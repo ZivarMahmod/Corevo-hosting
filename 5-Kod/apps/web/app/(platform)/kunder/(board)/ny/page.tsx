@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CreateTenantForm } from '@/components/platform/CreateTenantForm'
-import { OnboardingStudio } from '@/components/platform/onboarding-studio/OnboardingStudio'
+import { OnboardingEntryLazy } from '@/components/platform/OnboardingEntryLazy'
 import { loadVerticalPresets } from '@/lib/platform/verticals'
 import { onboardingStudioEnabled } from '@/lib/platform/onboarding-studio/flag'
 import styles from '@/components/platform/kunder-v2.module.css'
@@ -33,11 +32,7 @@ export default async function NewTenantPage() {
           Kunder
         </Link>
         <section className={studioEnabled ? 'onboarding-host' : 'portal-section'}>
-          {studioEnabled ? (
-            <OnboardingStudio presets={presets} />
-          ) : (
-            <CreateTenantForm presets={presets} />
-          )}
+          <OnboardingEntryLazy presets={presets} studioEnabled={studioEnabled} />
         </section>
       </div>
     </div>

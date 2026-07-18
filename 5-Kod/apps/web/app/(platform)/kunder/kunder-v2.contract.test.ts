@@ -15,14 +15,17 @@ describe('goal-72 customer master–detail route contract', () => {
     expect(readWeb('app/(platform)/kunder/layout.tsx')).toBe('')
 
     expect(layout).toContain("import { listTenantsWithStats } from '@/lib/platform/tenants'")
-    expect(layout).toContain(
-      "import { KunderBoard, type KundCardVM } from '@/components/platform/KunderBoard'",
-    )
+    expect(layout).toContain("import type { KundCardVM } from '@/components/platform/KunderBoard'")
+    expect(layout).toContain("import { KunderBoardLazy } from '@/components/platform/KunderBoardLazy'")
     expect(layout).toContain('const tenants = await listTenantsWithStats()')
     expect(layout).toContain('const rows: KundCardVM[] = tenants.map((tenant) => ({')
     expect(layout).toContain('owner: tenant.ownerName ?? tenant.owner')
     expect(layout).toContain('lastLabel: relativeTenantActivity(tenant.lastActivityAt)')
-    expect(layout).toContain('<KunderBoard tenants={rows}>{children}</KunderBoard>')
+    expect(layout).toContain('<KunderBoardLazy tenants={rows}>{children}</KunderBoardLazy>')
+
+    const lazyBoard = readWeb('components/platform/KunderBoardLazy.tsx')
+    expect(lazyBoard).toContain("import('./KunderBoard')")
+    expect(lazyBoard).toContain('ssr: false')
 
     const page = readWeb('app/(platform)/kunder/(board)/page.tsx')
     expect(page).not.toContain('listTenantsWithStats')
@@ -53,9 +56,13 @@ describe('goal-72 customer master–detail route contract', () => {
     expect(index).not.toContain('<main className={styles.pane}>')
 
     const create = readWeb('app/(platform)/kunder/(board)/ny/page.tsx')
+    const lazyEntry = readWeb('components/platform/OnboardingEntryLazy.tsx')
     expect(create).toContain('className={styles.pane}')
     expect(create).toContain('styles.paneInnerWide')
-    expect(create).toContain('<OnboardingStudio')
+    expect(create).toContain('<OnboardingEntryLazy')
+    expect(lazyEntry).toContain("import('./onboarding-studio/OnboardingStudio')")
+    expect(lazyEntry).toContain("import('./CreateTenantForm')")
+    expect(lazyEntry.match(/ssr: false/g)).toHaveLength(2)
     expect(create).toContain('<Link href="/kunder" className={styles.back}>')
     expect(create).not.toContain('<main className={styles.pane}>')
 

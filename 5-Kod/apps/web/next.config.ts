@@ -106,6 +106,15 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        source: '/installningar/:kategori',
+        destination: '/installningar?kategori=:kategori',
+        has: [{ type: 'host', value: `^${escapedSuperadminHost}$` }],
+      },
+    ]
+  },
   async headers() {
     // Global DENY first (covers EVERY route — never a CSP regression). The preview
     // override is listed LAST so that for that path it wins (Next applies matching header

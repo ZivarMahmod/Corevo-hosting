@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -17,20 +17,18 @@ describe('platform settings workspace route contract', () => {
     expect(root).toContain('searchEntries={platformSettingsSearchEntries(categories)}')
   })
 
-  it('self-gates every category and uses the platform root as the mobile back target', () => {
-    const categoryPath = resolve(import.meta.dirname, '[kategori]/page.tsx')
-    expect(existsSync(categoryPath), '[kategori]/page.tsx is missing').toBe(true)
-    if (!existsSync(categoryPath)) return
+  it('serves every category through one gated route while preserving category URLs', () => {
+    const root = readWeb('app/(platform)/installningar/page.tsx')
+    const nextConfig = readWeb('next.config.ts')
 
-    const category = readFileSync(categoryPath, 'utf8')
-    expect(category).toContain('await requirePlatformAdmin()')
-    expect(category).toContain('<SettingsWorkspace')
-    expect(category).toContain('rootHref="/installningar"')
-    expect(category).toContain('groups={PLATFORM_SETTINGS_GROUPS}')
-    expect(category).toContain('searchEntries={platformSettingsSearchEntries(categories)}')
-    expect(category).toContain("category.id === 'sakerhet'")
-    expect(category).toContain('<SecuritySettings')
-    expect(category).toContain('<BillingSettings')
+    expect(root).toContain('await requirePlatformAdmin()')
+    expect(root).toContain("category.id === 'sakerhet'")
+    expect(root).toContain('<SecuritySettings')
+    expect(root).toContain('<BillingSettings')
+    expect(root).toContain('mobileIndex={!requestedCategory}')
+    expect(nextConfig).toContain("source: '/installningar/:kategori'")
+    expect(nextConfig).toContain("destination: '/installningar?kategori=:kategori'")
+    expect(nextConfig).toContain('escapedSuperadminHost')
   })
 
   it('generalizes the shared workspace without changing admin defaults or CSS', () => {

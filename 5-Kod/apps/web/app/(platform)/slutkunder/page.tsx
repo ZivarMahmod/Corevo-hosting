@@ -3,7 +3,7 @@ import { requirePlatformOperator } from '@/lib/auth/session'
 import { listCustomersAllTenants } from '@/lib/platform/people'
 import { listTenants } from '@/lib/platform/tenants'
 import { hasServiceRole } from '@/lib/platform/service'
-import { KunderView } from '@/components/platform/kunder/KunderView'
+import { KunderViewLazy } from '@/components/platform/kunder/KunderViewLazy'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Slutkunder' }
@@ -45,7 +45,7 @@ export default async function EndCustomersPage({
 
   return (
     <section className="portal-section">
-      <KunderView
+      <KunderViewLazy
         customers={customers}
         tenants={tenants.map((t) => ({ id: t.id, name: t.name, slug: t.slug, status: t.status }))}
         q={q}

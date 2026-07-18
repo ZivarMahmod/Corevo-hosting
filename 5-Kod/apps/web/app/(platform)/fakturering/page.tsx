@@ -6,7 +6,7 @@ import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/platform/platform.module.css'
 import { requirePlatformOperator } from '@/lib/auth/session'
 import { loadOwnPartnerBilling } from '@/lib/platform/partners'
-import { PartnerBillingClient } from '@/components/platform/partners/PartnerBillingClient'
+import { PartnerBillingClientLazy } from '@/components/platform/partners/PartnerClientsLazy'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Fakturering' }
@@ -32,7 +32,7 @@ export default async function FaktureringPage({
     const partner = await loadOwnPartnerBilling()
     return partner.summary ? (
       <section className="portal-section">
-        <PartnerBillingClient
+        <PartnerBillingClientLazy
           partner={partner.summary}
           history={partner.history}
           smsSender={partner.smsSender}

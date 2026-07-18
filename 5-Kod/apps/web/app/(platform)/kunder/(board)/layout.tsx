@@ -1,5 +1,6 @@
 import { listTenantsWithStats } from '@/lib/platform/tenants'
-import { KunderBoard, type KundCardVM } from '@/components/platform/KunderBoard'
+import type { KundCardVM } from '@/components/platform/KunderBoard'
+import { KunderBoardLazy } from '@/components/platform/KunderBoardLazy'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,5 +45,5 @@ export default async function KunderLayout({ children }: { children: React.React
     storefrontUrl: tenantPublicUrl(tenant.slug),
   }))
 
-  return <KunderBoard tenants={rows}>{children}</KunderBoard>
+  return <KunderBoardLazy tenants={rows}>{children}</KunderBoardLazy>
 }
