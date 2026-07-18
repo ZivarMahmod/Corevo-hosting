@@ -18,23 +18,14 @@ import {
 import { mergeBranding } from '@/lib/branding/merge'
 import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
 import { canWrite } from '@/lib/platform/catalog-shared'
+import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import { BOOKING_STATUSES, restoreBlockedByRefund } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
 import { eraseTenantCustomerData } from '@/lib/gdpr/erase'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
-import {
-  compensateFailedStaffInvite,
-  findExistingStaffInviteProfile,
-  findStaffInviteBinding,
-} from '@/lib/auth/staff-invite-service'
-import { captureException } from '@/lib/observability'
 import { getAdminLocationPreferences } from './location-context'
-import {
-  notificationQueueMessage,
-  queueBookingEvent,
-} from '@/lib/notifications/booking-events'
 import {
   mergeScopedSettings,
   parseSettingsScope,
@@ -63,43 +54,9 @@ function staffActivationErrorMessage(message: string): string {
 
 type AdminServiceClient = NonNullable<ReturnType<typeof createAdminServiceClient>>
 
-async function compensateAdminStaffInvite(
-  service: AdminServiceClient,
-  args: { authId: string; tenantId: string; roleId: string; targetStaffId?: string },
-) {
-  return compensateFailedStaffInvite(service, {
-    ...args,
-    reportIncident: async (event) => {
-      await captureException(new Error('staff_invite_manual_cleanup_required'), {
-        action: 'inviteStaff.cleanup',
-        stage: event.stage,
-        tenantId: event.tenantId,
-        containmentOk: event.containmentOk,
-      })
-    },
-  })
-}
-
-function failedInviteState(
-  result: Awaited<ReturnType<typeof compensateAdminStaffInvite>>,
-): ActionState | null {
-  if (result.status === 'committed') return null
-  if (result.status === 'conflict_preserved') {
-    return { error: 'Kontot är redan kopplat till en annan medarbetare och lämnades orört.' }
-  }
-  if (result.status === 'manual_cleanup_required' && result.containmentOk) {
-    return {
-      error:
-        'manual_cleanup_required: Kontot spärrades men kunde inte städas automatiskt. Kontakta drift innan en ny inbjudan skickas.',
-    }
-  }
-  if (result.status === 'containment_failed') {
-    return {
-      error:
-        'containment_failed: Kontot kunde inte spärras fullständigt. Kontakta drift omedelbart och skicka ingen ny inbjudan.',
-    }
-  }
-  return { error: 'Inbjudan kunde inte slutföras. Det provisoriska kontot städades; försök igen.' }
+async function removeInvitedStaffUser(service: AdminServiceClient, authId: string): Promise<void> {
+  await service.from('users').delete().eq('id', authId)
+  await service.auth.admin.deleteUser(authId)
 }
 
 /**
@@ -714,6 +671,7 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
     ? null
     : await resolveActiveStaffLocation(supabase, ctx.tenant.id, requestedLocation)
   if (!staffId && !locationId) return { error: 'Välj en aktiv plats.' }
+
   const svc = createAdminServiceClient()
   if (!svc) {
     return {
@@ -740,82 +698,15 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   if (rErr || !role) return { error: GENERIC }
   const roleId = role.id
 
-  // A safe retry reuses only the exact active tenant+staff profile. It never
-  // guesses from an Auth "already exists" error or moves an account across tenants.
-  let existing = await findExistingStaffInviteProfile(svc, {
-    email,
-    tenantId: ctx.tenant.id,
-    roleId,
+  // 2) Invite the auth user (one-time magic link). Only this step needs svc.
+  //    redirectTo → /valkommen på personal-dörren (annars Site URL = fel host).
+  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
+    redirectTo: inviteRedirectUrl('staff'),
   })
-  if (!existing.ok) return { error: GENERIC }
-  if (existing.profile && !existing.profile.reusable) {
-    return {
-      error:
-        'manual_cleanup_required: Ett inaktivt konto finns redan för e-postadressen. Aktivera eller städa kontot innan ny inbjudan.',
-    }
+  if (iErr || !invited?.user) {
+    return { error: `Inbjudan misslyckades: ${iErr?.message ?? 'kontot finns kanske redan'}.` }
   }
-
-  if (staffId) {
-    const target = await findStaffInviteBinding(svc, {
-      tenantId: ctx.tenant.id,
-      authId: existing.profile?.id ?? '',
-      targetStaffId: staffId,
-    })
-    if (!target.ok || !target.staffId) return { error: 'Medarbetaren saknas.' }
-    if (target.authBoundStaffId && target.authBoundStaffId !== staffId) {
-      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
-    }
-    if (target.profileId) {
-      if (existing.profile?.id === target.profileId) {
-        return { success: `Kontot fanns redan och är kopplat till ${email}.` }
-      }
-      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
-    }
-  }
-
-  // 2) Invite the auth user (one-time magic link). If a concurrent retry won,
-  //    re-read the exact public profile once and continue idempotently.
-  let authId = existing.profile?.id ?? ''
-  let inviteSent = false
-  if (!authId) {
-    const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
-      redirectTo: inviteRedirectUrl('staff'),
-    })
-    if (iErr || !invited?.user) {
-      existing = await findExistingStaffInviteProfile(svc, {
-        email,
-        tenantId: ctx.tenant.id,
-        roleId,
-      })
-      if (!existing.ok || !existing.profile || !existing.profile.reusable) {
-        return { error: 'Inbjudan misslyckades. Kontot kunde inte återfinnas säkert.' }
-      }
-      authId = existing.profile.id
-    } else {
-      authId = invited.user.id
-      inviteSent = true
-    }
-  }
-
-  if (!inviteSent) {
-    const binding = await findStaffInviteBinding(svc, {
-      tenantId: ctx.tenant.id,
-      authId,
-      ...(staffId ? { targetStaffId: staffId } : {}),
-    })
-    if (!binding.ok) {
-      return { error: 'manual_cleanup_required: Kontots personalkoppling kunde inte verifieras.' }
-    }
-    if (staffId && binding.authBoundStaffId && binding.authBoundStaffId !== staffId) {
-      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
-    }
-    if (binding.profileId === authId) {
-      return { success: `Kontot fanns redan och är kopplat till ${email}.` }
-    }
-    if (staffId && binding.profileId && binding.profileId !== authId) {
-      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
-    }
-  }
+  const authId = invited.user.id
 
   // 3) Bake tenant_id into app_metadata so the JWT carries it before the access
   //    token hook is enabled (same belt-and-suspenders as the platform invite).
@@ -823,40 +714,18 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
     app_metadata: { tenant_id: ctx.tenant.id, platform_admin: false },
   })
   if (metadataError) {
-    if (!inviteSent) {
-      await captureException(new Error('existing_staff_metadata_update_failed'), {
-        action: 'inviteStaff.metadata',
-        tenantId: ctx.tenant.id,
-      })
-      return { error: 'manual_cleanup_required: Det befintliga kontots företagskoppling kunde inte verifieras.' }
-    }
-    const resolution = await compensateAdminStaffInvite(svc, {
-      authId,
-      tenantId: ctx.tenant.id,
-      roleId,
-      ...(staffId ? { targetStaffId: staffId } : {}),
-    })
-    return failedInviteState(resolution) ?? {
-      error: 'manual_cleanup_required: Kontot kopplades men metadata behöver verifieras av drift.',
-    }
+    await removeInvitedStaffUser(svc, authId)
+    return { error: 'Medarbetarkontot kunde inte kopplas till företaget.' }
   }
 
   // 4) public.users-raden skrivs med service-role; authenticated får avsiktligt
   //    aldrig ändra role_id/status direkt efter 0071.
-  if (inviteSent) {
-    const { error: uErr } = await svc
-      .from('users')
-      .insert({ id: authId, tenant_id: ctx.tenant.id, email, role_id: roleId, status: 'active' })
-    if (uErr) {
-      const resolution = await compensateAdminStaffInvite(svc, {
-        authId,
-        tenantId: ctx.tenant.id,
-        roleId,
-        ...(staffId ? { targetStaffId: staffId } : {}),
-      })
-      const failure = failedInviteState(resolution)
-      if (failure) return failure
-    }
+  const { error: uErr } = await svc
+    .from('users')
+    .insert({ id: authId, tenant_id: ctx.tenant.id, email, role_id: roleId, status: 'active' })
+  if (uErr) {
+    await removeInvitedStaffUser(svc, authId)
+    return { error: 'Medarbetaren kunde inte kopplas (kontot finns kanske redan).' }
   }
 
   // 5) Create or link the staff row → profile_id points at the new account.
@@ -866,37 +735,11 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
       .update({ profile_id: authId })
       .eq('id', staffId)
       .eq('tenant_id', ctx.tenant.id)
-      .is('profile_id', null)
       .select('id')
       .maybeSingle()
     if (linkErr || !linked) {
-      if (!inviteSent) {
-        const binding = await findStaffInviteBinding(svc, {
-          tenantId: ctx.tenant.id,
-          authId,
-          targetStaffId: staffId,
-        })
-        if (
-          binding.ok &&
-          binding.profileId === authId &&
-          binding.authBoundStaffId === staffId
-        ) {
-          // Ambiguous update response, but the exact retry target proves commit.
-        } else if (!binding.ok) {
-          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
-        } else {
-          return { error: 'Medarbetaren kopplades av en annan inbjudan. Det befintliga kontot lämnades orört.' }
-        }
-      } else {
-        const resolution = await compensateAdminStaffInvite(svc, {
-          authId,
-          tenantId: ctx.tenant.id,
-          roleId,
-          targetStaffId: staffId,
-        })
-        const failure = failedInviteState(resolution)
-        if (failure) return failure
-      }
+      await removeInvitedStaffUser(svc, authId)
+      return { error: GENERIC }
     }
   } else {
     const { error: insErr } = await supabase.rpc('create_staff_with_defaults', {
@@ -905,27 +748,8 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
       p_profile: authId,
     })
     if (insErr) {
-      if (!inviteSent) {
-        const binding = await findStaffInviteBinding(svc, {
-          tenantId: ctx.tenant.id,
-          authId,
-        })
-        if (binding.ok && binding.profileId === authId) {
-          // Exact row proves an idempotent retry committed.
-        } else if (!binding.ok) {
-          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
-        } else {
-          return { error: GENERIC }
-        }
-      } else {
-        const resolution = await compensateAdminStaffInvite(svc, {
-          authId,
-          tenantId: ctx.tenant.id,
-          roleId,
-        })
-        const failure = failedInviteState(resolution)
-        if (failure) return failure
-      }
+      await removeInvitedStaffUser(svc, authId)
+      return { error: GENERIC }
     }
   }
 
@@ -933,9 +757,7 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
   revalidateTenant(ctx.tenant.slug)
   return {
-    success: !inviteSent
-      ? `Kontot fanns redan och kopplades till ${email}. Använd Glömt lösenord om en ny länk behövs.`
-      : staffId
+    success: staffId
       ? `Inbjudan skickad till ${email}. Kontot är kopplat till den befintliga medarbetaren.`
       : `Inbjudan skickad till ${email}. Ny personal är skapad. Kontrollera tjänster, arbetstider och bokningsstatus under Personal.`,
   }
@@ -1328,6 +1150,7 @@ export async function saveLegalSettings(_p: ActionState, fd: FormData): Promise<
   revalidatePath('/admin/installningar/betalning')
   return { success: 'Juridikuppgifter sparade. Villkor och kvitton uppdaterade.' }
 }
+
 
 // ── Storefront media (hero/gallery/about/closing + team + stats) ───────────────
 // Owner-uploaded media that OVERRIDES the per-theme defaults on the storefront
@@ -2003,42 +1826,30 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // No-op: the admin <select> defaults to the booking's CURRENT status, so the
   // most trivial interaction (open a booking, click Spara without changing the
   // dropdown) submits the same status. Treat that as a success without writing —
-  // and without re-firing the refund side-effect below. Completion-eventet skapas
-  // atomiskt av DB-triggern i samma transaktion som den första statusövergången.
+  // and without re-firing the review-nudge/refund side-effects below.
   const { data: current } = await supabase
     .from('bookings')
-    .select('status, start_ts, end_ts, customer_id, staff_id')
+    .select('status, start_ts')
     .eq('id', bookingId)
     .eq('tenant_id', ctx.tenant.id)
     .maybeSingle()
   if (!current) return { error: 'Saknar bokning.' }
-  if (current.status === status) {
-    return { success: 'Status uppdaterad.' }
-  }
+  if (current.status === status) return { success: 'Status uppdaterad.' }
 
-  // Uteblivet/genomfört är ett PÅSTÅENDE OM ETT AVSLUTAT BESÖK: hela den bokade tiden
-  // måste ha passerat. Vakten sitter på servern, inte bara i knapp-logiken — UI:t kan inte vara
-  // enda sanningen om vad en status betyder. Ett felaktigt terminalt utfall rättas
-  // direkt completed ↔ no_show; DB:n bokför lojalitetskorrigeringen atomiskt.)
+  // Uteblivet besök är ett PÅSTÅENDE OM DÅTID: en tid som inte har börjat kan inte ha
+  // uteblivit. Vakten sitter på servern, inte bara i knapp-logiken — UI:t kan inte vara
+  // enda sanningen om vad en status betyder. (Ångerbart: no_show → confirmed, se
+  // ALLOWED_FROM — receptionen felklickar och priset ska inte bli en lögn.)
   if (
     (status === 'no_show' || status === 'completed') &&
-    new Date(current.end_ts).getTime() > Date.now()
+    new Date(current.start_ts).getTime() > Date.now()
   ) {
     return {
       error:
         status === 'no_show'
-          ? 'Besöket har inte nått sin sluttid än — det kan inte markeras uteblivet.'
-          : 'Besöket har inte nått sin sluttid än — det kan inte markeras genomfört.',
+          ? 'Tiden har inte börjat än — en framtida bokning kan inte ha uteblivit.'
+          : 'Tiden har inte börjat än — en framtida bokning kan inte markeras klar.',
     }
-  }
-
-  if (
-    (current.status === 'pending' || current.status === 'confirmed') &&
-    new Date(current.end_ts).getTime() <= Date.now() &&
-    status !== 'completed' &&
-    status !== 'no_show'
-  ) {
-    return { error: 'Bokningen behöver avslutas som Genomförd eller Uteblev.' }
   }
 
   // Ångra en avbokning (B-24). PENGARNA styr, inte klicket: har betalningen
@@ -2046,9 +1857,6 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // tid kunden fått pengarna tillbaka för. ALLOWED_FROM kan inte se pengar, så
   // vakten sitter här (regeln själv: restoreBlockedByRefund, unit-låst i format.test).
   if (current.status === 'cancelled') {
-    if (new Date(current.start_ts).getTime() <= Date.now()) {
-      return { error: 'Starttiden har passerat. Skapa en ny bokning i stället.' }
-    }
     const { data: pay } = await supabase
       .from('payments')
       .select('status')
@@ -2068,7 +1876,7 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
       error: { code?: string; message: string } | null
     }>
   }
-  const { data: statusResult, error } = await statusRpc.rpc('set_admin_booking_status', {
+  const { error } = await statusRpc.rpc('set_admin_booking_status', {
     p_booking: bookingId,
     p_status: status,
   })
@@ -2076,25 +1884,12 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
     // Reactivating a booking can collide with the no_double_booking EXCLUDE.
     if (error.code === '23P01')
       return { error: 'Tiden krockar med en annan aktiv bokning för medarbetaren.' }
-    if (
-      error.message.includes('booking_not_ended_for_no_show') ||
-      error.message.includes('future_booking_cannot_be_no_show')
-    )
-      return { error: 'Besöket har inte nått sin sluttid än — det kan inte markeras uteblivet.' }
-    if (
-      error.message.includes('booking_not_ended_for_completed') ||
-      error.message.includes('future_booking_cannot_be_completed')
-    )
-      return { error: 'Besöket har inte nått sin sluttid än — det kan inte markeras genomfört.' }
+    if (error.message.includes('future_booking_cannot_be_no_show'))
+      return { error: 'Tiden har inte börjat än — en framtida bokning kan inte ha uteblivit.' }
+    if (error.message.includes('future_booking_cannot_be_completed'))
+      return { error: 'Tiden har inte börjat än — en framtida bokning kan inte markeras klar.' }
     if (error.message.includes('refunded_booking_cannot_be_restored'))
       return { error: 'Bokningen är återbetald och kan inte återställas. Boka en ny tid.' }
-    if (
-      error.message.includes('past_booking_requires_outcome') ||
-      error.message.includes('past_booking_schedule_read_only')
-    )
-      return { error: 'Bokningen behöver avslutas som Genomförd eller Uteblev.' }
-    if (error.message.includes('cancelled_booking_already_started'))
-      return { error: 'Starttiden har passerat. Skapa en ny bokning i stället.' }
     if (
       error.message.includes('invalid_booking_status_transition') ||
       error.message.includes('booking_changed_concurrently')
@@ -2103,48 +1898,14 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
     return { error: GENERIC }
   }
 
-  const changed =
-    typeof statusResult === 'object' &&
-    statusResult !== null &&
-    (statusResult as { changed?: unknown }).changed === true
+  // Visit done → Google-review nudge (M9). Best-effort: never throws, so it can't
+  // fail the status the admin just set. Only fires on a real transition.
+  if (status === 'completed') await sendReviewNudgeForBooking(supabase, bookingId)
   // Avbokning → återbetala ev. lyckad betalning. No-op om ingen 'succeeded'
   // betalning finns; refundBookingPayment sväljer egna fel (kastar aldrig).
-  if (changed && status === 'cancelled') await refundBookingPayment(bookingId, ctx.tenant.id)
-
-  let notificationMessage = ''
-  if (changed && status === 'cancelled') {
-    const notification = await queueBookingEvent({
-      tenantId: ctx.tenant.id,
-      bookingId,
-      type: 'booking_cancelled',
-      occurredAt: new Date().toISOString(),
-      startISO: current.start_ts,
-    })
-    notificationMessage = ` ${notificationQueueMessage(notification)}`
-  } else if (changed && status === 'completed') {
-    const notification = await queueBookingEvent({
-      tenantId: ctx.tenant.id,
-      bookingId,
-      type: 'booking_completed',
-      occurredAt: new Date().toISOString(),
-      staffId: current.staff_id,
-    })
-    notificationMessage = ` ${notificationQueueMessage(notification)}`
-  } else if (changed && status === 'confirmed') {
-    const notification = await queueBookingEvent({
-      tenantId: ctx.tenant.id,
-      bookingId,
-      type: 'booking_confirmation',
-      occurredAt: new Date().toISOString(),
-      startISO: current.start_ts,
-      staffId: current.staff_id,
-      includeManageLink: true,
-      includeAccountClaim: true,
-    })
-    notificationMessage = ` ${notificationQueueMessage(notification)}`
-  }
+  if (status === 'cancelled') await refundBookingPayment(bookingId, ctx.tenant.id)
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')
-  return { success: `Status uppdaterad.${notificationMessage}` }
+  return { success: 'Status uppdaterad.' }
 }

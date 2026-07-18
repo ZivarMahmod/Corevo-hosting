@@ -9,7 +9,6 @@ import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
 import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
 import { PageHead } from '@/components/portal/ui'
 import { settingsCategories } from '@/lib/admin/settings-map'
-import { commerceReleaseGate } from '@/lib/release/commerce'
 
 /** L3 C-01 — Betalning. StripeConnectCard är ORÖRD, den flyttade bara hit från
  *  inställningsroten (som nu är kartan). Stripes retur-URL pekar hit (lib/admin/stripe.ts). */
@@ -65,7 +64,6 @@ export default async function BetalningPage({
         payoutsEnabled={stripeRow?.stripe_payouts_enabled ?? false}
         detailsSubmitted={stripeRow?.stripe_details_submitted ?? false}
         paymentsEnabled={settingsRow?.payments_enabled ?? false}
-        releaseEnabled={commerceReleaseGate(tenant.id).bookingPayment}
         justReturned={stripe === 'return'}
       />
       {/* goal-72 1c: org-nr + moms (settings.legal) — kvittot/villkoren konsumerar. */}

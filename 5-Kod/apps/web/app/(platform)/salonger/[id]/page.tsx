@@ -59,7 +59,6 @@ import { hasServiceRole } from '@/lib/platform/service'
 import { Badge, Button, Card, Icon, type BadgeTone, type IconName } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
-import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Kund' }
@@ -676,7 +675,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           payoutsEnabled={stripeRow?.stripe_payouts_enabled ?? false}
           detailsSubmitted={stripeRow?.stripe_details_submitted ?? false}
           paymentsEnabled={paymentsRow?.payments_enabled ?? false}
-          releaseEnabled={commerceReleaseGate(tenant.id).bookingPayment}
           justReturned={false}
         />
         {/* Google-recensionslänken bor HÄR (det är en integration) — flyttad från
