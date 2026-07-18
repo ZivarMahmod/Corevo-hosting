@@ -98,6 +98,12 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
   layoutskalet får bytas.
 
 ## Regler för genomförandet
+- ⭐ **Partner-modellen är slutmålet** (Zivar 2026-07-18, kanon:
+  `1-Planering/01-arkitektur/partner-modellen.md`): superadmin v2 är ytan som
+  framtida utlandspartners driver SIN verksamhet i — helt utan Zivar/backend.
+  Därför: servern bestämmer alltid tenant-listan (aldrig "alla" i UI-logik),
+  ingen ny funktion får kräva SQL för normal drift, kostnader aggregeras via
+  tenant_id (per-partner imorgon), leverantörer hårdkodas inte i UI.
 - Kundkortets flikstruktur är HELIG (SPEC) — inga flik-omflyttningar.
 - Återanvänd `components/portal/ui/*`; nya delade mönster flyttas DIT, inte kopieras.
 - Kund-adminen får inte försämras: delade komponenter ändras bakåtkompatibelt,
