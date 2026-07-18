@@ -199,4 +199,15 @@ describe('database release verification', () => {
     assert.equal(first, reordered)
     assert.notEqual(first, migrationFingerprint([{ name: '0001_a.sql', content: 'select 9;' }]))
   })
+
+  it('uses the same migration fingerprint for Windows and Unix line endings', () => {
+    const windows = migrationFingerprint([
+      { name: '0001_a.sql', content: 'select 1;\r\nselect 2;\r\n' },
+    ])
+    const unix = migrationFingerprint([
+      { name: '0001_a.sql', content: 'select 1;\nselect 2;\n' },
+    ])
+
+    assert.equal(windows, unix)
+  })
 })

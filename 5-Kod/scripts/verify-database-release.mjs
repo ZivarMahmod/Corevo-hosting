@@ -104,7 +104,9 @@ export function migrationFingerprint(entries) {
   for (const entry of [...entries].sort((left, right) => left.name.localeCompare(right.name))) {
     hash.update(entry.name)
     hash.update('\0')
-    hash.update(entry.content)
+    // Git checkouts may expose the same SQL as LF or CRLF. The release identity
+    // must describe the migration contents, not the operator's platform.
+    hash.update(entry.content.replace(/\r\n?/g, '\n'))
     hash.update('\0')
   }
   return `sha256:${hash.digest('hex')}`

@@ -6,7 +6,7 @@
   "schemaAligned": true,
   "verifiedAt": "2026-07-18T09:09:43Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:4da1c5cb89df6f1cdf71188fa3bf722a766c0123e55f5229e64579066d6c251c",
+  "migrationFingerprint": "sha256:c9c26c4e5dc1ac9a8a0df355110422603ff8ca382df7bd0082f27b2589e3a92a",
   "verificationEvidence": "docs/ops/database-migration-drift.md#produktionsavstamning-2026-07-18",
   "reason": null
 }
