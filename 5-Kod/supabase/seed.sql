@@ -32,6 +32,22 @@ values (
 )
 on conflict (tenant_id) do nothing;
 
+-- ── location + confirmed opening hours ──
+-- Migrations run before seed data, so readiness dependencies must be seeded
+-- explicitly before a staff row can be activated.
+insert into public.locations (id, tenant_id, name, timezone, is_primary) values
+  ('77777777-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Frisör Demo', 'Europe/Stockholm', true)
+on conflict (id) do nothing;
+
+insert into public.location_opening_hours
+  (tenant_id, location_id, weekday, start_time, end_time, source, confirmed_at)
+select
+  '11111111-1111-1111-1111-111111111111',
+  '77777777-0000-0000-0000-000000000001',
+  d, time '09:00', time '17:00', 'confirmed', now()
+from generate_series(1, 5) as d
+on conflict (location_id, weekday, start_time, end_time) do nothing;
+
 -- ── roles ──
 insert into public.roles (id, tenant_id, name, level) values
   ('22222222-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'salon_admin', 6),
@@ -63,21 +79,22 @@ insert into public.users (id, tenant_id, email, role_id, status) values
    'klippare@frisor1.se', '22222222-0000-0000-0000-000000000002', 'active')
 on conflict (id) do nothing;
 
--- ── staff (1, linked to the klippare user) ──
-insert into public.staff (id, tenant_id, profile_id, title, active) values
+-- ── staff draft (linked to the klippare user) ──
+insert into public.staff (id, tenant_id, location_id, profile_id, title, active) values
   ('44444444-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
-   '33333333-0000-0000-0000-000000000002', 'Frisör', true)
+   '77777777-0000-0000-0000-000000000001',
+   '33333333-0000-0000-0000-000000000002', 'Frisör', false)
 on conflict (id) do nothing;
 
 -- ── services (3) ──
 insert into public.services
-  (id, tenant_id, name, description, category, duration_min, price_cents, active) values
+  (id, tenant_id, location_id, name, description, category, duration_min, price_cents, active) values
   ('55555555-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
-   'Klippning', 'Herrklippning', 'Hår', 30, 39500, true),
+   '77777777-0000-0000-0000-000000000001', 'Klippning', 'Herrklippning', 'Hår', 30, 39500, true),
   ('55555555-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111',
-   'Skäggtrim', 'Trim och rakning', 'Skägg', 15, 19500, true),
+   '77777777-0000-0000-0000-000000000001', 'Skäggtrim', 'Trim och rakning', 'Skägg', 15, 19500, true),
   ('55555555-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111',
-   'Klipp & Skägg', 'Paket', 'Paket', 45, 54500, true)
+   '77777777-0000-0000-0000-000000000001', 'Klipp & Skägg', 'Paket', 'Paket', 45, 54500, true)
 on conflict (id) do nothing;
 
 -- ── staff_services (the staff member does all three) ──
@@ -88,15 +105,22 @@ insert into public.staff_services (tenant_id, staff_id, service_id) values
 on conflict (staff_id, service_id) do nothing;
 
 -- ── working_hours (Mon-Fri 09:00-17:00) ──
-insert into public.working_hours (tenant_id, staff_id, weekday, start_time, end_time)
+insert into public.working_hours (tenant_id, staff_id, location_id, weekday, start_time, end_time)
 select '11111111-1111-1111-1111-111111111111',
        '44444444-0000-0000-0000-000000000001',
+       '77777777-0000-0000-0000-000000000001',
        d, time '09:00', time '17:00'
 from generate_series(1, 5) as d
 where not exists (
   select 1 from public.working_hours
   where staff_id = '44444444-0000-0000-0000-000000000001' and weekday = d
 );
+
+-- Activate only after the location, confirmed opening hours, services and
+-- working hours satisfy the database readiness invariant.
+update public.staff
+   set active = true
+ where id = '44444444-0000-0000-0000-000000000001';
 
 -- ============================================================================
 -- Platform super-admin (cross-tenant back-office on booking.corevo.se).
@@ -145,20 +169,3 @@ where id in (
   '33333333-0000-0000-0000-000000000002',
   '33333333-0000-0000-0000-000000000003'
 );
-
--- ── location (primary) + location_id backfill (migration 0005) ──
--- On a fresh local `supabase db reset` the 0005 migration runs before any tenant
--- exists (no-op), so the seed carries the equivalent location row + backfill.
-insert into public.locations (id, tenant_id, name, timezone, is_primary) values
-  ('77777777-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Frisör Demo', 'Europe/Stockholm', true)
-on conflict (id) do nothing;
-
-update public.staff s set location_id = l.id
-  from public.locations l
- where l.tenant_id = s.tenant_id and l.is_primary and s.location_id is null;
-update public.services sv set location_id = l.id
-  from public.locations l
- where l.tenant_id = sv.tenant_id and l.is_primary and sv.location_id is null;
-update public.working_hours wh set location_id = l.id
-  from public.locations l
- where l.tenant_id = wh.tenant_id and l.is_primary and wh.location_id is null;

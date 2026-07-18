@@ -11,6 +11,7 @@ const MIGRATION = path.join(
   'migrations',
   '0079_staff_readiness_invariant.sql',
 )
+const SEED = path.join(CODE_ROOT, 'supabase', 'seed.sql')
 
 describe('0079 staff readiness invariant', () => {
   it('creates staff as a draft before children and activates only after readiness exists', () => {
@@ -53,5 +54,25 @@ describe('0079 staff readiness invariant', () => {
     expect(sql).toMatch(
       /create constraint trigger trg_services_staff_readiness[\s\S]*?after update or delete on public\.services[\s\S]*?deferrable initially deferred/,
     )
+  })
+
+  it('seeds demo staff as a draft and activates only after every readiness dependency', () => {
+    const sql = fs.readFileSync(SEED, 'utf8').toLowerCase()
+    const location = sql.indexOf('insert into public.locations')
+    const openingHours = sql.indexOf('insert into public.location_opening_hours', location)
+    const draftStaff = sql.indexOf('insert into public.staff', openingHours)
+    const staffServices = sql.indexOf('insert into public.staff_services', draftStaff)
+    const workingHours = sql.indexOf('insert into public.working_hours', staffServices)
+    const activation = sql.indexOf('set active = true', workingHours)
+
+    expect(location).toBeGreaterThan(-1)
+    expect(openingHours).toBeGreaterThan(location)
+    expect(draftStaff).toBeGreaterThan(openingHours)
+    expect(sql.slice(draftStaff, staffServices)).toContain('location_id')
+    expect(sql.slice(draftStaff, staffServices)).toContain("'frisör', false")
+    expect(staffServices).toBeGreaterThan(draftStaff)
+    expect(workingHours).toBeGreaterThan(staffServices)
+    expect(sql.slice(workingHours, activation)).toContain('location_id')
+    expect(activation).toBeGreaterThan(workingHours)
   })
 })
