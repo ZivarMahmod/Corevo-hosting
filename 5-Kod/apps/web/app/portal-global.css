@@ -12,6 +12,25 @@
    design tokens so each salon's theme (nivå 1) carries through automatically.
    =========================================================================== */
 
+/* ---- personal-portalen: back-office-palett för de återanvända --pwa-*-klasserna ----
+   Personal-sidorna (Kalender/Min profil + walk-in) byggdes med en egen mörk --pwa-*-
+   palett i personal-pwa.module.css. Nu när de renderar genom back-office-skalet ska de
+   bära samma forest/gold-toner som kund-adminen. Vi mappar --pwa-* → de frusna --c-*-
+   tokensen på portalroten (data-portal="personal"), så VARJE återanvänd klass (även den
+   top-layer <dialog> som ärver via DOM-trädet) byter palett utan att klassreglerna skrivs
+   om. --c-* har egna dark-varianter → light/dark följer med automatiskt. */
+[data-portal='personal'] {
+  --pwa-bg: transparent;
+  --pwa-surface: var(--c-paper);
+  --pwa-surface-2: var(--c-paper-2);
+  --pwa-line: var(--c-line);
+  --pwa-ink: var(--c-ink);
+  --pwa-ink-2: var(--c-ink-2);
+  --pwa-ink-3: color-mix(in srgb, var(--c-ink-2) 78%, transparent);
+  --pwa-green: var(--c-forest-fill, var(--c-forest));
+  --pwa-green-2: var(--c-gold);
+}
+
 /* ---- portal chrome ---- */
 /* Sign-out button — shared by the /konto storefront header (below) and any other
    simple top-header surface. (The old generic .portal-header/.portal-tenant/

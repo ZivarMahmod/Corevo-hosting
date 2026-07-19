@@ -114,6 +114,7 @@ function mobileNavIcon(areaId: string): IconName {
   if (areaId === 'oversikt' || areaId === 'overview') return 'grid'
   if (areaId === 'kalender') return 'calendar'
   if (areaId === 'kunder' || areaId === 'customers') return 'users'
+  if (areaId === 'profil') return 'user'
   if (areaId === 'insight') return 'chartBars'
   if (areaId === 'drift') return 'alert'
   return 'menu'

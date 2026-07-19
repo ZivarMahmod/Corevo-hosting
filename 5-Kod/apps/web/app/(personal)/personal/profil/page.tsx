@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
-import { signOut } from '@/app/(auth)/actions'
 import { getMyStaff } from '@/lib/personal/staff'
 import { getMyWorkingHours, getMyTimeOff } from '@/lib/personal/schedule'
 import { fmtDateTime, WEEKDAYS_SV } from '@/lib/personal/format'
@@ -37,7 +36,6 @@ export default async function PersonalProfilePage() {
 
   return (
     <section className={styles.profileScreen} data-accept="personal-profile">
-      <p className={styles.profileEyebrow}>COREVO PERSONAL · DITT KONTO</p>
       <h1>Min profil</h1>
 
       <div className={`${styles.profileCard} ${styles.identity}`}>
@@ -79,9 +77,6 @@ export default async function PersonalProfilePage() {
       <div className={styles.profileCard}>
         <p className={styles.sectionLabel}><span>KONTO</span></p>
         <Link className={styles.profileRow} href="/personal/konto"><span>Byt lösenord</span><span>›</span></Link>
-        <form action={signOut} className={styles.profileRow}>
-          <button type="submit" className={styles.signOutButton}>Logga ut</button>
-        </form>
       </div>
     </section>
   )

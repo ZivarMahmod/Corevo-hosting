@@ -111,10 +111,12 @@ export const NAV: Record<PortalRole, NavConfig> = {
   },
   personal: {
     sub: 'Personal',
+    // EXAKT två destinationer (Zivar): Kalender + Min profil — samma bottenflik-
+    // mönster som kund-adminen. Arbetstider/Frånvaro finns kvar som rutter men nås
+    // från profilsidan, inte ur naven.
     items: [
-      { href: '/personal', label: 'Idag', icon: 'home' },
-      { href: '/personal/arbetstider', label: 'Mitt schema', icon: 'calendar' },
-      { href: '/personal/franvaro', label: 'Frånvaro', icon: 'coffee' },
+      { href: '/personal', label: 'Kalender', icon: 'calendar' },
+      { href: '/personal/profil', label: 'Min profil', icon: 'user' },
     ],
   },
 }

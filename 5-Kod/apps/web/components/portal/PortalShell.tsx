@@ -25,6 +25,7 @@ import {
   platformSubnavForUser,
 } from './platform-navigation'
 import { adminAreas, adminMobileNavigation } from './admin-navigation'
+import { personalAreas, personalMobileNavigation } from './personal-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
@@ -254,9 +255,44 @@ export async function PortalShell({
       }
     }
 
+    // Personal-portalen: SAMMA TOPNAV-skal som kund-adminen (samma <Topnav>, samma CSS,
+    // samma bottenflik-mobilnav), bara med personalens två destinationer och utan admins
+    // genvägar/moduler/platsväljare. Egen gren så admin/platform-grenarna förblir orörda.
+    if (portal === 'personal') {
+      const topAreas = personalAreas()
+      return (
+        <div
+          className={`tenant-root portal-shell ${topnavStyles.shell}`}
+          data-world={world}
+          data-portal={portal}
+          data-tenant={bundle?.tenant.id}
+          style={injectTenantTokens(branding) as CSSProperties}
+        >
+          <Topnav
+            areas={topAreas}
+            mobileNavigation={personalMobileNavigation(topAreas)}
+            paletteItems={paletteItems}
+            brandHref="/personal"
+            brandMark={brand.charAt(0).toUpperCase() || 'C'}
+            brandName={brand}
+            brandSub="Personal"
+            brandLabel={`${brand} – personal`}
+            themeVariant="cycle"
+            userLabel={userLabel}
+            email={email}
+            roleLabel={userSub}
+            signOut={<SignOutButton />}
+          />
+          <main className={`portal-main ${topnavStyles.main}`}>
+            <ToastProvider>{children}</ToastProvider>
+          </main>
+        </div>
+      )
+    }
+
     // Superadmin och kund-admin delar handoff-skalet: fem toppdestinationer i stället
     // för sidofältet. Bara chrome byts — children är samma route-komponenter och behåller
-    // varje riktig läsning, action och guard. Personal-portalen har kvar sidofältet.
+    // varje riktig läsning, action och guard.
     if (portal === 'platform' || portal === 'admin') {
       const isPlatform = portal === 'platform'
       const topAreas = isPlatform

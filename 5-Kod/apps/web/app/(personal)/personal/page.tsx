@@ -23,9 +23,9 @@ export default async function PersonalPage({
   if (!user.tenantId || mine.length === 0) {
     return (
       <section style={{ padding: 16 }}>
-        <p style={{ color: '#96968c', fontFamily: 'monospace', fontSize: 10 }}>COREVO PERSONAL</p>
-        <h1 style={{ color: '#f0f0ea', fontSize: 21 }}>Ingen personalprofil kopplad</h1>
-        <p style={{ color: '#c8c8bd', fontSize: 13 }}>Be ägaren koppla ditt personliga konto till din medarbetarrad.</p>
+        <p style={{ color: 'var(--c-ink-2)', fontFamily: 'monospace', fontSize: 10 }}>COREVO PERSONAL</p>
+        <h1 style={{ color: 'var(--c-ink)', fontSize: 21 }}>Ingen personalprofil kopplad</h1>
+        <p style={{ color: 'var(--c-ink-2)', fontSize: 13 }}>Be ägaren koppla ditt personliga konto till din medarbetarrad.</p>
       </section>
     )
   }
