@@ -17,9 +17,10 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
 
     expect(css).toContain('grid-template-columns: 308px minmax(0, 1fr)')
     expect(css).toContain('max-width: 760px')
-    expect(css).toContain('--settings-bg: #121210')
-    expect(css).toContain('--settings-surface: #1c1c18')
-    expect(css).toContain('--settings-line: #33332c')
+    expect(css).toContain('--settings-bg: var(--c-cream)')
+    expect(css).toContain('--settings-surface: var(--c-paper)')
+    expect(css).toContain('--settings-line: var(--c-line)')
+    expect(css).toContain('--settings-ink: var(--c-ink)')
     expect(component).toContain('Tillbaka till inställningar')
     expect(component).toContain('Sök — öppettider, pris, behörighet…')
     expect(component).toContain('settingsSearchEntries(categories)')

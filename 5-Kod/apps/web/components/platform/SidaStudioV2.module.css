@@ -1,17 +1,18 @@
 .shell {
-  --editor-bg: #121210;
-  --editor-panel: #1c1c18;
-  --editor-card: #25251f;
-  --editor-card-2: #2e2e28;
-  --editor-line: #33332c;
-  --editor-line-strong: #4a4a41;
-  --editor-text: #f0f0ea;
-  --editor-text-2: #c8c8bd;
-  --editor-text-3: #96968c;
-  --editor-green: #2f5f47;
-  --editor-warn: #d6ac6a;
-  --editor-danger: #d68f85;
-  --editor-info: #a2b6d0;
+  --editor-bg: var(--c-cream);
+  --editor-panel: var(--c-paper);
+  --editor-card: var(--c-paper-2);
+  --editor-card-2: var(--c-paper-3);
+  --editor-line: var(--c-line);
+  --editor-line-strong: var(--c-line-strong);
+  --editor-text: var(--c-ink);
+  --editor-text-2: var(--c-ink-2);
+  --editor-text-3: var(--c-ink-3);
+  --editor-green: var(--c-forest-fill);
+  --editor-warn: var(--c-warning);
+  --editor-warn-bg: var(--c-warning-bg);
+  --editor-danger: var(--c-danger);
+  --editor-info: var(--c-info);
   width: 100%;
   height: calc(100dvh - 60px);
   min-height: 0;
@@ -79,7 +80,7 @@
 .tabs button:hover { color: var(--editor-text); }
 .tabs .activeTab {
   background: var(--editor-card-2);
-  box-shadow: inset 0 -2px 0 #3a7357;
+  box-shadow: inset 0 -2px 0 var(--editor-green);
   color: var(--editor-text);
 }
 
@@ -152,8 +153,8 @@
   align-items: center;
   flex-shrink: 0;
   gap: 10px;
-  border-bottom: 1px solid #4a4235;
-  background: #2a2416;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-warn) 30%, var(--editor-line));
+  background: var(--editor-warn-bg);
   color: var(--editor-warn);
   font-size: 12.5px;
   box-sizing: border-box;

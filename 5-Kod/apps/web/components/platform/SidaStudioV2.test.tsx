@@ -181,13 +181,13 @@ describe('SidaStudioV2 acceptance shell', () => {
     expect(component).not.toContain('nextRows.filter(([statValue, label])')
   })
 
-  it('locks canonical geometry, tokens and mobile controls in CSS', () => {
+  it('locks canonical geometry, shared theme tokens and mobile controls in CSS', () => {
     expect(css).toMatch(/grid-template-columns:\s*470px\s+minmax\(0,\s*1fr\)/)
-    expect(css).toMatch(/--editor-bg:\s*#121210/i)
-    expect(css).toMatch(/--editor-panel:\s*#1c1c18/i)
-    expect(css).toMatch(/--editor-card:\s*#25251f/i)
-    expect(css).toMatch(/--editor-line:\s*#33332c/i)
-    expect(css).toMatch(/--editor-text:\s*#f0f0ea/i)
+    expect(css).toMatch(/--editor-bg:\s*var\(--c-cream\)/i)
+    expect(css).toMatch(/--editor-panel:\s*var\(--c-paper\)/i)
+    expect(css).toMatch(/--editor-card:\s*var\(--c-paper-2\)/i)
+    expect(css).toMatch(/--editor-line:\s*var\(--c-line\)/i)
+    expect(css).toMatch(/--editor-text:\s*var\(--c-ink\)/i)
     expect(css).toMatch(/\.mobileDevice[^}]*width:\s*390px/is)
     expect(css).toMatch(/\.mobileDevice[^}]*flex:\s*1(?:\s+1\s+auto)?\s*;/is)
     expect(css).toMatch(/\.mobilePublish[^}]*min-height:\s*(?:4[4-9]|[5-9]\d)px/is)

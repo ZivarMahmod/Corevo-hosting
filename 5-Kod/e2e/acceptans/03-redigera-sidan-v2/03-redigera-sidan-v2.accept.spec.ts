@@ -36,13 +36,13 @@ test.describe('03 Redigera sidan v2 — source contract @readonly @contract', ()
     }
   })
 
-  test('03-C03 geometry and canonical dark tokens are locked in CSS', () => {
+  test('03-C03 geometry and shared theme tokens are locked in CSS', () => {
     expect(studioCss).toMatch(/grid-template-columns:\s*470px\s+minmax\(0,\s*1fr\)/)
-    expect(studioCss).toMatch(/--editor-bg:\s*#121210/i)
-    expect(studioCss).toMatch(/--editor-panel:\s*#1c1c18/i)
-    expect(studioCss).toMatch(/--editor-card:\s*#25251f/i)
-    expect(studioCss).toMatch(/--editor-line:\s*#33332c/i)
-    expect(studioCss).toMatch(/--editor-text:\s*#f0f0ea/i)
+    expect(studioCss).toMatch(/--editor-bg:\s*var\(--c-cream\)/i)
+    expect(studioCss).toMatch(/--editor-panel:\s*var\(--c-paper\)/i)
+    expect(studioCss).toMatch(/--editor-card:\s*var\(--c-paper-2\)/i)
+    expect(studioCss).toMatch(/--editor-line:\s*var\(--c-line\)/i)
+    expect(studioCss).toMatch(/--editor-text:\s*var\(--c-ink\)/i)
     expect(studioCss).toMatch(/\.mobileDevice[^}]*width:\s*390px/is)
     expect(studioCss).toMatch(/\.toolbar[^}]*padding:\s*12px 24px/is)
     expect(studioCss).toMatch(/\.panel[^}]*padding:\s*16px 18px 40px/is)

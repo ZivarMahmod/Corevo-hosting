@@ -32,7 +32,7 @@ describe('platform settings workspace route contract', () => {
     expect(platformRoutes).toContain("'/installningar'")
   })
 
-  it('generalizes the shared workspace without changing admin defaults or CSS', () => {
+  it('generalizes the shared workspace while inheriting the back-office theme', () => {
     const workspace = readWeb('components/admin/SettingsWorkspace.tsx')
     const navigation = readWeb('components/admin/SettingsV2.tsx')
     const css = readWeb('components/admin/settings-v2.module.css')
@@ -45,7 +45,7 @@ describe('platform settings workspace route contract', () => {
     expect(navigation).toContain('groups = SETTINGS_GROUPS')
     expect(navigation).toContain('providedSearchEntries ?? settingsSearchEntries')
     expect(css).toContain('grid-template-columns: 308px minmax(0, 1fr)')
-    expect(css).toContain('--settings-bg: #121210')
+    expect(css).toContain('--settings-bg: var(--c-cream)')
   })
 
   it('reuses real security and billing surfaces without duplicating billing data', () => {

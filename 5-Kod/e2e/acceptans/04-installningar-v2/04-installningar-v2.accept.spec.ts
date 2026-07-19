@@ -7,15 +7,15 @@ const read = (relativePath: string) =>
   readFileSync(path.join(repo, relativePath), 'utf8').replaceAll('\r\n', '\n')
 
 test.describe('04 Inställningar v2 — source contract @readonly @contract', () => {
-  test('04-C01 canonical geometry and dark tokens', () => {
+  test('04-C01 canonical geometry and shared theme tokens', () => {
     const css = read('apps/web/components/admin/settings-v2.module.css')
     expect(css).toMatch(/grid-template-columns:\s*308px\s+minmax\(0,\s*1fr\)/)
     expect(css).toMatch(/max-width:\s*760px/)
-    expect(css).toMatch(/--settings-bg:\s*#121210/i)
-    expect(css).toMatch(/--settings-surface:\s*#1c1c18/i)
-    expect(css).toMatch(/--settings-surface-2:\s*#25251f/i)
-    expect(css).toMatch(/--settings-line:\s*#33332c/i)
-    expect(css).toMatch(/--settings-ink:\s*#f0f0ea/i)
+    expect(css).toMatch(/--settings-bg:\s*var\(--c-cream\)/i)
+    expect(css).toMatch(/--settings-surface:\s*var\(--c-paper\)/i)
+    expect(css).toMatch(/--settings-surface-2:\s*var\(--c-paper-2\)/i)
+    expect(css).toMatch(/--settings-line:\s*var\(--c-line\)/i)
+    expect(css).toMatch(/--settings-ink:\s*var\(--c-ink\)/i)
   })
 
   test('04-C02 complete grouped map, search and honest warnings', () => {
