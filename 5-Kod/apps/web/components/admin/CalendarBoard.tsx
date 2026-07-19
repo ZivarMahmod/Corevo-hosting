@@ -504,7 +504,7 @@ export function CalendarBoard({
       { date, bookings: vBookings, blocks: vBlocks, staff: vStaff },
       filterDay(next),
     ] as const
-  }, [blocks, bookings, date, dayNeighbors, resurs, resursValid, staff, vBlocks, vBookings, vStaff])
+  }, [date, dayNeighbors, resurs, resursValid, staff, vBlocks, vBookings, vStaff])
 
   // goal-67 — färgen slås upp på staffId. Vecko- och månadsvyn saknar resurskolumner
   // och är just därför de vyer som BEHÖVER färgen mest. En bokning vars resurs
