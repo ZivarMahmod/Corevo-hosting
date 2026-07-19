@@ -715,17 +715,23 @@ export type StaffDay = {
  *  gamla listWorkingHours(staffId) är per resurs och blir N+1 i en dagvy.
  *  Kalenderns kolumner (goal-66) läser samma funktion: en resurs som är ledig ska
  *  ritas som ledig, inte utelämnas. */
-export async function staffDay(
+export async function staffDays(
   tenantId: string,
-  weekday: number,
+  weekdays: readonly number[],
   locationId?: string,
-): Promise<StaffDay[]> {
+): Promise<Map<number, StaffDay[]>> {
+  const requested = [...new Set(weekdays)].filter(
+    (weekday) => Number.isInteger(weekday) && weekday >= 0 && weekday <= 6,
+  )
+  const result = new Map<number, StaffDay[]>(requested.map((weekday) => [weekday, []]))
+  if (requested.length === 0) return result
+
   const supabase = await createClient()
   let hoursQuery = supabase
     .from('working_hours')
     .select('staff_id, weekday, start_time, end_time')
     .eq('tenant_id', tenantId)
-    .eq('weekday', weekday)
+    .in('weekday', requested)
     .order('start_time', { ascending: true })
   if (locationId) hoursQuery = hoursQuery.eq('location_id', locationId)
 
@@ -744,8 +750,8 @@ export async function staffDay(
   ])
   // Kasta, svälj inte (B-10): noll resurser p.g.a. datafel skulle rita en kalender
   // helt utan kolumner — som ser ut som "ingen jobbar idag".
-  if (staffRes.error) throw new Error(`staffDay: ${staffRes.error.message}`)
-  if (hoursRes.error) throw new Error(`staffDay: ${hoursRes.error.message}`)
+  if (staffRes.error) throw new Error(`staffDays: ${staffRes.error.message}`)
+  if (hoursRes.error) throw new Error(`staffDays: ${hoursRes.error.message}`)
   const { data: staffRows } = staffRes
   const { data: hourRows } = hoursRes
 
@@ -761,33 +767,51 @@ export async function staffDay(
     start_time: string
     end_time: string
   }[]) {
-    if (row.weekday !== weekday) continue
-    const prev = span.get(row.staff_id)
-    span.set(row.staff_id, {
+    if (!result.has(row.weekday)) continue
+    const key = `${row.weekday}:${row.staff_id}`
+    const prev = span.get(key)
+    span.set(key, {
       start: prev && prev.start < row.start_time ? prev.start : row.start_time,
       end: prev && prev.end > row.end_time ? prev.end : row.end_time,
     })
-    const arr = passes.get(row.staff_id) ?? []
+    const arr = passes.get(key) ?? []
     arr.push([hmToMinutes(row.start_time), hmToMinutes(row.end_time)])
-    passes.set(row.staff_id, arr)
+    passes.set(key, arr)
   }
   // Faktiska arbetsminuter per resurs = sammanslagna pass (ej ytterspann, ej dubbelräknat).
   const worked = new Map<string, number>()
   for (const [id, ivs] of passes) worked.set(id, sumMergedMinutes(ivs))
 
-  return ((staffRows ?? []) as { id: string; title: string | null; color: string | null }[])
-    .map((s) => {
-      const hours = span.get(s.id)
-      return {
-        staffId: s.id,
-        // Samma fallback som listStaff.displayName — identiteten bärs av namnet.
-        name: s.title?.trim() || 'Namnlös medarbetare',
-        start: hours?.start ?? null,
-        end: hours?.end ?? null,
-        workedMinutes: worked.get(s.id) ?? 0,
-        color: staffColor(s.id, s.color),
-      }
-    })
+  const stableStaff = (staffRows ?? []) as { id: string; title: string | null; color: string | null }[]
+  for (const weekday of requested) {
+    result.set(
+      weekday,
+      stableStaff.map((s) => {
+        const key = `${weekday}:${s.id}`
+        const hours = span.get(key)
+        return {
+          staffId: s.id,
+          // Samma fallback som listStaff.displayName — identiteten bärs av namnet.
+          name: s.title?.trim() || 'Namnlös medarbetare',
+          start: hours?.start ?? null,
+          end: hours?.end ?? null,
+          workedMinutes: worked.get(key) ?? 0,
+          color: staffColor(s.id, s.color),
+        }
+      }),
+    )
+  }
+  return result
+}
+
+/** Bakåtkompatibel enkel-dag-fasad. All schemaberäkning bor i staffDays så färger,
+ * passammanslagning och stabil kolumnordning aldrig kan glida isär. */
+export async function staffDay(
+  tenantId: string,
+  weekday: number,
+  locationId?: string,
+): Promise<StaffDay[]> {
+  return (await staffDays(tenantId, [weekday], locationId)).get(weekday) ?? []
 }
 
 /** goal-67: översikten svarar på "vad händer idag" — inget annat. `servicesActive`,

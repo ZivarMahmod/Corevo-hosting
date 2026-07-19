@@ -113,19 +113,3 @@ describe('placeOverlaps', () => {
     expect(new Set(placed.map((p) => p.lane))).toEqual(new Set([0, 1, 2]))
   })
 })
-
-describe('calendarSwipeDirection', () => {
-  const swipeDirection = (
-    calendarBoard as typeof calendarBoard & {
-      calendarSwipeDirection?: (dx: number, dy: number) => -1 | 0 | 1
-    }
-  ).calendarSwipeDirection
-
-  it('byter bara dag efter ett tydligt horisontellt 48px-svep', () => {
-    expect(swipeDirection).toBeTypeOf('function')
-    expect(swipeDirection!(49, 4)).toBe(-1)
-    expect(swipeDirection!(-49, 4)).toBe(1)
-    expect(swipeDirection!(48, 0)).toBe(0)
-    expect(swipeDirection!(60, 50)).toBe(0)
-  })
-})

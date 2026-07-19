@@ -16,7 +16,9 @@ describe('size-limited Worker client boundaries', () => {
     expect(page).toContain("import { CalendarBoardLazy } from '@/components/admin/CalendarBoardLazy'")
     expect(page).toContain('<CalendarBoardLazy')
     expect(page).not.toContain("CalendarBoard,\n  type CalendarBlock")
-    expect(page).toContain("import type { CalendarBlock, CalendarView } from '@/components/admin/CalendarBoard'")
+    expect(page).toMatch(
+      /import type \{[\s\S]*?CalendarBlock,[\s\S]*?CalendarDayNeighbors,[\s\S]*?CalendarView,[\s\S]*?\} from '@\/components\/admin\/CalendarBoard'/,
+    )
     expect(page).toContain('const [')
     expect(page).toContain('listBookings(tenant.id')
 

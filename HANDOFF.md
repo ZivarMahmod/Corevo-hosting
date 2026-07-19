@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-18.
+Senast uppdaterad: 2026-07-19.
 
 ## Läsordning
 
@@ -52,9 +52,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
   permanent radering och schemahoppet behåller plats. Panelen och Schemas innehåll
   är avsiktligt befintliga implementationer inne i nya Inställningar-workspacet;
   individuell nydesign ingår inte i paket 04.
-- Mobil-/iPadkalendern kan flytta bokningar med finger via ett separat touch-handtag.
-  Kalendern visar måltid/resurs under draget och kräver bekräftelse innan skrivning;
-  vanlig scroll startas utanför handtaget.
+- Goal-73 för kundadminens mobilchrome och kalendergester finns och är aktiv.
+  Mobilkalendern använder hela bokningskortet för långtryck och drag; inget separat
+  touch-handtag finns. Kalendern visar måltid/resurs och kräver bekräftelse innan
+  skrivning. Goal-73 arkiveras inte förrän Zivar godkänt den live.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
@@ -72,8 +73,8 @@ kundkortets master–detalj, mobilparitet, IA-svängen till `/kunder` +
 `0117`, Worker-budget och extern oautentiserad prod-rök är gröna. Zivars
 autentiserade manuella acceptans som superadmin och en verklig partner återstår,
 så goal-72 ligger kvar i `goals/` tills dess. Det senast inkomna designpaketet
-`Dagens genomgångar/Mobil pwa/` har ännu inget goal-73 och är orört. Provider-
-konfigurationen per partner finns, men `SMS_DELIVERY_MODE=off`; provider-dry-run
+`Dagens genomgångar/Mobil pwa/` styr den aktiva goal-73 och är fortsatt designlag.
+Provider-konfigurationen per partner finns, men `SMS_DELIVERY_MODE=off`; provider-dry-run
 och live-SMS är fortsatt separata, uttryckligen godkända driftsteg.
 
 ## Hårda regler

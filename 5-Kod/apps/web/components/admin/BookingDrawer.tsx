@@ -19,6 +19,7 @@ import {
 import type { BookingPaymentStatus } from '@/lib/admin/data'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
+import { dayKey } from '@/lib/admin/dates'
 import styles from './calendar.module.css'
 
 /** Bokningsdrawern och dess delade format-/statushjälpare. Låg tidigare INNE i
@@ -76,13 +77,6 @@ export function statusAccent(status: string): string {
 }
 
 // tz-ankrade formatterare (browser Intl — klientruntime, DST-säkra).
-export const dayKey = (ts: string, tz: string) =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(ts))
 export const dayLabel = (ts: string, tz: string) =>
   new Intl.DateTimeFormat('sv-SE', {
     timeZone: tz,

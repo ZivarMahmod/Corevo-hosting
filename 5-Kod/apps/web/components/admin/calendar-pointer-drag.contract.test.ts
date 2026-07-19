@@ -6,6 +6,10 @@ import { describe, expect, it } from 'vitest'
 const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const component = fs.readFileSync(path.join(WEB_ROOT, 'components/admin/CalendarBoard.tsx'), 'utf8')
 const css = fs.readFileSync(path.join(WEB_ROOT, 'components/admin/calendar.module.css'), 'utf8')
+const gestures = fs.readFileSync(
+  path.join(WEB_ROOT, 'components/admin/calendar-gestures.ts'),
+  'utf8',
+)
 
 describe('kalenderns draggenväg med mus och touch', () => {
   it('använder pointer capture i stället för native HTML5 drag and drop', () => {
@@ -28,18 +32,48 @@ describe('kalenderns draggenväg med mus och touch', () => {
 
   it('behåller vertikal scroll tills långtryck och faktisk förflyttning aktiverar drag', () => {
     expect(css).toMatch(
-      /@media \(pointer:\s*coarse\), \(any-pointer:\s*coarse\)[\s\S]*?\.blockDrag\s*\{[\s\S]*?touch-action:\s*pan-y;/,
+      /@media \(pointer:\s*coarse\), \(any-pointer:\s*coarse\)[\s\S]*?\.blockDrag\s*\{[\s\S]*?touch-action:\s*pan-x pan-y pinch-zoom;/,
     )
     expect(css).not.toMatch(/\.blockDrag\s*\{[\s\S]*?touch-action:\s*none;/)
-    expect(component).toContain("addEventListener('touchmove', preventTouchScroll, { passive: false })")
+    expect(component).toContain(
+      "addEventListener('touchmove', preventTouchScroll, { passive: false })",
+    )
     expect(component).toContain('moved: false')
-    expect(component).toContain('if (!drag.active || !drag.moved) return')
+    expect(component).toContain('if (!drag.active) return')
     expect(component).toContain('styles.blockTouchDragging')
+    expect(gestures).toContain('TOUCH_DRAG_HOLD_MS = 500')
+    expect(gestures).toContain('TOUCH_DRAG_SLOP_PX = 10')
+    expect(component).toContain('cancelPressCandidate')
     expect(component).not.toContain('<Icon name="grip"')
   })
 
+  it('avbryter friytans långtryck även när finger två landar i en annan kolumn', () => {
+    expect(component).toContain(
+      'useRef<FreeAreaGestureCoordinator>({ cancelActive: null })',
+    )
+    expect(component).toContain('gestureCoordinator={freeAreaGesture.current}')
+    expect(component).toMatch(
+      /className=\{styles\.dayWrap\}[\s\S]*?onPointerDownCapture=\{\(event\) => \{[\s\S]*?if \(!event\.isPrimary\) freeAreaGesture\.current\.cancelActive\?\.\(\)/,
+    )
+    expect(component).toMatch(
+      /function FreeArea\([\s\S]*?onPointerDown=\{\(e\) => \{[\s\S]*?if \(!e\.isPrimary\) \{[\s\S]*?gestureCoordinator\.cancelActive\?\.\(\)/,
+    )
+  })
+
+  it('öppnar direkt och lyfter en fast ghost utan textmarkering eller callout', () => {
+    expect(component).toContain('onOpen(booking)')
+    expect(component).not.toContain('CalendarBubble')
+    expect(component).toContain('styles.blockGhost')
+    expect(component).toContain('grabOffsetX')
+    expect(component).toContain('grabOffsetY')
+    expect(component).toContain('edgeAutoScrollVelocity')
+    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?user-select:\s*none;/)
+    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?-webkit-user-select:\s*none;/)
+    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?-webkit-touch-callout:\s*none;/)
+  })
+
   it('släpper bara i en faktisk personalkolumn under pekaren', () => {
-    expect(component).toMatch(/document\s*\.elementFromPoint\(clientX, clientY\)/)
+    expect(component).toMatch(/document\s*\.elementFromPoint\(pointer\.clientX, pointer\.clientY\)/)
     expect(component).toContain('data-calendar-staff-id')
     expect(component).toContain('target.dataset.calendarStaffId')
   })

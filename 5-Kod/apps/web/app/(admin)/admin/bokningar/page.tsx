@@ -11,11 +11,13 @@ import {
   listLocations,
   listServices,
   listStaffBookingResources,
-  staffDay,
+  staffDays,
   type AdminBooking,
   type BookingPayment,
 } from '@/lib/admin/data'
 import {
+  calendarDayTriplet,
+  dayKey,
   dayRangeUtc,
   isValidDate,
   monthGridRangeUtc,
@@ -28,7 +30,13 @@ import { requiredLocationId } from '@/lib/admin/location-scope'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { Icon, PageHead } from '@/components/portal/ui'
 import { CalendarBoardLazy } from '@/components/admin/CalendarBoardLazy'
-import type { CalendarBlock, CalendarView } from '@/components/admin/CalendarBoard'
+import type {
+  CalendarBlock,
+  CalendarDayData,
+  CalendarDayNeighbors,
+  CalendarStaff,
+  CalendarView,
+} from '@/components/admin/CalendarBoard'
 import type { BookingRow } from '@/components/admin/BookingDrawer'
 import calendarStyles from '@/components/admin/calendar.module.css'
 
@@ -104,6 +112,8 @@ export default async function KalenderPage({
   const today = todayInTz(tz)
   const view: CalendarView = VIEWS.includes(sp.vy as CalendarView) ? (sp.vy as CalendarView) : 'dag'
   const date = isValidDate(sp.datum) ? sp.datum : today
+  const dayDates = calendarDayTriplet(date)
+  const dayRanges = dayDates.map((day) => dayRangeUtc(day, tz))
 
   // Fönstret följer vyn. Månadsvyn hämtar HELA rutnätet (inkl. randdagarna från
   // grannmånaderna) — annars ser rutnätets kanter tomma ut fast de har bokningar.
@@ -112,11 +122,13 @@ export default async function KalenderPage({
       ? monthGridRangeUtc(date, tz)
       : view === 'vecka'
         ? weekRangeUtc(date, tz)
-        : dayRangeUtc(date, tz)
+        : { fromUtc: dayRanges[0]!.fromUtc, toUtc: dayRanges[2]!.toUtc }
 
   // Veckodagen i salongens tidszon (0=sön…6=lör, samma konvention som
   // working_hours.weekday) — inte serverns lokala dag.
   const weekday = new Date(`${date}T12:00:00Z`).getUTCDay()
+  const weekdays =
+    view === 'dag' ? dayDates.map((day) => new Date(`${day}T12:00:00Z`).getUTCDay()) : [weekday]
 
   // Frånvaro = kalenderns blockeringar. EN modell för "resursen kan inte bokas" —
   // rast, frånvaro och avvikande arbetstid är samma sak (Wavys universalmekanism).
@@ -132,7 +144,7 @@ export default async function KalenderPage({
     bookings,
     unresolved,
     unresolvedCount,
-    roster,
+    rostersByWeekday,
     timeOff,
     allServices,
     staffResources,
@@ -147,7 +159,7 @@ export default async function KalenderPage({
       limit: 50,
     }),
     countBookings(tenant.id, unresolvedFilters),
-    staffDay(tenant.id, weekday, locationId),
+    staffDays(tenant.id, weekdays, locationId),
     // Blockeringar ritas bara i dag- och veckovyn. Månadsvyn visar antal per dag, så
     // en 42-dagars frånvarofråga där vore ren spilld last.
     view === 'manad'
@@ -159,6 +171,7 @@ export default async function KalenderPage({
 
   const resourcesByStaff = new Map(staffResources.map((resource) => [resource.staffId, resource]))
   const activeLocationIds = new Set(locations.map((location) => location.id))
+  const roster = rostersByWeekday.get(weekday) ?? []
 
   const blocks: CalendarBlock[] = timeOff.map((t) => ({
     id: t.id,
@@ -194,7 +207,7 @@ export default async function KalenderPage({
 
   const now = Date.now()
   const NO_PAYMENT: BookingPayment = { status: null, amountCents: null }
-  const rows: BookingRow[] = visibleBookings.map((b: AdminBooking) => {
+  const allRows: BookingRow[] = visibleBookings.map((b: AdminBooking) => {
     const pay = payments.get(b.id) ?? NO_PAYMENT
     return {
       id: b.id,
@@ -219,6 +232,48 @@ export default async function KalenderPage({
       paymentAmountCents: pay.amountCents,
     }
   })
+
+  const staffRows = (dayRoster: typeof roster): CalendarStaff[] => {
+    const visible = ownCalendarOnly
+      ? dayRoster.filter((person) => person.staffId === user.staffId)
+      : dayRoster
+    return visible.map((person) => ({
+      id: person.staffId,
+      name: person.name,
+      start: person.start,
+      end: person.end,
+      color: person.color,
+      workedMinutes: person.workedMinutes,
+      serviceIds: resourcesByStaff.get(person.staffId)?.serviceIds ?? [],
+      locationIds:
+        resourcesByStaff
+          .get(person.staffId)
+          ?.locationIds.filter((resourceLocationId) => activeLocationIds.has(resourceLocationId)) ??
+        [],
+    }))
+  }
+
+  const rowsForDate = (day: string) =>
+    allRows.filter((booking) => dayKey(booking.startTs, tz) === day)
+  const blocksForDate = (day: string) => {
+    const dayRange = dayRangeUtc(day, tz)
+    const from = new Date(dayRange.fromUtc).getTime()
+    const to = new Date(dayRange.toUtc).getTime()
+    return visibleBlocks.filter(
+      (block) => new Date(block.startTs).getTime() < to && new Date(block.endTs).getTime() > from,
+    )
+  }
+  const dayData = (day: string): CalendarDayData => ({
+    date: day,
+    bookings: rowsForDate(day),
+    blocks: blocksForDate(day),
+    staff: staffRows(rostersByWeekday.get(new Date(`${day}T12:00:00Z`).getUTCDay()) ?? []),
+  })
+  const dayNeighbors: CalendarDayNeighbors | undefined =
+    view === 'dag' ? { previous: dayData(dayDates[0]), next: dayData(dayDates[2]) } : undefined
+  const rows = view === 'dag' ? rowsForDate(date) : allRows
+  const currentBlocks = view === 'dag' ? blocksForDate(date) : visibleBlocks
+  const currentStaff = staffRows(visibleRoster)
 
   return (
     <>
@@ -265,42 +320,29 @@ export default async function KalenderPage({
         </div>
       ) : null}
       <CalendarBoardLazy
-      bookings={rows}
-      blocks={visibleBlocks}
-      staff={visibleRoster.map((s) => ({
-        id: s.staffId,
-        name: s.name,
-        start: s.start,
-        end: s.end,
-        color: s.color,
-        // Serverberäknade arbetsminuter (sammanslagna pass) — nämnaren i kalenderns
-        // beläggningssiffra. Klienten räknar statistiken så den följer resursfiltret.
-        workedMinutes: s.workedMinutes,
-        serviceIds: resourcesByStaff.get(s.staffId)?.serviceIds ?? [],
-        locationIds:
-          resourcesByStaff
-            .get(s.staffId)
-            ?.locationIds.filter((locationId) => activeLocationIds.has(locationId)) ?? [],
-      }))}
-      // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
-      // drawern och sedan avvisas av servern.
-      services={allServices
-        .filter((s) => s.active && (s.location_id === null || s.location_id === locationId))
-        .map((s) => ({
-          id: s.id,
-          name: s.name,
-          durationMin: s.duration_min ?? 30,
-          priceCents: s.price_cents ?? null,
-        }))}
-      tz={tz}
-      view={view}
-      date={date}
-      today={today}
-      locationId={locationId}
-      staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
-      openBookingId={sp.open}
-      onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
-      canManageBookings={canManageBookings}
+        bookings={rows}
+        blocks={currentBlocks}
+        staff={currentStaff}
+        dayNeighbors={dayNeighbors}
+        // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
+        // drawern och sedan avvisas av servern.
+        services={allServices
+          .filter((s) => s.active && (s.location_id === null || s.location_id === locationId))
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            durationMin: s.duration_min ?? 30,
+            priceCents: s.price_cents ?? null,
+          }))}
+        tz={tz}
+        view={view}
+        date={date}
+        today={today}
+        locationId={locationId}
+        staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
+        openBookingId={sp.open}
+        onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
+        canManageBookings={canManageBookings}
       />
     </>
   )

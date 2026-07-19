@@ -1,22 +1,28 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { isoWeekNumber } from '@/lib/admin/dates'
+import { addDays, addMonths, dayKey, isoWeekNumber } from '@/lib/admin/dates'
 import { occupancyPct } from '@/lib/admin/dashboard-view'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
 import dynamic from 'next/dynamic'
 import {
   BookingDrawer,
-  dayKey,
   eligibleRescheduleStaff,
   isAvbokad,
   isBokad,
   isKlar,
   statusAccent,
-  telHref,
   timeLabel,
   type BookingRow,
 } from './BookingDrawer'
@@ -27,7 +33,7 @@ import type { CalendarService, NewBookingSeed } from './NewBookingDrawer'
 // hämtas först vid klick. CalendarHelp + CancelledLog monteras alltid (deras trigger-knapp
 // syns i verktygsraden; bara modal-innehållet är klick-gatat) → deras chunk hämtas vid
 // mount, men ligger fortfarande UTANFÖR huvud-chunken (mindre initial parse). BookingDrawer
-// lämnas STATISK: den delar modul med synkrona render-hjälpare (dayKey/isAvbokad/isKlar/
+// lämnas STATISK: den delar modul med synkrona render-hjälpare (isAvbokad/isKlar/
 // statusAccent/timeLabel) som CalendarBoard behöver eagerly — att splitta drar in modulen ändå.
 const NewBookingDrawer = dynamic(() => import('./NewBookingDrawer').then((m) => m.NewBookingDrawer))
 const BlockDrawer = dynamic(() => import('./BlockDrawer').then((m) => m.BlockDrawer))
@@ -42,6 +48,17 @@ import {
   MOBILE_CALENDAR_SHIFT_EVENT,
 } from '@/components/portal/mobile-search-event'
 import styles from './calendar.module.css'
+import {
+  nearestDaySlide,
+  scrollTopForVisibleMinute,
+  visibleMinuteAtScrollTop,
+} from './calendar-pager'
+import {
+  TOUCH_DRAG_HOLD_MS,
+  TOUCH_DRAG_SLOP_PX,
+  dragGhostPosition,
+  edgeAutoScrollVelocity,
+} from './calendar-gestures'
 
 /** Kalenderarbetsbordet (goal-66). ETT arbetsbord, tre vyer — inte tre sidor:
  *
@@ -88,6 +105,18 @@ export type CalendarBlock = {
 
 export type CalendarView = 'dag' | 'vecka' | 'manad'
 
+export type CalendarDayData = {
+  date: string
+  bookings: BookingRow[]
+  blocks: CalendarBlock[]
+  staff: CalendarStaff[]
+}
+
+export type CalendarDayNeighbors = {
+  previous: CalendarDayData
+  next: CalendarDayData
+}
+
 const VIEWS: { value: CalendarView; label: string }[] = [
   { value: 'dag', label: 'Dag' },
   { value: 'vecka', label: 'Vecka' },
@@ -97,16 +126,6 @@ const VIEWS: { value: CalendarView; label: string }[] = [
 /** Rutnätets upplösning. 15 min är snappningen (Wavy gör samma): ett klick på
  *  09:20-höjd ger 09:15, aldrig 09:20. */
 const SNAP_MIN = 15
-export const SWIPE_THRESHOLD_PX = 48
-const TOUCH_DRAG_HOLD_MS = 240
-
-/** Ett dagbyte kräver ett avsiktligt horisontellt svep. Positivt dx betyder att
- * innehållet dras åt höger och kalendern ska gå till föregående dag. */
-export function calendarSwipeDirection(deltaX: number, deltaY: number): -1 | 0 | 1 {
-  const horizontal = Math.abs(deltaX)
-  if (horizontal <= SWIPE_THRESHOLD_PX || horizontal <= Math.abs(deltaY) * 1.25) return 0
-  return deltaX > 0 ? -1 : 1
-}
 
 /** Pixlar per minut. Styr höjden på en bokning: 60 min = 84 px. Räcker för att läsa
  *  kund + tjänst i ett 30-minuterspass utan att dagen blir orimligt lång. */
@@ -229,6 +248,8 @@ export type CalendarBoardProps = {
   bookings: BookingRow[]
   blocks: CalendarBlock[]
   staff: CalendarStaff[]
+  /** Dagvyns två sidorslides. Mittendagens data är fortsatt toppnivåprops. */
+  dayNeighbors?: CalendarDayNeighbors
   services: CalendarService[]
   tz: string
   view: CalendarView
@@ -246,6 +267,7 @@ export function CalendarBoard({
   bookings,
   blocks,
   staff,
+  dayNeighbors,
   services,
   tz,
   view,
@@ -262,8 +284,14 @@ export function CalendarBoard({
   const params = useSearchParams()
   const absenceTimeOffId = params.get('absence')
   const scrollRef = useRef<HTMLDivElement>(null)
-  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const pagerNavigationLocked = useRef(false)
+  const pagerScrollLeft = useRef(0)
+  const pagerSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const preservedTopMinute = useRef<number | null>(null)
   const lastAutoScrollKey = useRef<string | null>(null)
+  const [activeDaySlide, setActiveDaySlide] = useState(1)
+  const [pagerNavigationPending, setPagerNavigationPending] = useState(false)
+  const [announcedDay, setAnnouncedDay] = useState(date)
   const [open, setOpen] = useState<BookingRow | null>(
     () => bookings.find((b) => b.id === openBookingId) ?? null,
   )
@@ -324,6 +352,10 @@ export function CalendarBoard({
     window.addEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
     return () => window.removeEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
   }, [])
+
+  useEffect(() => {
+    window.dispatchEvent(new Event('corevo:calendar-cancel-drag'))
+  }, [date, view])
 
   // Djuplänk-parametrar (?ny/?blockera) är ENGÅNGS: rensa dem ur URL:en efter att
   // drawern öppnats, annars öppnar en omladdning/tillbaka-navigering den igen.
@@ -394,13 +426,6 @@ export function CalendarBoard({
     minute: number
     durationMin: number
   } | null>(null)
-  /** Klick-bubblan (designens signatur): ett pekar-/touch-klick på ett block öppnar en
-   *  liten bubbla vid pekaren med Ring + Öppna, i stället för att slänga upp hela drawern.
-   *  Bara pekare/touch — tangentbord (Enter/Space) öppnar drawern direkt (se BookingBlock),
-   *  för en bubbla man inte kan sikta med musen på är bara ett extra steg. */
-  const [bubble, setBubble] = useState<{ booking: BookingRow; x: number; y: number } | null>(null)
-  const openBubble = (b: BookingRow, x: number, y: number) => setBubble({ booking: b, x, y })
-
   const staffNames = useMemo(() => new Map(staff.map((s) => [s.id, s.name])), [staff])
 
   const confirmMove = () => {
@@ -438,7 +463,7 @@ export function CalendarBoard({
       }
       q.delete('open')
       setMobileDateOpen(false)
-      router.push(`/admin/bokningar?${q.toString()}`)
+      router.push(`/admin/bokningar?${q.toString()}`, { scroll: false })
     },
     [params, router],
   )
@@ -451,6 +476,35 @@ export function CalendarBoard({
   const vStaff = resursValid ? staff.filter((s) => s.id === resurs) : staff
   const vBookings = resursValid ? bookings.filter((b) => b.staffId === resurs) : bookings
   const vBlocks = resursValid ? blocks.filter((b) => b.staffId === resurs) : blocks
+
+  const visibleDaySlides = useMemo(() => {
+    const filterDay = (day: CalendarDayData): CalendarDayData =>
+      resursValid
+        ? {
+            ...day,
+            staff: day.staff.filter((person) => person.id === resurs),
+            bookings: day.bookings.filter((booking) => booking.staffId === resurs),
+            blocks: day.blocks.filter((block) => block.staffId === resurs),
+          }
+        : day
+    const previous = dayNeighbors?.previous ?? {
+      date: addDays(date, -1),
+      bookings: [],
+      blocks: [],
+      staff,
+    }
+    const next = dayNeighbors?.next ?? {
+      date: addDays(date, 1),
+      bookings: [],
+      blocks: [],
+      staff,
+    }
+    return [
+      filterDay(previous),
+      { date, bookings: vBookings, blocks: vBlocks, staff: vStaff },
+      filterDay(next),
+    ] as const
+  }, [date, dayNeighbors, resurs, resursValid, staff, vBlocks, vBookings, vStaff])
 
   // goal-67 — färgen slås upp på staffId. Vecko- och månadsvyn saknar resurskolumner
   // och är just därför de vyer som BEHÖVER färgen mest. En bokning vars resurs
@@ -483,13 +537,16 @@ export function CalendarBoard({
     }
   }, [view, vBookings, vStaff, date])
 
-  // Arbetsdagens fönster = union av resursernas arbetstider. Tom dag (ingen arbetar)
-  // faller tillbaka på 08–18 så rutnätet aldrig kollapsar till en tom remsa.
+  // Dagbladets tre slides delar tidsaxel. Unionen gör att en halvdragning aldrig får
+  // klockslagen att hoppa mellan två dagar med olika öppettider.
   const [dayStart, dayEnd] = useMemo(() => {
-    const starts = vStaff.filter((s) => s.start).map((s) => toMin(s.start!))
-    const ends = vStaff.filter((s) => s.end).map((s) => toMin(s.end!))
+    const axisStaff = view === 'dag' ? visibleDaySlides.flatMap((day) => day.staff) : vStaff
+    const axisBookings =
+      view === 'dag' ? visibleDaySlides.flatMap((day) => day.bookings) : vBookings
+    const starts = axisStaff.filter((s) => s.start).map((s) => toMin(s.start!))
+    const ends = axisStaff.filter((s) => s.end).map((s) => toMin(s.end!))
     // Bokningar utanför arbetstid (t.ex. inlagda före ett schemabyte) måste ändå SYNAS.
-    for (const b of vBookings) {
+    for (const b of axisBookings) {
       starts.push(minutesInTz(b.startTs, tz))
       ends.push(minutesInTz(b.endTs, tz))
     }
@@ -497,7 +554,7 @@ export function CalendarBoard({
     const lo = Math.floor(Math.min(...starts) / 60) * 60
     const hi = Math.ceil(Math.max(...ends) / 60) * 60
     return [lo, Math.max(hi, lo + 60)]
-  }, [vStaff, vBookings, tz])
+  }, [vStaff, vBookings, tz, view, visibleDaySlides])
 
   const hours = useMemo(() => {
     const out: number[] = []
@@ -506,6 +563,8 @@ export function CalendarBoard({
   }, [dayStart, dayEnd])
 
   const gridHeight = (dayEnd - dayStart) * PX_PER_MIN
+  const pagerCenteredKey = useRef<string | null>(null)
+  const pagerDayStart = useRef(dayStart)
 
   const dayLabelLong = new Intl.DateTimeFormat('sv-SE', {
     weekday: 'long',
@@ -596,36 +655,147 @@ export function CalendarBoard({
   const step = view === 'manad' ? 'month' : view === 'vecka' ? 'week' : 'day'
   const shift = useCallback(
     (dir: -1 | 1) => {
-      const d = new Date(`${date}T12:00:00Z`)
-      if (step === 'day') d.setUTCDate(d.getUTCDate() + dir)
-      if (step === 'week') d.setUTCDate(d.getUTCDate() + dir * 7)
-      if (step === 'month') d.setUTCMonth(d.getUTCMonth() + dir)
-      go({ datum: d.toISOString().slice(0, 10) })
+      const target =
+        step === 'month' ? addMonths(date, dir) : addDays(date, step === 'week' ? dir * 7 : dir)
+      go({ datum: target })
     },
     [date, go, step],
   )
 
+  const mobilePagerMatches = useCallback(
+    () =>
+      window.matchMedia('(max-width: 767px), (orientation: landscape) and (max-height: 520px)')
+        .matches,
+    [],
+  )
+
+  const settleDayPager = useCallback(() => {
+    const scroller = scrollRef.current
+    if (!scroller || view !== 'dag' || !mobilePagerMatches() || scroller.clientWidth <= 0) return
+    const slide = nearestDaySlide(scroller.scrollLeft, scroller.clientWidth)
+    setActiveDaySlide(slide)
+    const landedDay = visibleDaySlides[slide]!.date
+    setAnnouncedDay(landedDay)
+    if (slide === 1 || pagerNavigationLocked.current) return
+    preservedTopMinute.current = visibleMinuteAtScrollTop(dayStart, scroller.scrollTop, PX_PER_MIN)
+    pagerNavigationLocked.current = true
+    setPagerNavigationPending(true)
+    go({ datum: landedDay })
+  }, [dayStart, go, mobilePagerMatches, view, visibleDaySlides])
+
+  const requestStep = useCallback(
+    (dir: -1 | 1) => {
+      if (step === 'month' || pagerNavigationLocked.current) return
+      const scroller = scrollRef.current
+      if (step !== 'day' || !scroller || !mobilePagerMatches()) {
+        shift(dir)
+        return
+      }
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      scroller.scrollTo({
+        left: scroller.clientWidth * (1 + dir),
+        top: scroller.scrollTop,
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      })
+      if (reducedMotion) settleDayPager()
+    },
+    [mobilePagerMatches, settleDayPager, shift, step],
+  )
+
+  // CSS Scroll Snap låter fingret följa ett sammanhängande tredagarsblad. URL:en
+  // ändras först när bladet landat, aldrig mitt i halvpositionen.
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current
+    const previousDayStart = pagerDayStart.current
+    pagerDayStart.current = dayStart
+    const pagerKey = `${view}:${date}`
+    if (!scroller || view !== 'dag' || !mobilePagerMatches()) {
+      pagerCenteredKey.current = null
+      return
+    }
+
+    const shouldCenter = pagerCenteredKey.current !== pagerKey
+    const visibleMinute =
+      preservedTopMinute.current ??
+      visibleMinuteAtScrollTop(previousDayStart, scroller.scrollTop, PX_PER_MIN)
+
+    if (shouldCenter) {
+      pagerCenteredKey.current = pagerKey
+      scroller.scrollLeft = scroller.clientWidth
+      pagerScrollLeft.current = scroller.clientWidth
+      pagerNavigationLocked.current = false
+      setPagerNavigationPending(false)
+      setActiveDaySlide(1)
+      setAnnouncedDay(date)
+    }
+
+    // En refresh kan utvidga den gemensamma tidsaxeln utan att datumet ändras.
+    // Behåll då väggklockan men rör inte den horisontella halvpositionen.
+    if (shouldCenter || previousDayStart !== dayStart) {
+      scroller.scrollTop = scrollTopForVisibleMinute(dayStart, visibleMinute, PX_PER_MIN)
+      preservedTopMinute.current = null
+    }
+  }, [date, dayStart, mobilePagerMatches, view])
+
+  useEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller || view !== 'dag') return
+    const hasNativeScrollEnd = 'onscrollend' in scroller
+    const onScroll = () => {
+      if (!mobilePagerMatches()) return
+      const nextLeft = scroller.scrollLeft
+      if (Math.abs(nextLeft - pagerScrollLeft.current) < 0.5) return
+      pagerScrollLeft.current = nextLeft
+      if (hasNativeScrollEnd) return
+      if (pagerSettleTimer.current) clearTimeout(pagerSettleTimer.current)
+      pagerSettleTimer.current = setTimeout(settleDayPager, 180)
+    }
+    const onScrollEnd = () => settleDayPager()
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    if (hasNativeScrollEnd) scroller.addEventListener('scrollend', onScrollEnd)
+    return () => {
+      scroller.removeEventListener('scroll', onScroll)
+      if (hasNativeScrollEnd) scroller.removeEventListener('scrollend', onScrollEnd)
+      if (pagerSettleTimer.current) clearTimeout(pagerSettleTimer.current)
+    }
+  }, [mobilePagerMatches, settleDayPager, view])
+
+  useEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller || view !== 'dag' || typeof ResizeObserver === 'undefined') return
+    let width = scroller.clientWidth
+    const observer = new ResizeObserver(() => {
+      if (!mobilePagerMatches() || scroller.clientWidth === width) return
+      const topMinute = visibleMinuteAtScrollTop(dayStart, scroller.scrollTop, PX_PER_MIN)
+      width = scroller.clientWidth
+      scroller.scrollLeft = width
+      pagerScrollLeft.current = width
+      scroller.scrollTop = scrollTopForVisibleMinute(dayStart, topMinute, PX_PER_MIN)
+      setActiveDaySlide(1)
+    })
+    observer.observe(scroller)
+    return () => observer.disconnect()
+  }, [dayStart, mobilePagerMatches, view])
+
   useEffect(() => {
     const onShift = (event: Event) => {
       const direction = (event as CustomEvent<number>).detail
-      if (direction === -1 || direction === 1) shift(direction)
+      if (direction === -1 || direction === 1) requestStep(direction)
     }
     window.addEventListener(MOBILE_CALENDAR_SHIFT_EVENT, onShift)
     return () => window.removeEventListener(MOBILE_CALENDAR_SHIFT_EVENT, onShift)
-  }, [shift])
+  }, [requestStep])
 
   useEffect(() => {
     const neighborLabel = (dir: -1 | 1) => {
       if (step === 'month') return '—'
-      const next = new Date(`${date}T12:00:00Z`)
-      if (step === 'day') next.setUTCDate(next.getUTCDate() + dir)
-      if (step === 'week') next.setUTCDate(next.getUTCDate() + dir * 7)
+      const target = addDays(date, step === 'day' ? dir : dir * 7)
       return new Intl.DateTimeFormat('sv-SE', {
         weekday: step === 'day' ? 'short' : undefined,
         day: 'numeric',
         month: 'short',
         timeZone: tz,
-      }).format(next)
+      }).format(new Date(`${target}T12:00:00Z`))
     }
     const publishMeta = () => {
       window.dispatchEvent(
@@ -645,8 +815,22 @@ export function CalendarBoard({
     return () => window.removeEventListener(MOBILE_CALENDAR_META_REQUEST_EVENT, publishMeta)
   }, [date, mobilePeriodLabel, mobilePeriodStats, step, tz])
 
-  // Ett tydligt horisontellt svep i dagvyn byter dag. Bokningskort undantas så att
-  // samma gestyta aldrig samtidigt försöker flytta en bokning.
+  const compactStepLabel = (dir: -1 | 1) => {
+    if (step === 'month') return '—'
+    const target = addDays(date, step === 'week' ? dir * 7 : dir)
+    return new Intl.DateTimeFormat('sv-SE', {
+      weekday: step === 'day' ? 'short' : undefined,
+      day: 'numeric',
+      month: 'short',
+      timeZone: tz,
+    }).format(new Date(`${target}T12:00:00Z`))
+  }
+  const announcedDayLabel = new Intl.DateTimeFormat('sv-SE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: tz,
+  }).format(new Date(`${announcedDay}T12:00:00Z`))
 
   // Klick på ledig yta = "boka här". Tiden SNAPPAS till 15 min (ett klick på 09:20-höjd
   // ger 09:15, aldrig 09:20) och resurs + tid ärvs in i drawern — användaren ska aldrig
@@ -842,63 +1026,44 @@ export function CalendarBoard({
           dokumentet och toppnaven stannar kvar. */}
       <div
         ref={scrollRef}
-        className={styles.scroll}
-        onTouchStart={(event) => {
-          if (
-            view === 'manad' ||
-            event.touches.length !== 1 ||
-            (event.target instanceof Element && event.target.closest('[data-calendar-booking]'))
-          ) {
-            swipeStart.current = null
-            return
-          }
-          // När kolumnerna är bredare än ytan (iPad/liggande) betyder ett
-          // horisontellt fingerdrag att användaren panorerar i schemat. Dagsvep
-          // aktiveras bara när hela dagvyn faktiskt ryms utan horisontell scroll.
-          const scroller = event.currentTarget
-          if (scroller.scrollWidth > scroller.clientWidth + 1) {
-            swipeStart.current = null
-            return
-          }
-          const touch = event.touches[0]
-          if (touch) swipeStart.current = { x: touch.clientX, y: touch.clientY }
-        }}
-        onTouchEnd={(event) => {
-          const start = swipeStart.current
-          swipeStart.current = null
-          const touch = event.changedTouches[0]
-          if (!start || !touch) return
-          const direction = calendarSwipeDirection(touch.clientX - start.x, touch.clientY - start.y)
-          if (direction) shift(direction)
-        }}
-        onTouchCancel={() => {
-          swipeStart.current = null
-        }}
+        className={`${styles.scroll}${view === 'dag' ? ` ${styles.dayPager}` : ''}`}
+        data-calendar-scroll
       >
         {view === 'dag' && (
-          <DayGrid
-            bookings={vBookings}
-            blocks={vBlocks}
-            staff={vStaff}
-            staffNoun={staffNoun}
-            tz={tz}
-            date={date}
-            today={today}
-            hours={hours}
-            dayStart={dayStart}
-            gridHeight={gridHeight}
-            onOpen={setOpen}
-            onBubble={openBubble}
-            onEmptyClick={onEmptyClick}
-            onDropBooking={onDropBooking}
-            onOpenBlock={(block) => {
-              if (canManageBookings) setBlocking({ seed: null, existing: block })
-            }}
-            focusedStaffId={resursValid ? resurs : null}
-            onStaffToggle={(staffId) => go({ resurs: resurs === staffId ? '' : staffId })}
-            dragOver={dragOver}
-            setDragOver={setDragOver}
-          />
+          <div className={styles.dayTrack} data-calendar-day-track>
+            {visibleDaySlides.map((day, index) => (
+              <div
+                key={day.date}
+                className={`${styles.daySlide}${index !== 1 ? ` ${styles.daySlideAdjacent}` : ''}`}
+                data-calendar-day-slide={day.date}
+                inert={pagerNavigationPending || index !== activeDaySlide ? true : undefined}
+                aria-hidden={pagerNavigationPending || index !== activeDaySlide ? true : undefined}
+              >
+                <DayGrid
+                  bookings={day.bookings}
+                  blocks={day.blocks}
+                  staff={day.staff}
+                  staffNoun={staffNoun}
+                  tz={tz}
+                  date={day.date}
+                  today={today}
+                  hours={hours}
+                  dayStart={dayStart}
+                  gridHeight={gridHeight}
+                  onOpen={setOpen}
+                  onEmptyClick={onEmptyClick}
+                  onDropBooking={onDropBooking}
+                  onOpenBlock={(block) => {
+                    if (canManageBookings) setBlocking({ seed: null, existing: block })
+                  }}
+                  focusedStaffId={resursValid ? resurs : null}
+                  onStaffToggle={(staffId) => go({ resurs: resurs === staffId ? '' : staffId })}
+                  dragOver={index === 1 ? dragOver : null}
+                  setDragOver={setDragOver}
+                />
+              </div>
+            ))}
+          </div>
         )}
         {view === 'vecka' && (
           <WeekGrid
@@ -910,7 +1075,6 @@ export function CalendarBoard({
             dayStart={dayStart}
             gridHeight={gridHeight}
             onOpen={setOpen}
-            onBubble={openBubble}
             onDayClick={(d) => go({ vy: 'dag', datum: d })}
             colorOf={colorOf}
           />
@@ -928,8 +1092,22 @@ export function CalendarBoard({
         )}
       </div>
 
+      <p className={styles.calendarLive} aria-live="polite" aria-atomic="true">
+        {announcedDayLabel}
+      </p>
+
       <div className={styles.mobileCalendarDock}>
         <div className={styles.mobileCalendarDateRow}>
+          <button
+            type="button"
+            className={styles.mobileDayStepButton}
+            onClick={() => requestStep(-1)}
+            aria-label={`Föregående: ${compactStepLabel(-1)}`}
+            disabled={step === 'month'}
+          >
+            <Icon name="chevronLeft" size={15} />
+            <span>{compactStepLabel(-1)}</span>
+          </button>
           <button
             type="button"
             className={styles.mobileDateToggle}
@@ -943,24 +1121,16 @@ export function CalendarBoard({
             </span>
             <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
           </button>
-          <div className={styles.mobileStep} aria-label="Bläddra i kalendern">
-            <button
-              type="button"
-              onClick={() => shift(-1)}
-              aria-label="Föregående"
-              disabled={step === 'month'}
-            >
-              <Icon name="chevronLeft" size={15} />
-            </button>
-            <button
-              type="button"
-              onClick={() => shift(1)}
-              aria-label="Nästa"
-              disabled={step === 'month'}
-            >
-              <Icon name="chevronRight" size={15} />
-            </button>
-          </div>
+          <button
+            type="button"
+            className={styles.mobileDayStepButton}
+            onClick={() => requestStep(1)}
+            aria-label={`Nästa: ${compactStepLabel(1)}`}
+            disabled={step === 'month'}
+          >
+            <span>{compactStepLabel(1)}</span>
+            <Icon name="chevronRight" size={15} />
+          </button>
         </div>
 
         <div className={styles.mobileCalendarActionRow}>
@@ -1045,19 +1215,6 @@ export function CalendarBoard({
             </div>
           </div>
         </>
-      )}
-
-      {bubble && (
-        <CalendarBubble
-          booking={bubble.booking}
-          x={bubble.x}
-          y={bubble.y}
-          onOpen={(b) => {
-            setBubble(null)
-            setOpen(b)
-          }}
-          onClose={() => setBubble(null)}
-        />
       )}
 
       {open && (
@@ -1183,6 +1340,10 @@ const HOLD_MS = 320
 /** Rör fingret sig mer än så är det en scroll, inte en tryckning. */
 const SLOP_PX = 10
 
+type FreeAreaGestureCoordinator = {
+  cancelActive: (() => void) | null
+}
+
 /**
  * Ledig yta i kalendern — "tryck där du vill boka".
  *
@@ -1203,18 +1364,23 @@ const SLOP_PX = 10
 function FreeArea({
   staffName,
   onPick,
+  gestureCoordinator,
 }: {
   staffName: string
   onPick: (clientY: number, box: DOMRect) => void
+  gestureCoordinator: FreeAreaGestureCoordinator
 }) {
   const [armed, setArmed] = useState(false)
   const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
 
-  const cancel = () => {
+  const cancel = useCallback(() => {
     if (hold.current) clearTimeout(hold.current.timer)
     hold.current = null
     setArmed(false)
-  }
+    if (gestureCoordinator.cancelActive === cancel) gestureCoordinator.cancelActive = null
+  }, [gestureCoordinator])
+
+  useEffect(() => cancel, [cancel])
 
   return (
     <button
@@ -1223,6 +1389,15 @@ function FreeArea({
       aria-label={`Boka ledig tid hos ${staffName}`}
       onPointerDown={(e) => {
         if (e.pointerType === 'mouse') return // musen går på onClick
+        if (!e.isPrimary) {
+          // Koordinatorn delas av alla personalkolumner. Finger två kan landa i en
+          // annan FreeArea-instans än finger ett och måste ändå avbryta den
+          // redan armerade långtryckstimern.
+          gestureCoordinator.cancelActive?.()
+          return
+        }
+        gestureCoordinator.cancelActive?.()
+        gestureCoordinator.cancelActive = cancel
         const el = e.currentTarget
         const { clientX: x, clientY: y } = e
         setArmed(true)
@@ -1232,6 +1407,9 @@ function FreeArea({
           timer: setTimeout(() => {
             hold.current = null
             setArmed(false)
+            if (gestureCoordinator.cancelActive === cancel) {
+              gestureCoordinator.cancelActive = null
+            }
             onPick(y, el.getBoundingClientRect())
           }, HOLD_MS),
         }
@@ -1262,92 +1440,35 @@ function FreeArea({
   )
 }
 
-/** Klick-bubblan (designens signatur). Öppnas vid pekar-/touch-klick på ett block med
- *  Ring (bara om nummer) + Öppna. Ligger `fixed` vid klickpunkten, klamrad innanför
- *  viewporten. Fokus flyttas in, Escape och klick utanför stänger — så den funkar även
- *  för touch och screenreader, inte bara mus. Renderas bara på klient (efter interaktion),
- *  så `window` finns alltid här. */
-function CalendarBubble({
-  booking,
-  x,
-  y,
-  onOpen,
-  onClose,
-}: {
-  booking: BookingRow
-  x: number
-  y: number
-  onOpen: (b: BookingRow) => void
-  onClose: () => void
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const tel = telHref(booking.customerPhone)
+type BookingDragPointer = {
+  clientX: number
+  clientY: number
+  grabOffsetX: number
+  grabOffsetY: number
+}
 
-  useEffect(() => {
-    // Var fokus låg innan bubblan (det klickade blocket) — återställs vid stängning så
-    // Escape/scrim inte tappar fokus till <body>. Öppna-vägen öppnar drawern som sedan
-    // tar fokus själv (monteras efter att bubblan avmonterats). (Codex-granskning, MEDEL.)
-    const prev = document.activeElement as HTMLElement | null
-    const box = ref.current
-    const focusables = () => Array.from(box?.querySelectorAll<HTMLElement>('a,button') ?? [])
-    focusables()[0]?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      // Minimal fokusfälla: Tab cyklar inom bubblans knappar, lämnar den aldrig bakom scrimen.
-      if (e.key === 'Tab') {
-        const items = focusables()
-        if (items.length === 0) return
-        const first = items[0]!
-        const last = items[items.length - 1]!
-        const active = document.activeElement
-        if (e.shiftKey && active === first) {
-          e.preventDefault()
-          last.focus()
-        } else if (!e.shiftKey && active === last) {
-          e.preventDefault()
-          first.focus()
-        }
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      // Återställ bara om fokus fortfarande ligger kvar i bubblan (Öppna-vägen har redan
-      // flyttat det vidare till drawern — rör det inte då).
-      if (box && box.contains(document.activeElement)) prev?.focus?.()
-    }
-  }, [onClose])
-
-  // Klamra innanför viewporten så bubblan aldrig hamnar delvis utanför kanten.
-  const left = Math.min(Math.max(x, 96), window.innerWidth - 96)
-  const top = Math.max(y - 14, 64)
-  const name = booking.customerName?.trim() || 'Gäst'
-
-  return (
-    <>
-      <div className={styles.bubbleScrim} onClick={onClose} aria-hidden="true" />
-      <div
-        ref={ref}
-        className={styles.bubble}
-        style={{ left, top }}
-        role="dialog"
-        aria-label={`Åtgärder för ${name}`}
-      >
-        {tel && (
-          <a href={tel} className={styles.bubbleRing} onClick={onClose}>
-            <Icon name="phone" size={14} />
-            Ring
-          </a>
-        )}
-        <button type="button" className={styles.bubbleOpen} onClick={() => onOpen(booking)}>
-          Öppna
-        </button>
-      </div>
-    </>
-  )
+type BookingDragSession = {
+  pointerId: number
+  startX: number
+  startY: number
+  lastX: number
+  lastY: number
+  grabOffsetX: number
+  grabOffsetY: number
+  originLeft: number
+  originTop: number
+  width: number
+  height: number
+  active: boolean
+  moved: boolean
+  touch: boolean
+  timer: number | null
+  frame: number | null
+  lastFrameAt: number | null
+  target: HTMLButtonElement
+  scrollContainer: HTMLElement | null
+  cancelTouchBlock: (() => void) | null
+  cancelGlobalBlock: (() => void) | null
 }
 
 function BookingBlock({
@@ -1358,7 +1479,6 @@ function BookingBlock({
   lane,
   lanes,
   onOpen,
-  onBubble,
   movable,
   onPointerPreview,
   onPointerDrop,
@@ -1373,8 +1493,6 @@ function BookingBlock({
   lane: number
   lanes: number
   onOpen: (b: BookingRow) => void
-  /** Pekar-/touch-klick → bubbla vid pekaren. Utelämnad (t.ex. framtida ytor) → onOpen. */
-  onBubble?: (b: BookingRow, x: number, y: number) => void
   /** goal-67: den bokade personens färg (hex). Bär "vems tid är det?" — den fråga
    *  en full dag ställer oftast. Aldrig ensam bärare: initialerna står i kortet och
    *  status har fortfarande ikon + text. */
@@ -1382,8 +1500,8 @@ function BookingBlock({
   /** Avbokade tider går inte att flytta — och veckovyn saknar resurskolumner att
    *  släppa i, så dragning är avstängd där. */
   movable?: boolean
-  onPointerPreview?: (booking: BookingRow, clientX: number, clientY: number) => void
-  onPointerDrop?: (booking: BookingRow, clientX: number, clientY: number) => void
+  onPointerPreview?: (booking: BookingRow, pointer: BookingDragPointer) => void
+  onPointerDrop?: (booking: BookingRow, pointer: BookingDragPointer) => boolean
   onPointerAbort?: () => void
   /** Dagvyn: blocken är breda nog för kundens telefonnummer. I vecko-/månadsvyn
    *  finns inte pixlarna — och där jobbar man inte heller "ring nästa kund". */
@@ -1391,33 +1509,163 @@ function BookingBlock({
 }) {
   const dim = isAvbokad(booking.status)
   const name = booking.customerName?.trim() || 'Gäst'
-  const pointerDrag = useRef<{
-    pointerId: number
-    startX: number
-    startY: number
-    active: boolean
-    moved: boolean
-    touch: boolean
-    timer: number | null
-    cancelTouchBlock: (() => void) | null
-  } | null>(null)
+  const pointerDrag = useRef<BookingDragSession | null>(null)
   const suppressClick = useRef(false)
+  const suppressClickTimer = useRef<number | null>(null)
+  const rollbackTimer = useRef<number | null>(null)
+  const ghostRef = useRef<HTMLDivElement>(null)
   const [touchDragging, setTouchDragging] = useState(false)
-
-  useEffect(
-    () => () => {
-      if (pointerDrag.current?.timer != null) window.clearTimeout(pointerDrag.current.timer)
-      pointerDrag.current?.cancelTouchBlock?.()
-    },
-    [],
-  )
+  const [ghost, setGhost] = useState<{
+    width: number
+    height: number
+    left: number
+    top: number
+  } | null>(null)
 
   const suppressSyntheticClick = () => {
     suppressClick.current = true
-    window.setTimeout(() => {
+    if (suppressClickTimer.current != null) window.clearTimeout(suppressClickTimer.current)
+    suppressClickTimer.current = window.setTimeout(() => {
       suppressClick.current = false
-    }, 0)
+      suppressClickTimer.current = null
+    }, 350)
   }
+
+  const releaseCapture = (drag: BookingDragSession) => {
+    if (drag.target.hasPointerCapture(drag.pointerId)) {
+      drag.target.releasePointerCapture(drag.pointerId)
+    }
+  }
+
+  const clearSessionResources = (drag: BookingDragSession) => {
+    if (drag.timer != null) window.clearTimeout(drag.timer)
+    if (drag.frame != null) window.cancelAnimationFrame(drag.frame)
+    drag.cancelTouchBlock?.()
+    drag.cancelGlobalBlock?.()
+    drag.timer = null
+    drag.frame = null
+    drag.cancelTouchBlock = null
+    drag.cancelGlobalBlock = null
+  }
+
+  const clearDragVisual = () => {
+    if (rollbackTimer.current != null) window.clearTimeout(rollbackTimer.current)
+    rollbackTimer.current = null
+    setTouchDragging(false)
+    setGhost(null)
+  }
+
+  const rollbackDragVisual = (drag: BookingDragSession) => {
+    const node = ghostRef.current
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!node || reducedMotion) {
+      clearDragVisual()
+      return
+    }
+    if (styles.blockGhostRollback) node.classList.add(styles.blockGhostRollback)
+    node.style.transform = `translate3d(${drag.originLeft}px, ${drag.originTop}px, 0)`
+    rollbackTimer.current = window.setTimeout(clearDragVisual, 200)
+  }
+
+  const dragPointer = (drag: BookingDragSession): BookingDragPointer => ({
+    clientX: drag.lastX,
+    clientY: drag.lastY,
+    grabOffsetX: drag.grabOffsetX,
+    grabOffsetY: drag.grabOffsetY,
+  })
+
+  const scheduleDragFrame = (drag: BookingDragSession) => {
+    if (drag.frame != null || pointerDrag.current !== drag) return
+    drag.frame = window.requestAnimationFrame((timestamp) => {
+      drag.frame = null
+      if (pointerDrag.current !== drag || !drag.active) return
+
+      const position = dragGhostPosition(drag.lastX, drag.lastY, drag.grabOffsetX, drag.grabOffsetY)
+      if (ghostRef.current) {
+        ghostRef.current.style.transform = `translate3d(${position.left}px, ${position.top}px, 0)`
+      }
+
+      let keepAutoScrolling = false
+      const scroller = drag.scrollContainer
+      if (scroller) {
+        const rect = scroller.getBoundingClientRect()
+        const velocity = edgeAutoScrollVelocity(drag.lastY, rect.top, rect.bottom)
+        if (velocity !== 0) {
+          const elapsed = drag.lastFrameAt == null ? 16 : Math.min(32, timestamp - drag.lastFrameAt)
+          const before = scroller.scrollTop
+          scroller.scrollTop += (velocity * elapsed) / 1000
+          keepAutoScrolling = Math.abs(scroller.scrollTop - before) > 0.1
+          drag.lastFrameAt = timestamp
+        } else {
+          drag.lastFrameAt = null
+        }
+      }
+
+      // Efter eventuell kant-scroll räknas kolumn + 15-minutersslot om. DayGrid
+      // uppdaterar React-state bara när just personal eller slot faktiskt ändrats.
+      onPointerPreview?.(booking, dragPointer(drag))
+      if (keepAutoScrolling) scheduleDragFrame(drag)
+    })
+  }
+
+  const liftDrag = (drag: BookingDragSession) => {
+    if (pointerDrag.current !== drag || drag.active) return
+    drag.active = true
+    if (drag.timer != null) window.clearTimeout(drag.timer)
+    drag.timer = null
+    if (drag.touch) {
+      const preventTouchScroll = (event: TouchEvent) => event.preventDefault()
+      drag.target.addEventListener('touchmove', preventTouchScroll, { passive: false })
+      drag.cancelTouchBlock = () => drag.target.removeEventListener('touchmove', preventTouchScroll)
+    }
+    setTouchDragging(true)
+    setGhost({
+      width: drag.width,
+      height: drag.height,
+      left: drag.originLeft,
+      top: drag.originTop,
+    })
+    scheduleDragFrame(drag)
+  }
+
+  const abortDrag = (drag: BookingDragSession, rollback = true) => {
+    if (pointerDrag.current !== drag) return
+    pointerDrag.current = null
+    clearSessionResources(drag)
+    releaseCapture(drag)
+    // En avbruten pointersekvens (OS-gest, extra finger, rotation eller navigation)
+    // får inte falla igenom som ett syntetiskt klick och öppna bokningen.
+    suppressSyntheticClick()
+    if (drag.active) {
+      onPointerAbort?.()
+      if (rollback) rollbackDragVisual(drag)
+      else clearDragVisual()
+    } else {
+      clearDragVisual()
+    }
+  }
+
+  /** Rörelse före långtrycket låser gesten till vanlig scroll. Den får aldrig senare
+   * byta identitet och plötsligt bli ett bokningsdrag. */
+  const cancelPressCandidate = (drag: BookingDragSession) => {
+    if (pointerDrag.current !== drag) return
+    pointerDrag.current = null
+    clearSessionResources(drag)
+    releaseCapture(drag)
+    suppressSyntheticClick()
+    clearDragVisual()
+  }
+
+  useEffect(
+    () => () => {
+      const drag = pointerDrag.current
+      pointerDrag.current = null
+      if (drag) clearSessionResources(drag)
+      if (suppressClickTimer.current != null) window.clearTimeout(suppressClickTimer.current)
+      if (rollbackTimer.current != null) window.clearTimeout(rollbackTimer.current)
+    },
+    [],
+  )
 
   // Ett block är bara så högt som tiden är lång — texten måste anpassa sig, inte
   // klippas mitt i en rad.
@@ -1432,7 +1680,7 @@ function BookingBlock({
   //
   // Statusflaggan tar INGEN höjd — den ligger absolut i kortets hörn (.blockFlag).
   // Telefonnumret visas från 45-min-block (63px ≥ 56); i mindre block är det ETT
-  // klick bort (bubblans Ring). Allt finns alltid i title, aria-label och drawern.
+  // klick bort i drawern. Allt finns alltid i title, aria-label och drawern.
   const h = Math.max(height, 20)
   const tier = h >= 56 ? 'full' : h >= 42 ? 'medium' : 'tiny'
   const showService = tier !== 'tiny'
@@ -1452,133 +1700,20 @@ function BookingBlock({
             ? { icon: 'x' as const, text: 'Avbokad' }
             : null
 
-  return (
-    <button
-      type="button"
-      className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${touchDragging ? ` ${styles.blockTouchDragging}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
-      style={{
-        top,
-        height: h,
-        left: `calc(${(lane / lanes) * 100}% + 2px)`,
-        width: `calc(${100 / lanes}% - 4px)`,
-        // Personens färg äger kortet (kant + toning, se calendar.module.css).
-        // Statusen bär sin egen ikon + text, så den behöver inte kanten längre.
-        ['--bk' as string]: color,
-        ['--bk-status' as string]: statusAccent(booking.status),
-      }}
-      data-calendar-booking
-      onPointerDown={(e) => {
-        const fromTouch = e.pointerType === 'touch' || e.pointerType === 'pen'
-        const fromDesktopMouse =
-          e.pointerType === 'mouse' &&
-          e.button === 0 &&
-          window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
-        if (!movable || !e.isPrimary || (!fromDesktopMouse && !fromTouch)) return
-        const target = e.currentTarget
-        const drag = {
-          pointerId: e.pointerId,
-          startX: e.clientX,
-          startY: e.clientY,
-          active: false,
-          moved: false,
-          touch: fromTouch,
-          timer: null as number | null,
-          cancelTouchBlock: null as (() => void) | null,
-        }
-        pointerDrag.current = drag
-        e.currentTarget.setPointerCapture(e.pointerId)
-        if (fromTouch) {
-          drag.timer = window.setTimeout(() => {
-            if (pointerDrag.current !== drag) return
-            drag.active = true
-            drag.timer = null
-            setTouchDragging(true)
-            // touch-action: pan-y behåller vanlig listscroll. Först EFTER
-            // långtrycket tar vi över touchmove, så vertikal bokningsflytt kan
-            // ske utan att sidan samtidigt rullar.
-            const preventTouchScroll = (event: TouchEvent) => event.preventDefault()
-            target.addEventListener('touchmove', preventTouchScroll, { passive: false })
-            drag.cancelTouchBlock = () =>
-              target.removeEventListener('touchmove', preventTouchScroll)
-          }, TOUCH_DRAG_HOLD_MS)
-        }
-      }}
-      onPointerMove={(e) => {
-        const drag = pointerDrag.current
-        if (!drag || drag.pointerId !== e.pointerId) return
-        if (drag.touch && !drag.active) return
-        if (
-          !drag.moved &&
-          Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < SLOP_PX
-        ) {
-          return
-        }
-        drag.active = true
-        drag.moved = true
-        if (drag.touch) e.preventDefault()
-        onPointerPreview?.(booking, e.clientX, e.clientY)
-      }}
-      onPointerUp={(e) => {
-        const drag = pointerDrag.current
-        if (!drag || drag.pointerId !== e.pointerId) return
-        pointerDrag.current = null
-        if (drag.timer != null) window.clearTimeout(drag.timer)
-        drag.cancelTouchBlock?.()
-        setTouchDragging(false)
-        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-          e.currentTarget.releasePointerCapture(e.pointerId)
-        }
-        if (!drag.active || !drag.moved) return
-        suppressSyntheticClick()
-        onPointerDrop?.(booking, e.clientX, e.clientY)
-      }}
-      onPointerCancel={(e) => {
-        const drag = pointerDrag.current
-        if (!drag || drag.pointerId !== e.pointerId) return
-        pointerDrag.current = null
-        if (drag.timer != null) window.clearTimeout(drag.timer)
-        drag.cancelTouchBlock?.()
-        setTouchDragging(false)
-        if (drag.active) suppressSyntheticClick()
-        onPointerAbort?.()
-      }}
-      onLostPointerCapture={(e) => {
-        const drag = pointerDrag.current
-        if (drag?.pointerId !== e.pointerId) return
-        pointerDrag.current = null
-        if (drag.timer != null) window.clearTimeout(drag.timer)
-        drag.cancelTouchBlock?.()
-        setTouchDragging(false)
-        if (drag.active) onPointerAbort?.()
-      }}
-      onClick={(e) => {
-        if (suppressClick.current) return
-        // Tangentbord (Enter/Space) ger detail===0 → öppna drawern direkt: en bubbla
-        // finns ingen pekare att sikta med. Pekare/touch → bubblan vid klickpunkten.
-        if (e.detail === 0 || !onBubble) onOpen(booking)
-        else onBubble(booking, e.clientX, e.clientY)
-      }}
-      title={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} · ${name} · ${booking.serviceName}`}
-      aria-label={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} ${name}, ${booking.serviceName}, ${booking.staffTitle}${statusFlag ? `, ${statusFlag.text}` : ''}`}
-    >
+  const renderContent = () => (
+    <>
       <span className={styles.blockHead}>
         <span className={`num ${styles.blockTime}`}>{timeLabel(booking.startTs, tz)}</span>
         <span className={styles.blockName}>{name}</span>
       </span>
       {showService && <span className={styles.blockService}>{booking.serviceName}</span>}
       <span className={`num ${styles.blockEnd}`}>{timeLabel(booking.endTs, tz)}</span>
-      {/* Numret står som TEXT här, inte som länk: blocket är redan en <button>, och en
-          <a> inuti en <button> är ogiltig HTML som skärmläsare tolkar olika. Ringbart
-          blir det i dialogen — ett klick bort, precis som önskat. */}
       {tier === 'full' && phone && (
         <span className={`num ${styles.blockPhone}`}>
           <Icon name="phone" size={10} />
           {phone}
         </span>
       )}
-      {/* Status bärs av ikon (+ text när kortet är stort nog), aldrig av färgen ensam
-          — färgblinda och gråskala måste kunna läsa den. Flaggan ligger ABSOLUT i
-          hörnet: som flödesrad åt den förut höjd från tjänsten och klippte texten. */}
       {statusFlag && (
         <span
           className={`${styles.blockFlag}${tier === 'full' ? ` ${styles.blockFlagFull}` : ''}`}
@@ -1588,15 +1723,159 @@ function BookingBlock({
           {tier === 'full' && <span>{statusFlag.text}</span>}
         </span>
       )}
-      {/* goal-67 — VEMS TID? I dagvyn svarar kolumnen. I VECKOVYN finns ingen kolumn,
-          och då vore färgen ensam bärare — det bryter regeln. Initialerna gör färgen
-          till en genväg i stället för det enda svaret. (Codex-granskning, MEDEL.) */}
       {!showPhone && tier !== 'tiny' && (
         <span className={styles.blockWho} style={{ background: color }}>
           {staffInitials(booking.staffTitle)}
         </span>
       )}
-    </button>
+    </>
+  )
+
+  return (
+    <>
+      <button
+        type="button"
+        className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${touchDragging ? ` ${styles.blockTouchDragging}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
+        style={{
+          top,
+          height: h,
+          left: `calc(${(lane / lanes) * 100}% + 2px)`,
+          width: `calc(${100 / lanes}% - 4px)`,
+          // Personens färg äger kortet (kant + toning, se calendar.module.css).
+          // Statusen bär sin egen ikon + text, så den behöver inte kanten längre.
+          ['--bk' as string]: color,
+          ['--bk-status' as string]: statusAccent(booking.status),
+        }}
+        data-calendar-booking
+        onPointerDown={(e) => {
+          const fromTouch = e.pointerType === 'touch' || e.pointerType === 'pen'
+          const fromDesktopMouse =
+            e.pointerType === 'mouse' &&
+            e.button === 0 &&
+            window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
+          if (!movable || !e.isPrimary || (!fromDesktopMouse && !fromTouch)) return
+          const target = e.currentTarget
+          const rect = target.getBoundingClientRect()
+          const drag: BookingDragSession = {
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            lastX: e.clientX,
+            lastY: e.clientY,
+            grabOffsetX: e.clientX - rect.left,
+            grabOffsetY: e.clientY - rect.top,
+            originLeft: rect.left,
+            originTop: rect.top,
+            width: rect.width,
+            height: rect.height,
+            active: false,
+            moved: false,
+            touch: fromTouch,
+            timer: null,
+            frame: null,
+            lastFrameAt: null,
+            target,
+            scrollContainer: target.closest<HTMLElement>('[data-calendar-scroll]'),
+            cancelTouchBlock: null,
+            cancelGlobalBlock: null,
+          }
+          pointerDrag.current = drag
+          target.setPointerCapture(e.pointerId)
+          const cancelForExternalState = (event?: Event) => {
+            if (event instanceof PointerEvent && event.pointerId === drag.pointerId) return
+            if (event?.type === 'visibilitychange' && document.visibilityState === 'visible') return
+            abortDrag(drag)
+          }
+          window.addEventListener('pointerdown', cancelForExternalState, true)
+          window.addEventListener('resize', cancelForExternalState)
+          window.addEventListener('pagehide', cancelForExternalState)
+          window.addEventListener('corevo:calendar-cancel-drag', cancelForExternalState)
+          document.addEventListener('visibilitychange', cancelForExternalState)
+          drag.cancelGlobalBlock = () => {
+            window.removeEventListener('pointerdown', cancelForExternalState, true)
+            window.removeEventListener('resize', cancelForExternalState)
+            window.removeEventListener('pagehide', cancelForExternalState)
+            window.removeEventListener('corevo:calendar-cancel-drag', cancelForExternalState)
+            document.removeEventListener('visibilitychange', cancelForExternalState)
+          }
+          if (fromTouch) {
+            drag.timer = window.setTimeout(() => {
+              liftDrag(drag)
+            }, TOUCH_DRAG_HOLD_MS)
+          }
+        }}
+        onPointerMove={(e) => {
+          const drag = pointerDrag.current
+          if (!drag || drag.pointerId !== e.pointerId) return
+          drag.lastX = e.clientX
+          drag.lastY = e.clientY
+          const distance = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY)
+          if (drag.touch && !drag.active) {
+            if (distance > TOUCH_DRAG_SLOP_PX) cancelPressCandidate(drag)
+            return
+          }
+          if (!drag.active && distance <= TOUCH_DRAG_SLOP_PX) return
+          if (!drag.active) liftDrag(drag)
+          if (distance < 1) return
+          drag.moved = true
+          if (drag.touch) e.preventDefault()
+          scheduleDragFrame(drag)
+        }}
+        onPointerUp={(e) => {
+          const drag = pointerDrag.current
+          if (!drag || drag.pointerId !== e.pointerId) return
+          pointerDrag.current = null
+          drag.lastX = e.clientX
+          drag.lastY = e.clientY
+          clearSessionResources(drag)
+          releaseCapture(drag)
+          if (!drag.active) return
+          suppressSyntheticClick()
+          if (!drag.moved) {
+            rollbackDragVisual(drag)
+            onPointerAbort?.()
+            return
+          }
+          const valid = onPointerDrop?.(booking, dragPointer(drag)) ?? false
+          if (valid) clearDragVisual()
+          else rollbackDragVisual(drag)
+        }}
+        onPointerCancel={(e) => {
+          const drag = pointerDrag.current
+          if (!drag || drag.pointerId !== e.pointerId) return
+          abortDrag(drag)
+        }}
+        onLostPointerCapture={(e) => {
+          const drag = pointerDrag.current
+          if (drag?.pointerId !== e.pointerId) return
+          abortDrag(drag)
+        }}
+        onClick={() => {
+          if (suppressClick.current) return
+          onOpen(booking)
+        }}
+        title={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} · ${name} · ${booking.serviceName}`}
+        aria-label={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} ${name}, ${booking.serviceName}, ${booking.staffTitle}${statusFlag ? `, ${statusFlag.text}` : ''}`}
+      >
+        {renderContent()}
+      </button>
+      {ghost && (
+        <div
+          ref={ghostRef}
+          className={`${styles.block} ${styles.blockGhost}${dim ? ` ${styles.blockDim}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
+          style={{
+            width: ghost.width,
+            height: ghost.height,
+            transform: `translate3d(${ghost.left}px, ${ghost.top}px, 0)`,
+            ['--bk' as string]: color,
+            ['--bk-status' as string]: statusAccent(booking.status),
+          }}
+          aria-hidden="true"
+        >
+          {renderContent()}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -1644,7 +1923,6 @@ function DayGrid({
   dayStart,
   gridHeight,
   onOpen,
-  onBubble,
   onEmptyClick,
   onDropBooking,
   onOpenBlock,
@@ -1666,7 +1944,6 @@ function DayGrid({
   dayStart: number
   gridHeight: number
   onOpen: (b: BookingRow) => void
-  onBubble: (b: BookingRow, x: number, y: number) => void
   onEmptyClick: (staffId: string, staffName: string, minute: number) => void
   onDropBooking: (booking: BookingRow, staffId: string, minute: number) => void
   onOpenBlock: (block: CalendarBlock) => void
@@ -1675,6 +1952,8 @@ function DayGrid({
   dragOver: { staffId: string; minute: number; durationMin: number } | null
   setDragOver: (v: { staffId: string; minute: number; durationMin: number } | null) => void
 }) {
+  const freeAreaGesture = useRef<FreeAreaGestureCoordinator>({ cancelActive: null })
+
   if (staff.length === 0) {
     return (
       <p className={styles.empty}>
@@ -1684,25 +1963,33 @@ function DayGrid({
     )
   }
 
-  const pointerTarget = (clientX: number, clientY: number) => {
+  const pointerTarget = (pointer: BookingDragPointer) => {
     const target = document
-      .elementFromPoint(clientX, clientY)
+      .elementFromPoint(pointer.clientX, pointer.clientY)
       ?.closest<HTMLElement>('[data-calendar-staff-id]')
     if (!target) return null
     const staffId = target.dataset.calendarStaffId
     if (!staffId || !staff.some((person) => person.id === staffId)) return null
     const box = target.getBoundingClientRect()
-    return { staffId, minute: dayStart + (clientY - box.top) / PX_PER_MIN }
+    return {
+      staffId,
+      minute: dayStart + (pointer.clientY - pointer.grabOffsetY - box.top) / PX_PER_MIN,
+    }
   }
 
-  const previewPointerMove = (booking: BookingRow, clientX: number, clientY: number) => {
-    const target = pointerTarget(clientX, clientY)
+  const previewPointerMove = (booking: BookingRow, pointer: BookingDragPointer) => {
+    const target = pointerTarget(pointer)
     if (!target) {
       setDragOver(null)
       return
     }
     const minute = Math.round(target.minute / SNAP_MIN) * SNAP_MIN
     const durationMin = minutesInTz(booking.endTs, tz) - minutesInTz(booking.startTs, tz)
+    const dayEnd = dayStart + gridHeight / PX_PER_MIN
+    if (minute < dayStart || minute + durationMin > dayEnd) {
+      setDragOver(null)
+      return
+    }
     if (
       dragOver?.staffId !== target.staffId ||
       dragOver.minute !== minute ||
@@ -1712,14 +1999,29 @@ function DayGrid({
     }
   }
 
-  const finishPointerMove = (booking: BookingRow, clientX: number, clientY: number) => {
-    const target = pointerTarget(clientX, clientY)
+  const finishPointerMove = (booking: BookingRow, pointer: BookingDragPointer) => {
+    const target = pointerTarget(pointer)
     setDragOver(null)
-    if (target) onDropBooking(booking, target.staffId, target.minute)
+    if (!target) return false
+    const minute = Math.round(target.minute / SNAP_MIN) * SNAP_MIN
+    const durationMin = minutesInTz(booking.endTs, tz) - minutesInTz(booking.startTs, tz)
+    const dayEnd = dayStart + gridHeight / PX_PER_MIN
+    if (minute < dayStart || minute + durationMin > dayEnd) return false
+    onDropBooking(booking, target.staffId, minute)
+    return true
   }
 
   return (
-    <div className={styles.dayWrap} style={{ ['--cols' as string]: staff.length }}>
+    <div
+      className={styles.dayWrap}
+      style={{ ['--cols' as string]: staff.length }}
+      onPointerDownCapture={(event) => {
+        // Capture-nivån omfattar fri yta, bokningskort och blockeringar. Ett andra
+        // finger avbryter därför alltid den eventuella friytetimern, oavsett vilket
+        // syskonelement det landar ovanpå.
+        if (!event.isPrimary) freeAreaGesture.current.cancelActive?.()
+      }}
+    >
       {/* Resurshuvudena är sticky: scrollar man ner i dagen ser man fortfarande vems
           kolumn man tittar i. */}
       <div className={styles.head}>
@@ -1799,6 +2101,7 @@ function DayGrid({
                   avsiktlig tryckning, se FreeArea. */}
               <FreeArea
                 staffName={s.name}
+                gestureCoordinator={freeAreaGesture.current}
                 onPick={(clientY, box) => {
                   const minute = dayStart + (clientY - box.top) / PX_PER_MIN
                   onEmptyClick(s.id, s.name, minute)
@@ -1832,7 +2135,6 @@ function DayGrid({
                   lane={lane}
                   lanes={lanes}
                   onOpen={onOpen}
-                  onBubble={onBubble}
                   movable={isBokad(booking.status)}
                   onPointerPreview={previewPointerMove}
                   onPointerDrop={finishPointerMove}
@@ -1878,7 +2180,6 @@ function WeekGrid({
   dayStart,
   gridHeight,
   onOpen,
-  onBubble,
   onDayClick,
   colorOf,
 }: {
@@ -1890,7 +2191,6 @@ function WeekGrid({
   dayStart: number
   gridHeight: number
   onOpen: (b: BookingRow) => void
-  onBubble: (b: BookingRow, x: number, y: number) => void
   onDayClick: (date: string) => void
   colorOf: (staffId: string) => string
 }) {
@@ -1960,7 +2260,6 @@ function WeekGrid({
                   lane={lane}
                   lanes={lanes}
                   onOpen={onOpen}
-                  onBubble={onBubble}
                   color={colorOf(booking.staffId)}
                 />
               ))}

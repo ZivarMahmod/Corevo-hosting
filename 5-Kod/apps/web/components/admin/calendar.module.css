@@ -804,6 +804,31 @@
   overscroll-behavior: contain;
 }
 
+.dayTrack {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+}
+
+.daySlide {
+  min-width: 0;
+  flex: 0 0 100%;
+}
+
+.daySlideAdjacent {
+  display: none;
+}
+
+.calendarLive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ---- dag/vecka: tidsaxel + kolumner ---- */
 .dayWrap {
   --axis-w: 56px;
@@ -1079,10 +1104,34 @@
    ned så man ser vart man är på väg. */
 .blockDrag {
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .blockDrag:active {
   cursor: grabbing;
   transform: scale(0.99);
+}
+
+.blockTouchDragging {
+  opacity: 0.35;
+}
+
+.blockGhost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.96;
+  transform-origin: top left;
+  transition: none;
+  will-change: transform;
+}
+
+.blockGhostRollback {
+  transition: transform 200ms var(--ease-out);
 }
 
 /* Avbokad tonas ned OCH får ett kryss i texten — status uttrycks aldrig enbart i färg. */
@@ -1196,85 +1245,6 @@
 .blockTiny {
   justify-content: center;
   padding: 0 8px;
-}
-
-/* ---- klick-bubbla (designens signatur) ----
-   Liten popover vid klickpunkten: Ring + Öppna. Scrim fångar utanför-klick utan att
-   mörklägga kalendern (man ska se vilket block bubblan hör till). */
-.bubbleScrim {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-}
-
-.bubble {
-  position: fixed;
-  z-index: 41;
-  transform: translate(-50%, -100%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 14px;
-  background: var(--c-paper-2);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-}
-
-/* Pil-svans nedåt mot blocket. */
-.bubble::after {
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  border-right: 1px solid var(--c-line-strong);
-  border-bottom: 1px solid var(--c-line-strong);
-  background: var(--c-paper-2);
-  transform: translateX(-50%) rotate(45deg);
-  content: '';
-}
-
-.bubbleRing,
-.bubbleOpen {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 9px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Ring = grön primär (designens CTA-grön, inte admins vita accent — ringa är HANDLINGEN
-   man öppnade bubblan för). */
-.bubbleRing {
-  border: 0;
-  background: var(--c-forest-fill);
-  color: #fff;
-  text-decoration: none;
-}
-.bubbleRing:hover {
-  filter: brightness(1.1);
-}
-
-.bubbleOpen {
-  border: 1px solid var(--c-line-strong);
-  background: transparent;
-  color: var(--c-ink);
-}
-.bubbleOpen:hover {
-  background: var(--c-paper-3);
-}
-
-.bubbleRing:focus-visible,
-.bubbleOpen:focus-visible {
-  outline: 2px solid var(--c-forest);
-  outline-offset: 2px;
 }
 
 /* ---- blockerad tid ----
@@ -1889,7 +1859,7 @@
 /* ---- responsivt ----
    Mobilkanon visar alltid samtliga resurskolumner samtidigt. Desktop och iPad får
    fortfarande en läsbar minbredd och intern sidscroll vid riktigt stora team. */
-@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
   .board {
     position: relative;
     height: calc(100dvh - 130px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -1974,8 +1944,22 @@
   }
 
   .scroll {
-    overflow-x: hidden;
     padding-bottom: 0;
+  }
+
+  .dayPager {
+    overflow: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: x mandatory;
+  }
+
+  .dayPager .daySlide {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .dayPager .daySlideAdjacent {
+    display: block;
   }
 
   .headCell {
@@ -2162,6 +2146,31 @@
     border-left: 1px solid var(--c-line);
   }
 
+  .mobileDayStepButton {
+    min-width: 72px;
+    min-height: 44px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-ink-2);
+    cursor: pointer;
+    font: inherit;
+    font-size: 9px;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .mobileDayStepButton:disabled {
+    color: var(--c-ink-3);
+    cursor: default;
+    opacity: 0.45;
+  }
+
   .mobileCalendarActionRow {
     display: flex;
     align-items: center;
@@ -2341,6 +2350,7 @@
   .mobileDateToggle:focus-visible,
   .mobileTodayBtn:focus-visible,
   .mobileStep button:focus-visible,
+  .mobileDayStepButton:focus-visible,
   .mobileViewSwitch button:focus-visible,
   .mobileBlockAction:focus-visible,
   .mobilePickerDays button:focus-visible {
@@ -2353,16 +2363,13 @@
    lyfts bara med transform/opacity — inga layoutomräkningar under drag. */
 @media (pointer: coarse), (any-pointer: coarse) {
   .blockDrag {
-    touch-action: pan-y;
+    touch-action: pan-x pan-y pinch-zoom;
   }
 
   .blockTouchDragging {
-    z-index: 4;
-    transform: scale(1.015);
-    box-shadow:
-      0 10px 24px color-mix(in srgb, var(--c-ink) 18%, transparent),
-      0 0 0 2px color-mix(in srgb, var(--c-forest) 55%, transparent);
-    opacity: 0.9;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.35;
   }
 }
 
@@ -2370,7 +2377,7 @@
    Egen nivå, inte "stor mobil" och inte "liten desktop". Plattan har gott om bredd men
    används med FINGER: touchmålen måste vara kvar i full storlek, medan kolumnerna får
    vara smalare än på desktop så en hel personalstyrka ryms utan att man scrollar i sidled. */
-@media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
+@media (min-width: 768px) and (max-width: 1199px) and (min-height: 521px) {
   .dayWrap {
     --axis-w: 50px;
     --col-min: 132px;
@@ -2385,7 +2392,7 @@
 
 /* Telefon: kolumnen är för smal för ett telefonnummer. Numret försvinner INTE — det
    står i kortet man öppnar. Ett avhugget nummer är värre än inget nummer. */
-@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
   .blockPhone {
     display: none;
   }
@@ -2421,6 +2428,9 @@
   .blockTouchDragging {
     transform: none;
   }
+  .blockGhostRollback {
+    transition: none;
+  }
   .confirmBackdrop,
   .confirmCard {
     animation: none;
@@ -2431,7 +2441,7 @@
    Schemat äger höjden (Zivar 2026-07-18: "så mycket schemayta som möjligt").
    Toppraden försvinner i Topnav.module.css; här pressas dockan till EN rad och
    kolumnhuvudena till en tunn list. Inga funktioner tas bort — bara ytan. */
-@media (max-height: 500px) and (pointer: coarse) {
+@media (orientation: landscape) and (max-height: 520px) {
   .mobileCalendarDock {
     display: flex;
     align-items: center;
@@ -2441,6 +2451,10 @@
     flex: none;
     min-height: 40px;
     padding: 3px 4px 3px 10px;
+  }
+
+  .mobileDayStepButton {
+    display: none;
   }
 
   .mobileCalendarActionRow {
@@ -2484,7 +2498,16 @@
   }
 
   .mobileCalendarDateRow {
-    display: none;
+    display: flex;
+    padding-inline: 6px;
+  }
+
+  .mobileDateToggle {
+    text-align: center;
+  }
+
+  .mobileDateTitle {
+    justify-content: center;
   }
 
   .mobileCalendarActionRow {
@@ -2597,6 +2620,10 @@
   }
 
   .mobileStep {
+    display: none;
+  }
+
+  .mobileDayStepButton {
     display: none;
   }
 

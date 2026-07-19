@@ -131,13 +131,18 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(modalCss).toMatch(/\.close\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/)
   })
 
-  it('låter horisontellt kolumnpan vinna över dagsvep när kalendern har overflow', () => {
+  it('använder ett native tredagarsblad och klampad navigering utan touchend-tröskel', () => {
     const component = read('components/admin/CalendarBoard.tsx')
+    const css = read('components/admin/calendar.module.css')
 
-    expect(component).toContain('scroller.scrollWidth > scroller.clientWidth + 1')
-    expect(component).toContain("if (step === 'month') d.setUTCMonth(d.getUTCMonth() + dir)")
+    expect(component).toContain('nearestDaySlide(scroller.scrollLeft, scroller.clientWidth)')
+    expect(component).toContain("scroller.addEventListener('scrollend', onScrollEnd)")
+    expect(component).toContain('addMonths(date, dir)')
     expect(component).toContain("view === 'manad'")
-    expect(component).not.toContain("view !== 'dag' ||\n            event.touches.length")
+    expect(component).not.toContain('onTouchEnd')
+    expect(component).not.toContain('Math.abs(dx) < 48')
+    expect(css).toContain('scroll-snap-type: x mandatory')
+    expect(css).toContain('scroll-snap-stop: always')
   })
 
   it('autoscrollar till nu en gång per öppnad dag och aldrig efter datarefresh', () => {
