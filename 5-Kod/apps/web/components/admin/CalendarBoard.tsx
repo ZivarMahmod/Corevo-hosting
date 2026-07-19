@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { isoWeekNumber } from '@/lib/admin/dates'
+import { addDays, addMonths, isoWeekNumber } from '@/lib/admin/dates'
 import { occupancyPct } from '@/lib/admin/dashboard-view'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
@@ -87,6 +87,18 @@ export type CalendarBlock = {
 }
 
 export type CalendarView = 'dag' | 'vecka' | 'manad'
+
+export type CalendarDayData = {
+  date: string
+  bookings: BookingRow[]
+  blocks: CalendarBlock[]
+  staff: CalendarStaff[]
+}
+
+export type CalendarDayNeighbors = {
+  previous: CalendarDayData
+  next: CalendarDayData
+}
 
 const VIEWS: { value: CalendarView; label: string }[] = [
   { value: 'dag', label: 'Dag' },
@@ -229,6 +241,8 @@ export type CalendarBoardProps = {
   bookings: BookingRow[]
   blocks: CalendarBlock[]
   staff: CalendarStaff[]
+  /** Dagvyns två sidorslides. Mittendagens data är fortsatt toppnivåprops. */
+  dayNeighbors?: CalendarDayNeighbors
   services: CalendarService[]
   tz: string
   view: CalendarView
@@ -246,6 +260,7 @@ export function CalendarBoard({
   bookings,
   blocks,
   staff,
+  dayNeighbors,
   services,
   tz,
   view,

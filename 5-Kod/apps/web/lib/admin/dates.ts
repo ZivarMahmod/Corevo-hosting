@@ -85,6 +85,12 @@ export function addDays(date: string, n: number): string {
   return dt.toISOString().slice(0, 10)
 }
 
+/** Föregående, vald och nästa lokala kalenderdag. Rent datumkontrakt utan UTC-offset,
+ * så servern och mobilens scroll-snap alltid bygger samma tredagarstriplett. */
+export function calendarDayTriplet(date: string): readonly [string, string, string] {
+  return [addDays(date, -1), date, addDays(date, 1)]
+}
+
 /** Monday ('YYYY-MM-DD') of the ISO week containing `date`. */
 function mondayOf(date: string): string {
   const { y, m, d } = ymd(date)
