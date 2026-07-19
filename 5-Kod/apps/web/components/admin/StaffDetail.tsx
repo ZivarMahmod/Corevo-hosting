@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { statusLabel } from '@/lib/admin/format'
-import { Badge, Card, Icon, type BadgeTone } from '@/components/portal/ui'
+import { Badge, Callout, Card, Icon, type BadgeTone } from '@/components/portal/ui'
 import type { MemberPermissions as PermissionValue } from '@/lib/admin/member-permissions'
 import {
   RenameSection,
@@ -116,9 +116,46 @@ export function StaffDetail({
           <ServicesSection member={member} services={services} onSaved={refresh} />
         </Card>
 
-        {locations.length > 1 && (
+        {/* Tider — bor på Schema-sidan (en sanning). Djuplänken öppnar den
+            direkt på DEN HÄR medarbetaren så hoppandet försvinner. */}
+        <Card>
+          <section>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>
+              Tider &amp; schema
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: '0 0 10px', lineHeight: 1.55 }}>
+              Vilka tider {member.displayName} kan bokas ställs i schemat — veckoschema, arbetstider
+              och frånvaro på ett ställe.
+            </p>
+            <Link
+              href={`/admin/scheman?staff=${member.id}${member.locationId ? `&plats=${member.locationId}` : ''}#mallar`}
+              style={{ color: 'var(--c-forest)', fontWeight: 600, fontSize: 13.5 }}
+            >
+              Öppna {member.displayName}s tider →
+            </Link>
+          </section>
+        </Card>
+
+        {/* Multi-place selector, also shown as a repair path for legacy staff with
+            no place. With one already-selected place there is nothing to choose. */}
+        {locations.length > 0 && (locations.length > 1 || !member.locationId) && (
           <Card>
-            <LocationSection member={member} locations={locations} onSaved={refresh} />
+            <Callout tone="info" icon="mapPin">
+              {member.locationName ? (
+                <>
+                  Den här veckan på <b>{member.locationName}</b>. Att dela en medarbetare mellan två
+                  platser per vecka kommer — bokningarna får aldrig krocka.
+                </>
+              ) : (
+                <>
+                  Ingen plats är satt för den här medarbetaren. Välj en plats nedan så landar
+                  bokningarna rätt.
+                </>
+              )}
+            </Callout>
+            <div style={{ marginTop: 12 }}>
+              <LocationSection member={member} locations={locations} onSaved={refresh} />
+            </div>
           </Card>
         )}
 

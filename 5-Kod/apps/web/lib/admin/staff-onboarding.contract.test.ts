@@ -122,6 +122,7 @@ describe('personalens bokningsbara onboarding', () => {
 
   it('visar samma prioriterade readiness på Personal och Schema', () => {
     const roster = readWeb('components/admin/StaffRoster.tsx')
+    const detail = readWeb('components/admin/StaffDetail.tsx')
     const bookability = readWeb('components/admin/StaffBookability.tsx')
     const page = readWeb('app/(admin)/admin/personal/page.tsx')
 
@@ -130,7 +131,8 @@ describe('personalens bokningsbara onboarding', () => {
     expect(page).toContain('staffReadiness({')
     expect(roster).toContain('readiness: StaffReadiness')
     expect(roster).toContain('member.readiness.label')
-    expect(roster).toContain('locations.length > 0 && (locations.length > 1 || !member.locationId)')
+    // Plats-väljaren + reparationsvägen bor nu på detaljsidan (drawern ersatt).
+    expect(detail).toContain('locations.length > 0 && (locations.length > 1 || !member.locationId)')
     expect(roster).toContain('Välj plats innan du kopplar tjänster.')
     expect(bookability).toContain('staffReadiness({')
     expect(bookability).toContain('openingHoursConfirmed')

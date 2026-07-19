@@ -50,10 +50,11 @@ describe('personalinställningarnas integritet', () => {
   })
 
   it('djuplänkar till rätt person och plats i schemat', () => {
-    const roster = readWeb('components/admin/StaffRoster.tsx')
+    // Schema-djuplänken flyttade från drawern till den centrerade detaljsidan.
+    const detail = readWeb('components/admin/StaffDetail.tsx')
     const schedule = readWeb('app/(admin)/admin/scheman/page.tsx')
 
-    expect(roster).toContain("&plats=${member.locationId}")
+    expect(detail).toContain("&plats=${member.locationId}")
     expect(schedule).toContain('sp.plats')
     expect(schedule).toContain('const selected = staff.find((s) => s.id === sp.staff)')
   })
