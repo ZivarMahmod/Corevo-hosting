@@ -85,6 +85,12 @@ function MemberRow({ member }: { member: PermissionMember }) {
 export function MemberPermissions({ ownerEmail, members }: { ownerEmail: string; members: PermissionMember[] }) {
   return (
     <div className={styles.permissions}>
+      <div className={styles.infoBox}>
+        <p>
+          Roll och behörigheter sätts nu på varje medarbetare under{' '}
+          <Link href="/admin/personal">Personal</Link>. Den här sidan är översikten.
+        </p>
+      </div>
       <p className={styles.monoLabel}>TRE ROLLER</p>
       <div className={styles.roleCards}>
         <div><span>ÄGARE</span><p>Allt — betalning, roller, GDPR och sidan. Flera ägare går bra.</p></div>

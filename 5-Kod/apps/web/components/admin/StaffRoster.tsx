@@ -12,18 +12,15 @@ import {
   setStaffServices,
   type ActionState,
 } from '@/lib/admin/actions'
-import { statusLabel } from '@/lib/admin/format'
 import { STAFF_PALETTE, staffColor } from '@/lib/admin/staff-colors'
 import { matchingBookableServices, type StaffReadiness } from '@/lib/admin/staff-readiness'
 import {
   Badge,
   Button,
-  Callout,
   Card,
   Drawer,
   Icon,
   useToast,
-  type BadgeTone,
 } from '@/components/portal/ui'
 
 /** One booking row in a staff member's "Verklig dag · idag" list. Shaped by the
@@ -86,22 +83,6 @@ export type StaffCard = {
 
 const initialOf = (name: string): string => name.trim()[0]?.toUpperCase() ?? '?'
 
-// Status → portal Badge tone. The primitive's bg tokens are muted tints with the
-// tone carried in the dot (§6: status muted on *-bg, dark ink, tone in the dot —
-// never saturated red/green panel fill).
-const STATUS_TONE: Record<string, BadgeTone> = {
-  pending: 'warning',
-  confirmed: 'info',
-  completed: 'success',
-  no_show: 'danger',
-}
-const statusTone = (status: string): BadgeTone => STATUS_TONE[status] ?? 'neutral'
-
-const timeLabel = (ts: string, tz: string) =>
-  new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
-    new Date(ts),
-  )
-
 // How many specialty chips a card shows before collapsing the rest into "+N fler"
 // (FreshCut staff can carry 7 services — the mock cards show ~3 dense chips).
 const CHIP_CAP = 3
@@ -124,55 +105,26 @@ const CHIP_CAP = 3
  */
 export function StaffRoster({
   staff,
-  services,
-  tz,
   staffNoun = 'Medarbetare',
-  locations = [],
 }: {
   staff: StaffCard[]
-  services: ServiceOption[]
-  tz: string
   /** Bransch-resolved SINGULAR staff noun (e.g. 'Stylist' for frisör, 'Barberare'
    *  for barbershop). Resolved server-side from the tenant's vertical terminology;
    *  defaults to 'Medarbetare' so any caller without it keeps today's wording. */
   staffNoun?: string
-  /** ACTIVE locations — feeds the Drawer's plats-select. Defaults to [] so the
-   *  section (and the multi-plats Callout) simply doesn't render when unwired. */
-  locations?: LocationOption[]
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selected = staff.find((s) => s.id === selectedId) ?? null
-
   return (
-    <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: 16,
-        }}
-      >
-        {staff.map((s) => (
-          <StaffGridCard
-            key={s.id}
-            member={s}
-            staffNoun={staffNoun}
-            onOpen={() => setSelectedId(s.id)}
-          />
-        ))}
-      </div>
-
-      {selected && (
-        <StaffDrawer
-          member={selected}
-          services={services}
-          locations={locations}
-          tz={tz}
-          staffNoun={staffNoun}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
-    </>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+        gap: 16,
+      }}
+    >
+      {staff.map((s) => (
+        <StaffGridCard key={s.id} member={s} staffNoun={staffNoun} />
+      ))}
+    </div>
   )
 }
 
@@ -209,11 +161,9 @@ export function AddStaffButton({
 function StaffGridCard({
   member,
   staffNoun,
-  onOpen,
 }: {
   member: StaffCard
   staffNoun: string
-  onOpen: () => void
 }) {
   const todayCount = member.today.length
   const chips = member.serviceNames.slice(0, CHIP_CAP)
@@ -221,9 +171,8 @@ function StaffGridCard({
 
   return (
     <Card>
-      <button
-        type="button"
-        onClick={onOpen}
+      <Link
+        href={`/admin/personal/${member.id}`}
         aria-label={`Öppna ${member.displayName}`}
         style={{
           all: 'unset',
@@ -382,161 +331,15 @@ function StaffGridCard({
             {todayCount} idag
           </span>
         </div>
-      </button>
+      </Link>
     </Card>
-  )
-}
-
-function StaffDrawer({
-  member,
-  services,
-  locations,
-  tz,
-  staffNoun,
-  onClose,
-}: {
-  member: StaffCard
-  services: ServiceOption[]
-  locations: LocationOption[]
-  tz: string
-  staffNoun: string
-  onClose: () => void
-}) {
-  return (
-    <Drawer
-      title={member.displayName}
-      sub={member.hasAccount ? 'Eget konto · egen vy' : 'Personalinställningar'}
-      accent={
-        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-          <Badge tone={member.active ? 'success' : 'neutral'}>
-            {member.active ? 'Aktiv' : 'Inaktiv'}
-          </Badge>
-          <Badge tone={member.readiness.bookable ? 'success' : 'warning'}>
-            {member.readiness.label}
-          </Badge>
-          <Badge tone="gold" dot={false}>
-            {member.serviceCount} {member.serviceCount === 1 ? 'tjänst' : 'tjänster'}
-          </Badge>
-        </div>
-      }
-      onClose={onClose}
-      ariaLabel={`${staffNoun} ${member.displayName}`}
-    >
-      <div style={{ display: 'grid', gap: 20 }}>
-        {/* Namn — the real updateStaff edit (was inline in the StaffManager
-            list, now folded into the Drawer; same server action). */}
-        <RenameSection member={member} onSaved={onClose} />
-
-        {/* Foto + synlighet på publika sidan (staff.avatar_url/show_on_site, 0049) —
-            samma updateStaff-partialpatch; speglar Sida-ytans StaffTeamCard så det
-            går att sköta från båda ytorna. */}
-        <PhotoSection member={member} onSaved={onClose} />
-
-        {/* Tjänster (specialiteter) — the real setStaffServices coupling. These ARE
-            the card chips; couple/uncouple drives bookability on the public sajt. */}
-        <ServicesSection member={member} services={services} onSaved={onClose} />
-
-        {/* Tider — bor på Schema-sidan (en sanning). Djuplänken öppnar den
-            direkt på DEN HÄR medarbetaren så hoppandet försvinner. */}
-        <section>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>
-            Tider &amp; schema
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: '0 0 10px', lineHeight: 1.55 }}>
-            Vilka tider {member.displayName} kan bokas ställs i schemat — veckoschema, arbetstider
-            och frånvaro på ett ställe.
-          </p>
-          <Link
-            href={`/admin/scheman?staff=${member.id}${member.locationId ? `&plats=${member.locationId}` : ''}#mallar`}
-            style={{ color: 'var(--c-forest)', fontWeight: 600, fontSize: 13.5 }}
-          >
-            Öppna {member.displayName}s tider →
-          </Link>
-        </section>
-
-        <EgetKontoSection member={member} onInvited={onClose} />
-
-        {/* Multi-place selector, also shown as a repair path for legacy staff with
-            no place. With one already-selected place there is nothing to choose. */}
-        {locations.length > 0 && (locations.length > 1 || !member.locationId) && (
-          <>
-            <Callout tone="info" icon="mapPin">
-              {member.locationName ? (
-                <>
-                  Den här veckan på <b>{member.locationName}</b>. Att dela en medarbetare mellan två
-                  platser per vecka kommer — bokningarna får aldrig krocka.
-                </>
-              ) : (
-                <>
-                  Ingen plats är satt för den här medarbetaren. Välj en plats nedan så landar
-                  bokningarna rätt.
-                </>
-              )}
-            </Callout>
-            <LocationSection member={member} locations={locations} onSaved={onClose} />
-          </>
-        )}
-
-        {/* Verklig dag · idag — that staff member's REAL bookings today
-            (getStaffScheduleWithNotes, cancelled excluded server-side). */}
-        <section>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            Verklig dag · idag
-          </div>
-          {member.today.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0 }}>Inga bokningar idag.</p>
-          ) : (
-            <div style={{ display: 'grid', gap: 8 }}>
-              {member.today.map((b) => (
-                <div
-                  key={b.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    background: 'var(--c-paper)',
-                    border: '1px solid var(--c-line)',
-                  }}
-                >
-                  <span
-                    className="num"
-                    style={{
-                      width: 48,
-                      fontWeight: 700,
-                      color: 'var(--c-forest)',
-                      fontSize: 14,
-                      flex: 'none',
-                    }}
-                  >
-                    {timeLabel(b.startTs, tz)}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{b.customerLabel}</div>
-                    <div style={{ fontSize: 12, color: 'var(--c-ink-3)' }}>
-                      {b.serviceName ?? 'Okänd tjänst'}
-                    </div>
-                  </div>
-                  <Badge tone={statusTone(b.status)}>{statusLabel(b.status)}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Ta bort visas bara för en felaktigt skapad rad utan bokningshistorik.
-            Personal med historik bevaras och inaktiveras i stället. */}
-        <DangerSection member={member} onDeleted={onClose} />
-      </div>
-    </Drawer>
   )
 }
 
 /** Namn edit + activate/deactivate (updateStaff + toggleStaffActive). Two
  *  real server actions folded out of the old StaffManager list, restyled to the
  *  Drawer grammar. Each fires one Swedish consequence toast + router.refresh(). */
-function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
+export function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const [nameState, nameAction, namePending] = useActionState<ActionState, FormData>(updateStaff, {})
@@ -622,7 +425,7 @@ function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => 
  *  "Spara"-knapp, inget mellansteg. Paletten är Okabe–Ito (färgblindsäker); färgen är
  *  aldrig ensam bärare i kalendern (namn står i kortet, status har ikon + text).
  *  Ingen vald färg → kalendern härleder en ur id:t, så rutnätet är färgkodat ändå. */
-function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
+export function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, action, pending] = useActionState<ActionState, FormData>(updateStaff, {})
@@ -708,7 +511,7 @@ function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => vo
  *  updateStaff-partialpatch: `avatar` (fil → R2 → staff.avatar_url),
  *  `remove_avatar` (→ null = standard-silhuett på sidan) och `show_on_site`
  *  (visa/dölj i "Våra barberare" — rör ALDRIG bokningsbarheten/`active`). */
-function PhotoSection({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
+export function PhotoSection({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const showOnSite = member.showOnSite ?? true
@@ -847,7 +650,7 @@ function PhotoSection({ member, onSaved }: { member: StaffCard; onSaved: () => v
 
 /** Tjänster-coupling (setStaffServices) — the real checkbox set, restyled. These
  *  are the card's chips; the set drives bookability (aktiv + ≥1 tjänst). */
-function ServicesSection({
+export function ServicesSection({
   member,
   services,
   onSaved,
@@ -937,7 +740,7 @@ function ServicesSection({
  *  location_id: updateStaff patches per-field, so the namn-form's title is never
  *  blanked. '' = ingen plats (location_id → null). Server-side the plats is
  *  verified to belong to the tenant before the pin is written. */
-function LocationSection({
+export function LocationSection({
   member,
   locations,
   onSaved,
@@ -1004,7 +807,7 @@ function LocationSection({
 /** Delete a staff member only when the DB-backed booking count is zero. Historical
  * identities are immutable from this surface: deactivate preserves reports,
  * customer history and the audit trail. A final FK guard remains server-side. */
-function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: () => void }) {
+export function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const [armed, setArmed] = useState(false)
@@ -1079,7 +882,7 @@ function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: ()
  *    staff_id links THIS staff row's profile_id to a new account. Fires one Swedish
  *    consequence toast + router.refresh() so the status flips without a reload.
  */
-function EgetKontoSection({ member, onInvited }: { member: StaffCard; onInvited: () => void }) {
+export function EgetKontoSection({ member, onInvited }: { member: StaffCard; onInvited: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(inviteStaff, {})

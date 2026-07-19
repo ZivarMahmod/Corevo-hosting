@@ -151,9 +151,6 @@ export default async function StaffPage() {
       ) : (
         <StaffRoster
           staff={cards}
-          services={serviceOptions}
-          locations={activeLocations.map((l) => ({ id: l.id, name: l.name }))}
-          tz={tenant.timeZone}
           staffNoun={resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}
         />
       )}
