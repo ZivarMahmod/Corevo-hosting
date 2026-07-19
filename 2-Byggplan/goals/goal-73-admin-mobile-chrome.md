@@ -68,9 +68,22 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Goal-filen kan markeras implementerad och mekaniskt verifierad efter bevisen,
   men flyttas inte till `klart/05-design/` förrän Zivar godkänt liveversionen.
 
+### Mekaniskt bevis 2026-07-19
+
+- `07-admin-mobile-chrome/probe.js --contract`: 5/5 PASS.
+- Full Vitest: 261 testfiler och 2 124 tester PASS.
+- `pnpm typecheck`, `pnpm lint` och `pnpm build`: PASS. Lint har sju redan
+  befintliga varningar utanför kalenderändringen och inga fel.
+- Lokal Claude/Fable 5:s mobilgranskning genomfördes; dess höga och relevanta
+  medelhöga fynd åtgärdades.
+- Oberoende GPT-5.6-sol omgranskade slutdiffen efter flerfingerfixen: inga
+  kvarvarande kritiska, höga eller medelhöga fynd.
+- Fysisk iPhone-/Samsung-acceptans och staging-/livebevis återstår och kan inte
+  ersättas av de mekaniska kontrollerna.
+
 ## Status
 
-- [ ] Implementerad
-- [ ] Mekaniskt verifierad
+- [x] Implementerad
+- [x] Mekaniskt verifierad
 - [ ] Zivar manuellt godkänd
 - [ ] Livebevis (först därefter flytt till `klart/05-design/`)
