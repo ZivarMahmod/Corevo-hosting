@@ -173,6 +173,7 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
   })
 
   it('har mobilkanon för översikt och kundarbetsbord utan att ta bort innehåll', () => {
+    const topnav = read('components/portal/Topnav.module.css')
     const dashboard = read('app/(admin)/admin/dashboard.module.css')
     const customers = read('components/admin/kunder-v2.module.css')
 
@@ -185,6 +186,9 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(customers).toContain('@media (max-width: 767px)')
     expect(customers).toMatch(
       /@media \(max-width: 767px\)[\s\S]*?\.board\s*\{[\s\S]*?env\(safe-area-inset-bottom\)/,
+    )
+    expect(topnav).not.toMatch(
+      /:has\([^{]*?workbench[^{]*?\)[^{]*?\.mobile(?:Actions|Nav|NavIcon|NavItem)/,
     )
   })
 })

@@ -236,10 +236,18 @@ describe('0095 booking outcome truth', () => {
       path.join(WEB_ROOT, 'app', '(admin)', 'admin', 'bokningar', 'page.tsx'),
       'utf8',
     )
+    const css = fs.readFileSync(
+      path.join(WEB_ROOT, 'components', 'admin', 'calendar.module.css'),
+      'utf8',
+    )
     expect(page).toContain('endToUtc: nowIso')
     expect(page).toContain("statuses: ['pending', 'confirmed']")
     expect(page).toContain('new Date(b.endTs).getTime() <= now')
     expect(page).toContain('besök väntar på avslut')
     expect(page).toContain('Ingen driftstörning')
+    expect(page).toContain('calendarStyles.unresolvedQueue')
+    expect(page).toContain('`${unresolvedCount} besök att stämma av`')
+    expect(page).not.toContain('<Callout tone="info" icon="clock">')
+    expect(css).toMatch(/\.unresolvedSummary\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/)
   })
 })

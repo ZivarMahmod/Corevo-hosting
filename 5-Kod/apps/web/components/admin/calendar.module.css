@@ -709,22 +709,81 @@
 
 .unresolvedNotice {
   display: grid;
-  gap: 5px;
+  gap: 10px;
 }
 
-.unresolvedDetails summary {
+.unresolvedHost {
+  position: relative;
+  /* Över kalenderns interna lager (≤6), under riktiga popovers och scrims (≥27). */
+  z-index: 12;
+  min-height: 52px;
+  padding: 0 14px 8px;
+}
+
+.unresolvedQueue {
+  position: relative;
   width: fit-content;
-  min-height: 44px;
+}
+
+.unresolvedSummary {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
-  color: var(--c-ink-2);
-  font-size: 12px;
-  font-weight: 650;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  background: var(--c-paper);
+  color: var(--c-gold);
   cursor: pointer;
+  list-style: none;
+}
+
+.unresolvedSummary::-webkit-details-marker {
+  display: none;
+}
+
+.unresolvedSummary span {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--c-gold-100);
+  color: var(--c-gold);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.unresolvedSummary:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+}
+
+.unresolvedPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(520px, calc(100vw - 28px));
+  max-height: min(62dvh, 520px);
+  padding: 14px;
+  overflow-y: auto;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 12px;
+  background: var(--c-paper);
+  box-shadow: var(--shadow-lg);
+  color: var(--c-ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+  box-sizing: border-box;
 }
 
 .unresolvedLinks {
-  padding: 2px 0 8px;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 7px;

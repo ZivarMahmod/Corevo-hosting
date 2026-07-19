@@ -64,13 +64,16 @@ test.describe('07 Kundadmin mobilchrome — source contract @readonly @contract'
   test('07-C04 compact cards and unresolved visits preserve information without alarm styling', () => {
     const component = read('apps/web/components/admin/CalendarBoard.tsx')
     const page = read('apps/web/app/(admin)/admin/bokningar/page.tsx')
+    const css = read('apps/web/components/admin/calendar.module.css')
 
     expect(component).toContain('styles.blockEnd')
     expect(component).toContain('timeLabel(booking.endTs, tz)')
-    expect(page).toContain('tone="info"')
+    expect(page).not.toContain('tone="info"')
     expect(page).toContain('Ingen driftstörning')
-    expect(page).toContain('<details')
-    expect(page).toContain('Visa bokningarna')
+    expect(page).toContain('calendarStyles.unresolvedQueue')
+    expect(page).toContain('`${unresolvedCount} besök att stämma av`')
+    expect(page).toContain('<Icon name="clock" size={18}')
+    expect(css).toMatch(/\.unresolvedSummary\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/)
   })
 
   test('07-C05 customers get their real create action while More has no generic action rail', () => {

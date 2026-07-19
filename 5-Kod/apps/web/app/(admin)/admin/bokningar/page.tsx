@@ -26,7 +26,7 @@ import { listTimeOffOverlapping } from '@/lib/admin/schedule-data'
 import { resolvePlats } from '@/lib/admin/plats'
 import { requiredLocationId } from '@/lib/admin/location-scope'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
-import { Callout, PageHead } from '@/components/portal/ui'
+import { Icon, PageHead } from '@/components/portal/ui'
 import { CalendarBoardLazy } from '@/components/admin/CalendarBoardLazy'
 import type { CalendarBlock, CalendarView } from '@/components/admin/CalendarBoard'
 import type { BookingRow } from '@/components/admin/BookingDrawer'
@@ -223,16 +223,23 @@ export default async function KalenderPage({
   return (
     <>
       {unresolvedCount > 0 ? (
-        <div className="portal-section" style={{ paddingBottom: 0 }}>
-          <Callout tone="info" icon="clock">
-            <div className={calendarStyles.unresolvedNotice}>
-              <div>
-                <strong>{unresolvedCount} besök väntar på avslut.</strong> Ingen driftstörning — de
-                behöver bara markeras som Genomförda eller Uteblivna för att statistiken ska bli
-                korrekt.
-              </div>
-              <details className={calendarStyles.unresolvedDetails}>
-                <summary>Visa bokningarna ({unresolvedCount})</summary>
+        <div className={calendarStyles.unresolvedHost}>
+          <details className={calendarStyles.unresolvedQueue}>
+            <summary
+              className={calendarStyles.unresolvedSummary}
+              aria-label={`${unresolvedCount} besök att stämma av`}
+              title={`${unresolvedCount} besök att stämma av`}
+            >
+              <Icon name="clock" size={18} />
+              <span>{unresolvedCount}</span>
+            </summary>
+            <div className={calendarStyles.unresolvedPanel}>
+              <div className={calendarStyles.unresolvedNotice}>
+                <div>
+                  <strong>{unresolvedCount} besök väntar på avslut.</strong> Ingen driftstörning —
+                  de behöver bara markeras som Genomförda eller Uteblivna för att statistiken ska
+                  bli korrekt.
+                </div>
                 <div className={calendarStyles.unresolvedLinks}>
                   {visibleUnresolved.slice(0, 12).map((booking) => {
                     const localDate = new Intl.DateTimeFormat('en-CA', {
@@ -252,9 +259,9 @@ export default async function KalenderPage({
                     )
                   })}
                 </div>
-              </details>
+              </div>
             </div>
-          </Callout>
+          </details>
         </div>
       ) : null}
       <CalendarBoardLazy

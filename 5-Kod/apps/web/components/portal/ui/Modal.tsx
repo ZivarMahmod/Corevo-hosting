@@ -48,13 +48,17 @@ export function Modal({
   const cardRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const closingRef = useRef(false)
-  // Portalas till <body>: renderad inline ärver dialogen förälderns stacking
-  // context (kalenderdockan z-6 < headerns z-60) och hamnar BAKOM toppraden.
+  // Portalas till backoffice-skalets rot: renderad inline ärver dialogen förälderns
+  // stacking context (kalenderdockan z-6 < headerns z-60) och hamnar BAKOM toppraden.
+  // <body> är däremot utanför skalets --c-*-tokens och gör kortet transparent.
   // Initialiseras direkt (inte i effect) så mount-effektens fokusflytt hinner
   // se kortet; på servern finns inget document och Modal renderar null.
-  const [portalHost] = useState<HTMLElement | null>(() =>
-    typeof document === 'undefined' ? null : document.body,
-  )
+  const [portalHost] = useState<HTMLElement | null>(() => {
+    if (typeof document === 'undefined') return null
+    return (
+      document.querySelector<HTMLElement>('[data-world="backoffice"][data-portal]') ?? document.body
+    )
+  })
   const adminPortal =
     typeof document !== 'undefined' && Boolean(document.querySelector('[data-portal="admin"]'))
 
