@@ -62,7 +62,7 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(component).toContain('mobileMoreAccountLink')
     expect(component).toContain('openMobileAccount')
     expect(component).toContain('styles.mobileNavIcon')
-    expect(component).toContain('calendarMeta?.step === \'month\'')
+    expect(component).toContain("calendarMeta?.step === 'month'")
     expect(component).toContain('disabled={calendarStepDisabled}')
     expect(component).toContain('<Icon name="clock" size={19}')
     expect(component).toContain('<Icon name="help" size={19}')
@@ -145,16 +145,14 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(css).toContain('scroll-snap-stop: always')
   })
 
-  it('autoscrollar till nu en gång per öppnad dag och aldrig efter datarefresh', () => {
+  it('öppnar varje dag vid arbetspassets början utan ett fördröjt nu- eller axelhopp', () => {
     const component = read('components/admin/CalendarBoard.tsx')
 
-    expect(component).toContain('lastAutoScrollKey')
-    expect(component).not.toMatch(
-      /centeredCalendarScrollTop[\s\S]*?\}, \[bookings\.length, date, staff\.length/,
-    )
-    expect(component.indexOf('lastAutoScrollKey.current = key')).toBeGreaterThan(
-      component.indexOf('window.requestAnimationFrame'),
-    )
+    expect(component).not.toContain('lastAutoScrollKey')
+    expect(component).not.toContain('centeredCalendarScrollTop')
+    expect(component).not.toContain('preservedTopMinute')
+    expect(component).not.toContain('scrollTopForVisibleMinute')
+    expect(component).toContain('scroller.scrollTop = 0')
   })
 
   it('har ett riktigt Omboka-flöde som ersätter desktop-drag på touch', () => {

@@ -707,88 +707,6 @@
   text-transform: uppercase;
 }
 
-.unresolvedNotice {
-  display: grid;
-  gap: 10px;
-}
-
-.unresolvedHost {
-  position: relative;
-  /* Över kalenderns interna lager (≤6), under riktiga popovers och scrims (≥27). */
-  z-index: 12;
-  min-height: 52px;
-  padding: 0 14px 8px;
-}
-
-.unresolvedQueue {
-  position: relative;
-  width: fit-content;
-}
-
-.unresolvedSummary {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
-  background: var(--c-paper);
-  color: var(--c-gold);
-  cursor: pointer;
-  list-style: none;
-}
-
-.unresolvedSummary::-webkit-details-marker {
-  display: none;
-}
-
-.unresolvedSummary span {
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--c-gold-100);
-  color: var(--c-gold);
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 700;
-  box-sizing: border-box;
-}
-
-.unresolvedSummary:focus-visible {
-  outline: 2px solid var(--c-forest);
-  outline-offset: 2px;
-}
-
-.unresolvedPanel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  width: min(520px, calc(100vw - 28px));
-  max-height: min(62dvh, 520px);
-  padding: 14px;
-  overflow-y: auto;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 12px;
-  background: var(--c-paper);
-  box-shadow: var(--shadow-lg);
-  color: var(--c-ink-2);
-  font-size: 13px;
-  line-height: 1.45;
-  box-sizing: border-box;
-}
-
-.unresolvedLinks {
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
 /* ---- scrollytan: det ENDA som scrollar ---- */
 .scroll {
   flex: 1;
@@ -987,20 +905,13 @@
   box-shadow: inset -1px 0 0 color-mix(in srgb, var(--c-line) 55%, transparent);
 }
 
-/* Utanför arbetstid: nedtonad, men kolumnen finns kvar. En ledig resurs är
-   information ("hen jobbar inte idag"), inte en tom lucka i rutnätet. Diskret
-   diagonalmönster gör skillnaden läsbar även i gråskala. */
+/* Utanför arbetstid är samma lugna pappersyta. Arbetspasset framgår redan av
+   kolumnrubriken; ett diagonalmönster gjorde mobilen rutig och visuellt orolig. */
 .offHours {
   position: absolute;
   right: 0;
   left: 0;
-  background: repeating-linear-gradient(
-    45deg,
-    color-mix(in srgb, var(--c-cream) 82%, transparent),
-    color-mix(in srgb, var(--c-cream) 82%, transparent) 7px,
-    color-mix(in srgb, var(--c-paper-2) 60%, transparent) 7px,
-    color-mix(in srgb, var(--c-paper-2) 60%, transparent) 14px
-  );
+  background: var(--c-paper);
 }
 
 /* Hel timme = svag linje. Halvtimme = ännu svagare (bara en ledtråd för ögat).
@@ -1031,16 +942,10 @@
   background: transparent;
   cursor: copy;
 }
-.freeArea:hover {
-  background: color-mix(in srgb, var(--c-gold) 6%, transparent);
-}
-
-/* Fingret ligger kvar på ytan — spärren räknar ner. Utan den här återkopplingen känns
-   fördröjningen som att appen hängt sig; med den ser man att systemet lyssnar.
-   `touch-action: pan-x pan-y` behålls implicit: ytan får ALDRIG äta scrollen. */
-.freeAreaArmed {
-  background: color-mix(in srgb, var(--c-forest) 12%, transparent);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c-forest) 55%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .freeArea:hover {
+    background: color-mix(in srgb, var(--c-gold) 6%, transparent);
+  }
 }
 .freeArea:focus-visible {
   outline: 2px solid var(--c-forest);
@@ -2119,6 +2024,12 @@
     font: inherit;
     font-size: 11.5px;
     font-weight: 650;
+    transition: opacity 140ms ease;
+  }
+
+  .mobileTodayIdle {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .mobileStep {

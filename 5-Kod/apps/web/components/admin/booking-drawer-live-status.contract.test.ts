@@ -15,7 +15,7 @@ describe('bokningsdetaljen följer kalenderns serverdata', () => {
 
   it('erbjuder bara slutförande när besöket faktiskt har nått sluttiden', () => {
     expect(drawer).toContain("if (isPast && can('completed'))")
-    expect(drawer).toContain('Behöver avslutas.')
+    expect(drawer).not.toContain('Behöver avslutas.')
     expect(drawer).not.toContain('auto-klar')
   })
 
@@ -31,7 +31,7 @@ describe('bokningsdetaljen följer kalenderns serverdata', () => {
 
   it('rättar terminalt utfall direkt utan att återöppna bokningen', () => {
     expect(drawer).toContain("label: 'Rätta till uteblev', target: 'no_show'")
-    expect(drawer).toContain("label: 'Rätta till genomförd', target: 'completed'")
+    expect(drawer).toMatch(/label:\s*'Rätta till genomförd',[\s\S]*?target:\s*'completed'/)
     expect(drawer).not.toContain("label: 'Öppna igen', target: 'confirmed'")
   })
 })

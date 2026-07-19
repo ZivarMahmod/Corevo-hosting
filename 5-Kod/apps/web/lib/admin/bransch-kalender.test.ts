@@ -2,11 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import {
-  calendarLaunchMode,
-  centeredCalendarScrollTop,
-  placeOverlaps,
-} from '@/components/admin/CalendarBoard'
+import { calendarLaunchMode, placeOverlaps } from '@/components/admin/CalendarBoard'
 import type { BookingRow } from '@/components/admin/BookingDrawer'
 import { resolveTerm, termPlural, type Terminology } from '@/lib/platform/verticals-shared'
 
@@ -167,12 +163,6 @@ describe('kalenderns responsiva startbeteende', () => {
   it('öppnar Blockera tid från ?blockera och annars ingenting', () => {
     expect(calendarLaunchMode(new URLSearchParams('blockera'))).toBe('block')
     expect(calendarLaunchMode(new URLSearchParams('vy=dag'))).toBeNull()
-  })
-
-  it('centrerar nu-linjen och klampar scrollpositionen inom kalendern', () => {
-    expect(centeredCalendarScrollTop(600, 400, 1200)).toBe(400)
-    expect(centeredCalendarScrollTop(80, 400, 1200)).toBe(0)
-    expect(centeredCalendarScrollTop(1150, 400, 1200)).toBe(800)
   })
 })
 

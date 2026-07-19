@@ -30,6 +30,22 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
     expect(errorBoundary).not.toContain('Kalendern kunde inte laddas')
   })
 
+  it('håller fristående inställningssidor inom mobilens viewport och ovanför bottennavet', () => {
+    const css = readWeb('components/admin/settings-v2.module.css')
+    const services = readWeb('components/admin/ServicesManager.tsx')
+    const customer = readWeb('components/admin/CreateCustomerForm.tsx')
+
+    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?margin:\s*-20px -14px 0;/)
+    expect(css).toMatch(
+      /@media \(max-width: 760px\)[\s\S]*?padding:\s*18px 14px calc\(132px \+ env\(safe-area-inset-bottom\)\);/,
+    )
+    expect(services).toContain('.services-2col > * { min-width: 0; }')
+    expect(services).toContain('.services-site-map { position: static !important; }')
+    expect(customer).not.toContain('var(--c-bg, #fff)')
+    expect(customer).toContain("background: 'var(--c-paper-2)'")
+    expect(customer).toContain("color: 'var(--c-ink)'")
+  })
+
   it('har paketets grupper, söksynonymer och varnings-only-status', () => {
     const map = readWeb('lib/admin/settings-map.ts')
 
@@ -53,7 +69,9 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
     expect(sql).toContain('private.tenant_id()')
     expect(sql).toContain('auth.uid()')
     expect(sql).toContain("security definer\nset search_path = ''")
-    expect(sql).toContain('revoke all on function private.has_admin_area_permission(text) from public')
+    expect(sql).toContain(
+      'revoke all on function private.has_admin_area_permission(text) from public',
+    )
     expect(sql).toContain('revoke all on table public.tenant_member_permissions from anon')
     expect(sql).toContain('grant select on table public.tenant_member_permissions to authenticated')
   })
