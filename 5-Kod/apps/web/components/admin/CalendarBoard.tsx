@@ -1340,6 +1340,10 @@ const HOLD_MS = 320
 /** Rör fingret sig mer än så är det en scroll, inte en tryckning. */
 const SLOP_PX = 10
 
+type FreeAreaGestureCoordinator = {
+  cancelActive: (() => void) | null
+}
+
 /**
  * Ledig yta i kalendern — "tryck där du vill boka".
  *
@@ -1360,18 +1364,23 @@ const SLOP_PX = 10
 function FreeArea({
   staffName,
   onPick,
+  gestureCoordinator,
 }: {
   staffName: string
   onPick: (clientY: number, box: DOMRect) => void
+  gestureCoordinator: FreeAreaGestureCoordinator
 }) {
   const [armed, setArmed] = useState(false)
   const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
 
-  const cancel = () => {
+  const cancel = useCallback(() => {
     if (hold.current) clearTimeout(hold.current.timer)
     hold.current = null
     setArmed(false)
-  }
+    if (gestureCoordinator.cancelActive === cancel) gestureCoordinator.cancelActive = null
+  }, [gestureCoordinator])
+
+  useEffect(() => cancel, [cancel])
 
   return (
     <button
@@ -1381,10 +1390,14 @@ function FreeArea({
       onPointerDown={(e) => {
         if (e.pointerType === 'mouse') return // musen går på onClick
         if (!e.isPrimary) {
-          cancel()
+          // Koordinatorn delas av alla personalkolumner. Finger två kan landa i en
+          // annan FreeArea-instans än finger ett och måste ändå avbryta den
+          // redan armerade långtryckstimern.
+          gestureCoordinator.cancelActive?.()
           return
         }
-        if (hold.current) cancel()
+        gestureCoordinator.cancelActive?.()
+        gestureCoordinator.cancelActive = cancel
         const el = e.currentTarget
         const { clientX: x, clientY: y } = e
         setArmed(true)
@@ -1394,6 +1407,9 @@ function FreeArea({
           timer: setTimeout(() => {
             hold.current = null
             setArmed(false)
+            if (gestureCoordinator.cancelActive === cancel) {
+              gestureCoordinator.cancelActive = null
+            }
             onPick(y, el.getBoundingClientRect())
           }, HOLD_MS),
         }
@@ -1936,6 +1952,8 @@ function DayGrid({
   dragOver: { staffId: string; minute: number; durationMin: number } | null
   setDragOver: (v: { staffId: string; minute: number; durationMin: number } | null) => void
 }) {
+  const freeAreaGesture = useRef<FreeAreaGestureCoordinator>({ cancelActive: null })
+
   if (staff.length === 0) {
     return (
       <p className={styles.empty}>
@@ -1994,7 +2012,16 @@ function DayGrid({
   }
 
   return (
-    <div className={styles.dayWrap} style={{ ['--cols' as string]: staff.length }}>
+    <div
+      className={styles.dayWrap}
+      style={{ ['--cols' as string]: staff.length }}
+      onPointerDownCapture={(event) => {
+        // Capture-nivån omfattar fri yta, bokningskort och blockeringar. Ett andra
+        // finger avbryter därför alltid den eventuella friytetimern, oavsett vilket
+        // syskonelement det landar ovanpå.
+        if (!event.isPrimary) freeAreaGesture.current.cancelActive?.()
+      }}
+    >
       {/* Resurshuvudena är sticky: scrollar man ner i dagen ser man fortfarande vems
           kolumn man tittar i. */}
       <div className={styles.head}>
@@ -2074,6 +2101,7 @@ function DayGrid({
                   avsiktlig tryckning, se FreeArea. */}
               <FreeArea
                 staffName={s.name}
+                gestureCoordinator={freeAreaGesture.current}
                 onPick={(clientY, box) => {
                   const minute = dayStart + (clientY - box.top) / PX_PER_MIN
                   onEmptyClick(s.id, s.name, minute)

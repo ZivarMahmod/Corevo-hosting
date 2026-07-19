@@ -47,9 +47,16 @@ describe('kalenderns draggenväg med mus och touch', () => {
     expect(component).not.toContain('<Icon name="grip"')
   })
 
-  it('avbryter friytans långtryck när ett andra finger tar över', () => {
+  it('avbryter friytans långtryck även när finger två landar i en annan kolumn', () => {
+    expect(component).toContain(
+      'useRef<FreeAreaGestureCoordinator>({ cancelActive: null })',
+    )
+    expect(component).toContain('gestureCoordinator={freeAreaGesture.current}')
     expect(component).toMatch(
-      /function FreeArea\([\s\S]*?onPointerDown=\{\(e\) => \{[\s\S]*?if \(!e\.isPrimary\) \{[\s\S]*?cancel\(\)/,
+      /className=\{styles\.dayWrap\}[\s\S]*?onPointerDownCapture=\{\(event\) => \{[\s\S]*?if \(!event\.isPrimary\) freeAreaGesture\.current\.cancelActive\?\.\(\)/,
+    )
+    expect(component).toMatch(
+      /function FreeArea\([\s\S]*?onPointerDown=\{\(e\) => \{[\s\S]*?if \(!e\.isPrimary\) \{[\s\S]*?gestureCoordinator\.cancelActive\?\.\(\)/,
     )
   })
 
