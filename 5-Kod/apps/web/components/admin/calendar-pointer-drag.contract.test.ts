@@ -36,15 +36,24 @@ describe('kalenderns draggenväg med mus och touch', () => {
     )
     expect(css).not.toMatch(/\.blockDrag\s*\{[\s\S]*?touch-action:\s*none;/)
     expect(component).toContain(
-      "addEventListener('touchmove', preventTouchScroll, { passive: false })",
+      "addEventListener('touchmove', blockActiveTouchScroll, { passive: false })",
     )
     expect(component).toContain('moved: false')
     expect(component).toContain('if (!drag.active) return')
     expect(component).toContain('styles.blockTouchDragging')
-    expect(gestures).toContain('TOUCH_DRAG_HOLD_MS = 500')
+    expect(gestures).toContain('TOUCH_DRAG_HOLD_MS = 300')
     expect(gestures).toContain('TOUCH_DRAG_SLOP_PX = 10')
     expect(component).toContain('cancelPressCandidate')
     expect(component).not.toContain('<Icon name="grip"')
+  })
+
+  it('registrerar touchblockeringen innan gesten startar och använder den bara efter lyft', () => {
+    expect(component).toContain('const bookingButtonRef = useRef<HTMLButtonElement>(null)')
+    expect(component).toContain("target.addEventListener('touchmove', blockActiveTouchScroll, {")
+    expect(component).toContain('if (pointerDrag.current?.active) event.preventDefault()')
+    expect(component).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*?blockActiveTouchScroll[\s\S]*?addEventListener\('touchmove',[\s\S]*?passive:\s*false[\s\S]*?removeEventListener\('touchmove'/,
+    )
   })
 
   it('avbryter friytans långtryck även när finger två landar i en annan kolumn', () => {

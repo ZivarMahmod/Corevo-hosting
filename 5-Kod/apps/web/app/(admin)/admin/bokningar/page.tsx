@@ -291,9 +291,10 @@ export default async function KalenderPage({
             <div className={calendarStyles.unresolvedPanel}>
               <div className={calendarStyles.unresolvedNotice}>
                 <div>
-                  <strong>{unresolvedCount} besök väntar på avslut.</strong> Ingen driftstörning —
-                  de behöver bara markeras som Genomförda eller Uteblivna för att statistiken ska
-                  bli korrekt.
+                  <strong>{unresolvedCount} tidigare bokningar saknar resultat.</strong> Det är ingen
+                  driftstörning: tiden har passerat utan att någon valt Genomförd eller Uteblev.
+                  Öppna dem här och välj rätt resultat när du stämmer av dagen. Tryck på klockan
+                  igen för att stänga listan.
                 </div>
                 <div className={calendarStyles.unresolvedLinks}>
                   {visibleUnresolved.slice(0, 12).map((booking) => {

@@ -1,6 +1,6 @@
 /** Mobilens avsiktströsklar är gemensamma för iPhone och Android. Webbläsaren får
  * vinna scroll/zoom före dessa trösklar; först ett stationärt långtryck lyfter kortet. */
-export const TOUCH_DRAG_HOLD_MS = 500
+export const TOUCH_DRAG_HOLD_MS = 300
 export const TOUCH_DRAG_SLOP_PX = 10
 export const EDGE_AUTO_SCROLL_ZONE_PX = 56
 export const EDGE_AUTO_SCROLL_MAX_PX_PER_SECOND = 600
