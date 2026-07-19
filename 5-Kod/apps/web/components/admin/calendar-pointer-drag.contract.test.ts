@@ -35,7 +35,21 @@ describe('kalenderns draggenväg med mus och touch', () => {
     expect(component).toContain('moved: false')
     expect(component).toContain('if (!drag.active || !drag.moved) return')
     expect(component).toContain('styles.blockTouchDragging')
+    expect(component).toContain('TOUCH_DRAG_HOLD_MS = 500')
+    expect(component).toContain('TOUCH_DRAG_SLOP_PX = 10')
+    expect(component).toContain('cancelPressCandidate')
     expect(component).not.toContain('<Icon name="grip"')
+  })
+
+  it('öppnar direkt och lyfter en fast ghost utan textmarkering eller callout', () => {
+    expect(component).toContain('onOpen(booking)')
+    expect(component).not.toContain('CalendarBubble')
+    expect(component).toContain('styles.blockGhost')
+    expect(component).toContain('grabOffsetX')
+    expect(component).toContain('grabOffsetY')
+    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?user-select:\s*none;/)
+    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?-webkit-user-select:\s*none;/)
+    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?-webkit-touch-callout:\s*none;/)
   })
 
   it('släpper bara i en faktisk personalkolumn under pekaren', () => {
