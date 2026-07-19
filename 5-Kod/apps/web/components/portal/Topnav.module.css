@@ -752,7 +752,7 @@
 
 /* iPad 768–1199: en komprimerad rad enligt responsivkanon. Om en kund har många
    moduler scrollar bara destinationsremsan; kontrollerna till höger försvinner inte. */
-@media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
+@media (min-width: 768px) and (max-width: 1199px) and (min-height: 521px) {
   .mobileAdmin .bar {
     height: 56px;
     min-height: 56px;
@@ -806,7 +806,7 @@
   }
 }
 
-@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
   .mobileAdmin {
     min-height: calc(52px + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
@@ -1414,7 +1414,7 @@
    Zivar 2026-07-18: sök ska bo bredvid gröna plus-knappen. Sjätte gridcellen
    tänds av .mobileNavSixCol; knappen speglar nav-postens anatomi (glyf + ord)
    men med cirkelram så den läses som handling, inte flik. */
-@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
   .mobileNavSixCol {
     grid-template-columns: repeat(6, 1fr);
   }

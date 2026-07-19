@@ -1,6 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { addDays, addMonths, isoWeekNumber } from '@/lib/admin/dates'
@@ -42,6 +50,11 @@ import {
   MOBILE_CALENDAR_SHIFT_EVENT,
 } from '@/components/portal/mobile-search-event'
 import styles from './calendar.module.css'
+import {
+  nearestDaySlide,
+  scrollTopForVisibleMinute,
+  visibleMinuteAtScrollTop,
+} from './calendar-pager'
 
 /** Kalenderarbetsbordet (goal-66). ETT arbetsbord, tre vyer — inte tre sidor:
  *
@@ -109,16 +122,7 @@ const VIEWS: { value: CalendarView; label: string }[] = [
 /** Rutnätets upplösning. 15 min är snappningen (Wavy gör samma): ett klick på
  *  09:20-höjd ger 09:15, aldrig 09:20. */
 const SNAP_MIN = 15
-export const SWIPE_THRESHOLD_PX = 48
 const TOUCH_DRAG_HOLD_MS = 240
-
-/** Ett dagbyte kräver ett avsiktligt horisontellt svep. Positivt dx betyder att
- * innehållet dras åt höger och kalendern ska gå till föregående dag. */
-export function calendarSwipeDirection(deltaX: number, deltaY: number): -1 | 0 | 1 {
-  const horizontal = Math.abs(deltaX)
-  if (horizontal <= SWIPE_THRESHOLD_PX || horizontal <= Math.abs(deltaY) * 1.25) return 0
-  return deltaX > 0 ? -1 : 1
-}
 
 /** Pixlar per minut. Styr höjden på en bokning: 60 min = 84 px. Räcker för att läsa
  *  kund + tjänst i ett 30-minuterspass utan att dagen blir orimligt lång. */
@@ -277,8 +281,13 @@ export function CalendarBoard({
   const params = useSearchParams()
   const absenceTimeOffId = params.get('absence')
   const scrollRef = useRef<HTMLDivElement>(null)
-  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const pagerNavigationLocked = useRef(false)
+  const pagerScrollLeft = useRef(0)
+  const pagerSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const preservedTopMinute = useRef<number | null>(null)
   const lastAutoScrollKey = useRef<string | null>(null)
+  const [activeDaySlide, setActiveDaySlide] = useState(1)
+  const [announcedDay, setAnnouncedDay] = useState(date)
   const [open, setOpen] = useState<BookingRow | null>(
     () => bookings.find((b) => b.id === openBookingId) ?? null,
   )
@@ -453,7 +462,7 @@ export function CalendarBoard({
       }
       q.delete('open')
       setMobileDateOpen(false)
-      router.push(`/admin/bokningar?${q.toString()}`)
+      router.push(`/admin/bokningar?${q.toString()}`, { scroll: false })
     },
     [params, router],
   )
@@ -466,6 +475,35 @@ export function CalendarBoard({
   const vStaff = resursValid ? staff.filter((s) => s.id === resurs) : staff
   const vBookings = resursValid ? bookings.filter((b) => b.staffId === resurs) : bookings
   const vBlocks = resursValid ? blocks.filter((b) => b.staffId === resurs) : blocks
+
+  const visibleDaySlides = useMemo(() => {
+    const filterDay = (day: CalendarDayData): CalendarDayData =>
+      resursValid
+        ? {
+            ...day,
+            staff: day.staff.filter((person) => person.id === resurs),
+            bookings: day.bookings.filter((booking) => booking.staffId === resurs),
+            blocks: day.blocks.filter((block) => block.staffId === resurs),
+          }
+        : day
+    const previous = dayNeighbors?.previous ?? {
+      date: addDays(date, -1),
+      bookings: [],
+      blocks: [],
+      staff,
+    }
+    const next = dayNeighbors?.next ?? {
+      date: addDays(date, 1),
+      bookings: [],
+      blocks: [],
+      staff,
+    }
+    return [
+      filterDay(previous),
+      { date, bookings: vBookings, blocks: vBlocks, staff: vStaff },
+      filterDay(next),
+    ] as const
+  }, [blocks, bookings, date, dayNeighbors, resurs, resursValid, staff, vBlocks, vBookings, vStaff])
 
   // goal-67 — färgen slås upp på staffId. Vecko- och månadsvyn saknar resurskolumner
   // och är just därför de vyer som BEHÖVER färgen mest. En bokning vars resurs
@@ -498,13 +536,16 @@ export function CalendarBoard({
     }
   }, [view, vBookings, vStaff, date])
 
-  // Arbetsdagens fönster = union av resursernas arbetstider. Tom dag (ingen arbetar)
-  // faller tillbaka på 08–18 så rutnätet aldrig kollapsar till en tom remsa.
+  // Dagbladets tre slides delar tidsaxel. Unionen gör att en halvdragning aldrig får
+  // klockslagen att hoppa mellan två dagar med olika öppettider.
   const [dayStart, dayEnd] = useMemo(() => {
-    const starts = vStaff.filter((s) => s.start).map((s) => toMin(s.start!))
-    const ends = vStaff.filter((s) => s.end).map((s) => toMin(s.end!))
+    const axisStaff = view === 'dag' ? visibleDaySlides.flatMap((day) => day.staff) : vStaff
+    const axisBookings =
+      view === 'dag' ? visibleDaySlides.flatMap((day) => day.bookings) : vBookings
+    const starts = axisStaff.filter((s) => s.start).map((s) => toMin(s.start!))
+    const ends = axisStaff.filter((s) => s.end).map((s) => toMin(s.end!))
     // Bokningar utanför arbetstid (t.ex. inlagda före ett schemabyte) måste ändå SYNAS.
-    for (const b of vBookings) {
+    for (const b of axisBookings) {
       starts.push(minutesInTz(b.startTs, tz))
       ends.push(minutesInTz(b.endTs, tz))
     }
@@ -512,7 +553,7 @@ export function CalendarBoard({
     const lo = Math.floor(Math.min(...starts) / 60) * 60
     const hi = Math.ceil(Math.max(...ends) / 60) * 60
     return [lo, Math.max(hi, lo + 60)]
-  }, [vStaff, vBookings, tz])
+  }, [vStaff, vBookings, tz, view, visibleDaySlides])
 
   const hours = useMemo(() => {
     const out: number[] = []
@@ -611,36 +652,134 @@ export function CalendarBoard({
   const step = view === 'manad' ? 'month' : view === 'vecka' ? 'week' : 'day'
   const shift = useCallback(
     (dir: -1 | 1) => {
-      const d = new Date(`${date}T12:00:00Z`)
-      if (step === 'day') d.setUTCDate(d.getUTCDate() + dir)
-      if (step === 'week') d.setUTCDate(d.getUTCDate() + dir * 7)
-      if (step === 'month') d.setUTCMonth(d.getUTCMonth() + dir)
-      go({ datum: d.toISOString().slice(0, 10) })
+      const target =
+        step === 'month'
+          ? addMonths(date, dir)
+          : addDays(date, step === 'week' ? dir * 7 : dir)
+      go({ datum: target })
     },
     [date, go, step],
   )
 
+  const mobilePagerMatches = useCallback(
+    () =>
+      window.matchMedia(
+        '(max-width: 767px), (orientation: landscape) and (max-height: 520px)',
+      ).matches,
+    [],
+  )
+
+  const settleDayPager = useCallback(() => {
+    const scroller = scrollRef.current
+    if (!scroller || view !== 'dag' || !mobilePagerMatches() || scroller.clientWidth <= 0) return
+    const slide = nearestDaySlide(scroller.scrollLeft, scroller.clientWidth)
+    setActiveDaySlide(slide)
+    const landedDay = visibleDaySlides[slide]!.date
+    setAnnouncedDay(landedDay)
+    if (slide === 1 || pagerNavigationLocked.current) return
+    preservedTopMinute.current = visibleMinuteAtScrollTop(dayStart, scroller.scrollTop, PX_PER_MIN)
+    pagerNavigationLocked.current = true
+    go({ datum: landedDay })
+  }, [dayStart, go, mobilePagerMatches, view, visibleDaySlides])
+
+  const requestStep = useCallback(
+    (dir: -1 | 1) => {
+      if (step === 'month' || pagerNavigationLocked.current) return
+      const scroller = scrollRef.current
+      if (step !== 'day' || !scroller || !mobilePagerMatches()) {
+        shift(dir)
+        return
+      }
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      scroller.scrollTo({
+        left: scroller.clientWidth * (1 + dir),
+        top: scroller.scrollTop,
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      })
+      if (reducedMotion) settleDayPager()
+    },
+    [mobilePagerMatches, settleDayPager, shift, step],
+  )
+
+  // CSS Scroll Snap låter fingret följa ett sammanhängande tredagarsblad. URL:en
+  // ändras först när bladet landat, aldrig mitt i halvpositionen.
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller || view !== 'dag' || !mobilePagerMatches()) return
+    scroller.scrollLeft = scroller.clientWidth
+    pagerScrollLeft.current = scroller.clientWidth
+    if (preservedTopMinute.current !== null) {
+      scroller.scrollTop = scrollTopForVisibleMinute(
+        dayStart,
+        preservedTopMinute.current,
+        PX_PER_MIN,
+      )
+      preservedTopMinute.current = null
+    }
+    pagerNavigationLocked.current = false
+    setActiveDaySlide(1)
+    setAnnouncedDay(date)
+  }, [date, dayStart, mobilePagerMatches, view])
+
+  useEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller || view !== 'dag') return
+    const hasNativeScrollEnd = 'onscrollend' in scroller
+    const onScroll = () => {
+      if (!mobilePagerMatches()) return
+      const nextLeft = scroller.scrollLeft
+      if (Math.abs(nextLeft - pagerScrollLeft.current) < 0.5) return
+      pagerScrollLeft.current = nextLeft
+      if (hasNativeScrollEnd) return
+      if (pagerSettleTimer.current) clearTimeout(pagerSettleTimer.current)
+      pagerSettleTimer.current = setTimeout(settleDayPager, 180)
+    }
+    const onScrollEnd = () => settleDayPager()
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    if (hasNativeScrollEnd) scroller.addEventListener('scrollend', onScrollEnd)
+    return () => {
+      scroller.removeEventListener('scroll', onScroll)
+      if (hasNativeScrollEnd) scroller.removeEventListener('scrollend', onScrollEnd)
+      if (pagerSettleTimer.current) clearTimeout(pagerSettleTimer.current)
+    }
+  }, [mobilePagerMatches, settleDayPager, view])
+
+  useEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller || view !== 'dag' || typeof ResizeObserver === 'undefined') return
+    let width = scroller.clientWidth
+    const observer = new ResizeObserver(() => {
+      if (!mobilePagerMatches() || scroller.clientWidth === width) return
+      const topMinute = visibleMinuteAtScrollTop(dayStart, scroller.scrollTop, PX_PER_MIN)
+      width = scroller.clientWidth
+      scroller.scrollLeft = width
+      pagerScrollLeft.current = width
+      scroller.scrollTop = scrollTopForVisibleMinute(dayStart, topMinute, PX_PER_MIN)
+      setActiveDaySlide(1)
+    })
+    observer.observe(scroller)
+    return () => observer.disconnect()
+  }, [dayStart, mobilePagerMatches, view])
+
   useEffect(() => {
     const onShift = (event: Event) => {
       const direction = (event as CustomEvent<number>).detail
-      if (direction === -1 || direction === 1) shift(direction)
+      if (direction === -1 || direction === 1) requestStep(direction)
     }
     window.addEventListener(MOBILE_CALENDAR_SHIFT_EVENT, onShift)
     return () => window.removeEventListener(MOBILE_CALENDAR_SHIFT_EVENT, onShift)
-  }, [shift])
+  }, [requestStep])
 
   useEffect(() => {
     const neighborLabel = (dir: -1 | 1) => {
       if (step === 'month') return '—'
-      const next = new Date(`${date}T12:00:00Z`)
-      if (step === 'day') next.setUTCDate(next.getUTCDate() + dir)
-      if (step === 'week') next.setUTCDate(next.getUTCDate() + dir * 7)
-      return new Intl.DateTimeFormat('sv-SE', {
+       const target = addDays(date, step === 'day' ? dir : dir * 7)
+       return new Intl.DateTimeFormat('sv-SE', {
         weekday: step === 'day' ? 'short' : undefined,
         day: 'numeric',
         month: 'short',
         timeZone: tz,
-      }).format(next)
+       }).format(new Date(`${target}T12:00:00Z`))
     }
     const publishMeta = () => {
       window.dispatchEvent(
@@ -660,8 +799,22 @@ export function CalendarBoard({
     return () => window.removeEventListener(MOBILE_CALENDAR_META_REQUEST_EVENT, publishMeta)
   }, [date, mobilePeriodLabel, mobilePeriodStats, step, tz])
 
-  // Ett tydligt horisontellt svep i dagvyn byter dag. Bokningskort undantas så att
-  // samma gestyta aldrig samtidigt försöker flytta en bokning.
+  const compactStepLabel = (dir: -1 | 1) => {
+    if (step === 'month') return '—'
+    const target = addDays(date, step === 'week' ? dir * 7 : dir)
+    return new Intl.DateTimeFormat('sv-SE', {
+      weekday: step === 'day' ? 'short' : undefined,
+      day: 'numeric',
+      month: 'short',
+      timeZone: tz,
+    }).format(new Date(`${target}T12:00:00Z`))
+  }
+  const announcedDayLabel = new Intl.DateTimeFormat('sv-SE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: tz,
+  }).format(new Date(`${announcedDay}T12:00:00Z`))
 
   // Klick på ledig yta = "boka här". Tiden SNAPPAS till 15 min (ett klick på 09:20-höjd
   // ger 09:15, aldrig 09:20) och resurs + tid ärvs in i drawern — användaren ska aldrig
@@ -857,63 +1010,44 @@ export function CalendarBoard({
           dokumentet och toppnaven stannar kvar. */}
       <div
         ref={scrollRef}
-        className={styles.scroll}
-        onTouchStart={(event) => {
-          if (
-            view === 'manad' ||
-            event.touches.length !== 1 ||
-            (event.target instanceof Element && event.target.closest('[data-calendar-booking]'))
-          ) {
-            swipeStart.current = null
-            return
-          }
-          // När kolumnerna är bredare än ytan (iPad/liggande) betyder ett
-          // horisontellt fingerdrag att användaren panorerar i schemat. Dagsvep
-          // aktiveras bara när hela dagvyn faktiskt ryms utan horisontell scroll.
-          const scroller = event.currentTarget
-          if (scroller.scrollWidth > scroller.clientWidth + 1) {
-            swipeStart.current = null
-            return
-          }
-          const touch = event.touches[0]
-          if (touch) swipeStart.current = { x: touch.clientX, y: touch.clientY }
-        }}
-        onTouchEnd={(event) => {
-          const start = swipeStart.current
-          swipeStart.current = null
-          const touch = event.changedTouches[0]
-          if (!start || !touch) return
-          const direction = calendarSwipeDirection(touch.clientX - start.x, touch.clientY - start.y)
-          if (direction) shift(direction)
-        }}
-        onTouchCancel={() => {
-          swipeStart.current = null
-        }}
+        className={`${styles.scroll}${view === 'dag' ? ` ${styles.dayPager}` : ''}`}
       >
         {view === 'dag' && (
-          <DayGrid
-            bookings={vBookings}
-            blocks={vBlocks}
-            staff={vStaff}
-            staffNoun={staffNoun}
-            tz={tz}
-            date={date}
-            today={today}
-            hours={hours}
-            dayStart={dayStart}
-            gridHeight={gridHeight}
-            onOpen={setOpen}
-            onBubble={openBubble}
-            onEmptyClick={onEmptyClick}
-            onDropBooking={onDropBooking}
-            onOpenBlock={(block) => {
-              if (canManageBookings) setBlocking({ seed: null, existing: block })
-            }}
-            focusedStaffId={resursValid ? resurs : null}
-            onStaffToggle={(staffId) => go({ resurs: resurs === staffId ? '' : staffId })}
-            dragOver={dragOver}
-            setDragOver={setDragOver}
-          />
+          <div className={styles.dayTrack} data-calendar-day-track>
+            {visibleDaySlides.map((day, index) => (
+              <div
+                key={day.date}
+                className={`${styles.daySlide}${index !== 1 ? ` ${styles.daySlideAdjacent}` : ''}`}
+                data-calendar-day-slide={day.date}
+                inert={activeDaySlide === index ? undefined : true}
+                aria-hidden={activeDaySlide === index ? undefined : true}
+              >
+                <DayGrid
+                  bookings={day.bookings}
+                  blocks={day.blocks}
+                  staff={day.staff}
+                  staffNoun={staffNoun}
+                  tz={tz}
+                  date={day.date}
+                  today={today}
+                  hours={hours}
+                  dayStart={dayStart}
+                  gridHeight={gridHeight}
+                  onOpen={setOpen}
+                  onBubble={openBubble}
+                  onEmptyClick={onEmptyClick}
+                  onDropBooking={onDropBooking}
+                  onOpenBlock={(block) => {
+                    if (canManageBookings) setBlocking({ seed: null, existing: block })
+                  }}
+                  focusedStaffId={resursValid ? resurs : null}
+                  onStaffToggle={(staffId) => go({ resurs: resurs === staffId ? '' : staffId })}
+                  dragOver={index === 1 ? dragOver : null}
+                  setDragOver={setDragOver}
+                />
+              </div>
+            ))}
+          </div>
         )}
         {view === 'vecka' && (
           <WeekGrid
@@ -943,8 +1077,22 @@ export function CalendarBoard({
         )}
       </div>
 
+      <p className={styles.calendarLive} aria-live="polite" aria-atomic="true">
+        {announcedDayLabel}
+      </p>
+
       <div className={styles.mobileCalendarDock}>
         <div className={styles.mobileCalendarDateRow}>
+          <button
+            type="button"
+            className={styles.mobileDayStepButton}
+            onClick={() => requestStep(-1)}
+            aria-label={`Föregående: ${compactStepLabel(-1)}`}
+            disabled={step === 'month'}
+          >
+            <Icon name="chevronLeft" size={15} />
+            <span>{compactStepLabel(-1)}</span>
+          </button>
           <button
             type="button"
             className={styles.mobileDateToggle}
@@ -958,24 +1106,16 @@ export function CalendarBoard({
             </span>
             <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
           </button>
-          <div className={styles.mobileStep} aria-label="Bläddra i kalendern">
-            <button
-              type="button"
-              onClick={() => shift(-1)}
-              aria-label="Föregående"
-              disabled={step === 'month'}
-            >
-              <Icon name="chevronLeft" size={15} />
-            </button>
-            <button
-              type="button"
-              onClick={() => shift(1)}
-              aria-label="Nästa"
-              disabled={step === 'month'}
-            >
-              <Icon name="chevronRight" size={15} />
-            </button>
-          </div>
+          <button
+            type="button"
+            className={styles.mobileDayStepButton}
+            onClick={() => requestStep(1)}
+            aria-label={`Nästa: ${compactStepLabel(1)}`}
+            disabled={step === 'month'}
+          >
+            <span>{compactStepLabel(1)}</span>
+            <Icon name="chevronRight" size={15} />
+          </button>
         </div>
 
         <div className={styles.mobileCalendarActionRow}>

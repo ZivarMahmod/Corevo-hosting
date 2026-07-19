@@ -49,7 +49,7 @@ test.describe('07 Kundadmin mobilchrome — source contract @readonly @contract'
     expect(component).toContain('CalendarDayNeighbors')
     expect(component).toContain('styles.dayTrack')
     expect(component).toContain('styles.daySlide')
-    expect(component).toContain('scroll-snap')
+    expect(css).toContain('scroll-snap-type: x mandatory')
     expect(component).not.toContain('calendarSwipeDirection')
     expect(component).not.toContain('SWIPE_THRESHOLD_PX = 48')
     expect(component).toContain('data-calendar-booking')

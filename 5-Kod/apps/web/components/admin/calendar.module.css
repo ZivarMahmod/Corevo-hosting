@@ -804,6 +804,31 @@
   overscroll-behavior: contain;
 }
 
+.dayTrack {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+}
+
+.daySlide {
+  min-width: 0;
+  flex: 0 0 100%;
+}
+
+.daySlideAdjacent {
+  display: none;
+}
+
+.calendarLive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ---- dag/vecka: tidsaxel + kolumner ---- */
 .dayWrap {
   --axis-w: 56px;
@@ -1889,7 +1914,7 @@
 /* ---- responsivt ----
    Mobilkanon visar alltid samtliga resurskolumner samtidigt. Desktop och iPad får
    fortfarande en läsbar minbredd och intern sidscroll vid riktigt stora team. */
-@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
   .board {
     position: relative;
     height: calc(100dvh - 130px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -1974,8 +1999,22 @@
   }
 
   .scroll {
-    overflow-x: hidden;
     padding-bottom: 0;
+  }
+
+  .dayPager {
+    overflow: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: x mandatory;
+  }
+
+  .dayPager .daySlide {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .dayPager .daySlideAdjacent {
+    display: block;
   }
 
   .headCell {
@@ -2162,6 +2201,31 @@
     border-left: 1px solid var(--c-line);
   }
 
+  .mobileDayStepButton {
+    min-width: 72px;
+    min-height: 44px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-ink-2);
+    cursor: pointer;
+    font: inherit;
+    font-size: 9px;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .mobileDayStepButton:disabled {
+    color: var(--c-ink-3);
+    cursor: default;
+    opacity: 0.45;
+  }
+
   .mobileCalendarActionRow {
     display: flex;
     align-items: center;
@@ -2341,6 +2405,7 @@
   .mobileDateToggle:focus-visible,
   .mobileTodayBtn:focus-visible,
   .mobileStep button:focus-visible,
+  .mobileDayStepButton:focus-visible,
   .mobileViewSwitch button:focus-visible,
   .mobileBlockAction:focus-visible,
   .mobilePickerDays button:focus-visible {
@@ -2370,7 +2435,7 @@
    Egen nivå, inte "stor mobil" och inte "liten desktop". Plattan har gott om bredd men
    används med FINGER: touchmålen måste vara kvar i full storlek, medan kolumnerna får
    vara smalare än på desktop så en hel personalstyrka ryms utan att man scrollar i sidled. */
-@media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
+@media (min-width: 768px) and (max-width: 1199px) and (min-height: 521px) {
   .dayWrap {
     --axis-w: 50px;
     --col-min: 132px;
@@ -2385,7 +2450,7 @@
 
 /* Telefon: kolumnen är för smal för ett telefonnummer. Numret försvinner INTE — det
    står i kortet man öppnar. Ett avhugget nummer är värre än inget nummer. */
-@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
   .blockPhone {
     display: none;
   }
@@ -2431,7 +2496,7 @@
    Schemat äger höjden (Zivar 2026-07-18: "så mycket schemayta som möjligt").
    Toppraden försvinner i Topnav.module.css; här pressas dockan till EN rad och
    kolumnhuvudena till en tunn list. Inga funktioner tas bort — bara ytan. */
-@media (max-height: 500px) and (pointer: coarse) {
+@media (orientation: landscape) and (max-height: 520px) {
   .mobileCalendarDock {
     display: flex;
     align-items: center;
@@ -2441,6 +2506,10 @@
     flex: none;
     min-height: 40px;
     padding: 3px 4px 3px 10px;
+  }
+
+  .mobileDayStepButton {
+    display: none;
   }
 
   .mobileCalendarActionRow {
@@ -2484,7 +2553,16 @@
   }
 
   .mobileCalendarDateRow {
-    display: none;
+    display: flex;
+    padding-inline: 6px;
+  }
+
+  .mobileDateToggle {
+    text-align: center;
+  }
+
+  .mobileDateTitle {
+    justify-content: center;
   }
 
   .mobileCalendarActionRow {
@@ -2597,6 +2675,10 @@
   }
 
   .mobileStep {
+    display: none;
+  }
+
+  .mobileDayStepButton {
     display: none;
   }
 
