@@ -13,7 +13,8 @@ const INPUT_STYLE: CSSProperties = {
   borderRadius: 8,
   padding: '7px 10px',
   fontSize: 13,
-  background: 'var(--c-bg, #fff)',
+  background: 'var(--c-paper-2)',
+  color: 'var(--c-ink)',
   minWidth: 150,
 }
 
@@ -60,11 +61,7 @@ export function CreateCustomerForm() {
 
   return (
     <Modal title="Ny kund" anchor="top" onClose={() => setOpen(false)}>
-      <form
-        ref={formRef}
-        action={formAction}
-        style={{ display: 'grid', gap: 12, width: '100%' }}
-      >
+      <form ref={formRef} action={formAction} style={{ display: 'grid', gap: 12, width: '100%' }}>
         <input
           name="full_name"
           placeholder="Namn (krav)"

@@ -37,8 +37,41 @@ describe('Kalender Mobil v2', () => {
       'inert={pagerNavigationPending || index !== activeDaySlide ? true : undefined}',
     )
     expect(component).toContain('pagerCenteredKey')
-    expect(component).toContain('const previousDayStart = pagerDayStart.current')
     expect(component).toContain('pagerCenteredKey.current !== pagerKey')
+    expect(component).not.toContain('pagerDayStart')
+  })
+
+  it('låter touchscroll vinna utan markerad friyta och visar ej arbetstid som samma lugna yta', () => {
+    const component = read('components/admin/CalendarBoard.tsx')
+    const css = read('components/admin/calendar.module.css')
+
+    expect(component).not.toContain('setArmed')
+    expect(component).not.toContain('styles.freeAreaArmed')
+    expect(css).not.toContain('.freeAreaArmed')
+    expect(css).not.toMatch(/\.offHours\s*\{[^}]*repeating-linear-gradient/)
+    expect(css).toMatch(/\.offHours\s*\{[^}]*background:\s*var\(--c-paper\);/)
+    expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.freeArea:hover/)
+  })
+
+  it('reserverar Idag-knappens plats så vyvalet inte hoppar när dagens slide landar', () => {
+    const component = read('components/admin/CalendarBoard.tsx')
+    const css = read('components/admin/calendar.module.css')
+
+    expect(component).toContain('styles.mobileTodayIdle')
+    expect(component).toContain('aria-hidden={!showToday}')
+    expect(css).toMatch(/\.mobileTodayIdle\s*\{[\s\S]*?opacity:\s*0;/)
+  })
+
+  it('låter mobilens söktangent köra sökningen direkt', () => {
+    const search = read('components/admin/CalendarSearch.tsx')
+    const palette = read('components/portal/ui/CommandPalette.tsx')
+
+    expect(search).toContain('onSubmit={submitSearch}')
+    expect(search).toContain('enterKeyHint="search"')
+    expect(search).toContain('debounceTimer.current')
+    expect(search).toContain('clearTimeout(debounceTimer.current)')
+    expect(palette).toContain('enterKeyHint="search"')
+    expect(palette).toContain('type="search"')
   })
 
   it('ger mobilen en egen topphjälp och bottensök utan en permanent verktygsrad', () => {

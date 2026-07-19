@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icon, Modal } from '@/components/portal/ui'
 import { MOBILE_SEARCH_EVENT } from '@/components/portal/mobile-search-event'
@@ -17,19 +17,14 @@ import styles from './calendar.module.css'
  *  En träff är en GENVÄG, inte en vy: klick → kalendern hoppar till den dagen och öppnar
  *  bokningen. Man landar där arbetet görs, inte i en sökresultatsida man måste lämna. */
 
-export function CalendarSearch({
-  tz,
-  mobileSheet = false,
-}: {
-  tz: string
-  mobileSheet?: boolean
-}) {
+export function CalendarSearch({ tz, mobileSheet = false }: { tz: string; mobileSheet?: boolean }) {
   const router = useRouter()
   const [q, setQ] = useState('')
   const [hits, setHits] = useState<BookingHit[] | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [pending, startTransition] = useTransition()
-  const box = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLFormElement>(null)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Debounce: en frisör skriver "anna" på en halv sekund. Utan fördröjning blir det
   // fyra sökningar; med 250 ms blir det en.
@@ -40,9 +35,14 @@ export function CalendarSearch({
       return
     }
     const t = setTimeout(() => {
+      debounceTimer.current = null
       startTransition(async () => setHits(await searchBookings(term)))
     }, 250)
-    return () => clearTimeout(t)
+    debounceTimer.current = t
+    return () => {
+      clearTimeout(t)
+      if (debounceTimer.current === t) debounceTimer.current = null
+    }
   }, [q])
 
   // Klick utanför stänger träfflistan — annars ligger den kvar över kalendern man
@@ -69,11 +69,28 @@ export function CalendarSearch({
     setQ('')
   }
 
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const term = q.trim()
+    if (term.length < 2) return
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+      debounceTimer.current = null
+    }
+    startTransition(async () => setHits(await searchBookings(term)))
+    event.currentTarget.querySelector('input')?.blur()
+  }
+
   const searchField = (
-    <div className={`${styles.search}${mobileSheet ? ` ${styles.searchSheet}` : ''}`} ref={box}>
+    <form
+      className={`${styles.search}${mobileSheet ? ` ${styles.searchSheet}` : ''}`}
+      ref={box}
+      onSubmit={submitSearch}
+    >
       <Icon name="search" size={15} />
       <input
         type="search"
+        enterKeyHint="search"
         className={styles.searchInput}
         placeholder="Sök kund…"
         value={q}
@@ -129,7 +146,7 @@ export function CalendarSearch({
           ))}
         </div>
       )}
-    </div>
+    </form>
   )
 
   // Mobil: triggern bor i BOTTENNAVEN bredvid FAB:en (Topnav, Zivar 2026-07-18) —

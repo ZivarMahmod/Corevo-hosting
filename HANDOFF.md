@@ -55,7 +55,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 - Goal-73 för kundadminens mobilchrome och kalendergester finns och är aktiv.
   Mobilkalendern använder hela bokningskortet för långtryck och drag; inget separat
   touch-handtag finns. Kalendern visar måltid/resurs och kräver bekräftelse innan
-  skrivning. Goal-73 arkiveras inte förrän Zivar godkänt den live.
+  skrivning. Dagvyn landar vid schemats start utan fördröjda vertikala hopp och
+  använder en lugn, oräfflad pappersyta. Passerade bokningar skapar ingen klocka
+  eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
+  arkiveras inte förrän Zivar godkänt den live.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 

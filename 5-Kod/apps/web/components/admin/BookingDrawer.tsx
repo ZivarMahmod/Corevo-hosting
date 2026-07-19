@@ -175,7 +175,12 @@ function actionsFor(status: string, isPast: boolean): DrawerAction[] {
       out.push({ label: 'Rätta till uteblev', target: 'no_show', variant: 'ghost', icon: 'clock' })
   } else if (status === 'no_show') {
     if (can('completed'))
-      out.push({ label: 'Rätta till genomförd', target: 'completed', variant: 'primary', icon: 'check' })
+      out.push({
+        label: 'Rätta till genomförd',
+        target: 'completed',
+        variant: 'primary',
+        icon: 'check',
+      })
   } else if (status === 'cancelled') {
     // "Återställ", inte "Öppna igen": det är ett ÅNGRA, och ordet ska säga det.
     if (can('confirmed'))
@@ -325,13 +330,11 @@ export function BookingDrawer({
   // igår. (no_show får däremot rättas bakåt: "hen kom visst" är en korrigering av
   // historien, inte en ny bokning.) Samma regel som ångraloggen.
   const restoreBlockedPast = booking.status === 'cancelled' && bookingStartPassed
-  const needsOutcome = outcomeReady && isBokad(booking.status)
   // Payment-guard: en ej betald, ej avbokad bokning får ALDRIG auto-markeras
   // "klar + betald" (sen kund / no-show).
   const showPaymentGuard =
     onlinePaymentsActive && booking.paymentStatus !== 'succeeded' && !isAvbokad(booking.status)
-  const canReschedule =
-    canManage && isBokad(booking.status) && staff.length > 0 && !outcomeReady
+  const canReschedule = canManage && isBokad(booking.status) && staff.length > 0 && !outcomeReady
 
   const submitReschedule = () => {
     if (!rescheduleStaffId || !rescheduleDate || !rescheduleTime) {
@@ -534,12 +537,6 @@ export function BookingDrawer({
           </section>
         )}
 
-        {needsOutcome && (
-          <Callout tone="warning" icon="clock">
-            <b>Behöver avslutas.</b> Sluttiden har passerat men inget utfall är registrerat.
-            Välj Genomförd eller Uteblev — systemet gissar aldrig.
-          </Callout>
-        )}
         {showPaymentGuard && (
           <Callout tone="warning" icon="shield">
             En sen kund eller no-show markeras <b>aldrig</b> automatiskt som klar + betald.

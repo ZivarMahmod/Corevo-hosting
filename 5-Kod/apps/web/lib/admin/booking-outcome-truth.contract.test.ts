@@ -81,7 +81,9 @@ describe('0095 booking outcome truth', () => {
     expect(sql).toContain("'routing', 5, pg_catalog.statement_timestamp()")
     expect(sql).not.toMatch(/'booking_completed'[\s\S]{0,700}'email'/)
     expect(sql).not.toMatch(/'booking_completed'[\s\S]{0,700}jsonb_build_object\('producer'/)
-    expect(sql).toMatch(/create trigger trg_enqueue_booking_completed_event[\s\S]*?after update of status on public\.bookings/)
+    expect(sql).toMatch(
+      /create trigger trg_enqueue_booking_completed_event[\s\S]*?after update of status on public\.bookings/,
+    )
     expect(admin).not.toContain('enqueueNotification')
     expect(admin).not.toContain('sendReviewNudgeForBooking')
     expect(admin).not.toContain("channel: 'sms'")
@@ -103,9 +105,10 @@ describe('0095 booking outcome truth', () => {
     expect(body).toContain('chosen_channel = null')
     expect(body).toContain('consent_state = null')
     expect(body).toMatch(/status = 'skipped'[\s\S]*?skip_reason = 'booking_outcome_changed'/)
-    const noShowBranch = body?.match(
-      /if new\.status = 'no_show' and old\.status = 'completed' then([\s\S]*?)return new;/,
-    )?.[1] ?? ''
+    const noShowBranch =
+      body?.match(
+        /if new\.status = 'no_show' and old\.status = 'completed' then([\s\S]*?)return new;/,
+      )?.[1] ?? ''
     expect(noShowBranch).not.toContain('delivery_started')
     expect(noShowBranch).not.toContain("'sent'")
     expect(noShowBranch).not.toContain("'delivered'")
@@ -120,8 +123,12 @@ describe('0095 booking outcome truth', () => {
 
   it('ger bara expiry-svepet en exakt intern väg för passerade pending-rader', () => {
     expect(sql).toContain('create or replace function public.expire_abandoned_pending_bookings')
-    expect(sql).toContain("set_config('app.booking_outcome_internal_intent', 'pending_expiry', true)")
-    expect(sql).toContain("current_setting('app.booking_outcome_internal_intent', true) = 'pending_expiry'")
+    expect(sql).toContain(
+      "set_config('app.booking_outcome_internal_intent', 'pending_expiry', true)",
+    )
+    expect(sql).toContain(
+      "current_setting('app.booking_outcome_internal_intent', true) = 'pending_expiry'",
+    )
     expect(sql).toContain("new.cancelled_by = 'system'")
     expect(sql).toContain("new.status = 'cancelled'")
     expect(sql).toContain("p.status = 'pending'")
@@ -131,13 +138,21 @@ describe('0095 booking outcome truth', () => {
   it('tillåter bara direkt completed/no_show-korrigering och bokför reversal/re-earn', () => {
     expect(sql).toContain("old.status = 'completed' and new.status = 'no_show'")
     expect(sql).toContain("old.status = 'no_show' and new.status = 'completed'")
-    expect(sql).not.toContain("old.status = 'completed' and new.status in ('pending','confirmed','cancelled')")
-    expect(sql).not.toContain("old.status = 'no_show'   and new.status in ('pending','confirmed','cancelled')")
+    expect(sql).not.toContain(
+      "old.status = 'completed' and new.status in ('pending','confirmed','cancelled')",
+    )
+    expect(sql).not.toContain(
+      "old.status = 'no_show'   and new.status in ('pending','confirmed','cancelled')",
+    )
     expect(sql).toContain("'booking_completed_reversal'")
     expect(sql).toContain("'booking_completed_reearn'")
     expect(sql).toContain('least(v_booking_points, greatest(v_customer_balance, 0))')
-    expect(sql).toMatch(/select[\s\S]*?reason = 'earn_completed'[\s\S]*?if v_earned_points > 0 then/)
-    expect(sql).toMatch(/if v_earned_points > 0 then[\s\S]*?booking_completed_reearn[\s\S]*?return new;/)
+    expect(sql).toMatch(
+      /select[\s\S]*?reason = 'earn_completed'[\s\S]*?if v_earned_points > 0 then/,
+    )
+    expect(sql).toMatch(
+      /if v_earned_points > 0 then[\s\S]*?booking_completed_reearn[\s\S]*?return new;/,
+    )
   })
 
   it('räknar livstid tenantbrett bakom en explicit auktoriserad definer-RPC', () => {
@@ -167,7 +182,9 @@ describe('0095 booking outcome truth', () => {
     expect(totals).not.toContain('to authenticated, service_role')
     expect(customerPortal).toContain("rpc('customer_loyalty_totals'")
     expect(staffCard).toContain("rpc('customer_loyalty_totals'")
-    expect(customerPortal).not.toContain(".from('loyalty_ledger')\n      .select('points_delta, reason')")
+    expect(customerPortal).not.toContain(
+      ".from('loyalty_ledger')\n      .select('points_delta, reason')",
+    )
     expect(staffCard).not.toContain(".from('loyalty_ledger').select('points_delta')")
   })
 
@@ -207,7 +224,7 @@ describe('0095 booking outcome truth', () => {
     expect(personal).toContain('Bokningen behöver avslutas som Genomförd eller Uteblev.')
   })
 
-  it('använder exakt count och en begränsad lista för avslutningskön', () => {
+  it('behåller exakt count-stöd i datalagret utan en påtvingad kalenderkö', () => {
     const data = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'admin', 'data.ts'), 'utf8')
     const page = fs.readFileSync(
       path.join(WEB_ROOT, 'app', '(admin)', 'admin', 'bokningar', 'page.tsx'),
@@ -217,9 +234,8 @@ describe('0095 booking outcome truth', () => {
     expect(data).toContain("count: 'exact', head: true")
     expect(data).toContain('filters.limit')
     expect(data).toMatch(/\.range\(\s*filters\.offset \?\? 0,/)
-    expect(page).toContain('countBookings(tenant.id')
-    expect(page).toContain('limit: 50')
-    expect(page).toContain('unresolvedCount')
+    expect(page).not.toContain('countBookings(tenant.id')
+    expect(page).not.toContain('unresolvedCount')
   })
 
   it('låter bara dokumenterad unik idempotens sväljas av lojalitetstriggern', () => {
@@ -231,24 +247,22 @@ describe('0095 booking outcome truth', () => {
     expect(body).not.toContain('exception when others')
   })
 
-  it('bygger adminens avslutningskö på end_ts och riktiga statusar', () => {
+  it('håller utfall valbart inne i bokningen utan en klocka eller kö över kalendern', () => {
     const page = fs.readFileSync(
       path.join(WEB_ROOT, 'app', '(admin)', 'admin', 'bokningar', 'page.tsx'),
       'utf8',
     )
-    const css = fs.readFileSync(
-      path.join(WEB_ROOT, 'components', 'admin', 'calendar.module.css'),
+    const drawer = fs.readFileSync(
+      path.join(WEB_ROOT, 'components', 'admin', 'BookingDrawer.tsx'),
       'utf8',
     )
-    expect(page).toContain('endToUtc: nowIso')
-    expect(page).toContain("statuses: ['pending', 'confirmed']")
+    expect(page).not.toContain('endToUtc: nowIso')
+    expect(page).not.toContain("statuses: ['pending', 'confirmed']")
     expect(page).toContain('new Date(b.endTs).getTime() <= now')
-    expect(page).toContain('tidigare bokningar saknar resultat')
-    expect(page).toContain('Det är ingen')
-    expect(page).toContain('driftstörning: tiden har passerat')
-    expect(page).toContain('calendarStyles.unresolvedQueue')
-    expect(page).toContain('`${unresolvedCount} besök att stämma av`')
-    expect(page).not.toContain('<Callout tone="info" icon="clock">')
-    expect(css).toMatch(/\.unresolvedSummary\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/)
+    expect(page).not.toContain('tidigare bokningar saknar resultat')
+    expect(page).not.toContain('calendarStyles.unresolvedQueue')
+    expect(drawer).toContain("target: 'completed'")
+    expect(drawer).toContain('Uteblev')
+    expect(drawer).not.toContain('Behöver avslutas.')
   })
 })
