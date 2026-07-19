@@ -41,11 +41,17 @@ test.describe('@mutating kalenderns klickbudget', () => {
 
     // Klick 2: tjänsten. Första chippen i tjänstlistan (seedad: Klippning).
     const dialog = page.getByRole('dialog')
-    await dialog.getByRole('button', { name: /klippning/i }).first().click()
+    await dialog
+      .getByRole('button', { name: /klippning/i })
+      .first()
+      .click()
 
     // Klick 3: första lediga tiden (chip med HH:MM). Att tiderna alls dyker upp är
     // en del av kontraktet — utan slots är bokningen omöjlig oavsett budget.
-    await dialog.getByRole('button', { name: /^\d{2}:\d{2}$/ }).first().click()
+    await dialog
+      .getByRole('button', { name: /^\d{2}:\d{2}$/ })
+      .first()
+      .click()
 
     // Kundnamnet SKRIVS (tangenter är inte klick — budgeten räknar beslut, inte
     // bokstäver). Ny kund = ingen träff att klicka på; namnet räcker.
@@ -69,13 +75,13 @@ test.describe('@mutating kalenderns klickbudget', () => {
     const block = page.getByRole('button', { name: new RegExp(CUSTOMER) }).first()
     await expect(block).toBeVisible()
 
-    // Moment 1: draget. HTML5-drag (dataTransfer) — Playwright syntetiserar hela
-    // dragstart→dragover→drop-kedjan. Målet är samma kolumn, längre ner (senare tid).
+    // Moment 1: riktig Pointer Events-sekvens. Kalendern använder medvetet inte HTML5
+    // Drag and Drop; musen går down→flera move→up i samma kolumn, längre ner.
     const box = (await block.boundingBox())!
-    await block.dragTo(page.locator('main'), {
-      sourcePosition: { x: box.width / 2, y: 10 },
-      targetPosition: { x: box.x + box.width / 2, y: box.y + 200 },
-    })
+    await page.mouse.move(box.x + box.width / 2, box.y + 10)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2, box.y + 200, { steps: 8 })
+    await page.mouse.up()
 
     // Moment 2: bekräftelsen — med konsekvensen utskriven, aldrig "Är du säker?".
     await page.getByRole('button', { name: 'Flytta' }).click()
@@ -86,7 +92,10 @@ test.describe('@mutating kalenderns klickbudget', () => {
     await loginBackoffice(page, SEED.salonAdmin)
     await openCalendar(page)
 
-    await page.getByRole('button', { name: new RegExp(CUSTOMER) }).first().click() // klick 1
+    await page
+      .getByRole('button', { name: new RegExp(CUSTOMER) })
+      .first()
+      .click() // klick 1
     await page.getByRole('button', { name: 'Avboka' }).click() // klick 2
 
     // Bokningen lämnar kalendern (avbokad = borta ur dagsvyn som aktiv).

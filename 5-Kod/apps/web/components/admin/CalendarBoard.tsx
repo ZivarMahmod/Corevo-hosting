@@ -24,7 +24,6 @@ import {
   isBokad,
   isKlar,
   statusAccent,
-  telHref,
   timeLabel,
   type BookingRow,
 } from './BookingDrawer'
@@ -55,6 +54,12 @@ import {
   scrollTopForVisibleMinute,
   visibleMinuteAtScrollTop,
 } from './calendar-pager'
+import {
+  TOUCH_DRAG_HOLD_MS,
+  TOUCH_DRAG_SLOP_PX,
+  dragGhostPosition,
+  edgeAutoScrollVelocity,
+} from './calendar-gestures'
 
 /** Kalenderarbetsbordet (goal-66). ETT arbetsbord, tre vyer — inte tre sidor:
  *
@@ -122,7 +127,6 @@ const VIEWS: { value: CalendarView; label: string }[] = [
 /** Rutnätets upplösning. 15 min är snappningen (Wavy gör samma): ett klick på
  *  09:20-höjd ger 09:15, aldrig 09:20. */
 const SNAP_MIN = 15
-const TOUCH_DRAG_HOLD_MS = 240
 
 /** Pixlar per minut. Styr höjden på en bokning: 60 min = 84 px. Räcker för att läsa
  *  kund + tjänst i ett 30-minuterspass utan att dagen blir orimligt lång. */
@@ -349,6 +353,10 @@ export function CalendarBoard({
     return () => window.removeEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
   }, [])
 
+  useEffect(() => {
+    window.dispatchEvent(new Event('corevo:calendar-cancel-drag'))
+  }, [date, view])
+
   // Djuplänk-parametrar (?ny/?blockera) är ENGÅNGS: rensa dem ur URL:en efter att
   // drawern öppnats, annars öppnar en omladdning/tillbaka-navigering den igen.
   useEffect(() => {
@@ -418,13 +426,6 @@ export function CalendarBoard({
     minute: number
     durationMin: number
   } | null>(null)
-  /** Klick-bubblan (designens signatur): ett pekar-/touch-klick på ett block öppnar en
-   *  liten bubbla vid pekaren med Ring + Öppna, i stället för att slänga upp hela drawern.
-   *  Bara pekare/touch — tangentbord (Enter/Space) öppnar drawern direkt (se BookingBlock),
-   *  för en bubbla man inte kan sikta med musen på är bara ett extra steg. */
-  const [bubble, setBubble] = useState<{ booking: BookingRow; x: number; y: number } | null>(null)
-  const openBubble = (b: BookingRow, x: number, y: number) => setBubble({ booking: b, x, y })
-
   const staffNames = useMemo(() => new Map(staff.map((s) => [s.id, s.name])), [staff])
 
   const confirmMove = () => {
@@ -653,9 +654,7 @@ export function CalendarBoard({
   const shift = useCallback(
     (dir: -1 | 1) => {
       const target =
-        step === 'month'
-          ? addMonths(date, dir)
-          : addDays(date, step === 'week' ? dir * 7 : dir)
+        step === 'month' ? addMonths(date, dir) : addDays(date, step === 'week' ? dir * 7 : dir)
       go({ datum: target })
     },
     [date, go, step],
@@ -663,9 +662,8 @@ export function CalendarBoard({
 
   const mobilePagerMatches = useCallback(
     () =>
-      window.matchMedia(
-        '(max-width: 767px), (orientation: landscape) and (max-height: 520px)',
-      ).matches,
+      window.matchMedia('(max-width: 767px), (orientation: landscape) and (max-height: 520px)')
+        .matches,
     [],
   )
 
@@ -773,13 +771,13 @@ export function CalendarBoard({
   useEffect(() => {
     const neighborLabel = (dir: -1 | 1) => {
       if (step === 'month') return '—'
-       const target = addDays(date, step === 'day' ? dir : dir * 7)
-       return new Intl.DateTimeFormat('sv-SE', {
+      const target = addDays(date, step === 'day' ? dir : dir * 7)
+      return new Intl.DateTimeFormat('sv-SE', {
         weekday: step === 'day' ? 'short' : undefined,
         day: 'numeric',
         month: 'short',
         timeZone: tz,
-       }).format(new Date(`${target}T12:00:00Z`))
+      }).format(new Date(`${target}T12:00:00Z`))
     }
     const publishMeta = () => {
       window.dispatchEvent(
@@ -1011,6 +1009,7 @@ export function CalendarBoard({
       <div
         ref={scrollRef}
         className={`${styles.scroll}${view === 'dag' ? ` ${styles.dayPager}` : ''}`}
+        data-calendar-scroll
       >
         {view === 'dag' && (
           <div className={styles.dayTrack} data-calendar-day-track>
@@ -1034,7 +1033,6 @@ export function CalendarBoard({
                   dayStart={dayStart}
                   gridHeight={gridHeight}
                   onOpen={setOpen}
-                  onBubble={openBubble}
                   onEmptyClick={onEmptyClick}
                   onDropBooking={onDropBooking}
                   onOpenBlock={(block) => {
@@ -1059,7 +1057,6 @@ export function CalendarBoard({
             dayStart={dayStart}
             gridHeight={gridHeight}
             onOpen={setOpen}
-            onBubble={openBubble}
             onDayClick={(d) => go({ vy: 'dag', datum: d })}
             colorOf={colorOf}
           />
@@ -1200,19 +1197,6 @@ export function CalendarBoard({
             </div>
           </div>
         </>
-      )}
-
-      {bubble && (
-        <CalendarBubble
-          booking={bubble.booking}
-          x={bubble.x}
-          y={bubble.y}
-          onOpen={(b) => {
-            setBubble(null)
-            setOpen(b)
-          }}
-          onClose={() => setBubble(null)}
-        />
       )}
 
       {open && (
@@ -1417,92 +1401,35 @@ function FreeArea({
   )
 }
 
-/** Klick-bubblan (designens signatur). Öppnas vid pekar-/touch-klick på ett block med
- *  Ring (bara om nummer) + Öppna. Ligger `fixed` vid klickpunkten, klamrad innanför
- *  viewporten. Fokus flyttas in, Escape och klick utanför stänger — så den funkar även
- *  för touch och screenreader, inte bara mus. Renderas bara på klient (efter interaktion),
- *  så `window` finns alltid här. */
-function CalendarBubble({
-  booking,
-  x,
-  y,
-  onOpen,
-  onClose,
-}: {
-  booking: BookingRow
-  x: number
-  y: number
-  onOpen: (b: BookingRow) => void
-  onClose: () => void
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const tel = telHref(booking.customerPhone)
+type BookingDragPointer = {
+  clientX: number
+  clientY: number
+  grabOffsetX: number
+  grabOffsetY: number
+}
 
-  useEffect(() => {
-    // Var fokus låg innan bubblan (det klickade blocket) — återställs vid stängning så
-    // Escape/scrim inte tappar fokus till <body>. Öppna-vägen öppnar drawern som sedan
-    // tar fokus själv (monteras efter att bubblan avmonterats). (Codex-granskning, MEDEL.)
-    const prev = document.activeElement as HTMLElement | null
-    const box = ref.current
-    const focusables = () => Array.from(box?.querySelectorAll<HTMLElement>('a,button') ?? [])
-    focusables()[0]?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      // Minimal fokusfälla: Tab cyklar inom bubblans knappar, lämnar den aldrig bakom scrimen.
-      if (e.key === 'Tab') {
-        const items = focusables()
-        if (items.length === 0) return
-        const first = items[0]!
-        const last = items[items.length - 1]!
-        const active = document.activeElement
-        if (e.shiftKey && active === first) {
-          e.preventDefault()
-          last.focus()
-        } else if (!e.shiftKey && active === last) {
-          e.preventDefault()
-          first.focus()
-        }
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      // Återställ bara om fokus fortfarande ligger kvar i bubblan (Öppna-vägen har redan
-      // flyttat det vidare till drawern — rör det inte då).
-      if (box && box.contains(document.activeElement)) prev?.focus?.()
-    }
-  }, [onClose])
-
-  // Klamra innanför viewporten så bubblan aldrig hamnar delvis utanför kanten.
-  const left = Math.min(Math.max(x, 96), window.innerWidth - 96)
-  const top = Math.max(y - 14, 64)
-  const name = booking.customerName?.trim() || 'Gäst'
-
-  return (
-    <>
-      <div className={styles.bubbleScrim} onClick={onClose} aria-hidden="true" />
-      <div
-        ref={ref}
-        className={styles.bubble}
-        style={{ left, top }}
-        role="dialog"
-        aria-label={`Åtgärder för ${name}`}
-      >
-        {tel && (
-          <a href={tel} className={styles.bubbleRing} onClick={onClose}>
-            <Icon name="phone" size={14} />
-            Ring
-          </a>
-        )}
-        <button type="button" className={styles.bubbleOpen} onClick={() => onOpen(booking)}>
-          Öppna
-        </button>
-      </div>
-    </>
-  )
+type BookingDragSession = {
+  pointerId: number
+  startX: number
+  startY: number
+  lastX: number
+  lastY: number
+  grabOffsetX: number
+  grabOffsetY: number
+  originLeft: number
+  originTop: number
+  width: number
+  height: number
+  active: boolean
+  moved: boolean
+  touch: boolean
+  timer: number | null
+  frame: number | null
+  lastFrameAt: number | null
+  target: HTMLButtonElement
+  scrollContainer: HTMLElement | null
+  cancelTouchBlock: (() => void) | null
+  cancelGlobalBlock: (() => void) | null
 }
 
 function BookingBlock({
@@ -1513,7 +1440,6 @@ function BookingBlock({
   lane,
   lanes,
   onOpen,
-  onBubble,
   movable,
   onPointerPreview,
   onPointerDrop,
@@ -1528,8 +1454,6 @@ function BookingBlock({
   lane: number
   lanes: number
   onOpen: (b: BookingRow) => void
-  /** Pekar-/touch-klick → bubbla vid pekaren. Utelämnad (t.ex. framtida ytor) → onOpen. */
-  onBubble?: (b: BookingRow, x: number, y: number) => void
   /** goal-67: den bokade personens färg (hex). Bär "vems tid är det?" — den fråga
    *  en full dag ställer oftast. Aldrig ensam bärare: initialerna står i kortet och
    *  status har fortfarande ikon + text. */
@@ -1537,8 +1461,8 @@ function BookingBlock({
   /** Avbokade tider går inte att flytta — och veckovyn saknar resurskolumner att
    *  släppa i, så dragning är avstängd där. */
   movable?: boolean
-  onPointerPreview?: (booking: BookingRow, clientX: number, clientY: number) => void
-  onPointerDrop?: (booking: BookingRow, clientX: number, clientY: number) => void
+  onPointerPreview?: (booking: BookingRow, pointer: BookingDragPointer) => void
+  onPointerDrop?: (booking: BookingRow, pointer: BookingDragPointer) => boolean
   onPointerAbort?: () => void
   /** Dagvyn: blocken är breda nog för kundens telefonnummer. I vecko-/månadsvyn
    *  finns inte pixlarna — och där jobbar man inte heller "ring nästa kund". */
@@ -1546,33 +1470,163 @@ function BookingBlock({
 }) {
   const dim = isAvbokad(booking.status)
   const name = booking.customerName?.trim() || 'Gäst'
-  const pointerDrag = useRef<{
-    pointerId: number
-    startX: number
-    startY: number
-    active: boolean
-    moved: boolean
-    touch: boolean
-    timer: number | null
-    cancelTouchBlock: (() => void) | null
-  } | null>(null)
+  const pointerDrag = useRef<BookingDragSession | null>(null)
   const suppressClick = useRef(false)
+  const suppressClickTimer = useRef<number | null>(null)
+  const rollbackTimer = useRef<number | null>(null)
+  const ghostRef = useRef<HTMLDivElement>(null)
   const [touchDragging, setTouchDragging] = useState(false)
-
-  useEffect(
-    () => () => {
-      if (pointerDrag.current?.timer != null) window.clearTimeout(pointerDrag.current.timer)
-      pointerDrag.current?.cancelTouchBlock?.()
-    },
-    [],
-  )
+  const [ghost, setGhost] = useState<{
+    width: number
+    height: number
+    left: number
+    top: number
+  } | null>(null)
 
   const suppressSyntheticClick = () => {
     suppressClick.current = true
-    window.setTimeout(() => {
+    if (suppressClickTimer.current != null) window.clearTimeout(suppressClickTimer.current)
+    suppressClickTimer.current = window.setTimeout(() => {
       suppressClick.current = false
-    }, 0)
+      suppressClickTimer.current = null
+    }, 350)
   }
+
+  const releaseCapture = (drag: BookingDragSession) => {
+    if (drag.target.hasPointerCapture(drag.pointerId)) {
+      drag.target.releasePointerCapture(drag.pointerId)
+    }
+  }
+
+  const clearSessionResources = (drag: BookingDragSession) => {
+    if (drag.timer != null) window.clearTimeout(drag.timer)
+    if (drag.frame != null) window.cancelAnimationFrame(drag.frame)
+    drag.cancelTouchBlock?.()
+    drag.cancelGlobalBlock?.()
+    drag.timer = null
+    drag.frame = null
+    drag.cancelTouchBlock = null
+    drag.cancelGlobalBlock = null
+  }
+
+  const clearDragVisual = () => {
+    if (rollbackTimer.current != null) window.clearTimeout(rollbackTimer.current)
+    rollbackTimer.current = null
+    setTouchDragging(false)
+    setGhost(null)
+  }
+
+  const rollbackDragVisual = (drag: BookingDragSession) => {
+    const node = ghostRef.current
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!node || reducedMotion) {
+      clearDragVisual()
+      return
+    }
+    if (styles.blockGhostRollback) node.classList.add(styles.blockGhostRollback)
+    node.style.transform = `translate3d(${drag.originLeft}px, ${drag.originTop}px, 0)`
+    rollbackTimer.current = window.setTimeout(clearDragVisual, 200)
+  }
+
+  const dragPointer = (drag: BookingDragSession): BookingDragPointer => ({
+    clientX: drag.lastX,
+    clientY: drag.lastY,
+    grabOffsetX: drag.grabOffsetX,
+    grabOffsetY: drag.grabOffsetY,
+  })
+
+  const scheduleDragFrame = (drag: BookingDragSession) => {
+    if (drag.frame != null || pointerDrag.current !== drag) return
+    drag.frame = window.requestAnimationFrame((timestamp) => {
+      drag.frame = null
+      if (pointerDrag.current !== drag || !drag.active) return
+
+      const position = dragGhostPosition(drag.lastX, drag.lastY, drag.grabOffsetX, drag.grabOffsetY)
+      if (ghostRef.current) {
+        ghostRef.current.style.transform = `translate3d(${position.left}px, ${position.top}px, 0)`
+      }
+
+      let keepAutoScrolling = false
+      const scroller = drag.scrollContainer
+      if (scroller) {
+        const rect = scroller.getBoundingClientRect()
+        const velocity = edgeAutoScrollVelocity(drag.lastY, rect.top, rect.bottom)
+        if (velocity !== 0) {
+          const elapsed = drag.lastFrameAt == null ? 16 : Math.min(32, timestamp - drag.lastFrameAt)
+          const before = scroller.scrollTop
+          scroller.scrollTop += (velocity * elapsed) / 1000
+          keepAutoScrolling = Math.abs(scroller.scrollTop - before) > 0.1
+          drag.lastFrameAt = timestamp
+        } else {
+          drag.lastFrameAt = null
+        }
+      }
+
+      // Efter eventuell kant-scroll räknas kolumn + 15-minutersslot om. DayGrid
+      // uppdaterar React-state bara när just personal eller slot faktiskt ändrats.
+      onPointerPreview?.(booking, dragPointer(drag))
+      if (keepAutoScrolling) scheduleDragFrame(drag)
+    })
+  }
+
+  const liftDrag = (drag: BookingDragSession) => {
+    if (pointerDrag.current !== drag || drag.active) return
+    drag.active = true
+    if (drag.timer != null) window.clearTimeout(drag.timer)
+    drag.timer = null
+    if (drag.touch) {
+      const preventTouchScroll = (event: TouchEvent) => event.preventDefault()
+      drag.target.addEventListener('touchmove', preventTouchScroll, { passive: false })
+      drag.cancelTouchBlock = () => drag.target.removeEventListener('touchmove', preventTouchScroll)
+    }
+    setTouchDragging(true)
+    setGhost({
+      width: drag.width,
+      height: drag.height,
+      left: drag.originLeft,
+      top: drag.originTop,
+    })
+    scheduleDragFrame(drag)
+  }
+
+  const abortDrag = (drag: BookingDragSession, rollback = true) => {
+    if (pointerDrag.current !== drag) return
+    pointerDrag.current = null
+    clearSessionResources(drag)
+    releaseCapture(drag)
+    // En avbruten pointersekvens (OS-gest, extra finger, rotation eller navigation)
+    // får inte falla igenom som ett syntetiskt klick och öppna bokningen.
+    suppressSyntheticClick()
+    if (drag.active) {
+      onPointerAbort?.()
+      if (rollback) rollbackDragVisual(drag)
+      else clearDragVisual()
+    } else {
+      clearDragVisual()
+    }
+  }
+
+  /** Rörelse före långtrycket låser gesten till vanlig scroll. Den får aldrig senare
+   * byta identitet och plötsligt bli ett bokningsdrag. */
+  const cancelPressCandidate = (drag: BookingDragSession) => {
+    if (pointerDrag.current !== drag) return
+    pointerDrag.current = null
+    clearSessionResources(drag)
+    releaseCapture(drag)
+    suppressSyntheticClick()
+    clearDragVisual()
+  }
+
+  useEffect(
+    () => () => {
+      const drag = pointerDrag.current
+      pointerDrag.current = null
+      if (drag) clearSessionResources(drag)
+      if (suppressClickTimer.current != null) window.clearTimeout(suppressClickTimer.current)
+      if (rollbackTimer.current != null) window.clearTimeout(rollbackTimer.current)
+    },
+    [],
+  )
 
   // Ett block är bara så högt som tiden är lång — texten måste anpassa sig, inte
   // klippas mitt i en rad.
@@ -1587,7 +1641,7 @@ function BookingBlock({
   //
   // Statusflaggan tar INGEN höjd — den ligger absolut i kortets hörn (.blockFlag).
   // Telefonnumret visas från 45-min-block (63px ≥ 56); i mindre block är det ETT
-  // klick bort (bubblans Ring). Allt finns alltid i title, aria-label och drawern.
+  // klick bort i drawern. Allt finns alltid i title, aria-label och drawern.
   const h = Math.max(height, 20)
   const tier = h >= 56 ? 'full' : h >= 42 ? 'medium' : 'tiny'
   const showService = tier !== 'tiny'
@@ -1607,133 +1661,20 @@ function BookingBlock({
             ? { icon: 'x' as const, text: 'Avbokad' }
             : null
 
-  return (
-    <button
-      type="button"
-      className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${touchDragging ? ` ${styles.blockTouchDragging}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
-      style={{
-        top,
-        height: h,
-        left: `calc(${(lane / lanes) * 100}% + 2px)`,
-        width: `calc(${100 / lanes}% - 4px)`,
-        // Personens färg äger kortet (kant + toning, se calendar.module.css).
-        // Statusen bär sin egen ikon + text, så den behöver inte kanten längre.
-        ['--bk' as string]: color,
-        ['--bk-status' as string]: statusAccent(booking.status),
-      }}
-      data-calendar-booking
-      onPointerDown={(e) => {
-        const fromTouch = e.pointerType === 'touch' || e.pointerType === 'pen'
-        const fromDesktopMouse =
-          e.pointerType === 'mouse' &&
-          e.button === 0 &&
-          window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
-        if (!movable || !e.isPrimary || (!fromDesktopMouse && !fromTouch)) return
-        const target = e.currentTarget
-        const drag = {
-          pointerId: e.pointerId,
-          startX: e.clientX,
-          startY: e.clientY,
-          active: false,
-          moved: false,
-          touch: fromTouch,
-          timer: null as number | null,
-          cancelTouchBlock: null as (() => void) | null,
-        }
-        pointerDrag.current = drag
-        e.currentTarget.setPointerCapture(e.pointerId)
-        if (fromTouch) {
-          drag.timer = window.setTimeout(() => {
-            if (pointerDrag.current !== drag) return
-            drag.active = true
-            drag.timer = null
-            setTouchDragging(true)
-            // touch-action: pan-y behåller vanlig listscroll. Först EFTER
-            // långtrycket tar vi över touchmove, så vertikal bokningsflytt kan
-            // ske utan att sidan samtidigt rullar.
-            const preventTouchScroll = (event: TouchEvent) => event.preventDefault()
-            target.addEventListener('touchmove', preventTouchScroll, { passive: false })
-            drag.cancelTouchBlock = () =>
-              target.removeEventListener('touchmove', preventTouchScroll)
-          }, TOUCH_DRAG_HOLD_MS)
-        }
-      }}
-      onPointerMove={(e) => {
-        const drag = pointerDrag.current
-        if (!drag || drag.pointerId !== e.pointerId) return
-        if (drag.touch && !drag.active) return
-        if (
-          !drag.moved &&
-          Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < SLOP_PX
-        ) {
-          return
-        }
-        drag.active = true
-        drag.moved = true
-        if (drag.touch) e.preventDefault()
-        onPointerPreview?.(booking, e.clientX, e.clientY)
-      }}
-      onPointerUp={(e) => {
-        const drag = pointerDrag.current
-        if (!drag || drag.pointerId !== e.pointerId) return
-        pointerDrag.current = null
-        if (drag.timer != null) window.clearTimeout(drag.timer)
-        drag.cancelTouchBlock?.()
-        setTouchDragging(false)
-        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-          e.currentTarget.releasePointerCapture(e.pointerId)
-        }
-        if (!drag.active || !drag.moved) return
-        suppressSyntheticClick()
-        onPointerDrop?.(booking, e.clientX, e.clientY)
-      }}
-      onPointerCancel={(e) => {
-        const drag = pointerDrag.current
-        if (!drag || drag.pointerId !== e.pointerId) return
-        pointerDrag.current = null
-        if (drag.timer != null) window.clearTimeout(drag.timer)
-        drag.cancelTouchBlock?.()
-        setTouchDragging(false)
-        if (drag.active) suppressSyntheticClick()
-        onPointerAbort?.()
-      }}
-      onLostPointerCapture={(e) => {
-        const drag = pointerDrag.current
-        if (drag?.pointerId !== e.pointerId) return
-        pointerDrag.current = null
-        if (drag.timer != null) window.clearTimeout(drag.timer)
-        drag.cancelTouchBlock?.()
-        setTouchDragging(false)
-        if (drag.active) onPointerAbort?.()
-      }}
-      onClick={(e) => {
-        if (suppressClick.current) return
-        // Tangentbord (Enter/Space) ger detail===0 → öppna drawern direkt: en bubbla
-        // finns ingen pekare att sikta med. Pekare/touch → bubblan vid klickpunkten.
-        if (e.detail === 0 || !onBubble) onOpen(booking)
-        else onBubble(booking, e.clientX, e.clientY)
-      }}
-      title={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} · ${name} · ${booking.serviceName}`}
-      aria-label={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} ${name}, ${booking.serviceName}, ${booking.staffTitle}${statusFlag ? `, ${statusFlag.text}` : ''}`}
-    >
+  const renderContent = () => (
+    <>
       <span className={styles.blockHead}>
         <span className={`num ${styles.blockTime}`}>{timeLabel(booking.startTs, tz)}</span>
         <span className={styles.blockName}>{name}</span>
       </span>
       {showService && <span className={styles.blockService}>{booking.serviceName}</span>}
       <span className={`num ${styles.blockEnd}`}>{timeLabel(booking.endTs, tz)}</span>
-      {/* Numret står som TEXT här, inte som länk: blocket är redan en <button>, och en
-          <a> inuti en <button> är ogiltig HTML som skärmläsare tolkar olika. Ringbart
-          blir det i dialogen — ett klick bort, precis som önskat. */}
       {tier === 'full' && phone && (
         <span className={`num ${styles.blockPhone}`}>
           <Icon name="phone" size={10} />
           {phone}
         </span>
       )}
-      {/* Status bärs av ikon (+ text när kortet är stort nog), aldrig av färgen ensam
-          — färgblinda och gråskala måste kunna läsa den. Flaggan ligger ABSOLUT i
-          hörnet: som flödesrad åt den förut höjd från tjänsten och klippte texten. */}
       {statusFlag && (
         <span
           className={`${styles.blockFlag}${tier === 'full' ? ` ${styles.blockFlagFull}` : ''}`}
@@ -1743,15 +1684,159 @@ function BookingBlock({
           {tier === 'full' && <span>{statusFlag.text}</span>}
         </span>
       )}
-      {/* goal-67 — VEMS TID? I dagvyn svarar kolumnen. I VECKOVYN finns ingen kolumn,
-          och då vore färgen ensam bärare — det bryter regeln. Initialerna gör färgen
-          till en genväg i stället för det enda svaret. (Codex-granskning, MEDEL.) */}
       {!showPhone && tier !== 'tiny' && (
         <span className={styles.blockWho} style={{ background: color }}>
           {staffInitials(booking.staffTitle)}
         </span>
       )}
-    </button>
+    </>
+  )
+
+  return (
+    <>
+      <button
+        type="button"
+        className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${touchDragging ? ` ${styles.blockTouchDragging}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
+        style={{
+          top,
+          height: h,
+          left: `calc(${(lane / lanes) * 100}% + 2px)`,
+          width: `calc(${100 / lanes}% - 4px)`,
+          // Personens färg äger kortet (kant + toning, se calendar.module.css).
+          // Statusen bär sin egen ikon + text, så den behöver inte kanten längre.
+          ['--bk' as string]: color,
+          ['--bk-status' as string]: statusAccent(booking.status),
+        }}
+        data-calendar-booking
+        onPointerDown={(e) => {
+          const fromTouch = e.pointerType === 'touch' || e.pointerType === 'pen'
+          const fromDesktopMouse =
+            e.pointerType === 'mouse' &&
+            e.button === 0 &&
+            window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
+          if (!movable || !e.isPrimary || (!fromDesktopMouse && !fromTouch)) return
+          const target = e.currentTarget
+          const rect = target.getBoundingClientRect()
+          const drag: BookingDragSession = {
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            lastX: e.clientX,
+            lastY: e.clientY,
+            grabOffsetX: e.clientX - rect.left,
+            grabOffsetY: e.clientY - rect.top,
+            originLeft: rect.left,
+            originTop: rect.top,
+            width: rect.width,
+            height: rect.height,
+            active: false,
+            moved: false,
+            touch: fromTouch,
+            timer: null,
+            frame: null,
+            lastFrameAt: null,
+            target,
+            scrollContainer: target.closest<HTMLElement>('[data-calendar-scroll]'),
+            cancelTouchBlock: null,
+            cancelGlobalBlock: null,
+          }
+          pointerDrag.current = drag
+          target.setPointerCapture(e.pointerId)
+          const cancelForExternalState = (event?: Event) => {
+            if (event instanceof PointerEvent && event.pointerId === drag.pointerId) return
+            if (event?.type === 'visibilitychange' && document.visibilityState === 'visible') return
+            abortDrag(drag)
+          }
+          window.addEventListener('pointerdown', cancelForExternalState, true)
+          window.addEventListener('resize', cancelForExternalState)
+          window.addEventListener('pagehide', cancelForExternalState)
+          window.addEventListener('corevo:calendar-cancel-drag', cancelForExternalState)
+          document.addEventListener('visibilitychange', cancelForExternalState)
+          drag.cancelGlobalBlock = () => {
+            window.removeEventListener('pointerdown', cancelForExternalState, true)
+            window.removeEventListener('resize', cancelForExternalState)
+            window.removeEventListener('pagehide', cancelForExternalState)
+            window.removeEventListener('corevo:calendar-cancel-drag', cancelForExternalState)
+            document.removeEventListener('visibilitychange', cancelForExternalState)
+          }
+          if (fromTouch) {
+            drag.timer = window.setTimeout(() => {
+              liftDrag(drag)
+            }, TOUCH_DRAG_HOLD_MS)
+          }
+        }}
+        onPointerMove={(e) => {
+          const drag = pointerDrag.current
+          if (!drag || drag.pointerId !== e.pointerId) return
+          drag.lastX = e.clientX
+          drag.lastY = e.clientY
+          const distance = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY)
+          if (drag.touch && !drag.active) {
+            if (distance > TOUCH_DRAG_SLOP_PX) cancelPressCandidate(drag)
+            return
+          }
+          if (!drag.active && distance <= TOUCH_DRAG_SLOP_PX) return
+          if (!drag.active) liftDrag(drag)
+          if (distance < 1) return
+          drag.moved = true
+          if (drag.touch) e.preventDefault()
+          scheduleDragFrame(drag)
+        }}
+        onPointerUp={(e) => {
+          const drag = pointerDrag.current
+          if (!drag || drag.pointerId !== e.pointerId) return
+          pointerDrag.current = null
+          drag.lastX = e.clientX
+          drag.lastY = e.clientY
+          clearSessionResources(drag)
+          releaseCapture(drag)
+          if (!drag.active) return
+          suppressSyntheticClick()
+          if (!drag.moved) {
+            rollbackDragVisual(drag)
+            onPointerAbort?.()
+            return
+          }
+          const valid = onPointerDrop?.(booking, dragPointer(drag)) ?? false
+          if (valid) clearDragVisual()
+          else rollbackDragVisual(drag)
+        }}
+        onPointerCancel={(e) => {
+          const drag = pointerDrag.current
+          if (!drag || drag.pointerId !== e.pointerId) return
+          abortDrag(drag)
+        }}
+        onLostPointerCapture={(e) => {
+          const drag = pointerDrag.current
+          if (drag?.pointerId !== e.pointerId) return
+          abortDrag(drag)
+        }}
+        onClick={() => {
+          if (suppressClick.current) return
+          onOpen(booking)
+        }}
+        title={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} · ${name} · ${booking.serviceName}`}
+        aria-label={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} ${name}, ${booking.serviceName}, ${booking.staffTitle}${statusFlag ? `, ${statusFlag.text}` : ''}`}
+      >
+        {renderContent()}
+      </button>
+      {ghost && (
+        <div
+          ref={ghostRef}
+          className={`${styles.block} ${styles.blockGhost}${dim ? ` ${styles.blockDim}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
+          style={{
+            width: ghost.width,
+            height: ghost.height,
+            transform: `translate3d(${ghost.left}px, ${ghost.top}px, 0)`,
+            ['--bk' as string]: color,
+            ['--bk-status' as string]: statusAccent(booking.status),
+          }}
+          aria-hidden="true"
+        >
+          {renderContent()}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -1799,7 +1884,6 @@ function DayGrid({
   dayStart,
   gridHeight,
   onOpen,
-  onBubble,
   onEmptyClick,
   onDropBooking,
   onOpenBlock,
@@ -1821,7 +1905,6 @@ function DayGrid({
   dayStart: number
   gridHeight: number
   onOpen: (b: BookingRow) => void
-  onBubble: (b: BookingRow, x: number, y: number) => void
   onEmptyClick: (staffId: string, staffName: string, minute: number) => void
   onDropBooking: (booking: BookingRow, staffId: string, minute: number) => void
   onOpenBlock: (block: CalendarBlock) => void
@@ -1839,25 +1922,33 @@ function DayGrid({
     )
   }
 
-  const pointerTarget = (clientX: number, clientY: number) => {
+  const pointerTarget = (pointer: BookingDragPointer) => {
     const target = document
-      .elementFromPoint(clientX, clientY)
+      .elementFromPoint(pointer.clientX, pointer.clientY)
       ?.closest<HTMLElement>('[data-calendar-staff-id]')
     if (!target) return null
     const staffId = target.dataset.calendarStaffId
     if (!staffId || !staff.some((person) => person.id === staffId)) return null
     const box = target.getBoundingClientRect()
-    return { staffId, minute: dayStart + (clientY - box.top) / PX_PER_MIN }
+    return {
+      staffId,
+      minute: dayStart + (pointer.clientY - pointer.grabOffsetY - box.top) / PX_PER_MIN,
+    }
   }
 
-  const previewPointerMove = (booking: BookingRow, clientX: number, clientY: number) => {
-    const target = pointerTarget(clientX, clientY)
+  const previewPointerMove = (booking: BookingRow, pointer: BookingDragPointer) => {
+    const target = pointerTarget(pointer)
     if (!target) {
       setDragOver(null)
       return
     }
     const minute = Math.round(target.minute / SNAP_MIN) * SNAP_MIN
     const durationMin = minutesInTz(booking.endTs, tz) - minutesInTz(booking.startTs, tz)
+    const dayEnd = dayStart + gridHeight / PX_PER_MIN
+    if (minute < dayStart || minute + durationMin > dayEnd) {
+      setDragOver(null)
+      return
+    }
     if (
       dragOver?.staffId !== target.staffId ||
       dragOver.minute !== minute ||
@@ -1867,10 +1958,16 @@ function DayGrid({
     }
   }
 
-  const finishPointerMove = (booking: BookingRow, clientX: number, clientY: number) => {
-    const target = pointerTarget(clientX, clientY)
+  const finishPointerMove = (booking: BookingRow, pointer: BookingDragPointer) => {
+    const target = pointerTarget(pointer)
     setDragOver(null)
-    if (target) onDropBooking(booking, target.staffId, target.minute)
+    if (!target) return false
+    const minute = Math.round(target.minute / SNAP_MIN) * SNAP_MIN
+    const durationMin = minutesInTz(booking.endTs, tz) - minutesInTz(booking.startTs, tz)
+    const dayEnd = dayStart + gridHeight / PX_PER_MIN
+    if (minute < dayStart || minute + durationMin > dayEnd) return false
+    onDropBooking(booking, target.staffId, minute)
+    return true
   }
 
   return (
@@ -1987,7 +2084,6 @@ function DayGrid({
                   lane={lane}
                   lanes={lanes}
                   onOpen={onOpen}
-                  onBubble={onBubble}
                   movable={isBokad(booking.status)}
                   onPointerPreview={previewPointerMove}
                   onPointerDrop={finishPointerMove}
@@ -2033,7 +2129,6 @@ function WeekGrid({
   dayStart,
   gridHeight,
   onOpen,
-  onBubble,
   onDayClick,
   colorOf,
 }: {
@@ -2045,7 +2140,6 @@ function WeekGrid({
   dayStart: number
   gridHeight: number
   onOpen: (b: BookingRow) => void
-  onBubble: (b: BookingRow, x: number, y: number) => void
   onDayClick: (date: string) => void
   colorOf: (staffId: string) => string
 }) {
@@ -2115,7 +2209,6 @@ function WeekGrid({
                   lane={lane}
                   lanes={lanes}
                   onOpen={onOpen}
-                  onBubble={onBubble}
                   color={colorOf(booking.staffId)}
                 />
               ))}

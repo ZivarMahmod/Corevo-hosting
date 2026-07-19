@@ -1104,10 +1104,34 @@
    ned så man ser vart man är på väg. */
 .blockDrag {
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .blockDrag:active {
   cursor: grabbing;
   transform: scale(0.99);
+}
+
+.blockTouchDragging {
+  opacity: 0.35;
+}
+
+.blockGhost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.96;
+  transform-origin: top left;
+  transition: none;
+  will-change: transform;
+}
+
+.blockGhostRollback {
+  transition: transform 200ms var(--ease-out);
 }
 
 /* Avbokad tonas ned OCH får ett kryss i texten — status uttrycks aldrig enbart i färg. */
@@ -1221,85 +1245,6 @@
 .blockTiny {
   justify-content: center;
   padding: 0 8px;
-}
-
-/* ---- klick-bubbla (designens signatur) ----
-   Liten popover vid klickpunkten: Ring + Öppna. Scrim fångar utanför-klick utan att
-   mörklägga kalendern (man ska se vilket block bubblan hör till). */
-.bubbleScrim {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-}
-
-.bubble {
-  position: fixed;
-  z-index: 41;
-  transform: translate(-50%, -100%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 14px;
-  background: var(--c-paper-2);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-}
-
-/* Pil-svans nedåt mot blocket. */
-.bubble::after {
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  border-right: 1px solid var(--c-line-strong);
-  border-bottom: 1px solid var(--c-line-strong);
-  background: var(--c-paper-2);
-  transform: translateX(-50%) rotate(45deg);
-  content: '';
-}
-
-.bubbleRing,
-.bubbleOpen {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 9px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Ring = grön primär (designens CTA-grön, inte admins vita accent — ringa är HANDLINGEN
-   man öppnade bubblan för). */
-.bubbleRing {
-  border: 0;
-  background: var(--c-forest-fill);
-  color: #fff;
-  text-decoration: none;
-}
-.bubbleRing:hover {
-  filter: brightness(1.1);
-}
-
-.bubbleOpen {
-  border: 1px solid var(--c-line-strong);
-  background: transparent;
-  color: var(--c-ink);
-}
-.bubbleOpen:hover {
-  background: var(--c-paper-3);
-}
-
-.bubbleRing:focus-visible,
-.bubbleOpen:focus-visible {
-  outline: 2px solid var(--c-forest);
-  outline-offset: 2px;
 }
 
 /* ---- blockerad tid ----
@@ -2418,16 +2363,13 @@
    lyfts bara med transform/opacity — inga layoutomräkningar under drag. */
 @media (pointer: coarse), (any-pointer: coarse) {
   .blockDrag {
-    touch-action: pan-y;
+    touch-action: pan-y pinch-zoom;
   }
 
   .blockTouchDragging {
-    z-index: 4;
-    transform: scale(1.015);
-    box-shadow:
-      0 10px 24px color-mix(in srgb, var(--c-ink) 18%, transparent),
-      0 0 0 2px color-mix(in srgb, var(--c-forest) 55%, transparent);
-    opacity: 0.9;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.35;
   }
 }
 
@@ -2485,6 +2427,9 @@
   }
   .blockTouchDragging {
     transform: none;
+  }
+  .blockGhostRollback {
+    transition: none;
   }
   .confirmBackdrop,
   .confirmCard {
