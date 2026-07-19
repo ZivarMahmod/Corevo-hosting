@@ -11,7 +11,15 @@ import { ThemeSwitch } from './ThemeSwitch'
 import styles from './Topnav.module.css'
 import adminStyles from './AdminTopnav.module.css'
 import { closePortalDetails, useDismissibleDetails } from './useDismissibleDetails'
-import { MOBILE_SEARCH_EVENT } from './mobile-search-event'
+import {
+  MOBILE_CALENDAR_DATE_EVENT,
+  MOBILE_CALENDAR_META_EVENT,
+  MOBILE_CALENDAR_META_REQUEST_EVENT,
+  MOBILE_CALENDAR_SHIFT_EVENT,
+  MOBILE_HELP_EVENT,
+  MOBILE_SEARCH_EVENT,
+  type MobileCalendarMeta,
+} from './mobile-search-event'
 
 /**
  * Back-office-skalet från 2026-07-13-handoffen. Var superadmin-only (PlatformTopnav);
@@ -93,9 +101,7 @@ function AccountIdentity({
   admin?: boolean
 }) {
   return (
-    <div
-      className={`${styles.accountIdentity}${admin ? ` ${adminStyles.accountIdentity}` : ''}`}
-    >
+    <div className={`${styles.accountIdentity}${admin ? ` ${adminStyles.accountIdentity}` : ''}`}>
       <strong>{userLabel}</strong>
       <span>
         {email} <b aria-hidden="true">·</b> {roleLabel}
@@ -104,13 +110,13 @@ function AccountIdentity({
   )
 }
 
-function mobileNavGlyph(areaId: string) {
-  if (areaId === 'oversikt' || areaId === 'overview') return '▦'
-  if (areaId === 'kalender') return '▤'
-  if (areaId === 'kunder' || areaId === 'customers') return '◉'
-  if (areaId === 'insight') return '◎'
-  if (areaId === 'drift') return '!'
-  return '≡'
+function mobileNavIcon(areaId: string): IconName {
+  if (areaId === 'oversikt' || areaId === 'overview') return 'grid'
+  if (areaId === 'kalender') return 'calendar'
+  if (areaId === 'kunder' || areaId === 'customers') return 'users'
+  if (areaId === 'insight') return 'chartBars'
+  if (areaId === 'drift') return 'alert'
+  return 'menu'
 }
 
 function AccountLinks({
@@ -144,6 +150,7 @@ function AccountLinks({
 export function Topnav({
   areas,
   mobileNavigation,
+  adminMobileChrome = false,
   subnav: subnavByArea,
   paletteItems,
   remoteAdminSearch = false,
@@ -166,6 +173,8 @@ export function Topnav({
   areas: readonly TopnavArea[]
   /** Rollens responsiva omarrangering av samma, redan servergodkända navigation. */
   mobileNavigation?: TopnavMobileNavigation
+  /** Kundadminens kanoniska PWA-chrome. Plattformens befintliga mobilnav är separat. */
+  adminMobileChrome?: boolean
   /** Subnav per område-id (superadminens befintliga karta). Områdets egen `subnav` vinner. */
   subnav?: Partial<Record<string, readonly TopnavItem[]>>
   paletteItems: ReadonlyArray<CommandItem>
@@ -198,15 +207,13 @@ export function Topnav({
   const activeArea = activeTopnavArea(pathname, areas) ?? areas[0]
   const subnav = activeArea ? (activeArea.subnav ?? subnavByArea?.[activeArea.id]) : undefined
   const activeSubitem = subnav ? activeTopnavSubitem(pathname, subnav) : undefined
-  const mobileAreas = mobileNavigation
-    ? [...mobileNavigation.tabs, ...mobileNavigation.more]
-    : []
-  const activeMobileArea = mobileNavigation
-    ? activeTopnavArea(pathname, mobileAreas)
-    : undefined
+  const mobileAreas = mobileNavigation ? [...mobileNavigation.tabs, ...mobileNavigation.more] : []
+  const activeMobileArea = mobileNavigation ? activeTopnavArea(pathname, mobileAreas) : undefined
   const [commandOpen, setCommandOpen] = useState(false)
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const [mobileAccountOpen, setMobileAccountOpen] = useState(false)
+  const [mobileHelpOpen, setMobileHelpOpen] = useState(false)
+  const [calendarMeta, setCalendarMeta] = useState<MobileCalendarMeta | null>(null)
   const [isMac, setIsMac] = useState(false)
   const accountRef = useRef<HTMLDetailsElement>(null)
   const onAccountToggle = useDismissibleDetails(accountRef)
@@ -260,7 +267,19 @@ export function Topnav({
     setCommandOpen(false)
     setMobileMoreOpen(false)
     setMobileAccountOpen(false)
+    setMobileHelpOpen(false)
+    setCalendarMeta(null)
   }, [pathname])
+
+  useEffect(() => {
+    if (!adminMobileChrome) return
+    const onCalendarMeta = (event: Event) => {
+      setCalendarMeta((event as CustomEvent<MobileCalendarMeta>).detail)
+    }
+    window.addEventListener(MOBILE_CALENDAR_META_EVENT, onCalendarMeta)
+    window.dispatchEvent(new Event(MOBILE_CALENDAR_META_REQUEST_EVENT))
+    return () => window.removeEventListener(MOBILE_CALENDAR_META_EVENT, onCalendarMeta)
+  }, [adminMobileChrome])
 
   useEffect(() => {
     if (!mobileNavigation) return
@@ -279,10 +298,27 @@ export function Topnav({
 
   const mobileMoreActive =
     mobileNavigation?.more.some((area) => area.id === activeMobileArea?.id) ?? false
+  const mobileContextVisible =
+    mobileNavigation?.tabs.some((area) => area.id === activeMobileArea?.id) ?? false
+  const isCalendar = adminMobileChrome && pathname.startsWith('/admin/bokningar')
+  const mobilePageTitle = isCalendar
+    ? (calendarMeta?.title ?? 'Kalender')
+    : (activeMobileArea?.label ?? brandName)
+  const mobilePageMeta = isCalendar ? calendarMeta?.meta : undefined
+  const calendarStepDisabled = calendarMeta?.step === 'month'
+  const calendarStepLabel =
+    calendarMeta?.step === 'month' ? 'månad' : calendarMeta?.step === 'week' ? 'vecka' : 'dag'
+
+  const openMobileHelp = () => {
+    if (isCalendar) window.dispatchEvent(new Event(MOBILE_HELP_EVENT))
+    else setMobileHelpOpen(true)
+  }
 
   return (
     <>
-      <header className={`${styles.header}${mobileNavigation ? ` ${styles.mobileAdmin}` : ''}`}>
+      <header
+        className={`${styles.header}${mobileNavigation ? ` ${styles.mobileAdmin}` : ''}${adminMobileChrome ? ` ${styles.adminMobileChrome}` : ''}`}
+      >
         <div className={styles.bar}>
           <Link href={brandHref} className={styles.brand} aria-label={brandLabel}>
             <span className={styles.mark} aria-hidden="true">
@@ -301,6 +337,26 @@ export function Topnav({
               </span>
             </span>
           </Link>
+          {adminMobileChrome ? (
+            isCalendar ? (
+              <button
+                type="button"
+                className={styles.mobilePageTitle}
+                onClick={() => window.dispatchEvent(new Event(MOBILE_CALENDAR_DATE_EVENT))}
+                aria-label="Välj datum"
+              >
+                <strong>
+                  {mobilePageTitle}
+                  <Icon name="chevronDown" size={11} />
+                </strong>
+                {mobilePageMeta ? <span>{mobilePageMeta}</span> : null}
+              </button>
+            ) : (
+              <span className={styles.mobilePageTitle}>
+                <strong>{mobilePageTitle}</strong>
+              </span>
+            )
+          ) : null}
 
           <nav className={styles.nav} aria-label="Huvudnavigering">
             {areas.map((area) => {
@@ -405,7 +461,19 @@ export function Topnav({
             </details>
           </div>
 
-          {mobileNavigation ? (
+          {mobileNavigation && adminMobileChrome ? (
+            <div className={styles.mobileActions}>
+              <button
+                type="button"
+                className={styles.mobileHelp}
+                onClick={openMobileHelp}
+                aria-label="Hjälp för den här sidan"
+              >
+                <Icon name="help" size={19} stroke={1.7} />
+                <span>Hjälp</span>
+              </button>
+            </div>
+          ) : mobileNavigation ? (
             <div className={styles.mobileActions}>
               <button
                 type="button"
@@ -449,9 +517,124 @@ export function Topnav({
           </div>
         ) : null}
 
-        {mobileNavigation ? (
+        {mobileNavigation && adminMobileChrome ? (
+          <>
+            {mobileContextVisible ? (
+              <nav className={styles.mobileContext} aria-label="Sidåtgärder">
+                {isCalendar ? (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.mobileContextAction}
+                      onClick={() => window.dispatchEvent(new Event(MOBILE_SEARCH_EVENT))}
+                    >
+                      <Icon name="search" size={19} stroke={1.7} />
+                      <span>Sök</span>
+                    </button>
+                    <Link className={styles.mobileContextAction} href="/admin/bokningar?ny=1">
+                      <Icon name="plus" size={19} stroke={1.7} />
+                      <span>Ny bokning</span>
+                    </Link>
+                    <Link
+                      className={`${styles.mobileContextAction} ${styles.mobileContextWarning}`}
+                      href="/admin/bokningar?blockera=1"
+                    >
+                      <Icon name="clock" size={19} stroke={1.7} />
+                      <span>Blockera</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className={`${styles.mobileContextAction} ${styles.mobileRailNext}`}
+                      onClick={() =>
+                        window.dispatchEvent(
+                          new CustomEvent(MOBILE_CALENDAR_SHIFT_EVENT, { detail: 1 }),
+                        )
+                      }
+                      disabled={calendarStepDisabled}
+                      aria-label={`Nästa ${calendarStepLabel}${calendarMeta?.next && !calendarStepDisabled ? `, ${calendarMeta.next}` : ''}`}
+                    >
+                      <Icon name="chevronRight" size={20} stroke={1.7} />
+                      <span>{calendarMeta?.next ?? 'Nästa'}</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.mobileContextAction}
+                      onClick={openCommandPalette}
+                    >
+                      <Icon name="search" size={19} stroke={1.7} />
+                      <span>Sök</span>
+                    </button>
+                    {activeMobileArea?.id === 'kunder' ? (
+                      <Link className={styles.mobileContextAction} href="/admin/kunder?ny=1">
+                        <Icon name="plus" size={19} stroke={1.7} />
+                        <span>Ny kund</span>
+                      </Link>
+                    ) : null}
+                  </>
+                )}
+              </nav>
+            ) : null}
+
+            <nav className={styles.mobileNav} aria-label="Mobilnavigering">
+              {mobileNavigation.tabs.slice(0, 3).map((area) => {
+                const active = area.id === activeMobileArea?.id
+                return (
+                  <Link
+                    key={area.id}
+                    href={area.href}
+                    className={`${styles.mobileNavItem}${active ? ` ${styles.mobileNavItemActive}` : ''}`}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <Icon
+                      className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
+                      name={mobileNavIcon(area.id)}
+                      size={19}
+                      stroke={1.7}
+                    />
+                    <span>{area.label}</span>
+                  </Link>
+                )
+              })}
+              <button
+                type="button"
+                className={`${styles.mobileNavItem}${mobileMoreActive ? ` ${styles.mobileNavItemActive}` : ''}`}
+                onClick={openMobileMore}
+                aria-label="Fler adminytor"
+                aria-haspopup="dialog"
+                aria-current={mobileMoreActive ? 'page' : undefined}
+              >
+                <Icon
+                  className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
+                  name={mobileNavIcon('more')}
+                  size={19}
+                  stroke={1.7}
+                />
+                <span>Mer</span>
+              </button>
+              {isCalendar ? (
+                <button
+                  type="button"
+                  className={`${styles.mobileNavItem} ${styles.mobileRailPrevious}`}
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent(MOBILE_CALENDAR_SHIFT_EVENT, { detail: -1 }),
+                    )
+                  }
+                  disabled={calendarStepDisabled}
+                  aria-label={`Föregående ${calendarStepLabel}${calendarMeta?.previous && !calendarStepDisabled ? `, ${calendarMeta.previous}` : ''}`}
+                >
+                  <Icon name="chevronLeft" size={20} stroke={1.7} />
+                  <span>{calendarMeta?.previous ?? 'Föregående'}</span>
+                </button>
+              ) : null}
+            </nav>
+          </>
+        ) : mobileNavigation ? (
           <nav
-            className={`${styles.mobileNav}${mobileNavigation.tabs.length > 3 || pathname.startsWith('/admin/bokningar') ? ` ${styles.mobileNavSixCol}` : ''}`}
+            className={`${styles.mobileNav}${mobileNavigation.tabs.length > 3 ? ` ${styles.mobileNavSixCol}` : ''}`}
             aria-label="Mobilnavigering"
           >
             {mobileNavigation.tabs.slice(0, 2).map((area) => {
@@ -467,7 +650,7 @@ export function Topnav({
                     className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
                     aria-hidden="true"
                   >
-                    {mobileNavGlyph(area.id)}
+                    <Icon name={mobileNavIcon(area.id)} size={18} />
                   </span>
                   <span>{area.label}</span>
                 </Link>
@@ -476,30 +659,17 @@ export function Topnav({
             {mobileNavigation.action ? (
               <Link
                 href={mobileNavigation.action.href}
-                className={styles.mobileFab}
+                className={styles.platformMobileFab}
                 aria-label={mobileNavigation.action.label}
               >
-                <span className={styles.mobileFabButton} aria-hidden="true">
+                <span className={styles.platformMobileFabButton} aria-hidden="true">
                   <Icon name="plus" size={20} />
                 </span>
-                <span className={styles.mobileFabLabel}>{mobileNavigation.action.label}</span>
+                <span className={styles.platformMobileFabLabel}>
+                  {mobileNavigation.action.label}
+                </span>
               </Link>
             ) : null}
-            {/* Sök bor BREDVID plus-knappen (Zivar 2026-07-18) — bara på kalendern,
-                arket ägs av CalendarSearch och öppnas via fönster-eventet. */}
-            {pathname.startsWith('/admin/bokningar') && (
-              <button
-                type="button"
-                className={styles.mobileNavSearch}
-                onClick={() => window.dispatchEvent(new Event(MOBILE_SEARCH_EVENT))}
-                aria-label="Sök i kalendern"
-              >
-                <span className={styles.mobileNavSearchCircle} aria-hidden="true">
-                  <Icon name="search" size={16} />
-                </span>
-                <span>Sök</span>
-              </button>
-            )}
             {mobileNavigation.tabs.slice(2).map((area) => {
               const active = area.id === activeMobileArea?.id
               return (
@@ -513,7 +683,7 @@ export function Topnav({
                     className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
                     aria-hidden="true"
                   >
-                    {mobileNavGlyph(area.id)}
+                    <Icon name={mobileNavIcon(area.id)} size={18} />
                   </span>
                   <span>{area.label}</span>
                 </Link>
@@ -531,7 +701,7 @@ export function Topnav({
                 className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
                 aria-hidden="true"
               >
-                {mobileNavGlyph('more')}
+                <Icon name={mobileNavIcon('more')} size={18} />
               </span>
               <span>Mer</span>
             </button>
@@ -623,16 +793,11 @@ export function Topnav({
               <ThemeSwitch variant={themeVariant} />
             </div>
           </div>
-
         </Modal>
       ) : null}
 
       {mobileNavigation && mobileAccountOpen ? (
-        <Modal
-          title="Konto"
-          ariaLabel="Kontomeny"
-          onClose={() => setMobileAccountOpen(false)}
-        >
+        <Modal title="Konto" ariaLabel="Kontomeny" onClose={() => setMobileAccountOpen(false)}>
           <div className={styles.mobileMoreAccount}>
             <AccountIdentity userLabel={userLabel} email={email} roleLabel={roleLabel} admin />
             {accountLinks?.length ? (
@@ -643,6 +808,20 @@ export function Topnav({
               />
             ) : null}
             {signOut}
+          </div>
+        </Modal>
+      ) : null}
+
+      {mobileNavigation && adminMobileChrome && mobileHelpOpen ? (
+        <Modal title="Hjälp" ariaLabel="Hjälp för admin" onClose={() => setMobileHelpOpen(false)}>
+          <div className={styles.mobileHelpBody}>
+            <p>
+              Sidans viktigaste åtgärder finns i raden ovanför huvudmenyn. I liggande telefonläge
+              flyttas samma val ut till sidornas räcken för att ge innehållet full höjd.
+            </p>
+            <p>
+              Konto, inställningar och övriga moduler finns under <strong>Mer</strong>.
+            </p>
           </div>
         </Modal>
       ) : null}

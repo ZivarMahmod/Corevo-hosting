@@ -30,6 +30,7 @@ import { Callout, PageHead } from '@/components/portal/ui'
 import { CalendarBoardLazy } from '@/components/admin/CalendarBoardLazy'
 import type { CalendarBlock, CalendarView } from '@/components/admin/CalendarBoard'
 import type { BookingRow } from '@/components/admin/BookingDrawer'
+import calendarStyles from '@/components/admin/calendar.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kalender · Adminpanel' }
@@ -223,27 +224,35 @@ export default async function KalenderPage({
     <>
       {unresolvedCount > 0 ? (
         <div className="portal-section" style={{ paddingBottom: 0 }}>
-          <Callout tone="warning" icon="clock">
-            <strong>{unresolvedCount} bokning(ar) behöver avslutas.</strong>{' '}
-            De räknas inte som besök förrän någon registrerar Genomförd eller Uteblev.
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-              {visibleUnresolved.slice(0, 12).map((booking) => {
-                const localDate = new Intl.DateTimeFormat('en-CA', {
-                  timeZone: tz,
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                }).format(new Date(booking.startTs))
-                return (
-                  <Link
-                    key={booking.id}
-                    href={`/admin/bokningar?vy=dag&datum=${localDate}&plats=${locationId}&open=${booking.id}`}
-                    className="pbtn pbtn--ghost pbtn--sm"
-                  >
-                    {booking.serviceName} · {booking.staffTitle}
-                  </Link>
-                )
-              })}
+          <Callout tone="info" icon="clock">
+            <div className={calendarStyles.unresolvedNotice}>
+              <div>
+                <strong>{unresolvedCount} besök väntar på avslut.</strong> Ingen driftstörning — de
+                behöver bara markeras som Genomförda eller Uteblivna för att statistiken ska bli
+                korrekt.
+              </div>
+              <details className={calendarStyles.unresolvedDetails}>
+                <summary>Visa bokningarna ({unresolvedCount})</summary>
+                <div className={calendarStyles.unresolvedLinks}>
+                  {visibleUnresolved.slice(0, 12).map((booking) => {
+                    const localDate = new Intl.DateTimeFormat('en-CA', {
+                      timeZone: tz,
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                    }).format(new Date(booking.startTs))
+                    return (
+                      <Link
+                        key={booking.id}
+                        href={`/admin/bokningar?vy=dag&datum=${localDate}&plats=${locationId}&open=${booking.id}`}
+                        className="pbtn pbtn--ghost pbtn--sm"
+                      >
+                        {booking.serviceName} · {booking.staffTitle}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </details>
             </div>
           </Callout>
         </div>

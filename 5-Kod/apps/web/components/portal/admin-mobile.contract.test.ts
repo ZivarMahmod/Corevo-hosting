@@ -19,16 +19,14 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(css).toContain('env(safe-area-inset-bottom)')
     expect(component).toContain('mobileNavigation')
     expect(component).toContain('aria-label="Mobilnavigering"')
-    expect(component).toContain('mobileNavGlyph(area.id)')
-    expect(component).toContain("mobileNavGlyph('more')")
-    expect(adminCss).toMatch(/\.mobileNavIcon\s*\{[\s\S]*?font-size:\s*16px;/)
-    expect(css).toMatch(/\.mobileNavItem\s*\{[\s\S]*?font-size:\s*9\.5px;/)
+    expect(component).toContain('mobileNavIcon(area.id)')
+    expect(component).toContain("mobileNavIcon('more')")
+    expect(component).not.toContain('mobileNavGlyph')
+    expect(adminCss).toContain('.mobileNavIcon')
+    expect(css).toMatch(/\.mobileNavItem\s*\{[\s\S]*?min-height:\s*44px;/)
     expect(css).toMatch(/\.mobileNav\s*\{[\s\S]*?z-index:\s*25;/)
-    expect(component).toContain('className={styles.mobileFabLabel}')
-    expect(component).toContain('{mobileNavigation.action.label}</span>')
-    expect(css).toMatch(
-      /\.mobileFabButton\s*\{[\s\S]*?width:\s*46px;[\s\S]*?height:\s*46px;[\s\S]*?background:\s*#2f5f47;/i,
-    )
+    expect(component).toContain('styles.mobileContext')
+    expect(component).toContain('styles.mobileHelp')
     expect(css).toContain('env(safe-area-inset-top)')
     const mobileHeaderStart = css.indexOf('@media (max-width: 767px)')
     const calendarHeaderOverride = css.indexOf(
@@ -48,37 +46,32 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     )
   })
 
-  it('matchar kalenderns Mobil v2-skal utan att ändra övriga adminrutter', () => {
+  it('matchar kalenderns tvånivådocka och liggande sidräcken', () => {
     const css = read('components/portal/Topnav.module.css')
     const calendarCss = read('components/admin/calendar.module.css')
     const component = read('components/portal/Topnav.tsx')
 
     expect(css).toContain(".shell[data-portal='admin']:has(.main > :global(.workbench))")
-    expect(css).toMatch(
-      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileAdmin \.brandSub\s*\{[\s\S]*?display:\s*block;/,
-    )
-    expect(css).toMatch(
-      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileActions\s*\{[\s\S]*?display:\s*none;/,
-    )
-    expect(css).toMatch(
-      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileNavIcon\s*\{[\s\S]*?display:\s*none;/,
-    )
-    expect(css).toMatch(
-      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileNavItemActive::after\s*\{[\s\S]*?background:\s*var\(--c-forest\);/,
-    )
-    expect(css).toMatch(
-      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileFabLabel\s*\{[\s\S]*?display:\s*none;/,
-    )
-    // 2026-07-18: sök bor i BOTTENNAVEN bredvid FAB:en (Zivars slutliga placering)
-    // — aldrig fixed-floater, aldrig i dockraden. Navknappen öppnar arket via
-    // fönster-eventet.
+    expect(css).toContain('@media (orientation: landscape) and (max-height: 520px)')
+    expect(css).toMatch(/\.mobileContext\s*\{[\s\S]*?width:\s*66px;/)
+    expect(css).toContain('.mobileRailPrevious')
+    expect(css).toContain('.mobileRailNext')
     expect(calendarCss).not.toContain('.mobileCalendarSearchAction')
     expect(calendarCss).not.toContain('.mobileSearchTrigger')
-    expect(css).toMatch(/\.mobileNavSearchCircle\s*\{[\s\S]*?border-radius:\s*999px;/)
     expect(component).toContain('MOBILE_SEARCH_EVENT')
     expect(component).toContain('mobileMoreAccountLink')
     expect(component).toContain('openMobileAccount')
     expect(component).toContain('styles.mobileNavIcon')
+    expect(component).toContain('calendarMeta?.step === \'month\'')
+    expect(component).toContain('disabled={calendarStepDisabled}')
+    expect(component).toContain('<Icon name="clock" size={19}')
+    expect(component).toContain('<Icon name="help" size={19}')
+    expect(component).toContain('<Icon name="chevronDown" size={11}')
+    expect(css).toContain('.adminMobileChrome .bar')
+    expect(css).not.toMatch(
+      /@media \(orientation: landscape\) and \(max-height: 520px\)[\s\S]*?\.mobileAdmin \.bar/,
+    )
+    expect(css).toMatch(/\.adminMobileChrome \.mobileNavItem\s*\{[\s\S]*?min-height:\s*46px;/)
   })
 
   it('pressar ihop alla kalenderkolumner på mobil utan vågrät scroll', () => {
@@ -96,17 +89,55 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     )
   })
 
-  it('placerar Blockera 38x38 på datumraden och växlaren ensam under', () => {
+  it('placerar vyval under bannern och Blockera i den gemensamma kontextraden', () => {
     const css = read('components/admin/calendar.module.css')
     const component = read('components/admin/CalendarBoard.tsx')
+    const topnav = read('components/portal/Topnav.tsx')
 
-    expect(component).toContain('mobileBlockBtn')
-    expect(css).toMatch(
-      /@media \(max-width: 767px\)[\s\S]*?\.mobileBlockBtn\s*\{[\s\S]*?width:\s*38px;[\s\S]*?height:\s*38px;/,
-    )
+    expect(component).toContain('mobileViewSwitch')
+    expect(topnav).toContain('/admin/bokningar?blockera=1')
     expect(css).toMatch(
       /@media \(max-width: 767px\)[\s\S]*?\.viewSwitch\s*\{[\s\S]*?width:\s*100%;/,
     )
+  })
+
+  it('ger kundvyn Sök + Ny kund och döljer kontextraden på Mer-sidor', () => {
+    const topnav = read('components/portal/Topnav.tsx')
+    const createCustomer = read('components/admin/CreateCustomerForm.tsx')
+
+    expect(topnav).toContain("activeMobileArea?.id === 'kunder'")
+    expect(topnav).toContain('/admin/kunder?ny=1')
+    expect(topnav).toContain('mobileNavigation?.tabs.some')
+    expect(createCustomer).toContain('useSearchParams')
+    expect(createCustomer).toContain("searchParams.has('ny')")
+    expect(createCustomer).toContain("router.replace('/admin/kunder', { scroll: false })")
+    expect(createCustomer).toContain('<Modal')
+  })
+
+  it('scope:ar liggande dialoger och sökpaneler till admin utan att påverka plattformen', () => {
+    const modalComponent = read('components/portal/ui/Modal.tsx')
+    const modalCss = read('components/portal/ui/modal.module.css')
+    const globalCss = read('app/portal-global.css')
+
+    expect(modalComponent).toContain("data-portal={adminPortal ? 'admin' : undefined}")
+    expect(modalCss).toMatch(
+      /@media \(orientation: landscape\) and \(max-height: 520px\)[\s\S]*?\.overlay\[data-portal='admin'\]/,
+    )
+    expect(modalCss).not.toMatch(
+      /@media \(orientation: landscape\) and \(max-height: 520px\)\s*\{\s*\.overlay\s*\{/,
+    )
+    expect(globalCss).toContain("[data-portal='admin'] .bo-cmdk-overlay")
+    expect(globalCss).toContain('place-items: stretch end')
+    expect(modalCss).toMatch(/\.close\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/)
+  })
+
+  it('låter horisontellt kolumnpan vinna över dagsvep när kalendern har overflow', () => {
+    const component = read('components/admin/CalendarBoard.tsx')
+
+    expect(component).toContain('scroller.scrollWidth > scroller.clientWidth + 1')
+    expect(component).toContain("if (step === 'month') d.setUTCMonth(d.getUTCMonth() + dir)")
+    expect(component).toContain("view === 'manad'")
+    expect(component).not.toContain("view !== 'dag' ||\n            event.touches.length")
   })
 
   it('autoscrollar till nu en gång per öppnad dag och aldrig efter datarefresh', () => {

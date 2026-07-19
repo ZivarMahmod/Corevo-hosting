@@ -277,6 +277,7 @@ export async function PortalShell({
         >
           <Topnav
             areas={topAreas}
+            adminMobileChrome={!isPlatform}
             mobileNavigation={
               isPlatform ? platformMobileNavigation(topAreas) : adminMobileNavigation(topAreas)
             }

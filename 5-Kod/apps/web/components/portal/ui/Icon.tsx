@@ -50,6 +50,7 @@ export type IconName =
   | 'link'
   | 'alert'
   | 'info'
+  | 'help'
   | 'shield'
   | 'gift'
   | 'dollar'
@@ -285,6 +286,13 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 11v5M12 8h.01" />
+    </>
+  ),
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.4 9a2.8 2.8 0 1 1 4.8 1.9c-1.4 1.1-2.2 1.6-2.2 3.1" />
+      <path d="M12 17h.01" />
     </>
   ),
   shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />,

@@ -55,6 +55,8 @@ export function Modal({
   const [portalHost] = useState<HTMLElement | null>(() =>
     typeof document === 'undefined' ? null : document.body,
   )
+  const adminPortal =
+    typeof document !== 'undefined' && Boolean(document.querySelector('[data-portal="admin"]'))
 
   function close() {
     if (closingRef.current) return
@@ -116,6 +118,7 @@ export function Modal({
       ref={overlayRef}
       className={styles.overlay}
       data-anchor={anchor}
+      data-portal={adminPortal ? 'admin' : undefined}
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) close()

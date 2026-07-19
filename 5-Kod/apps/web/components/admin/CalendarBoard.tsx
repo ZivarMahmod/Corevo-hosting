@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { isoWeekNumber } from '@/lib/admin/dates'
@@ -35,6 +35,12 @@ const CalendarHelp = dynamic(() => import('./CalendarHelp').then((m) => m.Calend
 const CancelledLog = dynamic(() => import('./CancelledLog').then((m) => m.CancelledLog))
 import { CalendarSearch } from './CalendarSearch'
 import { staffColor, staffInitials } from '@/lib/admin/staff-colors'
+import {
+  MOBILE_CALENDAR_DATE_EVENT,
+  MOBILE_CALENDAR_META_EVENT,
+  MOBILE_CALENDAR_META_REQUEST_EVENT,
+  MOBILE_CALENDAR_SHIFT_EVENT,
+} from '@/components/portal/mobile-search-event'
 import styles from './calendar.module.css'
 
 /** Kalenderarbetsbordet (goal-66). ETT arbetsbord, tre vyer — inte tre sidor:
@@ -91,6 +97,16 @@ const VIEWS: { value: CalendarView; label: string }[] = [
 /** Rutnätets upplösning. 15 min är snappningen (Wavy gör samma): ett klick på
  *  09:20-höjd ger 09:15, aldrig 09:20. */
 const SNAP_MIN = 15
+export const SWIPE_THRESHOLD_PX = 48
+const TOUCH_DRAG_HOLD_MS = 240
+
+/** Ett dagbyte kräver ett avsiktligt horisontellt svep. Positivt dx betyder att
+ * innehållet dras åt höger och kalendern ska gå till föregående dag. */
+export function calendarSwipeDirection(deltaX: number, deltaY: number): -1 | 0 | 1 {
+  const horizontal = Math.abs(deltaX)
+  if (horizontal <= SWIPE_THRESHOLD_PX || horizontal <= Math.abs(deltaY) * 1.25) return 0
+  return deltaX > 0 ? -1 : 1
+}
 
 /** Pixlar per minut. Styr höjden på en bokning: 60 min = 84 px. Räcker för att läsa
  *  kund + tjänst i ett 30-minuterspass utan att dagen blir orimligt lång. */
@@ -246,6 +262,7 @@ export function CalendarBoard({
   const params = useSearchParams()
   const absenceTimeOffId = params.get('absence')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
   const lastAutoScrollKey = useRef<string | null>(null)
   const [open, setOpen] = useState<BookingRow | null>(
     () => bookings.find((b) => b.id === openBookingId) ?? null,
@@ -301,6 +318,12 @@ export function CalendarBoard({
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [mobileDateOpen])
+
+  useEffect(() => {
+    const toggleMobileDate = () => setMobileDateOpen((open) => !open)
+    window.addEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
+    return () => window.removeEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
+  }, [])
 
   // Djuplänk-parametrar (?ny/?blockera) är ENGÅNGS: rensa dem ur URL:en efter att
   // drawern öppnats, annars öppnar en omladdning/tillbaka-navigering den igen.
@@ -404,18 +427,21 @@ export function CalendarBoard({
 
   // Navigering bor i URL:en. Vy, datum och resursfilter är delbara och bakåtknappen
   // fungerar. resurs: '' = alla (parametern tas bort).
-  const go = (next: { vy?: CalendarView; datum?: string; resurs?: string }) => {
-    const q = new URLSearchParams(params.toString())
-    if (next.vy) q.set('vy', next.vy)
-    if (next.datum) q.set('datum', next.datum)
-    if (next.resurs !== undefined) {
-      if (next.resurs) q.set('resurs', next.resurs)
-      else q.delete('resurs')
-    }
-    q.delete('open')
-    setMobileDateOpen(false)
-    router.push(`/admin/bokningar?${q.toString()}`)
-  }
+  const go = useCallback(
+    (next: { vy?: CalendarView; datum?: string; resurs?: string }) => {
+      const q = new URLSearchParams(params.toString())
+      if (next.vy) q.set('vy', next.vy)
+      if (next.datum) q.set('datum', next.datum)
+      if (next.resurs !== undefined) {
+        if (next.resurs) q.set('resurs', next.resurs)
+        else q.delete('resurs')
+      }
+      q.delete('open')
+      setMobileDateOpen(false)
+      router.push(`/admin/bokningar?${q.toString()}`)
+    },
+    [params, router],
+  )
 
   // Resursfilter (B-06): fokusera EN person. Filtreringen sker här — samma data,
   // smalare blick — så filtret följer med gratis mellan dag/vecka/månad. Ett påhittat
@@ -568,18 +594,59 @@ export function CalendarBoard({
   }, [date, tz])
 
   const step = view === 'manad' ? 'month' : view === 'vecka' ? 'week' : 'day'
-  const shift = (dir: -1 | 1) => {
-    const d = new Date(`${date}T12:00:00Z`)
-    if (step === 'day') d.setUTCDate(d.getUTCDate() + dir)
-    if (step === 'week') d.setUTCDate(d.getUTCDate() + dir * 7)
-    if (step === 'month') d.setUTCMonth(d.getUTCMonth() + dir)
-    go({ datum: d.toISOString().slice(0, 10) })
-  }
+  const shift = useCallback(
+    (dir: -1 | 1) => {
+      const d = new Date(`${date}T12:00:00Z`)
+      if (step === 'day') d.setUTCDate(d.getUTCDate() + dir)
+      if (step === 'week') d.setUTCDate(d.getUTCDate() + dir * 7)
+      if (step === 'month') d.setUTCMonth(d.getUTCMonth() + dir)
+      go({ datum: d.toISOString().slice(0, 10) })
+    },
+    [date, go, step],
+  )
 
-  // Dagbyte sker via ‹ Idag ›-stegaren (samma kontroll på desktop och mobil) och,
-  // för längre hopp, via Månad-vyn (tryck på datumet). Ingen mobil-egen svep-gest och
-  // inga dag-chips — mobilytan ska ha SAMMA funktioner som desktop, bara omplacerade
-  // (Zivar 2026-07-15). Den gamla svep-byt-dag togs bort (krockade med kolumn-scroll).
+  useEffect(() => {
+    const onShift = (event: Event) => {
+      const direction = (event as CustomEvent<number>).detail
+      if (direction === -1 || direction === 1) shift(direction)
+    }
+    window.addEventListener(MOBILE_CALENDAR_SHIFT_EVENT, onShift)
+    return () => window.removeEventListener(MOBILE_CALENDAR_SHIFT_EVENT, onShift)
+  }, [shift])
+
+  useEffect(() => {
+    const neighborLabel = (dir: -1 | 1) => {
+      if (step === 'month') return '—'
+      const next = new Date(`${date}T12:00:00Z`)
+      if (step === 'day') next.setUTCDate(next.getUTCDate() + dir)
+      if (step === 'week') next.setUTCDate(next.getUTCDate() + dir * 7)
+      return new Intl.DateTimeFormat('sv-SE', {
+        weekday: step === 'day' ? 'short' : undefined,
+        day: 'numeric',
+        month: 'short',
+        timeZone: tz,
+      }).format(next)
+    }
+    const publishMeta = () => {
+      window.dispatchEvent(
+        new CustomEvent(MOBILE_CALENDAR_META_EVENT, {
+          detail: {
+            title: mobilePeriodLabel,
+            meta: mobilePeriodStats,
+            previous: neighborLabel(-1),
+            next: neighborLabel(1),
+            step,
+          },
+        }),
+      )
+    }
+    publishMeta()
+    window.addEventListener(MOBILE_CALENDAR_META_REQUEST_EVENT, publishMeta)
+    return () => window.removeEventListener(MOBILE_CALENDAR_META_REQUEST_EVENT, publishMeta)
+  }, [date, mobilePeriodLabel, mobilePeriodStats, step, tz])
+
+  // Ett tydligt horisontellt svep i dagvyn byter dag. Bokningskort undantas så att
+  // samma gestyta aldrig samtidigt försöker flytta en bokning.
 
   // Klick på ledig yta = "boka här". Tiden SNAPPAS till 15 min (ett klick på 09:20-höjd
   // ger 09:15, aldrig 09:20) och resurs + tid ärvs in i drawern — användaren ska aldrig
@@ -773,7 +840,41 @@ export function CalendarBoard({
 
       {/* Scrollytan. overflow ligger HÄR, inte på sidan — därför scrollar aldrig
           dokumentet och toppnaven stannar kvar. */}
-      <div ref={scrollRef} className={styles.scroll}>
+      <div
+        ref={scrollRef}
+        className={styles.scroll}
+        onTouchStart={(event) => {
+          if (
+            view === 'manad' ||
+            event.touches.length !== 1 ||
+            (event.target instanceof Element && event.target.closest('[data-calendar-booking]'))
+          ) {
+            swipeStart.current = null
+            return
+          }
+          // När kolumnerna är bredare än ytan (iPad/liggande) betyder ett
+          // horisontellt fingerdrag att användaren panorerar i schemat. Dagsvep
+          // aktiveras bara när hela dagvyn faktiskt ryms utan horisontell scroll.
+          const scroller = event.currentTarget
+          if (scroller.scrollWidth > scroller.clientWidth + 1) {
+            swipeStart.current = null
+            return
+          }
+          const touch = event.touches[0]
+          if (touch) swipeStart.current = { x: touch.clientX, y: touch.clientY }
+        }}
+        onTouchEnd={(event) => {
+          const start = swipeStart.current
+          swipeStart.current = null
+          const touch = event.changedTouches[0]
+          if (!start || !touch) return
+          const direction = calendarSwipeDirection(touch.clientX - start.x, touch.clientY - start.y)
+          if (direction) shift(direction)
+        }}
+        onTouchCancel={() => {
+          swipeStart.current = null
+        }}
+      >
         {view === 'dag' && (
           <DayGrid
             bookings={vBookings}
@@ -829,22 +930,41 @@ export function CalendarBoard({
 
       <div className={styles.mobileCalendarDock}>
         <div className={styles.mobileCalendarDateRow}>
-          {canManageBookings && (
+          <button
+            type="button"
+            className={styles.mobileDateToggle}
+            onClick={() => setMobileDateOpen((open) => !open)}
+            aria-expanded={mobileDateOpen}
+            aria-haspopup="dialog"
+          >
+            <span className={styles.mobileDateTitle}>
+              {mobilePeriodLabel}
+              <Icon name="chevronDown" size={12} />
+            </span>
+            <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
+          </button>
+          <div className={styles.mobileStep} aria-label="Bläddra i kalendern">
             <button
               type="button"
-              className={styles.mobileDateToggle}
-              onClick={() => setMobileDateOpen((open) => !open)}
-              aria-expanded={mobileDateOpen}
-              aria-haspopup="dialog"
+              onClick={() => shift(-1)}
+              aria-label="Föregående"
+              disabled={step === 'month'}
             >
-              <span className={styles.mobileDateTitle}>
-                {mobilePeriodLabel}
-                <span aria-hidden="true">{mobileDateOpen ? '▾' : '▴'}</span>
-              </span>
-              <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
+              <Icon name="chevronLeft" size={15} />
             </button>
-          )}
-          {(date !== today || view !== 'dag' || resursValid) && (
+            <button
+              type="button"
+              onClick={() => shift(1)}
+              aria-label="Nästa"
+              disabled={step === 'month'}
+            >
+              <Icon name="chevronRight" size={15} />
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.mobileCalendarActionRow}>
+          {date !== today || view !== 'dag' || resursValid ? (
             <button
               type="button"
               className={styles.mobileTodayBtn}
@@ -852,18 +972,7 @@ export function CalendarBoard({
             >
               Idag
             </button>
-          )}
-          <div className={styles.mobileStep} aria-label="Bläddra i kalendern">
-            <button type="button" onClick={() => shift(-1)} aria-label="Föregående">
-              <Icon name="chevronLeft" size={15} />
-            </button>
-            <button type="button" onClick={() => shift(1)} aria-label="Nästa">
-              <Icon name="chevronRight" size={15} />
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.mobileCalendarActionRow}>
+          ) : null}
           <div className={styles.mobileViewSwitch} role="radiogroup" aria-label="Kalendervy">
             {VIEWS.map((item) => (
               <button
@@ -890,7 +999,6 @@ export function CalendarBoard({
               gamla flytande knappen låg fixed bakom bottennavens täckande yta. */}
           <CalendarSearch tz={tz} mobileSheet />
         </div>
-
       </div>
 
       {mobileDateOpen && (
@@ -1288,10 +1396,21 @@ function BookingBlock({
     startX: number
     startY: number
     active: boolean
+    moved: boolean
     touch: boolean
+    timer: number | null
+    cancelTouchBlock: (() => void) | null
   } | null>(null)
   const suppressClick = useRef(false)
   const [touchDragging, setTouchDragging] = useState(false)
+
+  useEffect(
+    () => () => {
+      if (pointerDrag.current?.timer != null) window.clearTimeout(pointerDrag.current.timer)
+      pointerDrag.current?.cancelTouchBlock?.()
+    },
+    [],
+  )
 
   const suppressSyntheticClick = () => {
     suppressClick.current = true
@@ -1347,42 +1466,55 @@ function BookingBlock({
         ['--bk' as string]: color,
         ['--bk-status' as string]: statusAccent(booking.status),
       }}
+      data-calendar-booking
       onPointerDown={(e) => {
-        const fromTouchHandle =
-          (e.pointerType === 'touch' || e.pointerType === 'pen') &&
-          e.target instanceof Element &&
-          Boolean(e.target.closest('[data-booking-drag-handle]'))
+        const fromTouch = e.pointerType === 'touch' || e.pointerType === 'pen'
         const fromDesktopMouse =
           e.pointerType === 'mouse' &&
           e.button === 0 &&
           window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
-        if (
-          !movable ||
-          !e.isPrimary ||
-          (!fromDesktopMouse && !fromTouchHandle)
-        ) {
-          return
-        }
-        pointerDrag.current = {
+        if (!movable || !e.isPrimary || (!fromDesktopMouse && !fromTouch)) return
+        const target = e.currentTarget
+        const drag = {
           pointerId: e.pointerId,
           startX: e.clientX,
           startY: e.clientY,
           active: false,
-          touch: fromTouchHandle,
+          moved: false,
+          touch: fromTouch,
+          timer: null as number | null,
+          cancelTouchBlock: null as (() => void) | null,
         }
-        setTouchDragging(fromTouchHandle)
+        pointerDrag.current = drag
         e.currentTarget.setPointerCapture(e.pointerId)
+        if (fromTouch) {
+          drag.timer = window.setTimeout(() => {
+            if (pointerDrag.current !== drag) return
+            drag.active = true
+            drag.timer = null
+            setTouchDragging(true)
+            // touch-action: pan-y behåller vanlig listscroll. Först EFTER
+            // långtrycket tar vi över touchmove, så vertikal bokningsflytt kan
+            // ske utan att sidan samtidigt rullar.
+            const preventTouchScroll = (event: TouchEvent) => event.preventDefault()
+            target.addEventListener('touchmove', preventTouchScroll, { passive: false })
+            drag.cancelTouchBlock = () =>
+              target.removeEventListener('touchmove', preventTouchScroll)
+          }, TOUCH_DRAG_HOLD_MS)
+        }
       }}
       onPointerMove={(e) => {
         const drag = pointerDrag.current
         if (!drag || drag.pointerId !== e.pointerId) return
+        if (drag.touch && !drag.active) return
         if (
-          !drag.active &&
+          !drag.moved &&
           Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < SLOP_PX
         ) {
           return
         }
         drag.active = true
+        drag.moved = true
         if (drag.touch) e.preventDefault()
         onPointerPreview?.(booking, e.clientX, e.clientY)
       }}
@@ -1390,14 +1522,13 @@ function BookingBlock({
         const drag = pointerDrag.current
         if (!drag || drag.pointerId !== e.pointerId) return
         pointerDrag.current = null
+        if (drag.timer != null) window.clearTimeout(drag.timer)
+        drag.cancelTouchBlock?.()
         setTouchDragging(false)
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
         }
-        if (!drag.active) {
-          if (drag.touch) suppressSyntheticClick()
-          return
-        }
+        if (!drag.active || !drag.moved) return
         suppressSyntheticClick()
         onPointerDrop?.(booking, e.clientX, e.clientY)
       }}
@@ -1405,15 +1536,20 @@ function BookingBlock({
         const drag = pointerDrag.current
         if (!drag || drag.pointerId !== e.pointerId) return
         pointerDrag.current = null
+        if (drag.timer != null) window.clearTimeout(drag.timer)
+        drag.cancelTouchBlock?.()
         setTouchDragging(false)
-        suppressSyntheticClick()
+        if (drag.active) suppressSyntheticClick()
         onPointerAbort?.()
       }}
       onLostPointerCapture={(e) => {
-        if (pointerDrag.current?.pointerId !== e.pointerId) return
+        const drag = pointerDrag.current
+        if (drag?.pointerId !== e.pointerId) return
         pointerDrag.current = null
+        if (drag.timer != null) window.clearTimeout(drag.timer)
+        drag.cancelTouchBlock?.()
         setTouchDragging(false)
-        onPointerAbort?.()
+        if (drag.active) onPointerAbort?.()
       }}
       onClick={(e) => {
         if (suppressClick.current) return
@@ -1430,6 +1566,7 @@ function BookingBlock({
         <span className={styles.blockName}>{name}</span>
       </span>
       {showService && <span className={styles.blockService}>{booking.serviceName}</span>}
+      <span className={`num ${styles.blockEnd}`}>{timeLabel(booking.endTs, tz)}</span>
       {/* Numret står som TEXT här, inte som länk: blocket är redan en <button>, och en
           <a> inuti en <button> är ogiltig HTML som skärmläsare tolkar olika. Ringbart
           blir det i dialogen — ett klick bort, precis som önskat. */}
@@ -1437,16 +1574,6 @@ function BookingBlock({
         <span className={`num ${styles.blockPhone}`}>
           <Icon name="phone" size={10} />
           {phone}
-        </span>
-      )}
-      {movable && (
-        <span
-          className={styles.touchDragHandle}
-          data-booking-drag-handle
-          title="Dra för att flytta bokningen"
-          aria-hidden="true"
-        >
-          <Icon name="grip" size={16} />
         </span>
       )}
       {/* Status bärs av ikon (+ text när kortet är stort nog), aldrig av färgen ensam

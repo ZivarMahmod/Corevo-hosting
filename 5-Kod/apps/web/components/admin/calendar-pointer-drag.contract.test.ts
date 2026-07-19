@@ -17,24 +17,30 @@ describe('kalenderns draggenväg med mus och touch', () => {
     expect(component).toContain('onPointerCancel')
   })
 
-  it('aktiveras för fin muspekare eller touch via bokningens draghandtag', () => {
+  it('aktiveras för fin muspekare eller långtryck på hela bokningen', () => {
     expect(component).toContain("e.pointerType === 'mouse'")
     expect(component).toContain("matchMedia('(min-width: 768px) and (pointer: fine)')")
     expect(component).toContain("e.pointerType === 'touch' || e.pointerType === 'pen'")
-    expect(component).toContain("closest('[data-booking-drag-handle]')")
-    expect(component).toContain('data-booking-drag-handle')
+    expect(component).toContain('TOUCH_DRAG_HOLD_MS')
+    expect(component).toContain('data-calendar-booking')
+    expect(component).not.toContain('data-booking-drag-handle')
   })
 
-  it('låter bara draghandtaget ta touchgesten och visar aktiv återkoppling', () => {
-    expect(css).toMatch(/\.touchDragHandle\s*\{[\s\S]*?touch-action:\s*none;/)
-    expect(css).toMatch(/@media \(pointer:\s*coarse\)[\s\S]*?\.touchDragHandle\s*\{[\s\S]*?display:\s*inline-flex;/)
+  it('behåller vertikal scroll tills långtryck och faktisk förflyttning aktiverar drag', () => {
+    expect(css).toMatch(
+      /@media \(pointer:\s*coarse\), \(any-pointer:\s*coarse\)[\s\S]*?\.blockDrag\s*\{[\s\S]*?touch-action:\s*pan-y;/,
+    )
+    expect(css).not.toMatch(/\.blockDrag\s*\{[\s\S]*?touch-action:\s*none;/)
+    expect(component).toContain("addEventListener('touchmove', preventTouchScroll, { passive: false })")
+    expect(component).toContain('moved: false')
+    expect(component).toContain('if (!drag.active || !drag.moved) return')
     expect(component).toContain('styles.blockTouchDragging')
-    expect(component).toContain('<Icon name="grip"')
+    expect(component).not.toContain('<Icon name="grip"')
   })
 
   it('släpper bara i en faktisk personalkolumn under pekaren', () => {
     expect(component).toMatch(/document\s*\.elementFromPoint\(clientX, clientY\)/)
     expect(component).toContain('data-calendar-staff-id')
-    expect(component).toContain("target.dataset.calendarStaffId")
+    expect(component).toContain('target.dataset.calendarStaffId')
   })
 })

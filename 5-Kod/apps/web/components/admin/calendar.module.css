@@ -707,6 +707,29 @@
   text-transform: uppercase;
 }
 
+.unresolvedNotice {
+  display: grid;
+  gap: 5px;
+}
+
+.unresolvedDetails summary {
+  width: fit-content;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--c-ink-2);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.unresolvedLinks {
+  padding: 2px 0 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
 /* ---- scrollytan: det ENDA som scrollar ---- */
 .scroll {
   flex: 1;
@@ -1003,25 +1026,6 @@
   transform: scale(0.99);
 }
 
-/* Touch har ett eget grepp. Bara greppet tar över gesten; resten av kortet behåller
-   webbläsarens vanliga pan/scroll. Det gör fingerdrag möjligt utan att en full kalender
-   känns fastlåst när personalen vill scrolla genom dagen. */
-.touchDragHandle {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  border-left: 1px solid color-mix(in srgb, var(--bk, var(--c-gold)) 28%, transparent);
-  background: color-mix(in srgb, var(--c-paper) 58%, transparent);
-  color: var(--c-ink-2);
-  touch-action: none;
-}
-
 /* Avbokad tonas ned OCH får ett kryss i texten — status uttrycks aldrig enbart i färg. */
 .blockDim {
   background: var(--c-paper-2);
@@ -1037,6 +1041,7 @@
   align-items: baseline;
   gap: 6px;
   min-width: 0;
+  padding-right: 16px;
 }
 
 .blockHead .blockName {
@@ -1063,12 +1068,25 @@
 }
 
 .blockService {
+  padding-right: 25px;
   color: var(--c-ink-3);
   font-size: 11.5px;
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Starttid uppe till vänster och sluttid nere till höger ger två tider utan en
+   extra textrad. Samma kompakta informationshierarki fungerar i smala kolumner. */
+.blockEnd {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  color: var(--c-ink-3);
+  font-size: 8px;
+  font-style: italic;
+  line-height: 1;
 }
 
 /* Telefonnumret ska gå att LÄSA på håll utan att skrika — det är referensinfo, inte
@@ -2100,7 +2118,7 @@
 
   .mobileViewSwitch button {
     min-width: 44px;
-    min-height: 36px;
+    min-height: 44px;
     padding: 0 9px;
     border: 0;
     border-radius: 8px;
@@ -2118,7 +2136,7 @@
   }
 
   .mobileBlockAction {
-    min-height: 36px;
+    min-height: 44px;
     margin-left: auto;
     padding: 0 11px;
     display: inline-flex;
@@ -2237,7 +2255,7 @@
   .mobilePickerDays button,
   .mobilePickerDays > span {
     min-width: 0;
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .mobilePickerDays button {
@@ -2272,19 +2290,11 @@
   }
 }
 
-/* Telefon, iPad och hybridenheter: visa fingerhandtaget även om enheten också har mus.
-   Aktivt kort lyfts bara med transform/opacity — inga dyra layoutomräkningar under drag. */
+/* Telefon, iPad och hybridenheter: håll hela kortet för att flytta. Aktivt kort
+   lyfts bara med transform/opacity — inga layoutomräkningar under drag. */
 @media (pointer: coarse), (any-pointer: coarse) {
   .blockDrag {
-    padding-right: 35px;
-  }
-
-  .blockDrag .blockFlag {
-    right: 35px;
-  }
-
-  .touchDragHandle {
-    display: inline-flex;
+    touch-action: pan-y;
   }
 
   .blockTouchDragging {
@@ -2395,5 +2405,177 @@
 
   .headHours {
     display: none;
+  }
+}
+
+/* Mobil PWA-kanon: dockan ligger under bannern; de stora sidåtgärderna ägs av
+   Topnavs kontextrad och dupliceras därför inte inne i kalendern. */
+@media (max-width: 767px) {
+  .board {
+    height: calc(100dvh - 180px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: 320px;
+  }
+
+  .mobileCalendarDock {
+    order: -1;
+    display: block;
+    border-top: 0;
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-paper);
+  }
+
+  .mobileCalendarDateRow {
+    display: none;
+  }
+
+  .mobileCalendarActionRow {
+    min-height: 48px;
+    padding: 2px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobileTodayBtn {
+    min-width: 52px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-forest);
+    font-family: var(--font-ui);
+    font-size: 10px;
+  }
+
+  .mobileTodayActive {
+    box-shadow: inset 0 0 0 1px var(--c-forest);
+  }
+
+  .mobileViewSwitch {
+    min-width: 0;
+    display: grid;
+    flex: 1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-radius: 9px;
+    background: var(--c-paper-2);
+  }
+
+  .mobileViewSwitch button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 7px;
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 9px;
+  }
+
+  .mobileViewSwitch .mobileViewOn {
+    background: var(--c-paper);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--c-ink) 10%, transparent);
+  }
+
+  .mobileBlockAction,
+  .mobileCalendarHeaderHelp {
+    display: none;
+  }
+
+  .mobileCalendarPicker {
+    top: 8px;
+    bottom: auto;
+  }
+
+  .blockEnd {
+    right: 3px;
+    bottom: 2px;
+    font-size: 8px;
+  }
+
+  .blockTiny .blockHead {
+    padding-right: 12px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .board {
+    height: 100dvh;
+    min-height: 0;
+    border-radius: 0;
+  }
+
+  .mobileCalendarDock {
+    order: -1;
+    min-height: 44px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 0;
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .mobileCalendarDateRow {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    display: flex;
+    flex: 1;
+  }
+
+  .mobileDateToggle {
+    min-height: 44px;
+    display: block;
+  }
+
+  .mobileDateTitle {
+    font-family: var(--font-ui);
+    font-size: 12px;
+  }
+
+  .mobileDateStats {
+    display: block;
+    font-size: 8px;
+  }
+
+  .mobileStep {
+    display: none;
+  }
+
+  .mobileCalendarActionRow {
+    min-height: 44px;
+    padding: 0;
+    flex: none;
+    gap: 6px;
+  }
+
+  .mobileTodayBtn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .mobileViewSwitch {
+    width: 180px;
+    flex: none;
+  }
+
+  .mobileViewSwitch button {
+    min-height: 44px;
+    font-size: 8px;
+  }
+
+  .mobileBlockAction {
+    display: none;
+  }
+
+  .mobileCalendarPicker {
+    top: 46px;
+    right: auto;
+    bottom: auto;
+    left: 10px;
+    width: min(300px, calc(100% - 20px));
+  }
+
+  .scroll {
+    overscroll-behavior-x: contain;
   }
 }

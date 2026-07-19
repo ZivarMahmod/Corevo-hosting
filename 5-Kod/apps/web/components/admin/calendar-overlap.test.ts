@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { placeOverlaps } from './CalendarBoard'
+import * as calendarBoard from './CalendarBoard'
 import type { BookingRow } from './BookingDrawer'
+
+const { placeOverlaps } = calendarBoard
 
 /** goal-66: krockande bokningar måste ligga SIDA VID SIDA i kolumnen. En bokning som
  *  ritas ovanpå en annan är en bokning användaren inte ser — och en osedd bokning blir
@@ -57,7 +59,11 @@ describe('placeOverlaps', () => {
   it('återanvänder en bana när den blivit fri', () => {
     // a 09–10, b 09:30–10:30 (krock), c 10:30–11:30 (fri igen → bana 0).
     const placed = placeOverlaps(
-      [booking('a', '07:00', '08:00'), booking('b', '07:30', '08:30'), booking('c', '08:30', '09:30')],
+      [
+        booking('a', '07:00', '08:00'),
+        booking('b', '07:30', '08:30'),
+        booking('c', '08:30', '09:30'),
+      ],
       TZ,
     )
     expect(laneOf(placed, 'c').lane).toBe(0)
@@ -105,5 +111,21 @@ describe('placeOverlaps', () => {
     expect(placed).toHaveLength(3)
     // Tre identiska tider → tre egna banor, ingen döljer en annan.
     expect(new Set(placed.map((p) => p.lane))).toEqual(new Set([0, 1, 2]))
+  })
+})
+
+describe('calendarSwipeDirection', () => {
+  const swipeDirection = (
+    calendarBoard as typeof calendarBoard & {
+      calendarSwipeDirection?: (dx: number, dy: number) => -1 | 0 | 1
+    }
+  ).calendarSwipeDirection
+
+  it('byter bara dag efter ett tydligt horisontellt 48px-svep', () => {
+    expect(swipeDirection).toBeTypeOf('function')
+    expect(swipeDirection!(49, 4)).toBe(-1)
+    expect(swipeDirection!(-49, 4)).toBe(1)
+    expect(swipeDirection!(48, 0)).toBe(0)
+    expect(swipeDirection!(60, 50)).toBe(0)
   })
 })

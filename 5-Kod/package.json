@@ -16,7 +16,7 @@
     "deploy": "turbo run deploy",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css,mjs}\"",
     "verify:tenant": "node apps/web/scripts/verify-tenant.ts",
-    "test:acceptance:contract": "node -e \"const { spawnSync } = require('node:child_process'); const probes = ['e2e/acceptans/03-redigera-sidan-v2/probe.js', 'e2e/acceptans/04-installningar-v2/probe.js', 'e2e/acceptans/06-frisoradmin-pwa/probe.js']; let failed = false; for (const probe of probes) { const result = spawnSync(process.execPath, [probe, '--contract'], { stdio: 'inherit' }); failed ||= result.status !== 0; } process.exit(failed ? 1 : 0)\"",
+    "test:acceptance:contract": "node -e \"const { spawnSync } = require('node:child_process'); const probes = ['e2e/acceptans/03-redigera-sidan-v2/probe.js', 'e2e/acceptans/04-installningar-v2/probe.js', 'e2e/acceptans/06-frisoradmin-pwa/probe.js', 'e2e/acceptans/07-admin-mobile-chrome/probe.js']; let failed = false; for (const probe of probes) { const result = spawnSync(process.execPath, [probe, '--contract'], { stdio: 'inherit' }); failed ||= result.status !== 0; } process.exit(failed ? 1 : 0)\"",
     "test:e2e": "playwright test",
     "test:e2e:readonly": "playwright test --grep @readonly",
     "test:e2e:ui": "playwright test --ui"

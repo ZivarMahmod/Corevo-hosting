@@ -239,6 +239,7 @@ describe('0095 booking outcome truth', () => {
     expect(page).toContain('endToUtc: nowIso')
     expect(page).toContain("statuses: ['pending', 'confirmed']")
     expect(page).toContain('new Date(b.endTs).getTime() <= now')
-    expect(page).toContain('bokning(ar) behöver avslutas')
+    expect(page).toContain('besök väntar på avslut')
+    expect(page).toContain('Ingen driftstörning')
   })
 })

@@ -310,7 +310,9 @@
   border-radius: 50%;
   color: var(--c-ink-3);
   text-decoration: none;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .quickTab:hover {
@@ -521,8 +523,31 @@
 /* Kund-adminens mobilchrome finns i samma komponent men aktiveras först under
    768px. Plattformen, som inte skickar mobileNavigation, påverkas inte. */
 .mobileActions,
-.mobileNav {
+.mobileNav,
+.mobileContext,
+.mobilePageTitle {
   display: none;
+}
+
+.mobileContextAction {
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--c-ink-2);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .mobileMoreLinks {
@@ -779,7 +804,6 @@
   .mobileAdmin .contextWide {
     display: none;
   }
-
 }
 
 @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
@@ -911,7 +935,7 @@
     font-weight: 650;
   }
 
-  .mobileFab {
+  .platformMobileFab {
     min-width: 0;
     min-height: 44px;
     margin: -22px auto 0;
@@ -923,7 +947,7 @@
     text-decoration: none;
   }
 
-  .mobileFabButton {
+  .platformMobileFabButton {
     width: 46px;
     height: 46px;
     display: grid;
@@ -934,7 +958,7 @@
     color: var(--c-on-forest);
   }
 
-  .mobileFabLabel {
+  .platformMobileFabLabel {
     margin-top: 3px;
     white-space: nowrap;
   }
@@ -991,24 +1015,343 @@
     background: var(--c-forest);
   }
 
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFab {
-    margin: -7px auto 0;
-    transform: translateX(26px);
-  }
-
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFabButton {
-    width: 44px;
-    height: 44px;
-    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.28);
-  }
-
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFabLabel {
-    display: none;
-  }
-
   .shell[data-portal='admin']:has(.main > :global(.workbench)) .main {
     padding-top: 0;
   }
+}
+
+/* ── Kundadmin PWA: Codex Design-kanon 2026-07-19 ───────────────────────────
+   Samma knappar i två lägen. Stående staplar banner + kontextrad + huvudnav;
+   en liggande telefon flyttar chrome till 66px-räcken utan att byta funktioner. */
+@media (max-width: 767px) {
+  .adminMobileChrome .bar {
+    height: 58px;
+    min-height: 58px;
+    padding: 0 12px;
+    gap: 9px;
+  }
+
+  .adminMobileChrome .brand {
+    min-width: 0;
+    flex: none;
+    gap: 9px;
+  }
+
+  .adminMobileChrome .brandText {
+    display: none;
+  }
+
+  .adminMobileChrome .mobilePageTitle {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .adminMobileChrome .mobilePageTitle strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    color: var(--c-ink);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .adminMobileChrome .mobilePageTitle span {
+    overflow: hidden;
+    color: var(--c-ink-3);
+    font-family: var(--font-mono);
+    font-size: 7px;
+    letter-spacing: 0.035em;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .adminMobileChrome .mobileActions {
+    display: flex;
+  }
+
+  .mobileHelp {
+    width: 46px;
+    min-height: 44px;
+    padding: 2px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 0;
+    background: transparent;
+    color: var(--c-ink-2);
+    font-family: var(--font-mono);
+    font-size: 7px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .adminMobileChrome .mobileContext {
+    position: fixed;
+    right: 0;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    left: 0;
+    z-index: 26;
+    min-height: 54px;
+    padding: 0 8px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    align-items: stretch;
+    border-top: 1px solid var(--c-line);
+    background: var(--c-paper);
+    box-sizing: border-box;
+  }
+
+  .adminMobileChrome .mobileContextAction + .mobileContextAction {
+    border-left: 1px solid var(--c-line);
+  }
+
+  .adminMobileChrome .mobileContextAction {
+    flex-direction: row;
+  }
+
+  .adminMobileChrome .mobileContextWarning {
+    color: #a8761f;
+  }
+
+  .adminMobileChrome .mobileContextAction:disabled,
+  .adminMobileChrome .mobileNavItem:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .adminMobileChrome .mobileNav {
+    min-height: calc(68px + env(safe-area-inset-bottom));
+    padding: 5px 7px calc(8px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+    background: var(--c-cream);
+  }
+
+  .adminMobileChrome .mobileNavItem {
+    min-height: 44px;
+    padding: 3px 2px 1px;
+    gap: 3px;
+    color: var(--c-ink-3);
+    font-family: var(--font-mono);
+    font-size: 7px;
+    font-weight: 500;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+  }
+
+  .shell[data-portal='admin'] .adminMobileChrome .mobileNavIcon {
+    display: block !important;
+  }
+
+  .adminMobileChrome .mobileNavItemActive {
+    color: var(--c-forest);
+    font-weight: 700;
+  }
+
+  .adminMobileChrome .mobileNavItemActive::after {
+    display: none;
+  }
+
+  .adminMobileChrome .mobileRailPrevious,
+  .adminMobileChrome .mobileRailNext {
+    display: none;
+  }
+
+  .shell[data-portal='admin'] .main {
+    padding-bottom: calc(142px + env(safe-area-inset-bottom));
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .main {
+    min-height: calc(100dvh - 58px - env(safe-area-inset-top));
+    padding: 0 0 calc(122px + env(safe-area-inset-bottom));
+  }
+
+  .shell[data-portal='admin']:not(:has(.mobileContext)) .main {
+    padding-bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .shell[data-portal='admin'] .header.adminMobileChrome {
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    display: block;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .adminMobileChrome .bar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 66px;
+    height: auto;
+    min-height: 0;
+    padding: max(8px, env(safe-area-inset-top)) 7px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 7px;
+    border-right: 1px solid var(--c-line);
+    background: var(--c-paper);
+    box-sizing: border-box;
+    pointer-events: auto;
+  }
+
+  .adminMobileChrome .brand {
+    width: 100%;
+    min-height: 42px;
+    flex: none;
+    justify-content: center;
+  }
+
+  .adminMobileChrome .mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+  }
+
+  .adminMobileChrome .brandText,
+  .adminMobileChrome .mobilePageTitle {
+    display: none;
+  }
+
+  .adminMobileChrome .mobileActions {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .adminMobileChrome .mobileHelp {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .adminMobileChrome .mobileNav {
+    position: fixed;
+    top: 102px;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    width: 66px;
+    min-height: 0;
+    padding: 3px 6px max(7px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1px;
+    border: 0;
+    border-right: 1px solid var(--c-line);
+    background: var(--c-paper);
+    box-sizing: border-box;
+    pointer-events: auto;
+  }
+
+  .adminMobileChrome .mobileNavItem {
+    width: 100%;
+    min-height: 46px;
+    flex: none;
+    padding: 3px 1px;
+    gap: 2px;
+    border-radius: 7px;
+    font-size: 7px;
+  }
+
+  .adminMobileChrome .mobileNavItemActive {
+    background: color-mix(in srgb, var(--c-forest) 9%, transparent);
+  }
+
+  .adminMobileChrome .mobileRailPrevious {
+    min-height: 44px;
+    margin-top: auto;
+    display: flex;
+  }
+
+  .adminMobileChrome .mobileContext {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    z-index: 36;
+    width: 66px;
+    min-height: 0;
+    padding: max(8px, env(safe-area-inset-top)) 6px max(7px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    border: 0;
+    border-left: 1px solid var(--c-line);
+    background: var(--c-paper);
+    box-sizing: border-box;
+    pointer-events: auto;
+  }
+
+  .adminMobileChrome .mobileContextAction {
+    width: 100%;
+    min-height: 46px;
+    padding: 4px 1px;
+    flex: none;
+    flex-direction: column;
+    gap: 3px;
+    border: 0;
+    border-radius: 7px;
+    font-size: 7px;
+  }
+
+  .adminMobileChrome .mobileRailNext {
+    min-height: 44px;
+    margin-top: auto;
+    display: flex;
+  }
+
+  .shell[data-portal='admin'] .main,
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .main {
+    width: calc(100% - 132px);
+    min-height: 100dvh;
+    margin: 0 66px;
+    padding: 0;
+  }
+
+  .shell[data-portal='admin']:not(:has(.mobileContext)) .main {
+    width: calc(100% - 66px);
+    margin: 0 0 0 66px;
+  }
+}
+
+.mobileHelpBody {
+  display: grid;
+  gap: 12px;
+  color: var(--c-ink-2);
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 @media (max-width: 760px) {
@@ -1105,16 +1448,11 @@
    topprad — det är schemat som ska maximeras, inte allt. */
 @media (max-height: 500px) and (pointer: coarse) {
   .shell[data-portal='admin']:has(.main > :global(.workbench)) .header {
-    display: none;
+    display: block;
   }
 
   .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileNavItem {
-    min-height: 38px;
-  }
-
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFabButton {
-    width: 40px;
-    height: 40px;
+    min-height: 46px;
   }
 }
 

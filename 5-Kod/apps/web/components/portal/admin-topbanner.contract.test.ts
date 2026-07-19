@@ -127,9 +127,8 @@ describe('del 02: universal toppbanner v2', () => {
 
   it('annonserar Mer som aktuell sida när en samlad mobilflik är aktiv', () => {
     expect(topnav).toContain("aria-current={mobileMoreActive ? 'page' : undefined}")
-    expect(topnav).toContain('mobileNavGlyph(area.id)')
-    expect(topnav).toContain("mobileNavGlyph('more')")
-    expect(topnav).toContain('className={styles.mobileFabLabel}')
+    expect(topnav).toContain('mobileNavIcon(area.id)')
+    expect(topnav).toContain("mobileNavIcon('more')")
   })
 
   it('gör platsväljaren till den kanoniska globala menyn', () => {
@@ -202,7 +201,7 @@ describe('del 02: universal toppbanner v2', () => {
     )
     expect(adminCss).toMatch(/\.mobileNavIcon\s*\{[\s\S]*?font-size:\s*16px;/)
     expect(css).toMatch(
-      /\.mobileFabButton\s*\{[\s\S]*?width:\s*46px;[\s\S]*?height:\s*46px;[\s\S]*?box-shadow:\s*0 8px 20px rgba\(0, 0, 0, 0\.45\);/,
+      /\.platformMobileFabButton\s*\{[\s\S]*?width:\s*46px;[\s\S]*?height:\s*46px;[\s\S]*?box-shadow:\s*0 8px 20px rgba\(0, 0, 0, 0\.45\);/,
     )
   })
 })

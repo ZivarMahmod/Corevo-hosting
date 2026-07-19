@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Icon, Modal } from '@/components/portal/ui'
+import { MOBILE_HELP_EVENT } from '@/components/portal/mobile-search-event'
 import styles from './calendar.module.css'
 
 /** Hjälp för kalendern (goal-66).
@@ -25,7 +26,7 @@ const TIPS: { q: string; a: string }[] = [
   },
   {
     q: 'Hur flyttar jag en tid?',
-    a: 'Dra bokningen dit du vill ha den — även till en annan person. Du ser tiden växa fram medan du drar, och får bekräfta innan något ändras. Krockar tiden med en annan bokning stoppas flytten och bokningen ligger kvar.',
+    a: 'Håll bokningen en kort stund och dra sedan hela kortet dit du vill ha det — även till en annan person. Du ser tiden medan du drar och får bekräfta innan något ändras. Krockar tiden med en annan bokning stoppas flytten.',
   },
   {
     q: 'Hur lägger jag in lunch eller frånvaro?',
@@ -43,6 +44,10 @@ const TIPS: { q: string; a: string }[] = [
     q: 'Vad betyder de streckade rutorna?',
     a: 'Randigt mönster = blockerad eller utanför arbetstid. Streckad kant och ⚠ = obekräftad bokning som väntar på ditt beslut.',
   },
+  {
+    q: 'Vad betyder "besök väntar på avslut"?',
+    a: 'Det är ingen driftstörning. Ett tidigare besök saknar bara slutstatus. Markera det som genomfört eller uteblivet så blir besöksstatistiken korrekt.',
+  },
 ]
 
 export function CalendarHelp({
@@ -56,6 +61,13 @@ export function CalendarHelp({
 }) {
   const [open, setOpen] = useState(false)
 
+  useEffect(() => {
+    if (!mobileHeader) return
+    const openFromChrome = () => setOpen(true)
+    window.addEventListener(MOBILE_HELP_EVENT, openFromChrome)
+    return () => window.removeEventListener(MOBILE_HELP_EVENT, openFromChrome)
+  }, [mobileHeader])
+
   return (
     <>
       <button
@@ -65,7 +77,7 @@ export function CalendarHelp({
         aria-label="Hjälp om kalendern"
         title="Hjälp"
       >
-        {mobileHeader ? <span aria-hidden="true">?</span> : <Icon name="info" size={16} />}
+        <Icon name="info" size={16} stroke={1.7} />
         {label && <span>{label}</span>}
       </button>
 

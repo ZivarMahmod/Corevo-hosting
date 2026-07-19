@@ -31,8 +31,13 @@ describe('goal-72 S5: superadminens mobilkontrakt', () => {
 
     expect(topnav).toContain('env(safe-area-inset-bottom)')
     expect(topnav).toMatch(/\.mobileNav\s*\{[\s\S]*?z-index:\s*25;/)
-    expect(topnav).toMatch(/\.mobileFabButton\s*\{[\s\S]*?width:\s*46px;[\s\S]*?height:\s*46px;/)
+    expect(topnav).toMatch(
+      /\.platformMobileFabButton\s*\{[\s\S]*?width:\s*46px;[\s\S]*?height:\s*46px;/,
+    )
     expect(global).toContain('[data-portal="platform"] .bo-drawer')
+    expect(topnav).not.toMatch(
+      /@media \(orientation: landscape\) and \(max-height: 520px\)[\s\S]*?\.mobileAdmin \.bar/,
+    )
   })
 
   it('låter kundlistan växla list/detalj och håller onboarding inom telefonbredden', () => {
