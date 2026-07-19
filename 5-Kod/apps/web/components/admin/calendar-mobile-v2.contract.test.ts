@@ -65,6 +65,14 @@ describe('Kalender Mobil v2', () => {
     expect(cancelled).toContain('styles.logEmbedded')
   })
 
+  it('döljer Androids viewport-scrollbar utan att stänga av scroll', () => {
+    const global = read('app/globals.css')
+
+    expect(global).toMatch(/html::-webkit-scrollbar,[\s\S]*?body::-webkit-scrollbar/)
+    expect(global).toMatch(/html,[\s\S]*?body\s*\{[\s\S]*?scrollbar-width:\s*none;/)
+    expect(global).not.toMatch(/html,[\s\S]*?body\s*\{[\s\S]*?overflow:\s*hidden;/)
+  })
+
   it('begränsar månadsstatusen till vald månad och behåller beläggning och avbokningar', () => {
     const component = read('components/admin/CalendarBoard.tsx')
 

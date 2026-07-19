@@ -380,3 +380,15 @@ h3 {
   height: 0;
   display: none; /* Chromium / WebKit / Edge */
 }
+/* Android ritar viewportens indikator på root-scrollern. Den behöver explicita
+   rootselektorer trots wildcardregeln ovan; scrollfunktionen är oförändrad. */
+html,
+body {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

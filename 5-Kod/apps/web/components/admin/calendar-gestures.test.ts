@@ -8,13 +8,13 @@ import {
 } from './calendar-gestures'
 
 describe('mobil bokningsgest', () => {
-  it('låser drag först efter 500 ms och lämnar tidig 10 px-rörelse till scroll', () => {
-    expect(TOUCH_DRAG_HOLD_MS).toBe(500)
+  it('låser drag efter 300 ms och lämnar tidig 10 px-rörelse till scroll', () => {
+    expect(TOUCH_DRAG_HOLD_MS).toBe(300)
     expect(TOUCH_DRAG_SLOP_PX).toBe(10)
-    expect(touchDragIntent(499, 0)).toBe('pressing')
+    expect(touchDragIntent(299, 0)).toBe('pressing')
     expect(touchDragIntent(200, 9.9)).toBe('pressing')
     expect(touchDragIntent(200, 10.1)).toBe('scroll')
-    expect(touchDragIntent(500, 9.9)).toBe('lifted')
+    expect(touchDragIntent(300, 9.9)).toBe('lifted')
   })
 
   it('bevarar den exakta greppunkten när ghosten lyfts', () => {

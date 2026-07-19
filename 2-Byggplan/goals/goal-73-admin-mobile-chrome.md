@@ -30,7 +30,7 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Kort tryck öppnar bokningsdrawern direkt; mellanbubblan Ring/Öppna finns inte.
   Ringfunktionen ligger kvar i drawern och tangentbordets Enter/Space öppnar som
   tidigare.
-- Stationärt långtryck i 500 ms lyfter bokningen. Rörelse över 10 px före
+- Stationärt långtryck i 300 ms lyfter bokningen. Rörelse över 10 px före
   långtrycket avbryter dragkandidaten och låter vanlig scroll vinna. Hela kortet
   är dragyta; inget separat trepricks-, grip- eller touch-handtag finns.
 - Drag snappar på 15 minuter och kan byta tid/personal inom den aktuella dagen.
@@ -59,7 +59,7 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - `07-admin-mobile-chrome` acceptans + probe låser tredagarsblad, direktöppning,
   helt kort som dragyta och den kanoniska 520 px-landskapströskeln.
 - Vitest låser dagstripletter över månads-/års-/skottårsskifte,
-  Europe/Stockholms 23-/25-timmarsdygn, månadsklampning, 500 ms/10 px-intent,
+  Europe/Stockholms 23-/25-timmarsdygn, månadsklampning, 300 ms/10 px-intent,
   bevarad greppunkt och autoscrollens nollzon/riktning/maxhastighet.
 - Fokuserade testkörningar följs av full `pnpm test`, typecheck, lint och build.
 - Mekanisk viewport-kontroll omfattar 393×852, 852×393, Android 360 px,

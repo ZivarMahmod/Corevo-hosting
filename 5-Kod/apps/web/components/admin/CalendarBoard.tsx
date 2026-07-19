@@ -1467,7 +1467,6 @@ type BookingDragSession = {
   lastFrameAt: number | null
   target: HTMLButtonElement
   scrollContainer: HTMLElement | null
-  cancelTouchBlock: (() => void) | null
   cancelGlobalBlock: (() => void) | null
 }
 
@@ -1509,6 +1508,7 @@ function BookingBlock({
 }) {
   const dim = isAvbokad(booking.status)
   const name = booking.customerName?.trim() || 'Gäst'
+  const bookingButtonRef = useRef<HTMLButtonElement>(null)
   const pointerDrag = useRef<BookingDragSession | null>(null)
   const suppressClick = useRef(false)
   const suppressClickTimer = useRef<number | null>(null)
@@ -1540,11 +1540,9 @@ function BookingBlock({
   const clearSessionResources = (drag: BookingDragSession) => {
     if (drag.timer != null) window.clearTimeout(drag.timer)
     if (drag.frame != null) window.cancelAnimationFrame(drag.frame)
-    drag.cancelTouchBlock?.()
     drag.cancelGlobalBlock?.()
     drag.timer = null
     drag.frame = null
-    drag.cancelTouchBlock = null
     drag.cancelGlobalBlock = null
   }
 
@@ -1613,11 +1611,6 @@ function BookingBlock({
     drag.active = true
     if (drag.timer != null) window.clearTimeout(drag.timer)
     drag.timer = null
-    if (drag.touch) {
-      const preventTouchScroll = (event: TouchEvent) => event.preventDefault()
-      drag.target.addEventListener('touchmove', preventTouchScroll, { passive: false })
-      drag.cancelTouchBlock = () => drag.target.removeEventListener('touchmove', preventTouchScroll)
-    }
     setTouchDragging(true)
     setGhost({
       width: drag.width,
@@ -1655,6 +1648,19 @@ function BookingBlock({
     suppressSyntheticClick()
     clearDragVisual()
   }
+
+  // Listenern måste finnas redan när touchsekvensen börjar. Chromium bestämmer
+  // annars att scrollmotorn äger gesten och skickar pointercancel så fort den
+  // redan lyfta ghosten börjar röra sig. Före lyftet blockeras ingenting.
+  useEffect(() => {
+    const target = bookingButtonRef.current
+    if (!target) return
+    const blockActiveTouchScroll = (event: TouchEvent) => {
+      if (pointerDrag.current?.active) event.preventDefault()
+    }
+    target.addEventListener('touchmove', blockActiveTouchScroll, { passive: false })
+    return () => target.removeEventListener('touchmove', blockActiveTouchScroll)
+  }, [])
 
   useEffect(
     () => () => {
@@ -1734,6 +1740,7 @@ function BookingBlock({
   return (
     <>
       <button
+        ref={bookingButtonRef}
         type="button"
         className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${touchDragging ? ` ${styles.blockTouchDragging}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
         style={{
@@ -1776,7 +1783,6 @@ function BookingBlock({
             lastFrameAt: null,
             target,
             scrollContainer: target.closest<HTMLElement>('[data-calendar-scroll]'),
-            cancelTouchBlock: null,
             cancelGlobalBlock: null,
           }
           pointerDrag.current = drag
