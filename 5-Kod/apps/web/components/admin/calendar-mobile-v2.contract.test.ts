@@ -30,6 +30,15 @@ describe('Kalender Mobil v2', () => {
     expect(css).toMatch(
       /@media \(max-width: 767px\)[\s\S]*?\.mobileCalendarDock\s*\{[\s\S]*?display:\s*block;/,
     )
+    expect(component).toContain('pagerNavigationPending')
+    expect(component).toContain('setPagerNavigationPending(true)')
+    expect(component).toContain('setPagerNavigationPending(false)')
+    expect(component).toContain(
+      'inert={pagerNavigationPending || index !== activeDaySlide ? true : undefined}',
+    )
+    expect(component).toContain('pagerCenteredKey')
+    expect(component).toContain('const previousDayStart = pagerDayStart.current')
+    expect(component).toContain('pagerCenteredKey.current !== pagerKey')
   })
 
   it('ger mobilen en egen topphjälp och bottensök utan en permanent verktygsrad', () => {

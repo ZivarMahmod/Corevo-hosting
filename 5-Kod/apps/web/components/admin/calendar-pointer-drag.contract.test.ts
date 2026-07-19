@@ -32,7 +32,7 @@ describe('kalenderns draggenväg med mus och touch', () => {
 
   it('behåller vertikal scroll tills långtryck och faktisk förflyttning aktiverar drag', () => {
     expect(css).toMatch(
-      /@media \(pointer:\s*coarse\), \(any-pointer:\s*coarse\)[\s\S]*?\.blockDrag\s*\{[\s\S]*?touch-action:\s*pan-y pinch-zoom;/,
+      /@media \(pointer:\s*coarse\), \(any-pointer:\s*coarse\)[\s\S]*?\.blockDrag\s*\{[\s\S]*?touch-action:\s*pan-x pan-y pinch-zoom;/,
     )
     expect(css).not.toMatch(/\.blockDrag\s*\{[\s\S]*?touch-action:\s*none;/)
     expect(component).toContain(
@@ -45,6 +45,12 @@ describe('kalenderns draggenväg med mus och touch', () => {
     expect(gestures).toContain('TOUCH_DRAG_SLOP_PX = 10')
     expect(component).toContain('cancelPressCandidate')
     expect(component).not.toContain('<Icon name="grip"')
+  })
+
+  it('avbryter friytans långtryck när ett andra finger tar över', () => {
+    expect(component).toMatch(
+      /function FreeArea\([\s\S]*?onPointerDown=\{\(e\) => \{[\s\S]*?if \(!e\.isPrimary\) \{[\s\S]*?cancel\(\)/,
+    )
   })
 
   it('öppnar direkt och lyfter en fast ghost utan textmarkering eller callout', () => {

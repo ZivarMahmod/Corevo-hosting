@@ -85,6 +85,17 @@ export function addDays(date: string, n: number): string {
   return dt.toISOString().slice(0, 10)
 }
 
+/** UTC-instantets lokala kalenderdag i tenantens tidszon. Server- och klientsäker:
+ *  datalagret får aldrig anropa en helper genom en `use client`-modul. */
+export function dayKey(timestamp: string, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(timestamp))
+}
+
 /** Föregående, vald och nästa lokala kalenderdag. Rent datumkontrakt utan UTC-offset,
  * så servern och mobilens scroll-snap alltid bygger samma tredagarstriplett. */
 export function calendarDayTriplet(date: string): readonly [string, string, string] {

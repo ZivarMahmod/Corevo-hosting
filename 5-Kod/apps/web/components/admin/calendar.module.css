@@ -2363,7 +2363,7 @@
    lyfts bara med transform/opacity — inga layoutomräkningar under drag. */
 @media (pointer: coarse), (any-pointer: coarse) {
   .blockDrag {
-    touch-action: pan-y pinch-zoom;
+    touch-action: pan-x pan-y pinch-zoom;
   }
 
   .blockTouchDragging {

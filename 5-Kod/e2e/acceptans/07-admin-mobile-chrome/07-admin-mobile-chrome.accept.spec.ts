@@ -65,7 +65,7 @@ test.describe('07 Kundadmin mobilchrome — source contract @readonly @contract'
     expect(component).not.toContain('data-booking-drag-handle')
     expect(component).not.toContain('touchDragHandle')
     expect(css).not.toContain('.touchDragHandle')
-    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?touch-action:\s*pan-y pinch-zoom;/)
+    expect(css).toMatch(/\.blockDrag\s*\{[\s\S]*?touch-action:\s*pan-x pan-y pinch-zoom;/)
     expect(css).toMatch(/\.dayTrack\s*\{[\s\S]*?display:\s*flex;/)
     expect(css).toMatch(/\.daySlide\s*\{[\s\S]*?flex:\s*0 0 100%;/)
     expect(help).toContain('Håll bokningen')

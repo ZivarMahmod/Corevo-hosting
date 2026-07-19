@@ -17,6 +17,7 @@ import {
 } from '@/lib/admin/data'
 import {
   calendarDayTriplet,
+  dayKey,
   dayRangeUtc,
   isValidDate,
   monthGridRangeUtc,
@@ -36,7 +37,7 @@ import type {
   CalendarStaff,
   CalendarView,
 } from '@/components/admin/CalendarBoard'
-import { dayKey, type BookingRow } from '@/components/admin/BookingDrawer'
+import type { BookingRow } from '@/components/admin/BookingDrawer'
 import calendarStyles from '@/components/admin/calendar.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -127,9 +128,7 @@ export default async function KalenderPage({
   // working_hours.weekday) — inte serverns lokala dag.
   const weekday = new Date(`${date}T12:00:00Z`).getUTCDay()
   const weekdays =
-    view === 'dag'
-      ? dayDates.map((day) => new Date(`${day}T12:00:00Z`).getUTCDay())
-      : [weekday]
+    view === 'dag' ? dayDates.map((day) => new Date(`${day}T12:00:00Z`).getUTCDay()) : [weekday]
 
   // Frånvaro = kalenderns blockeringar. EN modell för "resursen kan inte bokas" —
   // rast, frånvaro och avvikande arbetstid är samma sak (Wavys universalmekanism).
@@ -254,7 +253,8 @@ export default async function KalenderPage({
     }))
   }
 
-  const rowsForDate = (day: string) => allRows.filter((booking) => dayKey(booking.startTs, tz) === day)
+  const rowsForDate = (day: string) =>
+    allRows.filter((booking) => dayKey(booking.startTs, tz) === day)
   const blocksForDate = (day: string) => {
     const dayRange = dayRangeUtc(day, tz)
     const from = new Date(dayRange.fromUtc).getTime()
@@ -267,14 +267,10 @@ export default async function KalenderPage({
     date: day,
     bookings: rowsForDate(day),
     blocks: blocksForDate(day),
-    staff: staffRows(
-      rostersByWeekday.get(new Date(`${day}T12:00:00Z`).getUTCDay()) ?? [],
-    ),
+    staff: staffRows(rostersByWeekday.get(new Date(`${day}T12:00:00Z`).getUTCDay()) ?? []),
   })
   const dayNeighbors: CalendarDayNeighbors | undefined =
-    view === 'dag'
-      ? { previous: dayData(dayDates[0]), next: dayData(dayDates[2]) }
-      : undefined
+    view === 'dag' ? { previous: dayData(dayDates[0]), next: dayData(dayDates[2]) } : undefined
   const rows = view === 'dag' ? rowsForDate(date) : allRows
   const currentBlocks = view === 'dag' ? blocksForDate(date) : visibleBlocks
   const currentStaff = staffRows(visibleRoster)
@@ -324,29 +320,29 @@ export default async function KalenderPage({
         </div>
       ) : null}
       <CalendarBoardLazy
-      bookings={rows}
-      blocks={currentBlocks}
-      staff={currentStaff}
-      dayNeighbors={dayNeighbors}
-      // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
-      // drawern och sedan avvisas av servern.
-      services={allServices
-        .filter((s) => s.active && (s.location_id === null || s.location_id === locationId))
-        .map((s) => ({
-          id: s.id,
-          name: s.name,
-          durationMin: s.duration_min ?? 30,
-          priceCents: s.price_cents ?? null,
-        }))}
-      tz={tz}
-      view={view}
-      date={date}
-      today={today}
-      locationId={locationId}
-      staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
-      openBookingId={sp.open}
-      onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
-      canManageBookings={canManageBookings}
+        bookings={rows}
+        blocks={currentBlocks}
+        staff={currentStaff}
+        dayNeighbors={dayNeighbors}
+        // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
+        // drawern och sedan avvisas av servern.
+        services={allServices
+          .filter((s) => s.active && (s.location_id === null || s.location_id === locationId))
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            durationMin: s.duration_min ?? 30,
+            priceCents: s.price_cents ?? null,
+          }))}
+        tz={tz}
+        view={view}
+        date={date}
+        today={today}
+        locationId={locationId}
+        staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
+        openBookingId={sp.open}
+        onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
+        canManageBookings={canManageBookings}
       />
     </>
   )

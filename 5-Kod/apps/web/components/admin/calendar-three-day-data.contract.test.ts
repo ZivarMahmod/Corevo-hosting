@@ -12,6 +12,10 @@ describe('dagvyns tredagarsdata', () => {
     const data = read('lib/admin/data.ts')
 
     expect(page).toContain('calendarDayTriplet(date)')
+    expect(page).toMatch(/import \{[\s\S]*?dayKey,[\s\S]*?\} from '@\/lib\/admin\/dates'/)
+    expect(page).not.toMatch(
+      /import \{\s*dayKey,[\s\S]*?from '@\/components\/admin\/BookingDrawer'/,
+    )
     expect(page).toContain('staffDays(tenant.id, weekdays, locationId)')
     expect(page).toContain('dayNeighbors')
     expect(data).toContain('export async function staffDays(')

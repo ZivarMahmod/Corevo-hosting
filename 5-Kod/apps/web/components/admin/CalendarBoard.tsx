@@ -11,14 +11,13 @@ import {
 } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { addDays, addMonths, isoWeekNumber } from '@/lib/admin/dates'
+import { addDays, addMonths, dayKey, isoWeekNumber } from '@/lib/admin/dates'
 import { occupancyPct } from '@/lib/admin/dashboard-view'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
 import dynamic from 'next/dynamic'
 import {
   BookingDrawer,
-  dayKey,
   eligibleRescheduleStaff,
   isAvbokad,
   isBokad,
@@ -34,7 +33,7 @@ import type { CalendarService, NewBookingSeed } from './NewBookingDrawer'
 // hämtas först vid klick. CalendarHelp + CancelledLog monteras alltid (deras trigger-knapp
 // syns i verktygsraden; bara modal-innehållet är klick-gatat) → deras chunk hämtas vid
 // mount, men ligger fortfarande UTANFÖR huvud-chunken (mindre initial parse). BookingDrawer
-// lämnas STATISK: den delar modul med synkrona render-hjälpare (dayKey/isAvbokad/isKlar/
+// lämnas STATISK: den delar modul med synkrona render-hjälpare (isAvbokad/isKlar/
 // statusAccent/timeLabel) som CalendarBoard behöver eagerly — att splitta drar in modulen ändå.
 const NewBookingDrawer = dynamic(() => import('./NewBookingDrawer').then((m) => m.NewBookingDrawer))
 const BlockDrawer = dynamic(() => import('./BlockDrawer').then((m) => m.BlockDrawer))
@@ -291,6 +290,7 @@ export function CalendarBoard({
   const preservedTopMinute = useRef<number | null>(null)
   const lastAutoScrollKey = useRef<string | null>(null)
   const [activeDaySlide, setActiveDaySlide] = useState(1)
+  const [pagerNavigationPending, setPagerNavigationPending] = useState(false)
   const [announcedDay, setAnnouncedDay] = useState(date)
   const [open, setOpen] = useState<BookingRow | null>(
     () => bookings.find((b) => b.id === openBookingId) ?? null,
@@ -563,6 +563,8 @@ export function CalendarBoard({
   }, [dayStart, dayEnd])
 
   const gridHeight = (dayEnd - dayStart) * PX_PER_MIN
+  const pagerCenteredKey = useRef<string | null>(null)
+  const pagerDayStart = useRef(dayStart)
 
   const dayLabelLong = new Intl.DateTimeFormat('sv-SE', {
     weekday: 'long',
@@ -677,6 +679,7 @@ export function CalendarBoard({
     if (slide === 1 || pagerNavigationLocked.current) return
     preservedTopMinute.current = visibleMinuteAtScrollTop(dayStart, scroller.scrollTop, PX_PER_MIN)
     pagerNavigationLocked.current = true
+    setPagerNavigationPending(true)
     go({ datum: landedDay })
   }, [dayStart, go, mobilePagerMatches, view, visibleDaySlides])
 
@@ -703,20 +706,35 @@ export function CalendarBoard({
   // ändras först när bladet landat, aldrig mitt i halvpositionen.
   useLayoutEffect(() => {
     const scroller = scrollRef.current
-    if (!scroller || view !== 'dag' || !mobilePagerMatches()) return
-    scroller.scrollLeft = scroller.clientWidth
-    pagerScrollLeft.current = scroller.clientWidth
-    if (preservedTopMinute.current !== null) {
-      scroller.scrollTop = scrollTopForVisibleMinute(
-        dayStart,
-        preservedTopMinute.current,
-        PX_PER_MIN,
-      )
+    const previousDayStart = pagerDayStart.current
+    pagerDayStart.current = dayStart
+    const pagerKey = `${view}:${date}`
+    if (!scroller || view !== 'dag' || !mobilePagerMatches()) {
+      pagerCenteredKey.current = null
+      return
+    }
+
+    const shouldCenter = pagerCenteredKey.current !== pagerKey
+    const visibleMinute =
+      preservedTopMinute.current ??
+      visibleMinuteAtScrollTop(previousDayStart, scroller.scrollTop, PX_PER_MIN)
+
+    if (shouldCenter) {
+      pagerCenteredKey.current = pagerKey
+      scroller.scrollLeft = scroller.clientWidth
+      pagerScrollLeft.current = scroller.clientWidth
+      pagerNavigationLocked.current = false
+      setPagerNavigationPending(false)
+      setActiveDaySlide(1)
+      setAnnouncedDay(date)
+    }
+
+    // En refresh kan utvidga den gemensamma tidsaxeln utan att datumet ändras.
+    // Behåll då väggklockan men rör inte den horisontella halvpositionen.
+    if (shouldCenter || previousDayStart !== dayStart) {
+      scroller.scrollTop = scrollTopForVisibleMinute(dayStart, visibleMinute, PX_PER_MIN)
       preservedTopMinute.current = null
     }
-    pagerNavigationLocked.current = false
-    setActiveDaySlide(1)
-    setAnnouncedDay(date)
   }, [date, dayStart, mobilePagerMatches, view])
 
   useEffect(() => {
@@ -1018,8 +1036,8 @@ export function CalendarBoard({
                 key={day.date}
                 className={`${styles.daySlide}${index !== 1 ? ` ${styles.daySlideAdjacent}` : ''}`}
                 data-calendar-day-slide={day.date}
-                inert={activeDaySlide === index ? undefined : true}
-                aria-hidden={activeDaySlide === index ? undefined : true}
+                inert={pagerNavigationPending || index !== activeDaySlide ? true : undefined}
+                aria-hidden={pagerNavigationPending || index !== activeDaySlide ? true : undefined}
               >
                 <DayGrid
                   bookings={day.bookings}
@@ -1362,6 +1380,11 @@ function FreeArea({
       aria-label={`Boka ledig tid hos ${staffName}`}
       onPointerDown={(e) => {
         if (e.pointerType === 'mouse') return // musen går på onClick
+        if (!e.isPrimary) {
+          cancel()
+          return
+        }
+        if (hold.current) cancel()
         const el = e.currentTarget
         const { clientX: x, clientY: y } = e
         setArmed(true)
