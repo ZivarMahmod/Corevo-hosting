@@ -1039,17 +1039,9 @@ export function CalendarBoard({
       </p>
 
       <div className={styles.mobileCalendarDock}>
-        <div className={styles.mobileCalendarDateRow}>
-          <button
-            type="button"
-            className={styles.mobileDayStepButton}
-            onClick={() => requestStep(-1)}
-            aria-label={`Föregående: ${compactStepLabel(-1)}`}
-            disabled={step === 'month'}
-          >
-            <Icon name="chevronLeft" size={15} />
-            <span>{compactStepLabel(-1)}</span>
-          </button>
+        <div className={styles.mobileCalendarActionRow}>
+          {/* Stående mobil visar redan datum + statistik i Topnav. Den här lilla
+              datumknappen behövs bara i liggande, där Topnav är dolt. */}
           <button
             type="button"
             className={styles.mobileDateToggle}
@@ -1063,28 +1055,23 @@ export function CalendarBoard({
             </span>
             <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
           </button>
+          {showToday && (
+            <button
+              type="button"
+              className={styles.mobileTodayBtn}
+              onClick={() => go({ datum: today, vy: 'dag', resurs: '' })}
+            >
+              Idag
+            </button>
+          )}
           <button
             type="button"
             className={styles.mobileDayStepButton}
-            onClick={() => requestStep(1)}
-            aria-label={`Nästa: ${compactStepLabel(1)}`}
+            onClick={() => requestStep(-1)}
+            aria-label={`Föregående: ${compactStepLabel(-1)}`}
             disabled={step === 'month'}
           >
-            <span>{compactStepLabel(1)}</span>
-            <Icon name="chevronRight" size={15} />
-          </button>
-        </div>
-
-        <div className={styles.mobileCalendarActionRow}>
-          <button
-            type="button"
-            className={`${styles.mobileTodayBtn}${showToday ? '' : ` ${styles.mobileTodayIdle}`}`}
-            onClick={() => go({ datum: today, vy: 'dag', resurs: '' })}
-            aria-hidden={!showToday}
-            tabIndex={showToday ? 0 : -1}
-            disabled={!showToday}
-          >
-            Idag
+            <Icon name="chevronLeft" size={15} />
           </button>
           <div className={styles.mobileViewSwitch} role="radiogroup" aria-label="Kalendervy">
             {VIEWS.map((item) => (
@@ -1100,6 +1087,15 @@ export function CalendarBoard({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className={styles.mobileDayStepButton}
+            onClick={() => requestStep(1)}
+            aria-label={`Nästa: ${compactStepLabel(1)}`}
+            disabled={step === 'month'}
+          >
+            <Icon name="chevronRight" size={15} />
+          </button>
           <button
             type="button"
             className={styles.mobileBlockAction}
