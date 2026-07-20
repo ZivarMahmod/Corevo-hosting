@@ -1,5 +1,13 @@
 # SMS / 46elks — aktivering, canary och rollback
 
+> **Strategiskt ersättningsbeslut 2026-07-20:** 46elks-koden nedan beskriver den
+> befintliga, fortsatt avstängda transporten. Den ska inte bli Corevos långsiktiga
+> produktionsväg och ska inte aktiveras i väntan på egen gateway med direkt
+> operatörsanslutning. Kanonisk plan och Claude-handoff finns i
+> `1-Planering/18-sms-direktoperator/00-BESLUT-ARKITEKTUR-BYGGPLAN.md` respektive
+> `1-Planering/18-sms-direktoperator/CLAUDE-HANDOFF.md`. Befintlig
+> `notifications_outbox` förblir den enda beständiga kön.
+
 Status 2026-07-18: transport och delivery-webhook är byggda men **fysiskt AV** i
 både produktion och staging. `SMS_DELIVERY_MODE` är committad som `off` i
 `apps/web/wrangler.jsonc`. Credentials, tenantinställning eller en kodväg kan

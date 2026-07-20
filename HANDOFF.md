@@ -47,6 +47,17 @@ tenant och ett testfall, aldrig produktdefinitionen.
   notifieringscron, driftgrindar och fail-closed handel. Skarpt SMS är byggt bakom
   tre grindar men `SMS_DELIVERY_MODE=off`; inget provideranrop ska ske före Zivars
   separata canarybeslut.
+- Zivar har låst den långsiktiga SMS-riktningen: Corevo ska äga gateway och kod,
+  utan CPaaS-återförsäljare, och ansluta direkt till en operatörs A2P/Bulk-SMSC
+  via direkt REST först när kraven klaras, annars SMPP på ett bevisat behov.
+  Samma avtalsförfrågan ska gå till Telia, Tele2/Comviq, Telenor/Vimla och
+  Tre/Hi3G/Hallon; Telia är första tekniska kandidat men inte förvald vinnare.
+  Comviq-SIM/Huawei kan
+  bara ge nummerbaserad avsändare och kan inte lösas med ett bättre modem.
+  Operatörsbeställning, SMPP-arkitektur, Sender ID-policy, PIN före bokning,
+  magic-link/PWA-flöde och Claude-handoff finns i
+  `1-Planering/18-sms-direktoperator/`. `notifications_outbox` förblir enda kö;
+  ingen parallell `sms_jobs` får byggas. Inget SMS har aktiverats av beslutet.
 - Personalpanelen är härdad: oförändrade formulär ger inget falskt fel,
   kalenderfärg skickas explicit och historisk personal kan inte erbjudas permanent
   radering. Personkortet äger nu personens bokningsbarhet, tjänster, arbetspass,
@@ -81,6 +92,10 @@ så goal-72 ligger kvar i `goals/` tills dess. Det senast inkomna designpaketet
 `Dagens genomgångar/Mobil pwa/` styr den aktiva goal-73 och är fortsatt designlag.
 Provider-konfigurationen per partner finns, men `SMS_DELIVERY_MODE=off`; provider-dry-run
 och live-SMS är fortsatt separata, uttryckligen godkända driftsteg.
+Direktoperatörsspåret i `1-Planering/18-sms-direktoperator/` är nu planerat men
+blir inte ett konkurrerande aktivt goal medan goal-73 fortfarande pågår. Den
+externa förutsättningen är ett undertecknat svenskt A2P/Bulk-avtal, en aktiv
+SMS-tjänst, dynamiskt alfanumeriskt Sender ID och tekniska testcredentials.
 
 ## Hårda regler
 
