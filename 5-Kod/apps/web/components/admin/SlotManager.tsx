@@ -99,6 +99,7 @@ export function SlotManager({
   weekCols,
   locations,
   defaultLocationId,
+  showStaffSelector = true,
 }: {
   staffId: string
   staff: StaffChip[]
@@ -110,6 +111,8 @@ export function SlotManager({
   // uncluttered, och servern faller tillbaka på medarbetarens/primär plats.
   locations: LocationRow[]
   defaultLocationId: string
+  /** Personkortet är redan staff-scopat och behöver ingen navigerande väljare. */
+  showStaffSelector?: boolean
 }) {
   const router = useRouter()
 
@@ -129,7 +132,7 @@ export function SlotManager({
   return (
     <div>
       {/* Frisör-väljare: färgade avatar-pill-chips (mock §4.5) */}
-      <StaffChips staff={staff} selectedId={staffId} />
+      {showStaffSelector ? <StaffChips staff={staff} selectedId={staffId} /> : null}
 
       {/* Röd-tråd-callout — copy VERBATIM ur mocken (ServicesSchema.jsx rad 88).
           Mockens glyf är "sparkle" (saknas i Icon-setet) → närmaste godkända accent =
@@ -260,7 +263,10 @@ function WeekGrid({
     <>
       <style>{`
         .scheman-week { grid-template-columns: repeat(7, 1fr); }
-        @media (max-width: 920px) { .scheman-week { grid-template-columns: 1fr; } }
+        @media (max-width: 920px) {
+          .scheman-week { grid-template-columns: 1fr; }
+          .scheman-week-day { min-height: 0 !important; }
+        }
       `}</style>
       <div
         style={{
@@ -277,6 +283,7 @@ function WeekGrid({
             return (
               <div
                 key={col.wd}
+                className="scheman-week-day"
                 style={{
                   minHeight: 360,
                   display: 'flex',
@@ -685,14 +692,14 @@ export function WorkingHoursEditor({
     <section style={{ marginTop: '2.25rem' }}>
       {/* eyebrow + Playfair-h2 + sub — egen sektionsrubrik i grammatiken */}
       <span className="eyebrow" style={{ color: 'var(--c-gold-600)' }}>
-        Öppettider
+        Personens vecka
       </span>
       <h2 className="h2" style={{ margin: '6px 0 0' }}>
         Arbetstider (öppet–stängt)
       </h2>
       <p className="small" style={{ margin: '4px 0 0', maxWidth: 560, color: 'var(--c-ink-3)' }}>
-        Veckovisa intervall för {staffName} — styr öppettiderna på den publika sajten och är
-        grunden de bokbara tiderna ovan genereras ur.
+        Veckovisa arbetspass för {staffName}. Platsens öppettider är den yttre ramen; dessa
+        intervall styr när just personen kan bokas och är grunden för de bokbara starttiderna.
       </p>
 
       <WorkingHoursAddRow

@@ -43,12 +43,12 @@ describe('personalens bokningsbara onboarding', () => {
 
   it('visar hela bokningsbarhetsregeln, inklusive schema', () => {
     const card = readWeb('components/admin/StaffBookability.tsx')
-    const page = readWeb('app/(admin)/admin/scheman/page.tsx')
+    const detail = readWeb('components/admin/StaffDetail.tsx')
 
     expect(card).toContain('workingDays')
     expect(card).toContain('Arbetstider')
     expect(card).toContain('workingHoursCount: workingDays')
-    expect(page).toContain('workingDays={new Set(rows.map((row) => row.weekday)).size}')
+    expect(detail).toContain('workingDays={new Set(workingHours.map((row) => row.weekday)).size}')
   })
 
   it('validerar vald aktiv plats innan personal skapas eller auth-inbjudan skickas', () => {
@@ -72,7 +72,10 @@ describe('personalens bokningsbara onboarding', () => {
     const adminEnd = adminActions.indexOf('// ── Working hours', adminStart)
     const adminInvite = adminActions.slice(adminStart, adminEnd)
     const platformStart = platformActions.indexOf('export async function inviteTenantStaff')
-    const platformEnd = platformActions.indexOf('export async function updateTenantStaff', platformStart)
+    const platformEnd = platformActions.indexOf(
+      'export async function updateTenantStaff',
+      platformStart,
+    )
     const platformInvite = platformActions.slice(platformStart, platformEnd)
 
     expect(adminInvite.indexOf('findStaffInviteBinding')).toBeLessThan(
@@ -81,14 +84,18 @@ describe('personalens bokningsbara onboarding', () => {
     expect(adminInvite).toContain(".is('profile_id', null)")
     expect(adminInvite).toContain('compensateAdminStaffInvite')
     expect(adminInvite).toContain('manual_cleanup_required')
-    expect(adminInvite).toContain('binding.authBoundStaffId && binding.authBoundStaffId !== staffId')
+    expect(adminInvite).toContain(
+      'binding.authBoundStaffId && binding.authBoundStaffId !== staffId',
+    )
 
     expect(platformInvite.indexOf('findStaffInviteBinding')).toBeLessThan(
       platformInvite.indexOf('inviteUserByEmail'),
     )
     expect(platformInvite).toContain('compensatePlatformStaffInvite')
     expect(platformInvite).toContain('manual_cleanup_required')
-    expect(platformInvite).toContain('binding.authBoundStaffId && binding.authBoundStaffId !== staffId')
+    expect(platformInvite).toContain(
+      'binding.authBoundStaffId && binding.authBoundStaffId !== staffId',
+    )
     expect(platformInvite).toContain('if (metadataError)')
     expect(platformInvite).toContain('if (uErr)')
     expect(platformInvite).toContain('if (linkErr || !linked)')
@@ -118,14 +125,17 @@ describe('personalens bokningsbara onboarding', () => {
 
     expect(start).toBeGreaterThan(-1)
     expect(linkAction).toContain("adminCtx('personal')")
+    expect(linkAction).toContain('if (ctx.user.platformAdmin)')
+    expect(linkAction).toContain('ctx.user.tenantId !== ctx.tenant.id')
     expect(linkAction).toContain("preferences.accessScope !== 'organization'")
     expect(linkAction).toContain(".eq('profile_id', ctx.user.id)")
-    expect(linkAction).toContain(".update({ profile_id: ctx.user.id })")
+    expect(linkAction).toContain('.update({ profile_id: ctx.user.id })')
     expect(linkAction).toContain(".is('profile_id', null)")
     expect(linkAction).not.toContain("from('roles')")
     expect(linkAction).not.toContain('inviteUserByEmail')
     expect(roster).toContain('Koppla mitt ägarkonto')
-    expect(detailPage).toContain('canLinkCurrentUser={!ownerStaffLink && !s.profile_id && canManageRoles}')
+    expect(detailPage).toContain('!user.platformAdmin && !ownerStaffLink')
+    expect(detailPage).toContain('!s.profile_id && canManageRoles')
   })
 
   it('fencar tjänster till aktiva globala eller personalens plats', () => {

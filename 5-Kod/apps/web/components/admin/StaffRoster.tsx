@@ -41,6 +41,8 @@ export type ServiceOption = {
   name: string
   active: boolean
   locationId: string | null
+  /** Tjänstens kanoniska längd. Personalkopplingen har ingen egen override. */
+  durationMin?: number
 }
 
 /** ACTIVE locations, for the Drawer's plats-select (updateStaff → staff.location_id).
@@ -716,7 +718,14 @@ export function ServicesSection({
                   defaultChecked={member.serviceIds.includes(svc.id)}
                   style={{ accentColor: 'var(--c-forest)' }}
                 />
-                {svc.name}
+                <span>
+                  {svc.name}
+                  {svc.durationMin ? (
+                    <small style={{ marginLeft: 6, color: 'var(--c-ink-3)' }}>
+                      {svc.durationMin} min
+                    </small>
+                  ) : null}
+                </span>
               </label>
             ))}
           </div>

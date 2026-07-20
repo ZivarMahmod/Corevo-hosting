@@ -2,11 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  addStaffTimeOff,
-  removeStaffTimeOff,
-  type ActionState,
-} from '@/lib/admin/schedule-actions'
+import { addStaffTimeOff, removeStaffTimeOff, type ActionState } from '@/lib/admin/schedule-actions'
 import { Badge, Button, Card, Icon, useToast } from '@/components/portal/ui'
 
 /**
@@ -29,43 +25,59 @@ export type TimeOffItem = {
   ongoing: boolean
 }
 
+function resolveStaffSelection(staffOptions: StaffOption[], defaultStaffId?: string) {
+  if (defaultStaffId !== undefined) {
+    return staffOptions.some((staff) => staff.id === defaultStaffId) ? defaultStaffId : ''
+  }
+  return staffOptions[0]?.id ?? ''
+}
+
 export function TimeOffManager({
   items,
   staffOptions,
   staffNoun,
+  defaultStaffId,
 }: {
   items: TimeOffItem[]
   staffOptions: StaffOption[]
   staffNoun: string
+  defaultStaffId?: string
 }) {
   const router = useRouter()
   return (
-    <Card>
-      <AddTimeOffForm staffOptions={staffOptions} staffNoun={staffNoun} onDone={() => router.refresh()} />
+    <div id="franvaro" style={{ scrollMarginTop: 90 }}>
+      <Card>
+        <AddTimeOffForm
+          staffOptions={staffOptions}
+          staffNoun={staffNoun}
+          defaultStaffId={defaultStaffId}
+          onDone={() => router.refresh()}
+        />
 
-      {items.length === 0 ? (
-        <p className="small" style={{ margin: '14px 0 0', color: 'var(--c-ink-3)' }}>
-          <strong style={{ fontWeight: 600, color: 'var(--c-ink-2)' }}>
-            Ingen kommande frånvaro.
-          </strong>{' '}
-          Lägg till semester eller ledighet ovan — tiderna stängs automatiskt i boka-flödet och
-          syns som overlay i veckoöversikten.
-        </p>
-      ) : (
-        <ul
-          style={{
-            listStyle: 'none',
-            margin: '14px 0 0',
-            padding: 0,
-            borderTop: '1px solid var(--c-line)',
-          }}
-        >
-          {items.map((item) => (
-            <TimeOffRowItem key={item.id} item={item} onDone={() => router.refresh()} />
-          ))}
-        </ul>
-      )}
-    </Card>
+        {items.length === 0 ? (
+          <p className="small" style={{ margin: '14px 0 0', color: 'var(--c-ink-3)' }}>
+            <strong style={{ fontWeight: 600, color: 'var(--c-ink-2)' }}>
+              Ingen kommande frånvaro.
+            </strong>{' '}
+            Lägg till semester eller ledighet ovan — tiderna stängs automatiskt i boka-flödet och
+            syns som overlay i veckoöversikten.
+          </p>
+        ) : (
+          <ul
+            style={{
+              listStyle: 'none',
+              margin: '14px 0 0',
+              padding: 0,
+              borderTop: '1px solid var(--c-line)',
+            }}
+          >
+            {items.map((item) => (
+              <TimeOffRowItem key={item.id} item={item} onDone={() => router.refresh()} />
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
   )
 }
 
@@ -75,10 +87,12 @@ export function TimeOffManager({
 function AddTimeOffForm({
   staffOptions,
   staffNoun,
+  defaultStaffId,
   onDone,
 }: {
   staffOptions: StaffOption[]
   staffNoun: string
+  defaultStaffId?: string
   onDone: () => void
 }) {
   const { notify } = useToast()
@@ -87,6 +101,22 @@ function AddTimeOffForm({
   // webbläsaren (servern validerar ändå).
   const [fromDate, setFromDate] = useState('')
   const [state, formAction, pending] = useActionState<ActionState, FormData>(addStaffTimeOff, {})
+  const resolvedDefaultStaffId = resolveStaffSelection(staffOptions, defaultStaffId)
+  const selectionResetKey = JSON.stringify({
+    explicitDefault: defaultStaffId !== undefined,
+    defaultStaffId: defaultStaffId ?? null,
+    optionIds: staffOptions.map((staff) => staff.id),
+  })
+  const [staffId, setStaffId] = useState(resolvedDefaultStaffId)
+  const previousSelectionResetKey = useRef(selectionResetKey)
+  const lockedToSingleStaff =
+    staffOptions.length === 1 && staffOptions[0]?.id === staffId && defaultStaffId === staffId
+
+  useEffect(() => {
+    if (selectionResetKey === previousSelectionResetKey.current) return
+    previousSelectionResetKey.current = selectionResetKey
+    setStaffId(resolvedDefaultStaffId)
+  }, [resolvedDefaultStaffId, selectionResetKey])
 
   // Vakta på resultat-OBJEKTET (inte strängen): två identiska succéer i rad ger
   // nya objekt men samma text — en sträng-dep skulle svälja andra toasten.
@@ -98,11 +128,12 @@ function AddTimeOffForm({
       notify(state.success, 'success')
       formRef.current?.reset()
       setFromDate('')
+      setStaffId(resolvedDefaultStaffId)
       onDone()
     } else if (state.error) {
       notify(state.error, 'warning')
     }
-  }, [state, notify, onDone])
+  }, [state, notify, onDone, resolvedDefaultStaffId])
 
   return (
     <form
@@ -119,16 +150,31 @@ function AddTimeOffForm({
         background: 'var(--c-paper-2)',
       }}
     >
-      <label style={fieldStyle}>
-        <span>{staffNoun}</span>
-        <select name="staff_id" defaultValue={staffOptions[0]?.id ?? ''} required style={inputStyle}>
-          {staffOptions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      {lockedToSingleStaff ? (
+        <input type="hidden" name="staff_id" value={staffId} />
+      ) : (
+        <label style={fieldStyle}>
+          <span>{staffNoun}</span>
+          <select
+            name="staff_id"
+            value={staffId}
+            onChange={(event) => setStaffId(event.target.value)}
+            required
+            style={inputStyle}
+          >
+            {staffId === '' && (
+              <option value="" disabled>
+                Välj {staffNoun.toLowerCase()}
+              </option>
+            )}
+            {staffOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label style={fieldStyle}>
         <span>Från (dag)</span>
         <input
@@ -188,6 +234,7 @@ function TimeOffRowItem({ item, onDone }: { item: TimeOffItem; onDone: () => voi
     <li
       style={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 12,
@@ -196,7 +243,7 @@ function TimeOffRowItem({ item, onDone }: { item: TimeOffItem; onDone: () => voi
         opacity: pending ? 0.5 : 1,
       }}
     >
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: '1 1 240px' }}>
         <span
           style={{
             display: 'inline-flex',
@@ -220,7 +267,17 @@ function TimeOffRowItem({ item, onDone }: { item: TimeOffItem; onDone: () => voi
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: 10,
+          flex: '1 1 auto',
+          flexWrap: 'wrap',
+          minWidth: 0,
+        }}
+      >
         <Badge tone={item.ongoing ? 'gold' : 'info'}>
           {item.ongoing ? 'Pågår nu' : 'Kommande'}
         </Badge>

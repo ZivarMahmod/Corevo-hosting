@@ -185,6 +185,24 @@ export async function requireAdminArea(area: AdminArea): Promise<CurrentUser> {
   return user
 }
 
+/** Kräv minst EN av flera namngivna adminytor. Används när en gemensam
+ * detaljsida visar olika, separat gatade delar — exempelvis personkortets
+ * ägaradministration och platschefens schemaredigering. Mutationerna behåller
+ * alltid sina egna enskilda area-grindar. */
+export async function requireAnyAdminArea(areas: readonly AdminArea[]): Promise<CurrentUser> {
+  const user = await requireUser()
+  const decisions = await Promise.all(areas.map((area) => hasAdminAreaPermission(area, user)))
+  if (!decisions.some(Boolean)) {
+    logAuthDenied({
+      userId: user.id,
+      roleLevel: user.roleLevel,
+      need: `admin:any(${areas.join('|')})`,
+    })
+    redirect('/ingen-atkomst')
+  }
+  return user
+}
+
 /** Require the global platform_admin flag (cross-tenant). */
 export async function requirePlatformAdmin(): Promise<CurrentUser> {
   const user = await requireUser()

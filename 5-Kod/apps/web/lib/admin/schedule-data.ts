@@ -11,6 +11,30 @@ import type { WorkingHourRow } from './data'
 
 export type TimeOffAdminRow = Tables<'time_off'>
 
+/** Frånvarointervall i verksamhetens tidszon. Midnattsslut är en exklusiv
+ * gräns och visas därför som föregående, inklusiva kalenderdag. Delas av
+ * teamöversikten och det enskilda personkortet. */
+export function timeOffRangeLabel(startTs: string, endTs: string, timeZone: string): string {
+  const day = new Intl.DateTimeFormat('sv-SE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone,
+  })
+  const time = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone })
+  const start = new Date(startTs)
+  const end = new Date(endTs)
+  const startLabel =
+    time.format(start) === '00:00'
+      ? day.format(start)
+      : `${day.format(start)} ${time.format(start)}`
+  const endLabel =
+    time.format(end) === '00:00'
+      ? day.format(new Date(end.getTime() - 60_000))
+      : `${day.format(end)} ${time.format(end)}`
+  return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`
+}
+
 // Migration 0076 är additiv och de genererade Supabase-typerna uppdateras först
 // när hela schemaändringen är låst. Håll den smala radtypen här tills dess så
 // adminytan inte behöver kasta hela klienten till `any`.
@@ -118,7 +142,28 @@ export async function listCurrentAndUpcomingTimeOff(
     .gte('end_ts', nowIso)
     .order('start_ts', { ascending: true })
   if (locationId) query = query.eq('location_id', locationId)
-  const { data } = await query
+  const { data, error } = await query
+  if (error) throw new Error(`listCurrentAndUpcomingTimeOff: ${error.message}`)
+  return data ?? []
+}
+
+/** Pågående + kommande frånvaro för en enda person. Personkortet får inte
+ * platsfiltrera den här läsningen: äldre/globala rader med location_id=null och
+ * rader skapade innan ett platsbyte tillhör fortfarande personen. */
+export async function listCurrentAndUpcomingStaffTimeOff(
+  tenantId: string,
+  staffId: string,
+  nowIso: string,
+): Promise<TimeOffAdminRow[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('time_off')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('staff_id', staffId)
+    .gte('end_ts', nowIso)
+    .order('start_ts', { ascending: true })
+  if (error) throw new Error(`listCurrentAndUpcomingStaffTimeOff: ${error.message}`)
   return data ?? []
 }
 

@@ -12,6 +12,8 @@ export type BookabilityService = {
   name: string
   active: boolean
   locationId: string | null
+  /** Global tjänstelängd; staff_services har avsiktligt ingen egen längd. */
+  durationMin?: number
 }
 
 /**
@@ -158,7 +160,14 @@ export function StaffBookability({
                 defaultChecked={serviceIds.includes(svc.id)}
                 style={{ accentColor: 'var(--c-forest)' }}
               />
-              {svc.name}
+              <span>
+                {svc.name}
+                {svc.durationMin ? (
+                  <small style={{ marginLeft: 6, color: 'var(--c-ink-3)' }}>
+                    {svc.durationMin} min
+                  </small>
+                ) : null}
+              </span>
             </label>
           ))}
         </div>
@@ -176,9 +185,12 @@ export function StaffBookability({
           </Button>
           <span style={{ fontSize: 12, color: 'var(--c-ink-3)' }}>
             Stegen kontrolleras i ordning och visar alltid nästa blockerande åtgärd. Foto, konto och
-            plats sköts under{' '}
-            <Link href="/admin/personal" style={{ color: 'var(--c-forest)', fontWeight: 600 }}>
-              Personal
+            plats sköts på{' '}
+            <Link
+              href={`/admin/personal/${staffId}`}
+              style={{ color: 'var(--c-forest)', fontWeight: 600 }}
+            >
+              personkortet
             </Link>
             .
           </span>
