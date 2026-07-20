@@ -373,22 +373,25 @@ h3 {
    någonstans. Scroll sker med finger, hjul eller trackpad — overflow/scroll fungerar
    precis som förut, bara den visuella listen försvinner. */
 * {
-  scrollbar-width: none; /* Firefox */
-}
-*::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none; /* Chromium / WebKit / Edge */
+  scrollbar-width: none !important; /* Firefox, vinner även över lokala thin-regler */
+  -ms-overflow-style: none;
 }
 /* Android ritar viewportens indikator på root-scrollern. Den behöver explicita
    rootselektorer trots wildcardregeln ovan; scrollfunktionen är oförändrad. */
-html,
-body {
-  scrollbar-width: none;
-}
+*::-webkit-scrollbar,
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-track,
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-track,
+body::-webkit-scrollbar-thumb {
+  border: 0 !important;
+  background: transparent !important;
 }

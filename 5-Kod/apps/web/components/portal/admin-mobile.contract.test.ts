@@ -101,13 +101,31 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     )
   })
 
-  it('ger kundvyn Sök + Ny kund och döljer kontextraden på Mer-sidor', () => {
+  it('har Sök som fast femte navval med rätt sökyta per sida', () => {
     const topnav = read('components/portal/Topnav.tsx')
+    const css = read('components/portal/Topnav.module.css')
     const createCustomer = read('components/admin/CreateCustomerForm.tsx')
+    const contextStart = topnav.indexOf('<nav className={styles.mobileContext}')
+    const contextEnd = topnav.indexOf('</nav>', contextStart)
+    const mobileContext = topnav.slice(contextStart, contextEnd)
 
+    expect(topnav).toContain("const mobileContextVisible = isCalendar || activeMobileArea?.id === 'kunder'")
+    expect(topnav).toMatch(
+      /const openMobileSearch = \(\) => \{[\s\S]*?if \(isCalendar\)[\s\S]*?MOBILE_SEARCH_EVENT[\s\S]*?else openCommandPalette\(\)/,
+    )
+    expect(topnav).toMatch(
+      /mobileNavigation\.tabs\.slice\(0, 2\)[\s\S]*?onClick=\{openMobileSearch\}[\s\S]*?<span>Sök<\/span>[\s\S]*?mobileNavigation\.tabs\.slice\(2, 3\)/,
+    )
+    expect(mobileContext).not.toContain('<span>Sök</span>')
     expect(topnav).toContain("activeMobileArea?.id === 'kunder'")
     expect(topnav).toContain('/admin/kunder?ny=1')
-    expect(topnav).toContain('mobileNavigation?.tabs.some')
+    expect(topnav).not.toContain('mobileNavigation?.tabs.some')
+    expect(css).toMatch(
+      /\.adminMobileChrome \.mobileNav\s*\{[\s\S]*?grid-auto-flow:\s*column;[\s\S]*?grid-auto-columns:\s*minmax\(0, 1fr\);/,
+    )
+    expect(css).toMatch(
+      /@media \(orientation: landscape\) and \(max-height: 520px\)[\s\S]*?\.adminMobileChrome \.mobileNav\s*\{[\s\S]*?overflow-y:\s*auto;/,
+    )
     expect(createCustomer).toContain('useSearchParams')
     expect(createCustomer).toContain("searchParams.has('ny')")
     expect(createCustomer).toContain("router.replace('/admin/kunder', { scroll: false })")

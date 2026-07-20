@@ -88,13 +88,15 @@ test.describe('07 Kundadmin mobilchrome — source contract @readonly @contract'
     expect(css).toMatch(/\.offHours\s*\{[^}]*background:\s*var\(--c-paper\);/)
   })
 
-  test('07-C05 customers get their real create action while More has no generic action rail', () => {
+  test('07-C05 search stays in the primary dock while customers keep their real create action', () => {
     const topnav = read('apps/web/components/portal/Topnav.tsx')
     const form = read('apps/web/components/admin/CreateCustomerForm.tsx')
 
     expect(topnav).toContain("activeMobileArea?.id === 'kunder'")
     expect(topnav).toContain('/admin/kunder?ny=1')
-    expect(topnav).toContain('mobileNavigation?.tabs.some')
+    expect(topnav).toContain('onClick={openMobileSearch}')
+    expect(topnav).toContain('<span>Sök</span>')
+    expect(topnav).not.toContain('mobileNavigation?.tabs.some')
     expect(form).toContain("searchParams.has('ny')")
     expect(form).toContain("router.replace('/admin/kunder', { scroll: false })")
     expect(form).toContain('<Modal')
