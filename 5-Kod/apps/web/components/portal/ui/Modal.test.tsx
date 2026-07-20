@@ -60,4 +60,16 @@ describe('Modal portal host', () => {
     expect(dialog).not.toBeNull()
     expect(dialog?.parentElement?.parentElement).toBe(document.body)
   })
+
+  it('låter ett autofokuserat sökfält behålla fokus när dialogen monteras', async () => {
+    await act(async () => {
+      root.render(
+        <Modal title="Sök" onClose={() => undefined}>
+          <input type="search" autoFocus aria-label="Sökfält" />
+        </Modal>,
+      )
+    })
+
+    expect(document.activeElement).toBe(document.querySelector('[aria-label="Sökfält"]'))
+  })
 })

@@ -50,11 +50,11 @@ export function CommandPalette({
   )
   const requestSequence = useRef(0)
   const dialogRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const listboxId = useId()
 
-  // reset query + highlight whenever the palette opens, and focus the input
+  // Reset query + highlight whenever the palette opens. Native autofocus runs
+  // during the opening click so mobile browsers may show the keyboard immediately.
   useEffect(() => {
     if (open) {
       returnFocusRef.current = document.activeElement as HTMLElement | null
@@ -62,9 +62,7 @@ export function CommandPalette({
       setHi(0)
       setRemoteItems([])
       setRemoteStatus('idle')
-      // focus after the open paint so the autofocus lands reliably
-      const t = window.setTimeout(() => inputRef.current?.focus(), 20)
-      return () => window.clearTimeout(t)
+      return
     }
     if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
   }, [open])
@@ -180,8 +178,8 @@ export function CommandPalette({
         <div className="bo-cmdk-search">
           <Icon name="search" size={19} />
           <input
-            ref={inputRef}
             type="search"
+            autoFocus
             enterKeyHint="search"
             value={q}
             onChange={(e) => {

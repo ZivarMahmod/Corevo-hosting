@@ -743,6 +743,7 @@ export function CalendarBoard({
       window.dispatchEvent(
         new CustomEvent(MOBILE_CALENDAR_META_EVENT, {
           detail: {
+            date,
             title: mobilePeriodLabel,
             meta: mobilePeriodStats,
             previous: neighborLabel(-1),
@@ -1175,6 +1176,7 @@ export function CalendarBoard({
           services={services}
           staffNames={staffNames}
           date={date}
+          today={today}
           tz={tz}
           locationId={locationId}
           seed={creating.seed}

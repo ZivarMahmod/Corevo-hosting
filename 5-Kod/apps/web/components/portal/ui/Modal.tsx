@@ -97,11 +97,15 @@ export function Modal({
     }
     document.addEventListener('keydown', onKey)
 
-    // Fokus in i dialogen: första fältet om det finns, annars själva kortet.
-    const target =
-      cardRef.current?.querySelector<HTMLElement>('input, select, textarea, button') ??
-      cardRef.current
-    target?.focus()
+    // Native autoFocus kan redan ha placerat fokus i dialogen under samma
+    // betrodda tryckgest. Låt det fältet behålla fokus så mobilens tangentbord
+    // inte stängs av en senare fokusflytt till stängknappen.
+    if (!cardRef.current?.contains(document.activeElement)) {
+      const target =
+        cardRef.current?.querySelector<HTMLElement>('input, select, textarea, button') ??
+        cardRef.current
+      target?.focus()
+    }
 
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'

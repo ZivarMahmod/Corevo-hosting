@@ -528,7 +528,10 @@ export function Topnav({
               <nav className={styles.mobileContext} aria-label="Sidåtgärder">
                 {isCalendar ? (
                   <>
-                    <Link className={styles.mobileContextAction} href="/admin/bokningar?ny=1">
+                    <Link
+                      className={styles.mobileContextAction}
+                      href={`/admin/bokningar?ny=1${calendarMeta?.date ? `&datum=${calendarMeta.date}` : ''}`}
+                    >
                       <Icon name="plus" size={19} stroke={1.7} />
                       <span>Ny bokning</span>
                     </Link>
