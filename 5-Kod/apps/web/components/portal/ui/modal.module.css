@@ -180,11 +180,15 @@
      hamnar bakom det uppfällda tangentbordet. Draghandtaget hör till underkant,
      bort här. */
   .overlay[data-anchor='top'] {
+    top: var(--modal-visual-offset-top, 0px);
+    bottom: auto;
+    height: var(--modal-visual-height, 100dvh);
     place-items: start center;
   }
 
   .overlay[data-anchor='top'] .card,
   .overlay[data-anchor='top'] .cardSm {
+    max-height: min(92dvh, var(--modal-visual-height, 100dvh));
     border-radius: 0 0 22px 22px;
     animation: sheetInTop 220ms var(--ease-out, ease-out);
   }
@@ -214,6 +218,12 @@
 
 /* Liggande telefon: samma ark vecklas ut från höger mellan de fasta räckena. */
 @media (orientation: landscape) and (max-height: 520px) {
+  .overlay[data-anchor='top'] {
+    top: var(--modal-visual-offset-top, 0px);
+    bottom: auto;
+    height: var(--modal-visual-height, 100dvh);
+  }
+
   .overlay[data-portal='admin'] {
     right: 66px;
     left: 66px;
@@ -226,7 +236,7 @@
   .overlay[data-portal='admin'][data-anchor='top'] .card,
   .overlay[data-portal='admin'][data-anchor='top'] .cardSm {
     width: min(430px, 100%);
-    max-height: 100dvh;
+    max-height: var(--modal-visual-height, 100dvh);
     border-radius: 16px 0 0 16px;
     animation: sheetInRight 220ms var(--ease-out, ease-out);
   }

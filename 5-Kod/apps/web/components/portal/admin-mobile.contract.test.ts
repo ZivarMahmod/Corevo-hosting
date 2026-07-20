@@ -129,6 +129,11 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(globalCss).toContain("[data-portal='admin'] .bo-cmdk-overlay")
     expect(globalCss).toContain('place-items: stretch end')
     expect(modalCss).toMatch(/\.close\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/)
+    expect(modalComponent).toContain('window.visualViewport')
+    expect(modalComponent).toContain("viewport.addEventListener('resize', syncVisualViewport)")
+    expect(modalComponent).toContain("viewport.addEventListener('scroll', syncVisualViewport)")
+    expect(modalCss).toContain('--modal-visual-height')
+    expect(modalCss).toContain('--modal-visual-offset-top')
   })
 
   it('använder ett native tredagarsblad och klampad navigering utan touchend-tröskel', () => {

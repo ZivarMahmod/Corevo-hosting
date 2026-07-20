@@ -44,6 +44,7 @@ describe('Kalender Mobil v2', () => {
   it('ger mobilen en egen topphjälp och bottensök utan en permanent verktygsrad', () => {
     const component = read('components/admin/CalendarBoard.tsx')
     const search = read('components/admin/CalendarSearch.tsx')
+    const css = read('components/admin/calendar.module.css')
     const help = read('components/admin/CalendarHelp.tsx')
     const cancelled = read('components/admin/CancelledLog.tsx')
 
@@ -59,6 +60,13 @@ describe('Kalender Mobil v2', () => {
     expect(component).toContain('<CalendarSearch tz={tz} mobileSheet />')
     expect(search).toContain('mobileSheet?: boolean')
     expect(search).toContain('Sök i kalendern')
+    // Träffarna måste delta i topparkets höjd när tangentbordet är öppet. En
+    // absolut dropdown hamnar utanför layouten och klipps av kortets overflow.
+    expect(search).toContain('className={styles.searchControl}')
+    expect(css).toMatch(
+      /\.searchSheet\s+\.searchDrop\s*\{[\s\S]*?position:\s*static;[\s\S]*?overflow-y:\s*auto;/,
+    )
+    expect(css).toContain('--modal-visual-height')
     expect(help).toContain('mobileHeader?: boolean')
     expect(help).toContain('children?: ReactNode')
     expect(cancelled).toContain('embedded?: boolean')

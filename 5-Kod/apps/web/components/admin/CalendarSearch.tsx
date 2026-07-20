@@ -71,21 +71,29 @@ export function CalendarSearch({
 
   const searchField = (
     <div className={`${styles.search}${mobileSheet ? ` ${styles.searchSheet}` : ''}`} ref={box}>
-      <Icon name="search" size={15} />
-      <input
-        type="search"
-        className={styles.searchInput}
-        placeholder="Sök kund…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            setHits(null)
-            setQ('')
-          }
-        }}
-        aria-label="Sök efter en kunds bokningar"
-      />
+      <div className={styles.searchControl}>
+        <Icon name="search" size={15} />
+        <input
+          type="search"
+          className={styles.searchInput}
+          placeholder="Sök kund…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setHits(null)
+              setQ('')
+            }
+          }}
+          aria-label="Sök efter en kunds bokningar"
+        />
+      </div>
+
+      {mobileSheet && (
+        <p className={styles.mobileSearchHint}>
+          Skriv minst två tecken. Välj en träff för att gå direkt till bokningen.
+        </p>
+      )}
 
       {hits !== null && (
         <div className={styles.searchDrop} role="listbox" aria-label="Sökträffar">
@@ -154,9 +162,6 @@ export function CalendarSearch({
           anchor="top"
         >
           {searchField}
-          <p className={styles.mobileSearchHint}>
-            Skriv minst två tecken. Välj en träff för att gå direkt till bokningen.
-          </p>
         </Modal>
       )}
     </>
