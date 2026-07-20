@@ -7,6 +7,7 @@
 import type { ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant, DEFAULT_BOOKING_VARIANT } from '@/lib/platform/booking-variant'
 import { modulesForVertical, type VerticalPresetData } from '@/lib/platform/verticals-shared'
+import { isSelectableTheme } from '@/lib/platform/theme-palettes'
 
 /** One onboarding service row (W4). `price` is the kr string the operator types (UI-
  *  friendly — no controlled-number fight); buildCreateTenantFormData converts it to
@@ -74,7 +75,15 @@ export function applyBranch(cfg: StudioCfg, verticalKey: string, presets: Vertic
   const v = presets.verticals.find((x) => x.key === verticalKey)
   if (!v) return { ...cfg, branch: verticalKey }
   const branschTemplates = presets.templatesByVertical[verticalKey] ?? []
-  const theme = v.defaultTemplate ?? branschTemplates[0]?.key ?? cfg.theme
+  // createTenant (pickTheme) accepterar BARA de 12 handoff-mallarna; legacy-teman
+  // (t.ex. barbershops default_template 'zigge') droppas till '' → lansering failar
+  // med "Välj en av de 12 godkända mallarna". Förfyll därför alltid ett selectable
+  // tema: branschens default om giltigt, annars första selectable bransch-mall,
+  // annars nuvarande cfg-tema.
+  const candidate = v.defaultTemplate ?? branschTemplates[0]?.key ?? cfg.theme
+  const theme = isSelectableTheme(candidate)
+    ? candidate
+    : (branschTemplates.find((t) => isSelectableTheme(t.key))?.key ?? cfg.theme)
   const moduleStates: Record<string, ModuleState> = {}
   for (const m of modulesForVertical(presets, verticalKey)) moduleStates[m.key] = m.defaultState
   return { ...cfg, branch: verticalKey, theme, moduleStates }

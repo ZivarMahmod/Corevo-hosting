@@ -489,19 +489,20 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
     { label: 'Bransch vald', done: !!cfg.branch },
     { label: 'Namn & subdomän', done: !!cfg.name.trim() && !!cfg.slug },
     { label: 'Temamall', done: !!cfg.theme },
-    { label: `Minst en tjänst (${namedServices.length} tillagda)`, done: namedServices.length > 0 },
+    { label: `Tjänster (${namedServices.length} tillagda — läggs i adminen)`, done: namedServices.length > 0, optional: true },
     { label: 'Ägare inbjuds via mail', done: !!cfg.ownerEmail.trim(), optional: true },
   ]
   // createTenant's only HARD blockers are name + a valid slug (actions.ts). Gate on those
   // + a theme so the gold button never fires a guaranteed-fail submit. booking is force-
   // floored to live in buildCreateTenantFormData, so we don't depend on the catalog read
   // (which fail-softs to [] and would otherwise permanently disable Lansera).
-  // + minst en namngiven tjänst (Dunder-fix): bokningsmodulen golvas till live,
-  // så en salong utan tjänster lanserades tidigare med en bokning som inte har
-  // något att boka. Tjänsterna läggs i steget «Tjänster & innehåll».
-  const hasService = namedServices.length > 0
+  // Tjänststeget togs bort 2026-07-11 (onboardingen ska vara superlätt att komma
+  // igång — tjänster läggs i kundens admin EFTER lansering). Grinden krävde ändå
+  // en namngiven tjänst men inget steg fanns att lägga den i → Lansera var
+  // permanent disabled. Kravet är nu rådgivande (checklistan visar antalet), och
+  // createTenants riktiga hard-blockers (namn + giltig slug + tema) gatar knappen.
   const ready =
-    !!cfg.name.trim() && !!cfg.slug && !isReservedSlug(cfg.slug) && !!cfg.theme && hasService
+    !!cfg.name.trim() && !!cfg.slug && !isReservedSlug(cfg.slug) && !!cfg.theme
   return (
     <Panel title="Granska & lansera" sub="Sista koll — exakt det här får kunden. Sen live på subdomänen.">
       <div style={{ display: 'grid', gap: 16 }}>
