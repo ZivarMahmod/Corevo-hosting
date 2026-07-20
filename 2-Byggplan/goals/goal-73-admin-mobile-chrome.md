@@ -13,8 +13,13 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 
 ## Acceptans
 
-- Stående: banner = logga, sidtitel/meta och Hjälp. Underst ligger sidans
-  kontextåtgärder över den fasta navigationen `Översikt · Kalender · Kunder · Mer`.
+- Stående: banner = logga, sidtitel/meta och Hjälp. Den fasta navigationen är
+  `Översikt · Kalender · Sök · Kunder · Mer`. Sök är en handling, aldrig en aktiv
+  flik: i Kalender öppnar den befintlig bokningssök; på övriga adminytor öppnar
+  den befintlig global sök.
+- Kontextåtgärdsraden renderas bara när sidan har en verklig extra åtgärd.
+  Kalender visar `Ny bokning · Blockera`, Kunder visar `Ny kund` och Översikt
+  har ingen extrarad. Sök dupliceras aldrig i kontextraden.
 - Alla mobila kontroller använder samma SVG-linjeikoner och minst 44×44 px verklig
   träffyta. Inga unicode-navikoner eller runda FAB-/sökknappar finns kvar.
 - Liggande telefon aktiveras endast av
@@ -55,6 +60,10 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Mobilens sökfält använder tangentbordets Sök/Enter för samma sökning som
   sökknappen, och inställningssidor samt dialoger håller sig inom viewporten med
   tillräcklig bottenmarginal för den fasta dockan.
+- Ingen scrollbarindikator får synas i mobilens viewport eller interna
+  scrollbehållare. WebKit-spår och tumme är 0 px/transparenta och
+  `scrollbar-width` är avstängt med högre prioritet än lokala `thin`-regler;
+  finger-, hjul-, tangentbords- och programsrollning fungerar oförändrat.
 
 ## Utanför scope
 
@@ -75,6 +84,9 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Fokuserade testkörningar följs av full `pnpm test`, typecheck, lint och build.
 - Mekanisk viewport-kontroll omfattar 393×852, 852×393, Android 360 px,
   höjderna 500/501/520 px och iPad liggande.
+- Källkontrakt låser den femdelade navigationen, sökens ruttberoende befintliga
+  event och att Översikt saknar kontextrad. Ett globalt CSS-kontrakt låser både
+  dold scrollbar-tumme/spår och bevarad scrollfunktion.
 - Oberoende GPT-5.6-sol och lokal Claude/Fable 5 granskar slutdiffen innan push.
 - Goal-filen kan markeras implementerad och mekaniskt verifierad efter bevisen,
   men flyttas inte till `klart/05-design/` förrän Zivar godkänt liveversionen.
