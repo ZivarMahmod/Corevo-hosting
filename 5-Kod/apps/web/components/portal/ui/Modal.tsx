@@ -97,15 +97,18 @@ export function Modal({
     }
     document.addEventListener('keydown', onKey)
 
-    // Fokus in i dialogen: ett formulärfält vinner över huvudets stängknapp. Det
-    // gör att sökark öppnar tangentbordet direkt på mobil utan ett extra tryck.
-    const target =
-      cardRef.current?.querySelector<HTMLElement>(
-        'input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
-      ) ??
-      cardRef.current?.querySelector<HTMLElement>('button:not([disabled]), a[href]') ??
-      cardRef.current
-    target?.focus()
+    // Native autoFocus kan redan ha placerat fokus i dialogen under samma
+    // betrodda tryckgest. Låt det fältet behålla fokus så mobilens tangentbord
+    // inte stängs av en senare fokusflytt till stängknappen.
+    if (!cardRef.current?.contains(document.activeElement)) {
+      const target =
+        cardRef.current?.querySelector<HTMLElement>(
+          'input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+        ) ??
+        cardRef.current?.querySelector<HTMLElement>('button:not([disabled]), a[href]') ??
+        cardRef.current
+      target?.focus()
+    }
 
     // iOS/Safari och Samsung/Gboard kan ändra visualViewport utan att `dvh`
     // hinner följa med. Variablerna ägs av just den öppna overlayn — aldrig av

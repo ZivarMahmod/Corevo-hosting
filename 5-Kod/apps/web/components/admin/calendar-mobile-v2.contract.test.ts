@@ -18,13 +18,17 @@ describe('Kalender Mobil v2', () => {
     expect(component).toContain('Visa alla')
   })
 
-  it('flyttar mobilens datum, bläddring och diskreta vyval till en egen bottendocka', () => {
+  it('visar datumet i toppfältet och samlar bläddring och vyval i en slimmad rad', () => {
     const component = read('components/admin/CalendarBoard.tsx')
     const css = read('components/admin/calendar.module.css')
 
     expect(component).toContain('mobileCalendarDock')
     expect(component).toContain('mobileDateToggle')
     expect(component).toContain('mobileViewSwitch')
+    expect(component).not.toContain('mobileCalendarDateRow')
+    expect(component).toMatch(
+      /mobileCalendarActionRow[\s\S]*?requestStep\(-1\)[\s\S]*?mobileViewSwitch[\s\S]*?requestStep\(1\)/,
+    )
     expect(component).toContain('mobileCalendarPicker')
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.toolbar\s*\{[\s\S]*?display:\s*none;/)
     expect(css).toMatch(
@@ -37,8 +41,65 @@ describe('Kalender Mobil v2', () => {
       'inert={pagerNavigationPending || index !== activeDaySlide ? true : undefined}',
     )
     expect(component).toContain('pagerCenteredKey')
-    expect(component).toContain('const previousDayStart = pagerDayStart.current')
     expect(component).toContain('pagerCenteredKey.current !== pagerKey')
+    expect(component).not.toContain('pagerDayStart')
+  })
+
+  it('låter touchscroll vinna utan markerad friyta och visar ej arbetstid som samma lugna yta', () => {
+    const component = read('components/admin/CalendarBoard.tsx')
+    const css = read('components/admin/calendar.module.css')
+
+    expect(component).not.toContain('setArmed')
+    expect(component).not.toContain('styles.freeAreaArmed')
+    expect(css).not.toContain('.freeAreaArmed')
+    expect(css).not.toMatch(/\.offHours\s*\{[^}]*repeating-linear-gradient/)
+    expect(css).toMatch(/\.offHours\s*\{[^}]*background:\s*var\(--c-paper\);/)
+    expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.freeArea:hover/)
+  })
+
+  it('visar bara Idag-knappen när den behövs så verktygsraden förblir kompakt', () => {
+    const component = read('components/admin/CalendarBoard.tsx')
+
+    expect(component).toContain('{showToday && (')
+    expect(component).not.toContain('styles.mobileTodayIdle')
+  })
+
+  it('låter mobilens söktangent köra sökningen direkt', () => {
+    const search = read('components/admin/CalendarSearch.tsx')
+    const palette = read('components/portal/ui/CommandPalette.tsx')
+
+    expect(search).toContain('onSubmit={submitSearch}')
+    expect(search).toContain('enterKeyHint="search"')
+    expect(search).toContain('debounceTimer.current')
+    expect(search).toContain('clearTimeout(debounceTimer.current)')
+    expect(palette).toContain('enterKeyHint="search"')
+    expect(palette).toContain('type="search"')
+  })
+
+  it('autofokuserar sökfältet under mobilens betrodda tryckgest', () => {
+    const search = read('components/admin/CalendarSearch.tsx')
+    const palette = read('components/portal/ui/CommandPalette.tsx')
+
+    expect(search).toMatch(/type="search"[\s\S]*?autoFocus/)
+    expect(palette).toMatch(/type="search"[\s\S]*?autoFocus/)
+  })
+
+  it('ärver den swipade dagen och låter Ny bokning byta datum', () => {
+    const events = read('components/portal/mobile-search-event.ts')
+    const topnav = read('components/portal/Topnav.tsx')
+    const board = read('components/admin/CalendarBoard.tsx')
+    const drawer = read('components/admin/NewBookingDrawer.tsx')
+
+    expect(events).toMatch(/MobileCalendarMeta[\s\S]*?date: string/)
+    expect(board).toMatch(/detail:\s*\{[\s\S]*?date,/)
+    expect(topnav).toContain('calendarMeta?.date')
+    expect(drawer).toContain('const [bookingDate, setBookingDate] = useState(date)')
+    expect(drawer).toContain('type="date"')
+    expect(drawer).toContain('value={bookingDate}')
+    expect(drawer).toContain('min={today}')
+    expect(drawer).toContain('setBookingDate(nextDate >= today ? nextDate : today)')
+    expect(drawer).toContain('loadDaySlots({ serviceId, date: bookingDate, locationId })')
+    expect(board).toMatch(/<NewBookingDrawer[\s\S]*?today=\{today\}/)
   })
 
   it('ger mobilen en egen topphjälp och bottensök utan en permanent verktygsrad', () => {
@@ -71,6 +132,21 @@ describe('Kalender Mobil v2', () => {
     expect(help).toContain('children?: ReactNode')
     expect(cancelled).toContain('embedded?: boolean')
     expect(cancelled).toContain('styles.logEmbedded')
+  })
+
+  it('döljer Androids viewport-scrollbar utan att stänga av scroll', () => {
+    const global = read('app/globals.css')
+
+    expect(global).toMatch(/html::-webkit-scrollbar,[\s\S]*?body::-webkit-scrollbar/)
+    expect(global).toMatch(/\*\s*\{[\s\S]*?scrollbar-width:\s*none !important;/)
+    expect(global).toMatch(/\*\s*\{[\s\S]*?-ms-overflow-style:\s*none;/)
+    expect(global).toMatch(
+      /\*::-webkit-scrollbar-track,[\s\S]*?\*::-webkit-scrollbar-thumb[\s\S]*?background:\s*transparent !important;/,
+    )
+    expect(global).toMatch(
+      /html::-webkit-scrollbar,[\s\S]*?body::-webkit-scrollbar[\s\S]*?width:\s*0 !important;[\s\S]*?height:\s*0 !important;/,
+    )
+    expect(global).not.toMatch(/html,[\s\S]*?body\s*\{[\s\S]*?overflow:\s*hidden;/)
   })
 
   it('begränsar månadsstatusen till vald månad och behåller beläggning och avbokningar', () => {

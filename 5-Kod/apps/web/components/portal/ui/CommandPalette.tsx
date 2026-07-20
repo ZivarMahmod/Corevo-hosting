@@ -45,14 +45,16 @@ export function CommandPalette({
   const [q, setQ] = useState('')
   const [hi, setHi] = useState(0)
   const [remoteItems, setRemoteItems] = useState<CommandItem[]>([])
-  const [remoteStatus, setRemoteStatus] = useState<'idle' | 'searching' | 'settled' | 'error'>('idle')
+  const [remoteStatus, setRemoteStatus] = useState<'idle' | 'searching' | 'settled' | 'error'>(
+    'idle',
+  )
   const requestSequence = useRef(0)
   const dialogRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const listboxId = useId()
 
-  // reset query + highlight whenever the palette opens, and focus the input
+  // Reset query + highlight whenever the palette opens. Native autofocus runs
+  // during the opening click so mobile browsers may show the keyboard immediately.
   useEffect(() => {
     if (open) {
       returnFocusRef.current = document.activeElement as HTMLElement | null
@@ -60,9 +62,7 @@ export function CommandPalette({
       setHi(0)
       setRemoteItems([])
       setRemoteStatus('idle')
-      // focus after the open paint so the autofocus lands reliably
-      const t = window.setTimeout(() => inputRef.current?.focus(), 20)
-      return () => window.clearTimeout(t)
+      return
     }
     if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
   }, [open])
@@ -104,11 +104,13 @@ export function CommandPalette({
       : items
     const combined = ql ? [...remoteItems, ...matchedStatic] : matchedStatic
     const seen = new Set<string>()
-    return combined.filter((item) => {
-      if (seen.has(item.href)) return false
-      seen.add(item.href)
-      return true
-    }).slice(0, 9)
+    return combined
+      .filter((item) => {
+        if (seen.has(item.href)) return false
+        seen.add(item.href)
+        return true
+      })
+      .slice(0, 9)
   }, [q, items, remoteItems])
 
   function run(it: CommandItem) {
@@ -143,7 +145,10 @@ export function CommandPalette({
         const first = focusable[0]
         const last = focusable.at(-1)
         if (!first || !last) return
-        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        if (
+          e.shiftKey &&
+          (document.activeElement === first || !dialog.contains(document.activeElement))
+        ) {
           e.preventDefault()
           last.focus()
         } else if (!e.shiftKey && document.activeElement === last) {
@@ -173,7 +178,9 @@ export function CommandPalette({
         <div className="bo-cmdk-search">
           <Icon name="search" size={19} />
           <input
-            ref={inputRef}
+            type="search"
+            autoFocus
+            enterKeyHint="search"
             value={q}
             onChange={(e) => {
               setQ(e.target.value)

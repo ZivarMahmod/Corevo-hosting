@@ -48,11 +48,7 @@ import {
   MOBILE_CALENDAR_SHIFT_EVENT,
 } from '@/components/portal/mobile-search-event'
 import styles from './calendar.module.css'
-import {
-  nearestDaySlide,
-  scrollTopForVisibleMinute,
-  visibleMinuteAtScrollTop,
-} from './calendar-pager'
+import { nearestDaySlide } from './calendar-pager'
 import {
   TOUCH_DRAG_HOLD_MS,
   TOUCH_DRAG_SLOP_PX,
@@ -146,15 +142,6 @@ export function calendarLaunchMode(params: Pick<URLSearchParams, 'get'>): Calend
   if (params.get('ny') !== null) return 'new'
   if (params.get('blockera') !== null) return 'block'
   return null
-}
-
-/** Centrerar nu-linjen i kalenderns egna scrollyta och klampar vid dygnets kanter. */
-export function centeredCalendarScrollTop(
-  lineTop: number,
-  viewportHeight: number,
-  scrollHeight: number,
-): number {
-  return Math.max(0, Math.min(lineTop - viewportHeight / 2, scrollHeight - viewportHeight))
 }
 
 /** Tidsaxeln — samma i dag- och veckovyn, så den bor på ett ställe. */
@@ -287,8 +274,6 @@ export function CalendarBoard({
   const pagerNavigationLocked = useRef(false)
   const pagerScrollLeft = useRef(0)
   const pagerSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const preservedTopMinute = useRef<number | null>(null)
-  const lastAutoScrollKey = useRef<string | null>(null)
   const [activeDaySlide, setActiveDaySlide] = useState(1)
   const [pagerNavigationPending, setPagerNavigationPending] = useState(false)
   const [announcedDay, setAnnouncedDay] = useState(date)
@@ -378,36 +363,6 @@ export function CalendarBoard({
     const qs = sp.toString()
     router.replace(qs ? `/admin/bokningar?${qs}` : '/admin/bokningar', { scroll: false })
   }, [canManageBookings, params, router])
-
-  // När dagens dagvy öppnas ska personalen landa vid NU, inte vid arbetsdagens
-  // första timme. Vi scrollar kalenderns egen yta (aldrig dokumentet) och centrerar
-  // linjen så det finns sammanhang både bakåt och framåt.
-  useEffect(() => {
-    if (view !== 'dag' || date !== today) {
-      lastAutoScrollKey.current = null
-      return
-    }
-    const key = `${view}:${date}`
-    if (lastAutoScrollKey.current === key) return
-    const frame = window.requestAnimationFrame(() => {
-      const scroller = scrollRef.current
-      const line = scroller?.querySelector<HTMLElement>('[data-calendar-now]')
-      if (!scroller || !line) return
-      // Markera först när scrollningen verkligen sker. I React Strict Mode körs
-      // effect setup→cleanup→setup; första frame:n avbryts då, och andra setup
-      // måste fortfarande få schemalägga en riktig autoscroll.
-      lastAutoScrollKey.current = key
-      const scrollRect = scroller.getBoundingClientRect()
-      const lineRect = line.getBoundingClientRect()
-      const lineTop = scroller.scrollTop + lineRect.top - scrollRect.top
-      scroller.scrollTop = centeredCalendarScrollTop(
-        lineTop,
-        scroller.clientHeight,
-        scroller.scrollHeight,
-      )
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [date, today, view])
 
   const { notify } = useToast()
   const [moving, startMove] = useTransition()
@@ -537,16 +492,14 @@ export function CalendarBoard({
     }
   }, [view, vBookings, vStaff, date])
 
-  // Dagbladets tre slides delar tidsaxel. Unionen gör att en halvdragning aldrig får
-  // klockslagen att hoppa mellan två dagar med olika öppettider.
+  // Dagbladets tre slides delar den AKTUELLA dagens tidsaxel medan fingret drar.
+  // Grannarnas längre öppettider får inte förlänga dagen med tomma timmar; när en
+  // granne landar blir den mittendag och får sin egen riktiga axel.
   const [dayStart, dayEnd] = useMemo(() => {
-    const axisStaff = view === 'dag' ? visibleDaySlides.flatMap((day) => day.staff) : vStaff
-    const axisBookings =
-      view === 'dag' ? visibleDaySlides.flatMap((day) => day.bookings) : vBookings
-    const starts = axisStaff.filter((s) => s.start).map((s) => toMin(s.start!))
-    const ends = axisStaff.filter((s) => s.end).map((s) => toMin(s.end!))
+    const starts = vStaff.filter((s) => s.start).map((s) => toMin(s.start!))
+    const ends = vStaff.filter((s) => s.end).map((s) => toMin(s.end!))
     // Bokningar utanför arbetstid (t.ex. inlagda före ett schemabyte) måste ändå SYNAS.
-    for (const b of axisBookings) {
+    for (const b of vBookings) {
       starts.push(minutesInTz(b.startTs, tz))
       ends.push(minutesInTz(b.endTs, tz))
     }
@@ -554,7 +507,7 @@ export function CalendarBoard({
     const lo = Math.floor(Math.min(...starts) / 60) * 60
     const hi = Math.ceil(Math.max(...ends) / 60) * 60
     return [lo, Math.max(hi, lo + 60)]
-  }, [vStaff, vBookings, tz, view, visibleDaySlides])
+  }, [vStaff, vBookings, tz])
 
   const hours = useMemo(() => {
     const out: number[] = []
@@ -564,7 +517,6 @@ export function CalendarBoard({
 
   const gridHeight = (dayEnd - dayStart) * PX_PER_MIN
   const pagerCenteredKey = useRef<string | null>(null)
-  const pagerDayStart = useRef(dayStart)
 
   const dayLabelLong = new Intl.DateTimeFormat('sv-SE', {
     weekday: 'long',
@@ -653,6 +605,7 @@ export function CalendarBoard({
   }, [date, tz])
 
   const step = view === 'manad' ? 'month' : view === 'vecka' ? 'week' : 'day'
+  const showToday = date !== today || view !== 'dag' || resursValid
   const shift = useCallback(
     (dir: -1 | 1) => {
       const target =
@@ -677,11 +630,13 @@ export function CalendarBoard({
     const landedDay = visibleDaySlides[slide]!.date
     setAnnouncedDay(landedDay)
     if (slide === 1 || pagerNavigationLocked.current) return
-    preservedTopMinute.current = visibleMinuteAtScrollTop(dayStart, scroller.scrollTop, PX_PER_MIN)
+    // En ny dag börjar vid sitt arbetspass. Gör det samtidigt som landningen, inte
+    // först när serverprops kommer 150–200 ms senare.
+    scroller.scrollTop = 0
     pagerNavigationLocked.current = true
     setPagerNavigationPending(true)
     go({ datum: landedDay })
-  }, [dayStart, go, mobilePagerMatches, view, visibleDaySlides])
+  }, [go, mobilePagerMatches, view, visibleDaySlides])
 
   const requestStep = useCallback(
     (dir: -1 | 1) => {
@@ -692,9 +647,10 @@ export function CalendarBoard({
         return
       }
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      scroller.scrollTop = 0
       scroller.scrollTo({
         left: scroller.clientWidth * (1 + dir),
-        top: scroller.scrollTop,
+        top: 0,
         behavior: reducedMotion ? 'auto' : 'smooth',
       })
       if (reducedMotion) settleDayPager()
@@ -706,8 +662,6 @@ export function CalendarBoard({
   // ändras först när bladet landat, aldrig mitt i halvpositionen.
   useLayoutEffect(() => {
     const scroller = scrollRef.current
-    const previousDayStart = pagerDayStart.current
-    pagerDayStart.current = dayStart
     const pagerKey = `${view}:${date}`
     if (!scroller || view !== 'dag' || !mobilePagerMatches()) {
       pagerCenteredKey.current = null
@@ -715,10 +669,6 @@ export function CalendarBoard({
     }
 
     const shouldCenter = pagerCenteredKey.current !== pagerKey
-    const visibleMinute =
-      preservedTopMinute.current ??
-      visibleMinuteAtScrollTop(previousDayStart, scroller.scrollTop, PX_PER_MIN)
-
     if (shouldCenter) {
       pagerCenteredKey.current = pagerKey
       scroller.scrollLeft = scroller.clientWidth
@@ -727,15 +677,9 @@ export function CalendarBoard({
       setPagerNavigationPending(false)
       setActiveDaySlide(1)
       setAnnouncedDay(date)
+      scroller.scrollTop = 0
     }
-
-    // En refresh kan utvidga den gemensamma tidsaxeln utan att datumet ändras.
-    // Behåll då väggklockan men rör inte den horisontella halvpositionen.
-    if (shouldCenter || previousDayStart !== dayStart) {
-      scroller.scrollTop = scrollTopForVisibleMinute(dayStart, visibleMinute, PX_PER_MIN)
-      preservedTopMinute.current = null
-    }
-  }, [date, dayStart, mobilePagerMatches, view])
+  }, [date, mobilePagerMatches, view])
 
   useEffect(() => {
     const scroller = scrollRef.current
@@ -766,16 +710,14 @@ export function CalendarBoard({
     let width = scroller.clientWidth
     const observer = new ResizeObserver(() => {
       if (!mobilePagerMatches() || scroller.clientWidth === width) return
-      const topMinute = visibleMinuteAtScrollTop(dayStart, scroller.scrollTop, PX_PER_MIN)
       width = scroller.clientWidth
       scroller.scrollLeft = width
       pagerScrollLeft.current = width
-      scroller.scrollTop = scrollTopForVisibleMinute(dayStart, topMinute, PX_PER_MIN)
       setActiveDaySlide(1)
     })
     observer.observe(scroller)
     return () => observer.disconnect()
-  }, [dayStart, mobilePagerMatches, view])
+  }, [mobilePagerMatches, view])
 
   useEffect(() => {
     const onShift = (event: Event) => {
@@ -801,6 +743,7 @@ export function CalendarBoard({
       window.dispatchEvent(
         new CustomEvent(MOBILE_CALENDAR_META_EVENT, {
           detail: {
+            date,
             title: mobilePeriodLabel,
             meta: mobilePeriodStats,
             previous: neighborLabel(-1),
@@ -1097,17 +1040,9 @@ export function CalendarBoard({
       </p>
 
       <div className={styles.mobileCalendarDock}>
-        <div className={styles.mobileCalendarDateRow}>
-          <button
-            type="button"
-            className={styles.mobileDayStepButton}
-            onClick={() => requestStep(-1)}
-            aria-label={`Föregående: ${compactStepLabel(-1)}`}
-            disabled={step === 'month'}
-          >
-            <Icon name="chevronLeft" size={15} />
-            <span>{compactStepLabel(-1)}</span>
-          </button>
+        <div className={styles.mobileCalendarActionRow}>
+          {/* Stående mobil visar redan datum + statistik i Topnav. Den här lilla
+              datumknappen behövs bara i liggande, där Topnav är dolt. */}
           <button
             type="button"
             className={styles.mobileDateToggle}
@@ -1121,20 +1056,7 @@ export function CalendarBoard({
             </span>
             <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
           </button>
-          <button
-            type="button"
-            className={styles.mobileDayStepButton}
-            onClick={() => requestStep(1)}
-            aria-label={`Nästa: ${compactStepLabel(1)}`}
-            disabled={step === 'month'}
-          >
-            <span>{compactStepLabel(1)}</span>
-            <Icon name="chevronRight" size={15} />
-          </button>
-        </div>
-
-        <div className={styles.mobileCalendarActionRow}>
-          {date !== today || view !== 'dag' || resursValid ? (
+          {showToday && (
             <button
               type="button"
               className={styles.mobileTodayBtn}
@@ -1142,7 +1064,16 @@ export function CalendarBoard({
             >
               Idag
             </button>
-          ) : null}
+          )}
+          <button
+            type="button"
+            className={styles.mobileDayStepButton}
+            onClick={() => requestStep(-1)}
+            aria-label={`Föregående: ${compactStepLabel(-1)}`}
+            disabled={step === 'month'}
+          >
+            <Icon name="chevronLeft" size={15} />
+          </button>
           <div className={styles.mobileViewSwitch} role="radiogroup" aria-label="Kalendervy">
             {VIEWS.map((item) => (
               <button
@@ -1157,6 +1088,15 @@ export function CalendarBoard({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className={styles.mobileDayStepButton}
+            onClick={() => requestStep(1)}
+            aria-label={`Nästa: ${compactStepLabel(1)}`}
+            disabled={step === 'month'}
+          >
+            <Icon name="chevronRight" size={15} />
+          </button>
           <button
             type="button"
             className={styles.mobileBlockAction}
@@ -1236,6 +1176,7 @@ export function CalendarBoard({
           services={services}
           staffNames={staffNames}
           date={date}
+          today={today}
           tz={tz}
           locationId={locationId}
           seed={creating.seed}
@@ -1356,9 +1297,6 @@ type FreeAreaGestureCoordinator = {
  * behöva hålla in en tredjedels sekund. Rör fingret sig mer än 10 px, eller lyfts det
  * före tiden, händer ingenting alls.
  *
- * Ytan får en tydlig markering under hållet (.freeAreaArmed) så det syns att systemet
- * lyssnar — annars känns fördröjningen som en bugg i stället för en spärr.
- *
  * TANGENTBORD: Enter/Space på knappen fungerar som förut (öppnar mitt i ytan).
  */
 function FreeArea({
@@ -1370,13 +1308,11 @@ function FreeArea({
   onPick: (clientY: number, box: DOMRect) => void
   gestureCoordinator: FreeAreaGestureCoordinator
 }) {
-  const [armed, setArmed] = useState(false)
   const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
 
   const cancel = useCallback(() => {
     if (hold.current) clearTimeout(hold.current.timer)
     hold.current = null
-    setArmed(false)
     if (gestureCoordinator.cancelActive === cancel) gestureCoordinator.cancelActive = null
   }, [gestureCoordinator])
 
@@ -1385,7 +1321,7 @@ function FreeArea({
   return (
     <button
       type="button"
-      className={`${styles.freeArea}${armed ? ` ${styles.freeAreaArmed}` : ''}`}
+      className={styles.freeArea}
       aria-label={`Boka ledig tid hos ${staffName}`}
       onPointerDown={(e) => {
         if (e.pointerType === 'mouse') return // musen går på onClick
@@ -1400,13 +1336,11 @@ function FreeArea({
         gestureCoordinator.cancelActive = cancel
         const el = e.currentTarget
         const { clientX: x, clientY: y } = e
-        setArmed(true)
         hold.current = {
           x,
           y,
           timer: setTimeout(() => {
             hold.current = null
-            setArmed(false)
             if (gestureCoordinator.cancelActive === cancel) {
               gestureCoordinator.cancelActive = null
             }
@@ -1467,7 +1401,6 @@ type BookingDragSession = {
   lastFrameAt: number | null
   target: HTMLButtonElement
   scrollContainer: HTMLElement | null
-  cancelTouchBlock: (() => void) | null
   cancelGlobalBlock: (() => void) | null
 }
 
@@ -1509,6 +1442,7 @@ function BookingBlock({
 }) {
   const dim = isAvbokad(booking.status)
   const name = booking.customerName?.trim() || 'Gäst'
+  const bookingButtonRef = useRef<HTMLButtonElement>(null)
   const pointerDrag = useRef<BookingDragSession | null>(null)
   const suppressClick = useRef(false)
   const suppressClickTimer = useRef<number | null>(null)
@@ -1540,11 +1474,9 @@ function BookingBlock({
   const clearSessionResources = (drag: BookingDragSession) => {
     if (drag.timer != null) window.clearTimeout(drag.timer)
     if (drag.frame != null) window.cancelAnimationFrame(drag.frame)
-    drag.cancelTouchBlock?.()
     drag.cancelGlobalBlock?.()
     drag.timer = null
     drag.frame = null
-    drag.cancelTouchBlock = null
     drag.cancelGlobalBlock = null
   }
 
@@ -1613,11 +1545,6 @@ function BookingBlock({
     drag.active = true
     if (drag.timer != null) window.clearTimeout(drag.timer)
     drag.timer = null
-    if (drag.touch) {
-      const preventTouchScroll = (event: TouchEvent) => event.preventDefault()
-      drag.target.addEventListener('touchmove', preventTouchScroll, { passive: false })
-      drag.cancelTouchBlock = () => drag.target.removeEventListener('touchmove', preventTouchScroll)
-    }
     setTouchDragging(true)
     setGhost({
       width: drag.width,
@@ -1655,6 +1582,19 @@ function BookingBlock({
     suppressSyntheticClick()
     clearDragVisual()
   }
+
+  // Listenern måste finnas redan när touchsekvensen börjar. Chromium bestämmer
+  // annars att scrollmotorn äger gesten och skickar pointercancel så fort den
+  // redan lyfta ghosten börjar röra sig. Före lyftet blockeras ingenting.
+  useEffect(() => {
+    const target = bookingButtonRef.current
+    if (!target) return
+    const blockActiveTouchScroll = (event: TouchEvent) => {
+      if (pointerDrag.current?.active) event.preventDefault()
+    }
+    target.addEventListener('touchmove', blockActiveTouchScroll, { passive: false })
+    return () => target.removeEventListener('touchmove', blockActiveTouchScroll)
+  }, [])
 
   useEffect(
     () => () => {
@@ -1734,6 +1674,7 @@ function BookingBlock({
   return (
     <>
       <button
+        ref={bookingButtonRef}
         type="button"
         className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${touchDragging ? ` ${styles.blockTouchDragging}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
         style={{
@@ -1776,7 +1717,6 @@ function BookingBlock({
             lastFrameAt: null,
             target,
             scrollContainer: target.closest<HTMLElement>('[data-calendar-scroll]'),
-            cancelTouchBlock: null,
             cancelGlobalBlock: null,
           }
           pointerDrag.current = drag

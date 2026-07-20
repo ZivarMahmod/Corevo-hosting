@@ -68,8 +68,8 @@ export function ServicesManager({
       </PageHead>
 
       <Callout tone="gold" icon="link">
-        Aktiva tjänster syns i tjänstemenyn på startsidan och på /tjanster (ordnade efter pris).
-        En tjänst blir bokningsbar först när den är kopplad till aktiv personal med plats och
+        Aktiva tjänster syns i tjänstemenyn på startsidan och på /tjanster (ordnade efter pris). En
+        tjänst blir bokningsbar först när den är kopplad till aktiv personal med plats och
         arbetstider. Inaktiverade tjänster döljs men behåller sin bokningshistorik.
       </Callout>
 
@@ -77,7 +77,11 @@ export function ServicesManager({
           på mobil — inline-style skulle annars slå media-queryn (RolesMatrix-fällan). */}
       <style>{`
         .services-2col { grid-template-columns: 1.7fr 1fr; }
-        @media (max-width: 920px) { .services-2col { grid-template-columns: 1fr; } }
+        .services-2col > * { min-width: 0; }
+        @media (max-width: 920px) {
+          .services-2col { grid-template-columns: 1fr; }
+          .services-site-map { position: static !important; }
+        }
       `}</style>
       <div className="bo-2col services-2col" style={{ alignItems: 'start', marginTop: 16 }}>
         <Card pad={0}>
@@ -226,9 +230,7 @@ function OnlineToggle({ service }: { service: ServiceRow }) {
         </PillToggle>
       </form>
       {/* Boolean aktiv-flagga (ingen status-sträng) — statusTone gäller ej här. */}
-      <Badge tone={service.active ? 'success' : 'neutral'}>
-        {service.active ? 'Aktiv' : 'Av'}
-      </Badge>
+      <Badge tone={service.active ? 'success' : 'neutral'}>{service.active ? 'Aktiv' : 'Av'}</Badge>
     </div>
   )
 }
@@ -261,7 +263,7 @@ function StorefrontSiteMap({
   const sectionList = [...sections.entries()]
 
   return (
-    <Card style={{ position: 'sticky', top: 84 }}>
+    <Card className="services-site-map" style={{ position: 'sticky', top: 84 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <Icon name="external" size={15} style={{ color: 'var(--c-gold-600)' }} />
         <h2 className="h2" style={{ margin: 0 }}>
@@ -375,13 +377,7 @@ function StorefrontSiteMap({
 /** Shared field markup for the create + edit drawers — eyebrow label over each
  *  input, mock control radius/borders. Keeps inline-edit parity: namn, kategori,
  *  varaktighet, pris are ALL editable here (RC: don't lose inline edit). */
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: ReactNode
-}) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <span className="eyebrow">{label}</span>
@@ -528,7 +524,9 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
       onClose={onClose}
       ariaLabel={`Redigera ${service.name}`}
       footer={
-        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div
+          style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <form action={delAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
             <input type="hidden" name="id" value={service.id} />
             {confirmDelete ? (
@@ -547,7 +545,12 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
                 </Button>
               </>
             ) : (
-              <Button variant="ghost" type="button" icon="trash" onClick={() => setConfirmDelete(true)}>
+              <Button
+                variant="ghost"
+                type="button"
+                icon="trash"
+                onClick={() => setConfirmDelete(true)}
+              >
                 Ta bort
               </Button>
             )}

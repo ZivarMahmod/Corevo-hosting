@@ -1,11 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { DEFAULT_MEMBER_PERMISSIONS, getMemberPermissions } from '@/lib/admin/member-permissions'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
-  countBookings,
   listBookings,
   listBookingPayments,
   listLocations,
@@ -28,7 +26,7 @@ import { listTimeOffOverlapping } from '@/lib/admin/schedule-data'
 import { resolvePlats } from '@/lib/admin/plats'
 import { requiredLocationId } from '@/lib/admin/location-scope'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
-import { Icon, PageHead } from '@/components/portal/ui'
+import { PageHead } from '@/components/portal/ui'
 import { CalendarBoardLazy } from '@/components/admin/CalendarBoardLazy'
 import type {
   CalendarBlock,
@@ -38,7 +36,6 @@ import type {
   CalendarView,
 } from '@/components/admin/CalendarBoard'
 import type { BookingRow } from '@/components/admin/BookingDrawer'
-import calendarStyles from '@/components/admin/calendar.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kalender · Adminpanel' }
@@ -133,32 +130,12 @@ export default async function KalenderPage({
   // Frånvaro = kalenderns blockeringar. EN modell för "resursen kan inte bokas" —
   // rast, frånvaro och avvikande arbetstid är samma sak (Wavys universalmekanism).
   // Intervall-överlapp, så en semester som började i förra fönstret syns ändå.
-  const nowIso = new Date().toISOString()
-  const unresolvedFilters = {
-    endToUtc: nowIso,
-    statuses: ['pending', 'confirmed'],
-    locationId,
-    staffId: ownCalendarOnly ? (user.staffId ?? undefined) : undefined,
-  }
-  const [
-    bookings,
-    unresolved,
-    unresolvedCount,
-    rostersByWeekday,
-    timeOff,
-    allServices,
-    staffResources,
-  ] = await Promise.all([
+  const [bookings, rostersByWeekday, timeOff, allServices, staffResources] = await Promise.all([
     listBookings(tenant.id, {
       fromUtc: range.fromUtc,
       toUtc: range.toUtc,
       locationId,
     }),
-    listBookings(tenant.id, {
-      ...unresolvedFilters,
-      limit: 50,
-    }),
-    countBookings(tenant.id, unresolvedFilters),
     staffDays(tenant.id, weekdays, locationId),
     // Blockeringar ritas bara i dag- och veckovyn. Månadsvyn visar antal per dag, så
     // en 42-dagars frånvarofråga där vore ren spilld last.
@@ -193,7 +170,6 @@ export default async function KalenderPage({
   const visibleBookings = ownCalendarOnly
     ? bookings.filter((b) => b.staffId === user.staffId)
     : bookings
-  const visibleUnresolved = unresolved
   const visibleBlocks = ownCalendarOnly ? blocks.filter((b) => b.staffId === user.staffId) : blocks
   const visibleRoster = ownCalendarOnly ? roster.filter((s) => s.staffId === user.staffId) : roster
 
@@ -276,74 +252,30 @@ export default async function KalenderPage({
   const currentStaff = staffRows(visibleRoster)
 
   return (
-    <>
-      {unresolvedCount > 0 ? (
-        <div className={calendarStyles.unresolvedHost}>
-          <details className={calendarStyles.unresolvedQueue}>
-            <summary
-              className={calendarStyles.unresolvedSummary}
-              aria-label={`${unresolvedCount} besök att stämma av`}
-              title={`${unresolvedCount} besök att stämma av`}
-            >
-              <Icon name="clock" size={18} />
-              <span>{unresolvedCount}</span>
-            </summary>
-            <div className={calendarStyles.unresolvedPanel}>
-              <div className={calendarStyles.unresolvedNotice}>
-                <div>
-                  <strong>{unresolvedCount} besök väntar på avslut.</strong> Ingen driftstörning —
-                  de behöver bara markeras som Genomförda eller Uteblivna för att statistiken ska
-                  bli korrekt.
-                </div>
-                <div className={calendarStyles.unresolvedLinks}>
-                  {visibleUnresolved.slice(0, 12).map((booking) => {
-                    const localDate = new Intl.DateTimeFormat('en-CA', {
-                      timeZone: tz,
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                    }).format(new Date(booking.startTs))
-                    return (
-                      <Link
-                        key={booking.id}
-                        href={`/admin/bokningar?vy=dag&datum=${localDate}&plats=${locationId}&open=${booking.id}`}
-                        className="pbtn pbtn--ghost pbtn--sm"
-                      >
-                        {booking.serviceName} · {booking.staffTitle}
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </details>
-        </div>
-      ) : null}
-      <CalendarBoardLazy
-        bookings={rows}
-        blocks={currentBlocks}
-        staff={currentStaff}
-        dayNeighbors={dayNeighbors}
-        // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
-        // drawern och sedan avvisas av servern.
-        services={allServices
-          .filter((s) => s.active && (s.location_id === null || s.location_id === locationId))
-          .map((s) => ({
-            id: s.id,
-            name: s.name,
-            durationMin: s.duration_min ?? 30,
-            priceCents: s.price_cents ?? null,
-          }))}
-        tz={tz}
-        view={view}
-        date={date}
-        today={today}
-        locationId={locationId}
-        staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
-        openBookingId={sp.open}
-        onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
-        canManageBookings={canManageBookings}
-      />
-    </>
+    <CalendarBoardLazy
+      bookings={rows}
+      blocks={currentBlocks}
+      staff={currentStaff}
+      dayNeighbors={dayNeighbors}
+      // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
+      // drawern och sedan avvisas av servern.
+      services={allServices
+        .filter((s) => s.active && (s.location_id === null || s.location_id === locationId))
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          durationMin: s.duration_min ?? 30,
+          priceCents: s.price_cents ?? null,
+        }))}
+      tz={tz}
+      view={view}
+      date={date}
+      today={today}
+      locationId={locationId}
+      staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
+      openBookingId={sp.open}
+      onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
+      canManageBookings={canManageBookings}
+    />
   )
 }

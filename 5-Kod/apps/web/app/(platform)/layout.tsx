@@ -1,8 +1,22 @@
+import type { Metadata, Viewport } from 'next'
 import { requirePlatformOperator } from '@/lib/auth/session'
 import { PortalShell } from '@/components/portal/PortalShell'
 import { RealtimeBookingsLazy } from '@/components/realtime/RealtimeBookingsLazy'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  manifest: '/api/pwa/platform-manifest',
+  appleWebApp: { capable: true, title: 'Corevo Platform', statusBarStyle: 'black-translucent' },
+  icons: { apple: '/pwa/admin-icon-180.png' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#121210',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
 
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   // Strict DB-backed operator fence. Root gets global scope; a partner gets only

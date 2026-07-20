@@ -299,9 +299,8 @@ export function Topnav({
 
   const mobileMoreActive =
     mobileNavigation?.more.some((area) => area.id === activeMobileArea?.id) ?? false
-  const mobileContextVisible =
-    mobileNavigation?.tabs.some((area) => area.id === activeMobileArea?.id) ?? false
   const isCalendar = adminMobileChrome && pathname.startsWith('/admin/bokningar')
+  const mobileContextVisible = isCalendar || activeMobileArea?.id === 'kunder'
   const mobilePageTitle = isCalendar
     ? (calendarMeta?.title ?? 'Kalender')
     : (activeMobileArea?.label ?? brandName)
@@ -313,6 +312,11 @@ export function Topnav({
   const openMobileHelp = () => {
     if (isCalendar) window.dispatchEvent(new Event(MOBILE_HELP_EVENT))
     else setMobileHelpOpen(true)
+  }
+
+  const openMobileSearch = () => {
+    if (isCalendar) window.dispatchEvent(new Event(MOBILE_SEARCH_EVENT))
+    else openCommandPalette()
   }
 
   return (
@@ -524,15 +528,10 @@ export function Topnav({
               <nav className={styles.mobileContext} aria-label="Sidåtgärder">
                 {isCalendar ? (
                   <>
-                    <button
-                      type="button"
+                    <Link
                       className={styles.mobileContextAction}
-                      onClick={() => window.dispatchEvent(new Event(MOBILE_SEARCH_EVENT))}
+                      href={`/admin/bokningar?ny=1${calendarMeta?.date ? `&datum=${calendarMeta.date}` : ''}`}
                     >
-                      <Icon name="search" size={19} stroke={1.7} />
-                      <span>Sök</span>
-                    </button>
-                    <Link className={styles.mobileContextAction} href="/admin/bokningar?ny=1">
                       <Icon name="plus" size={19} stroke={1.7} />
                       <span>Ny bokning</span>
                     </Link>
@@ -559,28 +558,50 @@ export function Topnav({
                     </button>
                   </>
                 ) : (
-                  <>
-                    <button
-                      type="button"
-                      className={styles.mobileContextAction}
-                      onClick={openCommandPalette}
-                    >
-                      <Icon name="search" size={19} stroke={1.7} />
-                      <span>Sök</span>
-                    </button>
-                    {activeMobileArea?.id === 'kunder' ? (
-                      <Link className={styles.mobileContextAction} href="/admin/kunder?ny=1">
-                        <Icon name="plus" size={19} stroke={1.7} />
-                        <span>Ny kund</span>
-                      </Link>
-                    ) : null}
-                  </>
+                  <Link className={styles.mobileContextAction} href="/admin/kunder?ny=1">
+                    <Icon name="plus" size={19} stroke={1.7} />
+                    <span>Ny kund</span>
+                  </Link>
                 )}
               </nav>
             ) : null}
 
             <nav className={styles.mobileNav} aria-label="Mobilnavigering">
-              {mobileNavigation.tabs.slice(0, 3).map((area) => {
+              {mobileNavigation.tabs.slice(0, 2).map((area) => {
+                const active = area.id === activeMobileArea?.id
+                return (
+                  <Link
+                    key={area.id}
+                    href={area.href}
+                    className={`${styles.mobileNavItem}${active ? ` ${styles.mobileNavItemActive}` : ''}`}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <Icon
+                      className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
+                      name={mobileNavIcon(area.id)}
+                      size={19}
+                      stroke={1.7}
+                    />
+                    <span>{area.label}</span>
+                  </Link>
+                )
+              })}
+              <button
+                type="button"
+                className={styles.mobileNavItem}
+                onClick={openMobileSearch}
+                aria-label={isCalendar ? 'Sök i kalendern' : 'Sök kund, bokning eller sida'}
+                aria-haspopup="dialog"
+              >
+                <Icon
+                  className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
+                  name="search"
+                  size={19}
+                  stroke={1.7}
+                />
+                <span>Sök</span>
+              </button>
+              {mobileNavigation.tabs.slice(2, 3).map((area) => {
                 const active = area.id === activeMobileArea?.id
                 return (
                   <Link

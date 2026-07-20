@@ -8,6 +8,7 @@ export const MOBILE_CALENDAR_META_REQUEST_EVENT = 'corevo:mobile-calendar-meta-r
 export const MOBILE_CALENDAR_DATE_EVENT = 'corevo:mobile-calendar-date'
 
 export type MobileCalendarMeta = {
+  date: string
   title: string
   meta: string
   previous: string

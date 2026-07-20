@@ -54,7 +54,7 @@ test.describe('07 Kundadmin mobilchrome — source contract @readonly @contract'
     expect(component).not.toContain('calendarSwipeDirection')
     expect(component).not.toContain('SWIPE_THRESHOLD_PX = 48')
     expect(component).toContain('data-calendar-booking')
-    expect(gestures).toContain('TOUCH_DRAG_HOLD_MS = 500')
+    expect(gestures).toContain('TOUCH_DRAG_HOLD_MS = 300')
     expect(gestures).toContain('TOUCH_DRAG_SLOP_PX = 10')
     expect(component).toContain('addMonths(date, dir)')
     expect(component).toContain("view === 'manad'")
@@ -71,28 +71,32 @@ test.describe('07 Kundadmin mobilchrome — source contract @readonly @contract'
     expect(help).toContain('Håll bokningen')
   })
 
-  test('07-C04 compact cards and unresolved visits preserve information without alarm styling', () => {
+  test('07-C04 compact cards keep outcomes optional and touch surfaces calm', () => {
     const component = read('apps/web/components/admin/CalendarBoard.tsx')
     const page = read('apps/web/app/(admin)/admin/bokningar/page.tsx')
     const css = read('apps/web/components/admin/calendar.module.css')
+    const drawer = read('apps/web/components/admin/BookingDrawer.tsx')
 
     expect(component).toContain('styles.blockEnd')
     expect(component).toContain('timeLabel(booking.endTs, tz)')
-    expect(page).not.toContain('tone="info"')
-    expect(page).toContain('Ingen driftstörning')
-    expect(page).toContain('calendarStyles.unresolvedQueue')
-    expect(page).toContain('`${unresolvedCount} besök att stämma av`')
-    expect(page).toContain('<Icon name="clock" size={18}')
-    expect(css).toMatch(/\.unresolvedSummary\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/)
+    expect(page).not.toContain('unresolvedCount')
+    expect(page).not.toContain('calendarStyles.unresolvedQueue')
+    expect(css).not.toContain('.unresolvedSummary')
+    expect(drawer).toContain("target: 'completed'")
+    expect(drawer).toContain('Uteblev')
+    expect(component).not.toContain('styles.freeAreaArmed')
+    expect(css).toMatch(/\.offHours\s*\{[^}]*background:\s*var\(--c-paper\);/)
   })
 
-  test('07-C05 customers get their real create action while More has no generic action rail', () => {
+  test('07-C05 search stays in the primary dock while customers keep their real create action', () => {
     const topnav = read('apps/web/components/portal/Topnav.tsx')
     const form = read('apps/web/components/admin/CreateCustomerForm.tsx')
 
     expect(topnav).toContain("activeMobileArea?.id === 'kunder'")
     expect(topnav).toContain('/admin/kunder?ny=1')
-    expect(topnav).toContain('mobileNavigation?.tabs.some')
+    expect(topnav).toContain('onClick={openMobileSearch}')
+    expect(topnav).toContain('<span>Sök</span>')
+    expect(topnav).not.toContain('mobileNavigation?.tabs.some')
     expect(form).toContain("searchParams.has('ny')")
     expect(form).toContain("router.replace('/admin/kunder', { scroll: false })")
     expect(form).toContain('<Modal')

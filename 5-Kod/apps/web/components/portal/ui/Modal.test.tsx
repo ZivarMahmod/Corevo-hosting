@@ -65,7 +65,7 @@ describe('Modal portal host', () => {
     await act(async () => {
       root.render(
         <Modal title="Sök i kalendern" onClose={() => undefined} anchor="top">
-          <input aria-label="Sök kund" />
+          <input type="search" autoFocus aria-label="Sök kund" />
         </Modal>,
       )
     })
@@ -109,7 +109,7 @@ describe('Modal portal host', () => {
       if (originalViewport) {
         Object.defineProperty(window, 'visualViewport', originalViewport)
       } else {
-        delete (window as Window & { visualViewport?: VisualViewport }).visualViewport
+        Reflect.deleteProperty(window, 'visualViewport')
       }
     }
   })
