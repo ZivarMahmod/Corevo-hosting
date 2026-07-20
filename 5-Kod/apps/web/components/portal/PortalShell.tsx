@@ -161,7 +161,13 @@ export async function PortalShell({
         grantedAreas = undefined
       }
     }
-    let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys, navRoleLevel, grantedAreas)
+    let paletteItems: CommandItem[] = paletteFromNav(
+      portal,
+      activeModuleKeys,
+      navRoleLevel,
+      grantedAreas,
+      Boolean(user.staffId),
+    )
     if (portal === 'platform') {
       paletteItems = paletteItems.filter((item) => platformLinkAllowed(item.href, user.platformAdmin))
       const tenantOptions = await listTenantNavOptions()
@@ -385,6 +391,7 @@ export async function PortalShell({
           activeModuleKeys={activeModuleKeys}
           roleLevel={navRoleLevel}
           grantedAreas={grantedAreas}
+          hasStaffProfile={Boolean(user.staffId)}
         />
         <div className="portal-col">
           <PortalTopbar

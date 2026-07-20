@@ -69,11 +69,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     | null
     | undefined
 
-  // En staff-roll utan aktiv personalrad är återkallad, även om webbläsaren ännu
-  // bär ett gammalt JWT. Samma kontroll finns i private.role_level() för direkt DB-
-  // åtkomst; DAL-vakten gör att sidan/actionen dessutom nekar med rätt portalflöde.
+  // Lös den aktiva personalraden för ALLA tenantroller. En ägare kan också arbeta i
+  // verksamheten och ska då få sin riktiga personalprofil, samtidigt som bara den
+  // rena staffrollen blir obehörig om länken saknas eller har inaktiverats.
   let activeStaff: { id: string } | null = null
-  if (profile?.status === 'active' && role?.level === 3 && profile.tenant_id) {
+  if (profile?.status === 'active' && profile.tenant_id) {
     const { data } = await supabase
       .from('staff')
       .select('id')
