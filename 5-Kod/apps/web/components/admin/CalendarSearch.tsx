@@ -90,6 +90,7 @@ export function CalendarSearch({ tz, mobileSheet = false }: { tz: string; mobile
       <Icon name="search" size={15} />
       <input
         type="search"
+        autoFocus={mobileSheet}
         enterKeyHint="search"
         className={styles.searchInput}
         placeholder="Sök kund…"

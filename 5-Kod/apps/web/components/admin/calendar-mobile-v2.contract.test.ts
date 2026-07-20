@@ -76,6 +76,32 @@ describe('Kalender Mobil v2', () => {
     expect(palette).toContain('type="search"')
   })
 
+  it('autofokuserar sökfältet under mobilens betrodda tryckgest', () => {
+    const search = read('components/admin/CalendarSearch.tsx')
+    const palette = read('components/portal/ui/CommandPalette.tsx')
+
+    expect(search).toMatch(/type="search"[\s\S]*?autoFocus/)
+    expect(palette).toMatch(/type="search"[\s\S]*?autoFocus/)
+  })
+
+  it('ärver den swipade dagen och låter Ny bokning byta datum', () => {
+    const events = read('components/portal/mobile-search-event.ts')
+    const topnav = read('components/portal/Topnav.tsx')
+    const board = read('components/admin/CalendarBoard.tsx')
+    const drawer = read('components/admin/NewBookingDrawer.tsx')
+
+    expect(events).toMatch(/MobileCalendarMeta[\s\S]*?date: string/)
+    expect(board).toMatch(/detail:\s*\{[\s\S]*?date,/)
+    expect(topnav).toContain('calendarMeta?.date')
+    expect(drawer).toContain('const [bookingDate, setBookingDate] = useState(date)')
+    expect(drawer).toContain('type="date"')
+    expect(drawer).toContain('value={bookingDate}')
+    expect(drawer).toContain('min={today}')
+    expect(drawer).toContain('setBookingDate(nextDate >= today ? nextDate : today)')
+    expect(drawer).toContain('loadDaySlots({ serviceId, date: bookingDate, locationId })')
+    expect(board).toMatch(/<NewBookingDrawer[\s\S]*?today=\{today\}/)
+  })
+
   it('ger mobilen en egen topphjälp och bottensök utan en permanent verktygsrad', () => {
     const component = read('components/admin/CalendarBoard.tsx')
     const search = read('components/admin/CalendarSearch.tsx')

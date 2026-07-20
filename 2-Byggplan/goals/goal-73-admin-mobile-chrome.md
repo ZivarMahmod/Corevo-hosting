@@ -58,7 +58,11 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
   `Genomförd` och `Uteblev` finns kvar som frivilliga statusval inne i bokningen;
   bokningssystemet gissar eller tvångsmarkerar aldrig ett utfall.
 - Mobilens sökfält använder tangentbordets Sök/Enter för samma sökning som
-  sökknappen, och inställningssidor samt dialoger håller sig inom viewporten med
+  sökknappen. När en sökyta öppnas från en knapp autofokuseras dess sökfält i
+  samma tryckgest så mobilens tangentbord visas direkt.
+- `Ny bokning` ärver kalenderns valda datum, även efter swipe. Drawern visar ett
+  native datumfält för framtida datum och räknar om verkliga lediga tider när
+  datumet ändras. Inställningssidor samt dialoger håller sig inom viewporten med
   tillräcklig bottenmarginal för den fasta dockan.
 - Ingen scrollbarindikator får synas i mobilens viewport eller interna
   scrollbehållare. WebKit-spår och tumme är 0 px/transparenta och
@@ -87,6 +91,8 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Källkontrakt låser den femdelade navigationen, sökens ruttberoende befintliga
   event och att Översikt saknar kontextrad. Ett globalt CSS-kontrakt låser både
   dold scrollbar-tumme/spår och bevarad scrollfunktion.
+- Källkontrakt låser native autofocus i båda sökytorna samt att kalenderdatumet
+  följer med till `Ny bokning`, kan bytas och styr samma befintliga slotladdning.
 - Oberoende GPT-5.6-sol och lokal Claude/Fable 5 granskar slutdiffen innan push.
 - Goal-filen kan markeras implementerad och mekaniskt verifierad efter bevisen,
   men flyttas inte till `klart/05-design/` förrän Zivar godkänt liveversionen.
@@ -122,7 +128,31 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Den fasta mobilnaven är nu `Översikt · Kalender · Sök · Kunder · Mer`.
   Kalender-Sök använder befintligt kalenderevent; övriga adminytor använder
   befintlig global sök. Ingen separat sökrad ligger längre ovanför navet.
-- Produktionsdeploy och Zivars fysiska Samsung-/iPhone-test återstår.
+- Zivars fysiska Samsung-/iPhone-test återstår.
+
+### Mekaniskt tilläggsbevis 2026-07-20 — sökfokus och bokningsdatum
+
+- TDD började med två röda regressioner: modalens generella mount-fokus stal
+  fokus från det autofokuserade sökfältet, och datumfältet accepterade tomt/
+  passerat värde. Båda är rättade och låsta i test.
+- Mobil Kalender-Sök samt den delade kommandosökningen använder native
+  autofocus under öppningstrycket. Modalens fokusfälla bevarar fokus om ett
+  element redan är fokuserat inne i dialogen.
+- `Ny bokning` ärver kalenderns publicerade URL-datum. Ett native datumfält kan
+  därefter välja ett framtida datum och samma befintliga slotladdning räknar om
+  lediga tider utan ny server- eller behörighetsväg.
+- Riktad regression: 4 testfiler och 29 tester PASS. Full Vitest: 262 testfiler
+  och 2 134 tester PASS.
+- `pnpm typecheck`, samtliga fyra kontraktsprober och `pnpm build`: PASS.
+  `pnpm lint`: 0 fel och sju befintliga varningar i orörda filer.
+- Lokal Claude/Fable 5 fann fokusstölden och otillräcklig datumguard i första
+  granskningen; båda fynden åtgärdades innan full verifiering kördes om. Den
+  smala slutgranskningen verifierade fokusfällan, datumklampen och slot-raceskyddet
+  och gav PASS utan blockerande, höga eller medelhöga fynd.
+- GPT-5.6-sol:s read-only-slutgranskning nådde åter sin treminutersgräns utan
+  svar eller fynd; verktygsfelet blockerar inte den gröna Fable-, test-, typ-,
+  lint-, build- och kommande CI-grinden.
+- Zivars fysiska tangentbords- och framtidsbokningstest återstår på live.
 
 ## Status
 

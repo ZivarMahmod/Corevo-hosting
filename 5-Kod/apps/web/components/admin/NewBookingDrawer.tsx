@@ -57,6 +57,7 @@ export function NewBookingDrawer({
   services,
   staffNames,
   date,
+  today,
   tz,
   locationId,
   seed,
@@ -66,6 +67,7 @@ export function NewBookingDrawer({
   /** staffId → namn, för att kunna sätta etikett på en lucka. */
   staffNames: Map<string, string>
   date: string
+  today: string
   tz: string
   locationId?: string
   seed: NewBookingSeed | null
@@ -79,6 +81,7 @@ export function NewBookingDrawer({
   )
 
   const [serviceId, setServiceId] = useState('')
+  const [bookingDate, setBookingDate] = useState(date)
   const [slots, setSlots] = useState<AdminSlot[]>([])
   const [slotsLoading, startSlots] = useTransition()
   const slotLoadSeq = useRef(0)
@@ -111,7 +114,7 @@ export function NewBookingDrawer({
       return
     }
     startSlots(async () => {
-      const res = await loadDaySlots({ serviceId, date, locationId })
+      const res = await loadDaySlots({ serviceId, date: bookingDate, locationId })
       if (slotLoadSeq.current !== sequence) return
       if (res.error) {
         notify(res.error, 'warning')
@@ -124,7 +127,7 @@ export function NewBookingDrawer({
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serviceId, date, locationId])
+  }, [serviceId, bookingDate, locationId])
 
   // Kundsök: en kontroll som söker OCH skapar. Debounce så vi inte skickar en fråga
   // per tangenttryck.
@@ -283,6 +286,25 @@ export function NewBookingDrawer({
               </button>
             ))}
           </div>
+        </section>
+
+        <section>
+          <label className="eyebrow" htmlFor="new-booking-date">
+            Datum
+          </label>
+          <input
+            id="new-booking-date"
+            className={styles.input}
+            type="date"
+            value={bookingDate}
+            min={today}
+            onChange={(event) => {
+              const nextDate = event.target.value
+              setBookingDate(nextDate >= today ? nextDate : today)
+              setSlots([])
+              setPicked(null)
+            }}
+          />
         </section>
 
         {/* 2. TID — bara giltiga luckor erbjuds. Fel går inte att göra. */}
