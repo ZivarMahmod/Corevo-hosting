@@ -104,7 +104,14 @@ describe('Kalender Mobil v2', () => {
     const global = read('app/globals.css')
 
     expect(global).toMatch(/html::-webkit-scrollbar,[\s\S]*?body::-webkit-scrollbar/)
-    expect(global).toMatch(/html,[\s\S]*?body\s*\{[\s\S]*?scrollbar-width:\s*none;/)
+    expect(global).toMatch(/\*\s*\{[\s\S]*?scrollbar-width:\s*none !important;/)
+    expect(global).toMatch(/\*\s*\{[\s\S]*?-ms-overflow-style:\s*none;/)
+    expect(global).toMatch(
+      /\*::-webkit-scrollbar-track,[\s\S]*?\*::-webkit-scrollbar-thumb[\s\S]*?background:\s*transparent !important;/,
+    )
+    expect(global).toMatch(
+      /html::-webkit-scrollbar,[\s\S]*?body::-webkit-scrollbar[\s\S]*?width:\s*0 !important;[\s\S]*?height:\s*0 !important;/,
+    )
     expect(global).not.toMatch(/html,[\s\S]*?body\s*\{[\s\S]*?overflow:\s*hidden;/)
   })
 

@@ -106,6 +106,24 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Fysisk iPhone-/Samsung-acceptans och staging-/livebevis återstår och kan inte
   ersättas av de mekaniska kontrollerna.
 
+### Mekaniskt tilläggsbevis 2026-07-20 — bottennav och scrollbar
+
+- TDD-kontrakten föll först på den gamla dubbla sökraden/fyrkolumnsnaven och den
+  överstyrbara scrollbarregeln. Efter implementation: 19/19 riktade mobiltest PASS.
+- Full Vitest efter slutgranskning: 262 testfiler och 2 131 tester PASS.
+- `pnpm typecheck`, `pnpm lint` och `pnpm build`: PASS. Lint har fortsatt sju
+  befintliga varningar i orörda storefrontfiler och inga fel.
+- Lokal Claude/Fable 5 verifierade sökrutt, kontextrader och bevarad scroll och
+  gav PASS. Dess medelfynd om klippt vänsterrail på låg liggande telefon
+  åtgärdades med finger-scrollbar rail utan synlig indikator och låstes i test.
+- Två separata read-only-försök med GPT-5.6-sol nådde vardera sin
+  treminutersgräns utan svar eller fynd. Verktygsfelet blockerar därför inte den
+  gröna Fable-, test-, typ-, lint-, build- och kommande CI-grinden.
+- Den fasta mobilnaven är nu `Översikt · Kalender · Sök · Kunder · Mer`.
+  Kalender-Sök använder befintligt kalenderevent; övriga adminytor använder
+  befintlig global sök. Ingen separat sökrad ligger längre ovanför navet.
+- Produktionsdeploy och Zivars fysiska Samsung-/iPhone-test återstår.
+
 ## Status
 
 - [x] Implementerad
