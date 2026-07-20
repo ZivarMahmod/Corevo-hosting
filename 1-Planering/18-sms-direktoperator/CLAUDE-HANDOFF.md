@@ -78,6 +78,20 @@ Fullt konto och globala “Mina ställen” är en senare fas.
 - Befintlig aktiverings-/rollbackmodell, fortsatt avstängd:
   `5-Kod/docs/ops/sms-activation.md`
 
+## Verifierad lokal modemstatus 2026-07-20
+
+- Huawei/Brovi `E3372-325` HiLink svarar på `http://192.168.8.1` via USB NDIS.
+- Operatören identifieras som Comviq och den skrivskyddade SMS API-kontrollen svarar.
+- Kontrollvärden: RSRP `-82 dBm`, RSRQ `-10 dB`, SINR `16 dB`.
+- Ingen inställning ändrades och inget test-SMS skickades.
+- SIP ALG/port `5060` i modemets UI är SIP-telefoni och har inget med SMPP att göra.
+- Använd modemet endast för nummerbaserat reserv-/lokalspår. REST/SMPP går från
+  driftservern direkt till operatören och ska inte routas genom modemet.
+
+Operatörspriset är ännu okänt eftersom publika direktprislistor saknas. Bygg
+inget som antar ett segmentpris, en fast avgift eller ett minimiåtagande; invänta
+offerten och lägg priser i drift-/affärskonfiguration, inte hårdkodat i transporten.
+
 ## Lokalt arbetsunderlag — inte kanon
 
 Repo-roten innehåller lokala otrackade mappar `corevo-sms/` och

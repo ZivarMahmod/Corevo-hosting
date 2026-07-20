@@ -25,6 +25,24 @@ Ett bättre modem ändrar inte detta. Namnet sätts i operatörens A2P/SMSC-led,
 inte av SIM-kortet eller radiomodemet.
 ```
 
+## Verifierat modem 2026-07-20
+
+En skrivskyddad kontroll från Zivars dator bekräftade:
+
+| Del | Resultat |
+|---|---|
+| Modell | Huawei/Brovi `E3372-325`, LTE HiLink |
+| Lokal adress | `http://192.168.8.1` via USB Remote NDIS |
+| Operatör | Comviq (`24007`) |
+| Signal vid kontroll | RSRP `-82 dBm`, RSRQ `-10 dB`, SINR `16 dB` |
+| HiLink SMS-API | svarar på den skrivskyddade `sms-count`-kontrollen |
+| Ändringar/testutskick | inga inställningar ändrades och inget SMS skickades |
+
+Modemet är alltså nåbart och passar det befintliga nummerbaserade reservspåret.
+Det behövs inte för REST eller SMPP: direktoperatörstrafiken går från Corevos
+server över internet till operatören. Bildens SIP ALG och port `5060` gäller
+internettelefoni, inte SMPP, och ska inte öppnas eller ändras för SMS-projektet.
+
 ## Låsta beslut
 
 1. Corevo ska inte bygga sin långsiktiga SMS-transport ovanpå en CPaaS-återförsäljare
@@ -102,6 +120,45 @@ Det går alltså att slippa betala en tredje parts plattformspåslag och ändå 
 hela gatewayen. Det går inte att undvika mobiloperatörernas nät-/termineringskostnad
 för SMS till vanliga telefoner. Alternativet vore att själv bli nätoperatör med
 interconnectavtal, vilket är en helt annan verksamhet och inte ett modemprojekt.
+
+## Vad kostar direkt REST/SMPP?
+
+SMPP är ett protokoll, inte ett abonnemang. Corevos egen kod och ett självhostat
+open-source-alternativ kan sakna programlicensavgift, men operatören tar betalt
+för A2P-avtalet och termineringen. De granskade publika operatörssidorna visar
+inte en komplett svensk prislista för Corevos direkta upplägg. Exakt belopp är
+därför **offert krävs**, inte något som ska gissas i kod eller budget.
+
+Corevo kan äga och drifta hela SMPP-gatewayen/SMSC-programvaran. Det som inte kan
+byggas bort är rätten och nätvägen till vanliga mobilnummer: antingen tecknas ett
+direkt operatörsavtal, eller så blir Corevo själv teleoperatör/interconnect-part.
+En lokal SMPP-server utan någon av dessa vägar kan ta emot submit-anrop men kan
+inte terminera SMS i Telias, Tele2s, Telenors eller Hi3G:s abonnentnät.
+
+```text
+månadskostnad = fast avgift/minimiåtagande
+              + on-net-segment  × avtalat on-net-pris
+              + off-net-segment × avtalat off-net-pris
+              + eventuella DLR/Sender ID/VPN-avgifter
+```
+
+Ett långt SMS eller Unicode/emoji kan bli flera debiterade segment. Begär därför
+följande som separata rader från alla fyra nätägare:
+
+- start-/anslutningsavgift och testmiljö;
+- månadsavgift eller minsta trafikåtagande;
+- pris per on-net- och off-net-segment samt volymsteg;
+- avgift för DLR, dynamiska Sender ID:n och registrering av nya tenantnamn;
+- pris för statisk IP/VPN/mTLS eller redundant anslutning om operatören kräver det;
+- bind/API-kvot, topp-TPS, support och SLA;
+- avtalslängd, uppsägningstid och vad som händer med outnyttjad minimivolym.
+
+Corevo ska välja direkt REST om det uppfyller kraven. Då behövs operatörsavtal,
+test-/produktionscredentials, en driftserver och operatörens nät-/authkrav —
+inget modem och ingen SMPP-sidecar. För SMPP behövs därutöver normalt statisk
+publik IP/allowlist, TLS, `system_id`/bind-secret och en liten långlivad
+SMPP-process. Köp inget nytt modem och beställ ingen extra server innan den
+vinnande operatören har lämnat sitt tekniska kontrakt.
 
 ## Open source-val — inga fler listor behövs
 
