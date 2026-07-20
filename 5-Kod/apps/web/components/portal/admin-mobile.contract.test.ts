@@ -180,6 +180,7 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
 
   it('har ett riktigt Omboka-flöde som ersätter desktop-drag på touch', () => {
     const drawer = read('components/admin/BookingDrawer.tsx')
+    const board = read('components/admin/CalendarBoard.tsx')
 
     expect(drawer).toContain('Omboka')
     expect(drawer).toContain('moveBooking')
@@ -187,6 +188,13 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(drawer).toContain('eligibleRescheduleStaff')
     expect(drawer).toContain('rescheduleFirstFieldRef')
     expect(drawer).toContain('rescheduleTriggerRef')
+    expect(drawer).toContain('Vill du meddela kunden?')
+    expect(drawer).toContain('notifyCustomer === null')
+    expect(drawer).toContain('notifyCustomer,')
+    expect(board).toContain('Vill du meddela kunden?')
+    expect(board).toContain('pendingMove.notifyCustomer === null')
+    expect(board).toContain('const notifyCustomer = pendingMove.notifyCustomer')
+    expect(board).toContain('notifyCustomer,')
   })
 
   it('gör adminens drawers till bottom sheets under 768 px', () => {

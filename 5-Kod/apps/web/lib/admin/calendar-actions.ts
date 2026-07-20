@@ -157,6 +157,9 @@ export async function moveBooking(input: {
   serviceId: string
   expectedStartIso: string
   expectedStaffId: string
+  /** Obligatoriskt, uttryckligt val i bekräftelsen. Även Nej lagras som ett
+   *  durable skipped-event så flytten och notisbeslutet kan följas upp. */
+  notifyCustomer: boolean
   /** När flytten startades i en frånvarokö auditeras upplösningen atomiskt. */
   absenceTimeOffId?: string
 }): Promise<MoveBookingState> {
@@ -169,6 +172,7 @@ export async function moveBooking(input: {
     !input.locationId ||
     !input.serviceId ||
     !input.expectedStaffId ||
+    typeof input.notifyCustomer !== 'boolean' ||
     Number.isNaN(Date.parse(input.startIso)) ||
     Number.isNaN(Date.parse(input.expectedStartIso))
   ) {
@@ -248,6 +252,8 @@ export async function moveBooking(input: {
     type: 'booking_rebooked',
     occurredAt: new Date().toISOString(),
     startISO: input.startIso,
+    allow: input.notifyCustomer,
+    skipReason: input.notifyCustomer ? undefined : 'actor_opted_out',
     includeManageLink: true,
   })
   return { success: `Bokningen är flyttad. ${notificationQueueMessage(notification)}` }

@@ -372,6 +372,7 @@ export function CalendarBoard({
     booking: BookingRow
     staffId: string
     startIso: string
+    notifyCustomer: boolean | null
   } | null>(null)
   /** Var blocket skulle landa just nu, medan man drar. Ritas som en genomskinlig
    *  förhandsvisning i kolumnen — man ser tiden innan man släpper, i stället för att
@@ -384,8 +385,9 @@ export function CalendarBoard({
   const staffNames = useMemo(() => new Map(staff.map((s) => [s.id, s.name])), [staff])
 
   const confirmMove = () => {
-    if (!pendingMove) return
+    if (!pendingMove || pendingMove.notifyCustomer === null) return
     const { booking, staffId, startIso } = pendingMove
+    const notifyCustomer = pendingMove.notifyCustomer
     startMove(async () => {
       const res = await moveBooking({
         bookingId: booking.id,
@@ -395,6 +397,7 @@ export function CalendarBoard({
         serviceId: booking.serviceId,
         expectedStartIso: booking.startTs,
         expectedStaffId: booking.staffId,
+        notifyCustomer,
       })
       if (res.error) notify(res.error, 'warning')
       else {
@@ -795,7 +798,7 @@ export function CalendarBoard({
     const startIso = wallClockToUtcIso(date, snapped, tz)
     // Släppte man tillbaka på exakt samma tid och resurs har inget hänt — fråga inte.
     if (staffId === booking.staffId && startIso === booking.startTs) return
-    setPendingMove({ booking, staffId, startIso })
+    setPendingMove({ booking, staffId, startIso, notifyCustomer: null })
   }
 
   return (
@@ -1219,7 +1222,7 @@ export function CalendarBoard({
                 variant="primary"
                 icon="check"
                 onClick={confirmMove}
-                disabled={moving}
+                disabled={moving || pendingMove.notifyCustomer === null}
                 style={{ flex: 1, justifyContent: 'center' }}
               >
                 {moving ? 'Flyttar…' : 'Flytta'}
@@ -1246,6 +1249,29 @@ export function CalendarBoard({
               </span>
             </div>
           </div>
+          <fieldset style={{ margin: '14px 0 0', padding: 0, border: 0 }}>
+            <legend style={{ fontSize: 13, fontWeight: 650, color: 'var(--c-ink)' }}>
+              Vill du meddela kunden?
+            </legend>
+            <div className={styles.chipRow} style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className={`${styles.slotChip}${pendingMove.notifyCustomer === true ? ` ${styles.chipOn}` : ''}`}
+                aria-pressed={pendingMove.notifyCustomer === true}
+                onClick={() => setPendingMove({ ...pendingMove, notifyCustomer: true })}
+              >
+                Ja, meddela
+              </button>
+              <button
+                type="button"
+                className={`${styles.slotChip}${pendingMove.notifyCustomer === false ? ` ${styles.chipOn}` : ''}`}
+                aria-pressed={pendingMove.notifyCustomer === false}
+                onClick={() => setPendingMove({ ...pendingMove, notifyCustomer: false })}
+              >
+                Nej
+              </button>
+            </div>
+          </fieldset>
         </Modal>
       )}
     </div>
