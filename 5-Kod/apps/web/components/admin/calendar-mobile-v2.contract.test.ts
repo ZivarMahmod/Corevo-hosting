@@ -18,13 +18,17 @@ describe('Kalender Mobil v2', () => {
     expect(component).toContain('Visa alla')
   })
 
-  it('flyttar mobilens datum, bläddring och diskreta vyval till en egen bottendocka', () => {
+  it('visar datumet i toppfältet och samlar bläddring och vyval i en slimmad rad', () => {
     const component = read('components/admin/CalendarBoard.tsx')
     const css = read('components/admin/calendar.module.css')
 
     expect(component).toContain('mobileCalendarDock')
     expect(component).toContain('mobileDateToggle')
     expect(component).toContain('mobileViewSwitch')
+    expect(component).not.toContain('mobileCalendarDateRow')
+    expect(component).toMatch(
+      /mobileCalendarActionRow[\s\S]*?requestStep\(-1\)[\s\S]*?mobileViewSwitch[\s\S]*?requestStep\(1\)/,
+    )
     expect(component).toContain('mobileCalendarPicker')
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.toolbar\s*\{[\s\S]*?display:\s*none;/)
     expect(css).toMatch(
@@ -53,13 +57,11 @@ describe('Kalender Mobil v2', () => {
     expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.freeArea:hover/)
   })
 
-  it('reserverar Idag-knappens plats så vyvalet inte hoppar när dagens slide landar', () => {
+  it('visar bara Idag-knappen när den behövs så verktygsraden förblir kompakt', () => {
     const component = read('components/admin/CalendarBoard.tsx')
-    const css = read('components/admin/calendar.module.css')
 
-    expect(component).toContain('styles.mobileTodayIdle')
-    expect(component).toContain('aria-hidden={!showToday}')
-    expect(css).toMatch(/\.mobileTodayIdle\s*\{[\s\S]*?opacity:\s*0;/)
+    expect(component).toContain('{showToday && (')
+    expect(component).not.toContain('styles.mobileTodayIdle')
   })
 
   it('låter mobilens söktangent köra sökningen direkt', () => {
