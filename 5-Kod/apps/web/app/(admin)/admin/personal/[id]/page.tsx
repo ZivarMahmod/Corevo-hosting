@@ -53,6 +53,7 @@ export default async function StaffMemberPage({
   // en knapp som alltid failar; övriga sektioner är oförändrat personal-gate:ade.
   const preferences = await getAdminLocationPreferences(user.id)
   const canManageRoles = preferences.accessScope === 'organization'
+  const ownerStaffLink = staff.find((member) => member.profile_id === user.id)
 
   const activeLocations = locations.filter((location) => location.active)
 
@@ -128,6 +129,7 @@ export default async function StaffMemberPage({
         staffNoun={resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}
         permissions={permissions}
         canManageRoles={canManageRoles}
+        canLinkCurrentUser={!ownerStaffLink && !s.profile_id && canManageRoles}
       />
     </SettingsWorkspace>
   )

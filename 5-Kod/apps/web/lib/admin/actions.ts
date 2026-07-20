@@ -684,6 +684,70 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   return { success: 'Tjänster kopplade.' }
 }
 
+/** Koppla den inloggade organisationsägarens befintliga konto till en staff-rad.
+ *  Detta är INTE inviteStaff: ägarens roll och auth-metadata ska lämnas helt
+ *  orörda. staff.profile_id är redan den kanoniska och unika auth→personal-länken. */
+export async function linkCurrentUserToStaff(
+  _p: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const ctx = await adminCtx('personal')
+  if (!ctx) return { error: NO_TENANT }
+
+  if (!ctx.user.platformAdmin) {
+    if (ctx.user.roleLevel < 6) return { error: 'Bara organisationsägaren kan koppla sitt konto.' }
+    const preferences = await getAdminLocationPreferences(ctx.user.id)
+    if (preferences.accessScope !== 'organization') {
+      return { error: 'Bara organisationsägaren kan koppla sitt konto.' }
+    }
+  }
+
+  const staffId = String(fd.get('staff_id') ?? '').trim()
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+
+  const supabase = await createClient()
+  const { data: existingLink, error: existingError } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('tenant_id', ctx.tenant.id)
+    .eq('profile_id', ctx.user.id)
+    .limit(1)
+    .maybeSingle()
+  if (existingError) return { error: GENERIC }
+  if (existingLink) {
+    return existingLink.id === staffId
+      ? { success: 'Ägarkontot är redan kopplat till den här profilen.' }
+      : { error: 'Ditt ägarkonto är redan kopplat till en annan personalprofil.' }
+  }
+
+  const { data: target, error: targetError } = await supabase
+    .from('staff')
+    .select('id, profile_id')
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (targetError) return { error: GENERIC }
+  if (!target) return { error: 'Medarbetaren saknas.' }
+  if (target.profile_id) return { error: 'Personalprofilen har redan ett annat konto.' }
+
+  const { data: linked, error } = await supabase
+    .from('staff')
+    .update({ profile_id: ctx.user.id })
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .is('profile_id', null)
+    .select('id')
+    .maybeSingle()
+  if (error?.code === '23505') {
+    return { error: 'Ditt ägarkonto är redan kopplat till en annan personalprofil.' }
+  }
+  if (error || !linked) return { error: 'Profilen hann kopplas av någon annan. Ladda om sidan.' }
+
+  revalidateStaff(ctx.tenant.slug)
+  revalidatePath(`/admin/personal/${staffId}`)
+  return { success: 'Ägarkontot är nu kopplat till personalprofilen.' }
+}
+
 /**
  * Invite a staff member by email (M6 §3.4 onboarding). Sends a Supabase magic-link
  * invite (one-time), provisions the public.users row with a tenant-scoped `staff`

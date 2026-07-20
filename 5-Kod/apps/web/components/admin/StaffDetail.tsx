@@ -45,6 +45,7 @@ export function StaffDetail({
   staffNoun,
   permissions,
   canManageRoles,
+  canLinkCurrentUser,
 }: {
   member: StaffCard
   services: ServiceOption[]
@@ -53,6 +54,7 @@ export function StaffDetail({
   staffNoun: string
   permissions: PermissionValue
   canManageRoles: boolean
+  canLinkCurrentUser: boolean
 }) {
   const router = useRouter()
   const refresh = () => router.refresh()
@@ -160,7 +162,11 @@ export function StaffDetail({
         )}
 
         <Card>
-          <EgetKontoSection member={member} onInvited={refresh} />
+          <EgetKontoSection
+            member={member}
+            onInvited={refresh}
+            canLinkCurrentUser={canLinkCurrentUser}
+          />
         </Card>
 
         <Card>

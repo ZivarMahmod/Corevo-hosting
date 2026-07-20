@@ -108,6 +108,26 @@ describe('personalens bokningsbara onboarding', () => {
     expect(page).toContain('defaultLocationId={defaultStaffLocationId}')
   })
 
+  it('låter organisationsägaren koppla sitt befintliga konto utan att skapa en ny staff-roll', () => {
+    const actions = readWeb('lib/admin/actions.ts')
+    const roster = readWeb('components/admin/StaffRoster.tsx')
+    const detailPage = readWeb('app/(admin)/admin/personal/[id]/page.tsx')
+    const start = actions.indexOf('export async function linkCurrentUserToStaff')
+    const end = actions.indexOf('export async function inviteStaff', start)
+    const linkAction = actions.slice(start, end)
+
+    expect(start).toBeGreaterThan(-1)
+    expect(linkAction).toContain("adminCtx('personal')")
+    expect(linkAction).toContain("preferences.accessScope !== 'organization'")
+    expect(linkAction).toContain(".eq('profile_id', ctx.user.id)")
+    expect(linkAction).toContain(".update({ profile_id: ctx.user.id })")
+    expect(linkAction).toContain(".is('profile_id', null)")
+    expect(linkAction).not.toContain("from('roles')")
+    expect(linkAction).not.toContain('inviteUserByEmail')
+    expect(roster).toContain('Koppla mitt ägarkonto')
+    expect(detailPage).toContain('canLinkCurrentUser={!ownerStaffLink && !s.profile_id && canManageRoles}')
+  })
+
   it('fencar tjänster till aktiva globala eller personalens plats', () => {
     const actions = readWeb('lib/admin/actions.ts')
     const start = actions.indexOf('export async function setStaffServices')

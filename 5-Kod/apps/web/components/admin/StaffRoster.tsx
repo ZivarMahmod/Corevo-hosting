@@ -10,6 +10,7 @@ import {
   toggleStaffActive,
   deleteStaff,
   setStaffServices,
+  linkCurrentUserToStaff,
   type ActionState,
 } from '@/lib/admin/actions'
 import { STAFF_PALETTE, staffColor } from '@/lib/admin/staff-colors'
@@ -882,10 +883,22 @@ export function DangerSection({ member, onDeleted }: { member: StaffCard; onDele
  *    staff_id links THIS staff row's profile_id to a new account. Fires one Swedish
  *    consequence toast + router.refresh() so the status flips without a reload.
  */
-export function EgetKontoSection({ member, onInvited }: { member: StaffCard; onInvited: () => void }) {
+export function EgetKontoSection({
+  member,
+  onInvited,
+  canLinkCurrentUser = false,
+}: {
+  member: StaffCard
+  onInvited: () => void
+  canLinkCurrentUser?: boolean
+}) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(inviteStaff, {})
+  const [linkState, linkAction, linking] = useActionState<ActionState, FormData>(
+    linkCurrentUserToStaff,
+    {},
+  )
 
   useEffect(() => {
     if (state.success) {
@@ -896,6 +909,15 @@ export function EgetKontoSection({ member, onInvited }: { member: StaffCard; onI
     // fire once when the action reports success
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success])
+
+  useEffect(() => {
+    if (linkState.success) {
+      notify('Ägarkontot är kopplat — den här profilen är nu din egen', 'success')
+      router.refresh()
+      onInvited()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkState.success])
 
   if (member.hasAccount) {
     return (
@@ -946,6 +968,22 @@ export function EgetKontoSection({ member, onInvited }: { member: StaffCard; onI
         Hanteras i företagets sida just nu. Bjud in med en engångslänk för att ge ett eget konto med
         egen kalender — medarbetaren sätter lösenord och loggar in själv.
       </p>
+      {canLinkCurrentUser && (
+        <form action={linkAction} style={{ margin: '0 0 14px' }}>
+          <input type="hidden" name="staff_id" value={member.id} />
+          <Button variant="ghost" type="submit" icon="user" size="sm" disabled={linking}>
+            {linking ? 'Kopplar…' : 'Koppla mitt ägarkonto'}
+          </Button>
+          <p style={{ margin: '6px 0 0', color: 'var(--c-ink-3)', fontSize: 12 }}>
+            Välj detta om profilen är du. Din ägarroll ändras inte.
+          </p>
+        </form>
+      )}
+      {linkState.error && (
+        <p className="auth-error" role="alert" style={{ margin: '0 0 10px', fontSize: 12.5 }}>
+          {linkState.error}
+        </p>
+      )}
       <form
         action={formAction}
         style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}
