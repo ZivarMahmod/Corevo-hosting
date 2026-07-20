@@ -79,6 +79,7 @@ export default async function StaffPage() {
     name: sv.name,
     active: sv.active,
     locationId: sv.location_id,
+    durationMin: sv.duration_min,
   }))
   const confirmedLocations = new Set(
     openingHours.filter((row) => row.confirmed_at !== null).map((row) => row.location_id),

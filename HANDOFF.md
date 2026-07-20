@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-19.
+Senast uppdaterad: 2026-07-20.
 
 ## Läsordning
 
@@ -47,18 +47,20 @@ tenant och ett testfall, aldrig produktdefinitionen.
   notifieringscron, driftgrindar och fail-closed handel. Skarpt SMS är byggt bakom
   tre grindar men `SMS_DELIVERY_MODE=off`; inget provideranrop ska ske före Zivars
   separata canarybeslut.
-- Personalpanelen är härdad: oförändrade formulär ger inget
-  falskt fel, kalenderfärg skickas explicit, historisk personal kan inte erbjudas
-  permanent radering och schemahoppet behåller plats. Panelen och Schemas innehåll
-  är avsiktligt befintliga implementationer inne i nya Inställningar-workspacet;
-  individuell nydesign ingår inte i paket 04.
+- Personalpanelen är härdad: oförändrade formulär ger inget falskt fel,
+  kalenderfärg skickas explicit och historisk personal kan inte erbjudas permanent
+  radering. Personkortet äger nu personens bokningsbarhet, tjänster, arbetspass,
+  bokbara starter och frånvaro; Scheman är platsens öppettider + teamöversikt och
+  länkar vidare till personkortet. Ägarkonto kan länkas via kanoniska
+  `staff.profile_id`; döda självservice-länkar döljs utan aktiv personalkoppling.
 - Goal-73 för kundadminens mobilchrome och kalendergester finns och är aktiv.
   Mobilkalendern använder hela bokningskortet för långtryck och drag; inget separat
   touch-handtag finns. Kalendern visar måltid/resurs och kräver bekräftelse innan
   skrivning. Dagvyn landar vid schemats start utan fördröjda vertikala hopp och
   använder en lugn, oräfflad pappersyta. Passerade bokningar skapar ingen klocka
   eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
-  arkiveras inte förrän Zivar godkänt den live.
+  innehåller även keyboard-safe kalenderträffar och explicit Ja/Nej till
+  kundmeddelande vid flytt. Goal-73 arkiveras inte förrän Zivar godkänt den live.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 

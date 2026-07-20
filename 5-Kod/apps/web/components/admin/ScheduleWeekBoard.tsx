@@ -67,6 +67,7 @@ export function ScheduleWeekBoard({
   staffSingular = 'medarbetare',
   basePath = '/admin/scheman',
   readOnly = false,
+  staffLinksToDetails = false,
 }: {
   weekLabel: string
   isCurrentWeek: boolean
@@ -90,6 +91,8 @@ export function ScheduleWeekBoard({
   basePath?: string
   /** Kiosk-läget: personalraderna är inte länkar till mall-redigeraren. */
   readOnly?: boolean
+  /** Översikten kan länka varje rad till personens enda redigeringsyta. */
+  staffLinksToDetails?: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -252,7 +255,13 @@ export function ScheduleWeekBoard({
                 key={row.staffId}
                 row={row}
                 days={days}
-                href={readOnly ? null : href({ staff: row.staffId }, '#mallar')}
+                href={
+                  readOnly
+                    ? null
+                    : staffLinksToDetails
+                      ? `/admin/personal/${row.staffId}#arbetstider`
+                      : href({ staff: row.staffId }, '#mallar')
+                }
               />
             ))}
           </div>

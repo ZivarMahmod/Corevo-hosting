@@ -20,6 +20,10 @@ export type NavItem = {
    *  Utelämnad → alla i portalen ser den. OBS: att dölja en länk är INTE
    *  behörighetskontroll — serversidan (requireAdminArea) är sanningen. */
   minLevel?: number
+  /** Självserviceyta som bara är meningsfull när kontot är kopplat till en aktiv
+   *  staff-rad. Hindrar ägare utan egen personalprofil från att hamna i PERSONAL-
+   *  skalets permanenta tomläge via sidomenyn eller kommandopaletten. */
+  requiresStaffProfile?: boolean
 }
 /** A nav entry is either a group header (handoff Sidebar groups the rail by
  *  area: Insyn/Tenants… for super, Din dag/Hantera/Din sida for salon) or a
@@ -77,8 +81,18 @@ export const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/bokningar', label: 'Bokningar', icon: 'calendar', minLevel: A.bokningar },
       // Personalens egna ytor (schema/frånvaro) bor i (personal)-portalen men nås
       // från SAMMA meny — hela arbetsdagen bakom en inloggning.
-      { href: '/personal/arbetstider', label: 'Mitt schema', icon: 'clock' },
-      { href: '/personal/franvaro', label: 'Frånvaro', icon: 'coffee' },
+      {
+        href: '/personal/arbetstider',
+        label: 'Mitt schema',
+        icon: 'clock',
+        requiresStaffProfile: true,
+      },
+      {
+        href: '/personal/franvaro',
+        label: 'Frånvaro',
+        icon: 'coffee',
+        requiresStaffProfile: true,
+      },
       // goal-67: statistiken hör till "Din dag" — det är frågan man ställer när dagen
       // är slut, inte en systeminställning. Ägaren/administratören ser den; personalen
       // gör det inte (A.statistik = 6).
@@ -128,8 +142,14 @@ export const NAV: Record<PortalRole, NavConfig> = {
  *  samma beslut som sidgrinden (hasAdminAreaPermission), aldrig en egen regel. */
 export function isNavItemVisible(
   item: NavItem,
-  opts: { activeModuleKeys?: string[]; roleLevel?: number; grantedAreas?: readonly string[] },
+  opts: {
+    activeModuleKeys?: string[]
+    roleLevel?: number
+    grantedAreas?: readonly string[]
+    hasStaffProfile?: boolean
+  },
 ): boolean {
+  if (item.requiresStaffProfile && opts.hasStaffProfile === false) return false
   if (item.module && opts.activeModuleKeys && !opts.activeModuleKeys.includes(item.module)) return false
   if (item.minLevel !== undefined && opts.roleLevel !== undefined && opts.roleLevel < item.minLevel) {
     const area = adminAreaForPath(item.href)
@@ -146,11 +166,13 @@ export function paletteFromNav(
   activeModuleKeys?: string[],
   roleLevel?: number,
   grantedAreas?: readonly string[],
+  hasStaffProfile?: boolean,
 ): CommandItem[] {
   return NAV[role].items
     .filter(
       (e): e is NavItem =>
-        !isGroup(e) && isNavItemVisible(e, { activeModuleKeys, roleLevel, grantedAreas }),
+        !isGroup(e) &&
+        isNavItemVisible(e, { activeModuleKeys, roleLevel, grantedAreas, hasStaffProfile }),
     )
     .map(({ href, label, icon }) => ({ href, label, icon, kind: 'Gå till' }))
 }

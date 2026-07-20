@@ -34,4 +34,14 @@ describe('locationSelectionTarget', () => {
       '/admin/bokningar?vy=dag&plats=alla',
     )
   })
+
+  it('rensar vald person när Scheman byter plats', () => {
+    expect(
+      locationSelectionTarget(
+        '/admin/scheman',
+        'week=2026-07-20&staff=staff-linkoping&plats=linkoping',
+        'tornby',
+      ),
+    ).toBe('/admin/scheman?week=2026-07-20&plats=tornby')
+  })
 })

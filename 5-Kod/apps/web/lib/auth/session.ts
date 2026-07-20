@@ -69,11 +69,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     | null
     | undefined
 
-  // En staff-roll utan aktiv personalrad är återkallad, även om webbläsaren ännu
-  // bär ett gammalt JWT. Samma kontroll finns i private.role_level() för direkt DB-
-  // åtkomst; DAL-vakten gör att sidan/actionen dessutom nekar med rätt portalflöde.
+  // Lös den aktiva personalraden för ALLA tenantroller. En ägare kan också arbeta i
+  // verksamheten och ska då få sin riktiga personalprofil, samtidigt som bara den
+  // rena staffrollen blir obehörig om länken saknas eller har inaktiverats.
   let activeStaff: { id: string } | null = null
-  if (profile?.status === 'active' && role?.level === 3 && profile.tenant_id) {
+  if (profile?.status === 'active' && profile.tenant_id) {
     const { data } = await supabase
       .from('staff')
       .select('id')
@@ -180,6 +180,24 @@ export async function requireAdminArea(area: AdminArea): Promise<CurrentUser> {
   const user = await requireUser()
   if (!(await hasAdminAreaPermission(area, user))) {
     logAuthDenied({ userId: user.id, roleLevel: user.roleLevel, need: `admin:${area}` })
+    redirect('/ingen-atkomst')
+  }
+  return user
+}
+
+/** Kräv minst EN av flera namngivna adminytor. Används när en gemensam
+ * detaljsida visar olika, separat gatade delar — exempelvis personkortets
+ * ägaradministration och platschefens schemaredigering. Mutationerna behåller
+ * alltid sina egna enskilda area-grindar. */
+export async function requireAnyAdminArea(areas: readonly AdminArea[]): Promise<CurrentUser> {
+  const user = await requireUser()
+  const decisions = await Promise.all(areas.map((area) => hasAdminAreaPermission(area, user)))
+  if (!decisions.some(Boolean)) {
+    logAuthDenied({
+      userId: user.id,
+      roleLevel: user.roleLevel,
+      need: `admin:any(${areas.join('|')})`,
+    })
     redirect('/ingen-atkomst')
   }
   return user

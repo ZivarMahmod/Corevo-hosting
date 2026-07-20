@@ -59,7 +59,9 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
   bokningssystemet gissar eller tvångsmarkerar aldrig ett utfall.
 - Mobilens sökfält använder tangentbordets Sök/Enter för samma sökning som
   sökknappen. När en sökyta öppnas från en knapp autofokuseras dess sökfält i
-  samma tryckgest så mobilens tangentbord visas direkt.
+  samma tryckgest så mobilens tangentbord visas direkt. Kalenderträffarna har
+  egen scroll och räknas mot `visualViewport`, så rubrik, fält och hela träffar
+  inte klipps av iOS-/Android-tangentbordet.
 - `Ny bokning` ärver kalenderns valda datum, även efter swipe. Drawern visar ett
   native datumfält för framtida datum och räknar om verkliga lediga tider när
   datumet ändras. Inställningssidor samt dialoger håller sig inom viewporten med
@@ -77,6 +79,24 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
 - Ingen egen fysikmotor, vibration, ny dependency, databasändring, cross-day-drag
   eller automatisk dagväxling vid dragets kant.
 - Ingen ändring av personal-PWA:n eller iPad-/desktoplayouten utanför delade sheets.
+
+## Godkända tillägg 2026-07-20
+
+Zivar lade uttryckligen till den befintliga adminens personal-/schemaytor i samma
+liveacceptans. Ingen parallell personalmodell eller migration införs:
+
+- `/admin/personal/[id]` är den enda individuella redigeringsytan för
+  bokningsbarhet, tjänster med kanonisk längd, arbetspass, bokbara starttider och
+  personens frånvaro. Identitet, konto och farozon ligger efter driftsektionerna.
+- `/admin/scheman` äger platsens öppettider och teamets veckoöversikt. En
+  personalrad leder till rätt personkort; platsbyte rensar ett gammalt personalval.
+- En ägare kan säkert koppla sitt befintliga konto till en ledig personalrad via
+  `staff.profile_id`. Självservice-länkar visas bara när en aktiv personalkoppling
+  verkligen finns.
+- Varje bokningsflytt kräver ett uttryckligt Ja/Nej till kundmeddelande. Nej skrivs
+  som ett auditerbart `actor_opted_out` i befintlig notifieringsoutbox.
+- Personkortets schemalås tar ingen tenantglobal återställningskopia. Återställning
+  återinförs först när backupkontraktet kan vara personal-scopat.
 
 ## Verifiering
 
@@ -153,6 +173,28 @@ vidare som samma aktiva del tills Zivar har godkänt den driftsatta mobilversion
   svar eller fynd; verktygsfelet blockerar inte den gröna Fable-, test-, typ-,
   lint-, build- och kommande CI-grinden.
 - Zivars fysiska tangentbords- och framtidsbokningstest återstår på live.
+
+### Mekaniskt tilläggsbevis 2026-07-20 — tangentbord och personkort
+
+- Kalender-Sök använder modal-lokala `visualViewport`-variabler och en statisk,
+  självscrollande träfflista. Modaltest verifierar resize + offset och bevarat
+  inputfokus; källkontrakt verifierar att ingen absolut dropdown återkommer.
+- Personkortet återanvänder `StaffBookability`, `WorkingHoursEditor`,
+  `SlotManager`, `ScheduleLock` och `TimeOffManager`; Scheman renderar bara
+  `LocationOpeningHours` + `ScheduleWeekBoard`.
+- Riktade kalender-sök-/personal-/behörighets-/plats-/frånvarotester:
+  66/66 PASS.
+- Web TypeScript, lint och produktionsbuild: PASS. Lint har sju befintliga
+  varningar utanför ändringen och inga fel.
+- Full Vitest hade 2 146 PASS. Två fel kommer från Zivars bevarade, ocommittade
+  onboardingarbete; ett SidaStudio-importtest nådde 5 s-gränsen under parallell
+  fullkörning men passerade isolerat 20/20 på 2,14 s.
+- Oberoende GPT-5.6-sol hittade platsbytes-404, tenantglobal schemabackup och
+  hårdkodat branschord. Slutgranskningen hittade även att en platschef kunde
+  förlora sin individuella schemaredigering. Samtliga rättades test-först med
+  separata grindar för schema, personaldrift och ägaradministration. Lokal
+  Claude/Fable och Claude/Sonnet verifierade sök-/personflödet och den
+  staff-scopade frånvaron.
 
 ## Status
 

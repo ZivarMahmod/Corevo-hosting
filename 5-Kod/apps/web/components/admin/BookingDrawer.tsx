@@ -262,6 +262,7 @@ export function BookingDrawer({
   const [rescheduleStaffId, setRescheduleStaffId] = useState(defaultRescheduleStaffId)
   const [rescheduleDate, setRescheduleDate] = useState(() => dayKey(booking.startTs, tz))
   const [rescheduleTime, setRescheduleTime] = useState(() => timeLabel(booking.startTs, tz))
+  const [notifyCustomer, setNotifyCustomer] = useState<boolean | null>(null)
   const [moveError, setMoveError] = useState<string | null>(null)
   const [outcomeReady, setOutcomeReady] = useState(booking.isPast)
   const [bookingStartPassed, setBookingStartPassed] = useState(
@@ -276,6 +277,7 @@ export function BookingDrawer({
     setRescheduleStaffId(defaultRescheduleStaffId)
     setRescheduleDate(dayKey(booking.startTs, tz))
     setRescheduleTime(timeLabel(booking.startTs, tz))
+    setNotifyCustomer(null)
     setMoveError(null)
   }, [booking.id, booking.startTs, defaultRescheduleStaffId, tz])
 
@@ -341,6 +343,10 @@ export function BookingDrawer({
       setMoveError('Välj person, datum och tid.')
       return
     }
+    if (notifyCustomer === null) {
+      setMoveError('Välj om kunden ska meddelas.')
+      return
+    }
     setMoveError(null)
     startMove(async () => {
       const result = await moveBooking({
@@ -351,6 +357,7 @@ export function BookingDrawer({
         serviceId: booking.serviceId,
         expectedStartIso: booking.startTs,
         expectedStaffId: booking.staffId,
+        notifyCustomer,
         absenceTimeOffId: absenceTimeOffId || undefined,
       })
       if (result.error) {
@@ -413,10 +420,11 @@ export function BookingDrawer({
               variant="ghost"
               onClick={() => {
                 setRescheduling(false)
+                setNotifyCustomer(null)
                 setMoveError(null)
                 window.requestAnimationFrame(() => rescheduleTriggerRef.current?.focus())
               }}
-              disabled={moving}
+              disabled={moving || notifyCustomer === null}
               style={{ flex: 1, justifyContent: 'center' }}
             >
               Avbryt
@@ -445,7 +453,10 @@ export function BookingDrawer({
                 type="button"
                 variant="ghost"
                 icon="calendar"
-                onClick={() => setRescheduling(true)}
+                onClick={() => {
+                  setNotifyCustomer(null)
+                  setRescheduling(true)
+                }}
                 style={{ flex: '1 1 120px', justifyContent: 'center' }}
               >
                 Omboka
@@ -529,6 +540,29 @@ export function BookingDrawer({
                 />
               </label>
             </div>
+            <fieldset style={{ margin: 0, padding: 0, border: 0 }}>
+              <legend style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--c-ink-2)' }}>
+                Vill du meddela kunden?
+              </legend>
+              <div className={styles.chipRow} style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  className={`${styles.slotChip}${notifyCustomer === true ? ` ${styles.chipOn}` : ''}`}
+                  aria-pressed={notifyCustomer === true}
+                  onClick={() => setNotifyCustomer(true)}
+                >
+                  Ja, meddela
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.slotChip}${notifyCustomer === false ? ` ${styles.chipOn}` : ''}`}
+                  aria-pressed={notifyCustomer === false}
+                  onClick={() => setNotifyCustomer(false)}
+                >
+                  Nej
+                </button>
+              </div>
+            </fieldset>
             {moveError && (
               <Callout tone="warning" icon="alert">
                 {moveError}

@@ -19,6 +19,10 @@ export function locationSelectionTarget(
   nextValue: string,
 ): string {
   const params = new URLSearchParams(currentSearch)
+  // Schemasidans staff-id hör till den gamla platsen. När platsen byts måste
+  // översikten välja en person ur den nya, platsfiltrerade listan i stället för
+  // att 404:a eller öppna fel person.
+  if (pathname.startsWith('/admin/scheman')) params.delete('staff')
   params.set('plats', nextValue || PLATS_ALLA)
   const query = params.toString()
   return query ? `${pathname}?${query}` : pathname

@@ -1,20 +1,33 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { requireAdminArea } from '@/lib/auth/session'
+import { requireAnyAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
-import { listServices, listStaff, listLocations } from '@/lib/admin/data'
-import { listAllWorkingHours, listLocationOpeningHours } from '@/lib/admin/schedule-data'
+import { listServices, listStaff, listLocations, listWorkingHourSlots } from '@/lib/admin/data'
+import {
+  listAllWorkingHours,
+  listCurrentAndUpcomingStaffTimeOff,
+  listLocationOpeningHours,
+  timeOffRangeLabel,
+} from '@/lib/admin/schedule-data'
 import { staffReadiness } from '@/lib/admin/staff-readiness'
 import { getStaffScheduleWithNotes, dayRangeUtc } from '@/lib/personal/calendar'
-import { todayInTz } from '@/lib/personal/format'
+import { addDays, mondayOf, todayInTz } from '@/lib/personal/format'
+import { weekdayOf } from '@/lib/booking/tz'
 import {
   DEFAULT_MEMBER_PERMISSIONS,
   getMemberPermissions,
+  hasAdminAreaPermission,
 } from '@/lib/admin/member-permissions'
 import { StaffDetail } from '@/components/admin/StaffDetail'
-import { type StaffCard, type StaffDayRow, type ServiceOption } from '@/components/admin/StaffRoster'
+import {
+  type StaffCard,
+  type StaffDayRow,
+  type ServiceOption,
+} from '@/components/admin/StaffRoster'
+import type { WeekCol } from '@/components/admin/SlotManager'
+import type { TimeOffItem } from '@/components/admin/TimeOffManager'
 import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
 import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
 import { settingsCategories } from '@/lib/admin/settings-map'
@@ -22,13 +35,9 @@ import { settingsCategories } from '@/lib/admin/settings-map'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Medarbetare · Adminpanel' }
 
-export default async function StaffMemberPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function StaffMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await requireAdminArea('personal')
+  const user = await requireAnyAdminArea(['personal', 'scheman'])
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return <SettingsWorkspaceEmpty currentCategory="personal" title="Personal" />
@@ -51,15 +60,32 @@ export default async function StaffMemberPage({
   // Roll/behörighet får bara ändras av organisationsägaren — samma grind som
   // roller-fliken (saveMemberPermissions self-guardar ändå). Platschef ser inte
   // en knapp som alltid failar; övriga sektioner är oförändrat personal-gate:ade.
-  const preferences = await getAdminLocationPreferences(user.id)
-  const canManageRoles = preferences.accessScope === 'organization'
+  const [preferences, canManageSchedule, canAccessPersonal] = await Promise.all([
+    getAdminLocationPreferences(user.id),
+    hasAdminAreaPermission('scheman', user),
+    hasAdminAreaPermission('personal', user),
+  ])
+  const canManageRoles = canAccessPersonal && preferences.accessScope === 'organization'
+  const canManageStaff = canAccessPersonal && (user.platformAdmin || user.roleLevel >= 6)
+  const ownerStaffLink = staff.find((member) => member.profile_id === user.id)
 
   const activeLocations = locations.filter((location) => location.active)
+  const selectedLocation = activeLocations.find((location) => location.id === s.location_id) ?? null
+  const staffTimeZone = selectedLocation?.timezone || tenant.timeZone
+  const nowIso = new Date().toISOString()
+  const [slots, upcomingTimeOff] = await Promise.all([
+    listWorkingHourSlots(tenant.id, s.id),
+    listCurrentAndUpcomingStaffTimeOff(tenant.id, s.id, nowIso),
+  ])
+  const memberWorkingHours = workingHours.filter(
+    (row) => row.staff_id === s.id && (!s.location_id || row.location_id === s.location_id),
+  )
+  const memberSlots = slots.filter((row) => !s.location_id || row.location_id === s.location_id)
 
   // Denna medarbetares riktiga dag — samma tenant-fence + cancelled-exkludering
   // som roster-sidan, men bara för den här staff_id:t.
-  const today = todayInTz(tenant.timeZone)
-  const { fromUtc, toUtc } = dayRangeUtc(today, tenant.timeZone)
+  const today = todayInTz(staffTimeZone)
+  const { fromUtc, toUtc } = dayRangeUtc(today, staffTimeZone)
   const todaysSchedule = await getStaffScheduleWithNotes([s.id], fromUtc, toUtc)
   const todayRows: StaffDayRow[] = todaysSchedule
     .filter((b) => b.status !== 'cancelled')
@@ -79,10 +105,29 @@ export default async function StaffMemberPage({
     name: sv.name,
     active: sv.active,
     locationId: sv.location_id,
+    durationMin: sv.duration_min,
   }))
   const confirmedLocations = new Set(
     openingHours.filter((row) => row.confirmed_at !== null).map((row) => row.location_id),
   )
+  const weekMonday = mondayOf(today)
+  const weekCols: WeekCol[] = Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(weekMonday, index)
+    const weekday = weekdayOf(date)
+    return {
+      wd: weekday,
+      name: ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'][weekday]!,
+      dayOfMonth: Number(date.slice(8, 10)),
+      isToday: date === today,
+    }
+  })
+  const timeOffItems: TimeOffItem[] = upcomingTimeOff.map((row) => ({
+    id: row.id,
+    staffName: s.displayName,
+    rangeLabel: timeOffRangeLabel(row.start_ts, row.end_ts, staffTimeZone),
+    reason: row.reason,
+    ongoing: row.start_ts <= nowIso,
+  }))
 
   // Samma StaffCard-mappning som roster-sidan (app/(admin)/admin/personal/page.tsx).
   const card: StaffCard = {
@@ -118,16 +163,28 @@ export default async function StaffMemberPage({
   return (
     <SettingsWorkspace
       categories={settingsCategories(tenant.terminology)}
-      currentCategory="personal"
+      currentCategory={canAccessPersonal ? 'personal' : 'scheman'}
     >
       <StaffDetail
         member={card}
         services={serviceOptions}
         locations={activeLocations.map((l) => ({ id: l.id, name: l.name }))}
-        tz={tenant.timeZone}
+        tz={staffTimeZone}
         staffNoun={resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}
         permissions={permissions}
+        canManagePersonal={canAccessPersonal}
+        canManageStaff={canManageStaff}
         canManageRoles={canManageRoles}
+        canManageSchedule={canManageSchedule}
+        canLinkCurrentUser={
+          !user.platformAdmin && !ownerStaffLink && !s.profile_id && canManageRoles
+        }
+        openingHoursConfirmed={Boolean(s.location_id && confirmedLocations.has(s.location_id))}
+        workingHours={memberWorkingHours}
+        slots={memberSlots}
+        weekCols={weekCols}
+        editorLocations={selectedLocation ? [selectedLocation] : []}
+        timeOffItems={timeOffItems}
       />
     </SettingsWorkspace>
   )

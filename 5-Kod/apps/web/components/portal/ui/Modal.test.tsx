@@ -61,15 +61,56 @@ describe('Modal portal host', () => {
     expect(dialog?.parentElement?.parentElement).toBe(document.body)
   })
 
-  it('låter ett autofokuserat sökfält behålla fokus när dialogen monteras', async () => {
+  it('fokuserar formulärfältet före stängknappen så mobiltangentbordet öppnas', async () => {
     await act(async () => {
       root.render(
-        <Modal title="Sök" onClose={() => undefined}>
-          <input type="search" autoFocus aria-label="Sökfält" />
+        <Modal title="Sök i kalendern" onClose={() => undefined} anchor="top">
+          <input type="search" autoFocus aria-label="Sök kund" />
         </Modal>,
       )
     })
 
-    expect(document.activeElement).toBe(document.querySelector('[aria-label="Sökfält"]'))
+    expect(document.activeElement).toBe(document.querySelector('[aria-label="Sök kund"]'))
+  })
+
+  it('följer visualViewport när mobiltangentbordet ändrar den synliga höjden', async () => {
+    const originalViewport = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+    const viewport = new EventTarget() as EventTarget & {
+      height: number
+      offsetTop: number
+    }
+    viewport.height = 420
+    viewport.offsetTop = 12
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: viewport,
+    })
+
+    try {
+      await act(async () => {
+        root.render(
+          <Modal title="Sök i kalendern" onClose={() => undefined} anchor="top">
+            <input aria-label="Sök kund" />
+          </Modal>,
+        )
+      })
+
+      const overlay = document.querySelector<HTMLElement>('[role="presentation"]')
+      expect(overlay?.style.getPropertyValue('--modal-visual-height')).toBe('420px')
+      expect(overlay?.style.getPropertyValue('--modal-visual-offset-top')).toBe('12px')
+
+      viewport.height = 360
+      viewport.offsetTop = 20
+      await act(async () => viewport.dispatchEvent(new Event('resize')))
+
+      expect(overlay?.style.getPropertyValue('--modal-visual-height')).toBe('360px')
+      expect(overlay?.style.getPropertyValue('--modal-visual-offset-top')).toBe('20px')
+    } finally {
+      if (originalViewport) {
+        Object.defineProperty(window, 'visualViewport', originalViewport)
+      } else {
+        Reflect.deleteProperty(window, 'visualViewport')
+      }
+    }
   })
 })

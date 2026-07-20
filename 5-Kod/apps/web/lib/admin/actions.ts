@@ -31,15 +31,8 @@ import {
 } from '@/lib/auth/staff-invite-service'
 import { captureException } from '@/lib/observability'
 import { getAdminLocationPreferences } from './location-context'
-import {
-  notificationQueueMessage,
-  queueBookingEvent,
-} from '@/lib/notifications/booking-events'
-import {
-  mergeScopedSettings,
-  parseSettingsScope,
-  type SettingsScope,
-} from './scoped-settings'
+import { notificationQueueMessage, queueBookingEvent } from '@/lib/notifications/booking-events'
+import { mergeScopedSettings, parseSettingsScope, type SettingsScope } from './scoped-settings'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -684,6 +677,71 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   return { success: 'Tjänster kopplade.' }
 }
 
+/** Koppla den inloggade organisationsägarens befintliga konto till en staff-rad.
+ *  Detta är INTE inviteStaff: ägarens roll och auth-metadata ska lämnas helt
+ *  orörda. staff.profile_id är redan den kanoniska och unika auth→personal-länken. */
+export async function linkCurrentUserToStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx('personal')
+  if (!ctx) return { error: NO_TENANT }
+
+  // Plattformspersonal kan förhandsgranska tenant-admin, men får aldrig binda
+  // sitt plattformskonto till en kunds personalrad. Bara en tenant-bunden
+  // organisationsägare får skapa den personliga auth→staff-länken.
+  if (ctx.user.platformAdmin) return { error: 'Bara organisationsägaren kan koppla sitt konto.' }
+  if (ctx.user.roleLevel < 6 || ctx.user.tenantId !== ctx.tenant.id) {
+    return { error: 'Bara organisationsägaren kan koppla sitt konto.' }
+  }
+  const preferences = await getAdminLocationPreferences(ctx.user.id)
+  if (preferences.accessScope !== 'organization') {
+    return { error: 'Bara organisationsägaren kan koppla sitt konto.' }
+  }
+
+  const staffId = String(fd.get('staff_id') ?? '').trim()
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+
+  const supabase = await createClient()
+  const { data: existingLink, error: existingError } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('tenant_id', ctx.tenant.id)
+    .eq('profile_id', ctx.user.id)
+    .limit(1)
+    .maybeSingle()
+  if (existingError) return { error: GENERIC }
+  if (existingLink) {
+    return existingLink.id === staffId
+      ? { success: 'Ägarkontot är redan kopplat till den här profilen.' }
+      : { error: 'Ditt ägarkonto är redan kopplat till en annan personalprofil.' }
+  }
+
+  const { data: target, error: targetError } = await supabase
+    .from('staff')
+    .select('id, profile_id')
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (targetError) return { error: GENERIC }
+  if (!target) return { error: 'Medarbetaren saknas.' }
+  if (target.profile_id) return { error: 'Personalprofilen har redan ett annat konto.' }
+
+  const { data: linked, error } = await supabase
+    .from('staff')
+    .update({ profile_id: ctx.user.id })
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .is('profile_id', null)
+    .select('id')
+    .maybeSingle()
+  if (error?.code === '23505') {
+    return { error: 'Ditt ägarkonto är redan kopplat till en annan personalprofil.' }
+  }
+  if (error || !linked) return { error: 'Profilen hann kopplas av någon annan. Ladda om sidan.' }
+
+  revalidateStaff(ctx.tenant.slug)
+  revalidatePath(`/admin/personal/${staffId}`)
+  return { success: 'Ägarkontot är nu kopplat till personalprofilen.' }
+}
+
 /**
  * Invite a staff member by email (M6 §3.4 onboarding). Sends a Supabase magic-link
  * invite (one-time), provisions the public.users row with a tenant-scoped `staff`
@@ -828,7 +886,10 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
         action: 'inviteStaff.metadata',
         tenantId: ctx.tenant.id,
       })
-      return { error: 'manual_cleanup_required: Det befintliga kontots företagskoppling kunde inte verifieras.' }
+      return {
+        error:
+          'manual_cleanup_required: Det befintliga kontots företagskoppling kunde inte verifieras.',
+      }
     }
     const resolution = await compensateAdminStaffInvite(svc, {
       authId,
@@ -836,9 +897,12 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
       roleId,
       ...(staffId ? { targetStaffId: staffId } : {}),
     })
-    return failedInviteState(resolution) ?? {
-      error: 'manual_cleanup_required: Kontot kopplades men metadata behöver verifieras av drift.',
-    }
+    return (
+      failedInviteState(resolution) ?? {
+        error:
+          'manual_cleanup_required: Kontot kopplades men metadata behöver verifieras av drift.',
+      }
+    )
   }
 
   // 4) public.users-raden skrivs med service-role; authenticated får avsiktligt
@@ -876,16 +940,15 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
           authId,
           targetStaffId: staffId,
         })
-        if (
-          binding.ok &&
-          binding.profileId === authId &&
-          binding.authBoundStaffId === staffId
-        ) {
+        if (binding.ok && binding.profileId === authId && binding.authBoundStaffId === staffId) {
           // Ambiguous update response, but the exact retry target proves commit.
         } else if (!binding.ok) {
           return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
         } else {
-          return { error: 'Medarbetaren kopplades av en annan inbjudan. Det befintliga kontot lämnades orört.' }
+          return {
+            error:
+              'Medarbetaren kopplades av en annan inbjudan. Det befintliga kontot lämnades orört.',
+          }
         }
       } else {
         const resolution = await compensateAdminStaffInvite(svc, {
@@ -936,8 +999,8 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
     success: !inviteSent
       ? `Kontot fanns redan och kopplades till ${email}. Använd Glömt lösenord om en ny länk behövs.`
       : staffId
-      ? `Inbjudan skickad till ${email}. Kontot är kopplat till den befintliga medarbetaren.`
-      : `Inbjudan skickad till ${email}. Ny personal är skapad. Kontrollera tjänster, arbetstider och bokningsstatus under Personal.`,
+        ? `Inbjudan skickad till ${email}. Kontot är kopplat till den befintliga medarbetaren.`
+        : `Inbjudan skickad till ${email}. Ny personal är skapad. Kontrollera tjänster, arbetstider och bokningsstatus under Personal.`,
   }
 }
 
@@ -1298,8 +1361,13 @@ export async function saveLegalSettings(_p: ActionState, fd: FormData): Promise<
   const ctx = await adminCtx('installningar')
   if (!ctx) return { error: NO_TENANT }
 
-  const orgNr = String(fd.get('org_nr') ?? '').trim().slice(0, 40) || null
-  const vatRaw = String(fd.get('vat_rate') ?? '').trim().replace(',', '.')
+  const orgNr =
+    String(fd.get('org_nr') ?? '')
+      .trim()
+      .slice(0, 40) || null
+  const vatRaw = String(fd.get('vat_rate') ?? '')
+    .trim()
+    .replace(',', '.')
   let vatRate: number | null = null
   if (vatRaw) {
     const n = Number(vatRaw)
@@ -1630,7 +1698,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   if (scope === 'all' && !PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
     return { error: 'Ogiltigt betalningsläge.' }
   const cancelHours = cancelRaw === '' ? 24 : Number(cancelRaw)
-  if (includesScope('booking') && (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760))
+  if (
+    includesScope('booking') &&
+    (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
+  )
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
   if (scope === 'all' && timezone && !isValidTz(timezone))
     return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
@@ -1657,9 +1728,8 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
   const settings = mergeScopedSettings(prev, scope, {
     cancellationHours: includesScope('booking') ? cancelHours : undefined,
-    contact: scope === 'all'
-      ? { email: contactEmail || null, phone: contactPhone || null }
-      : undefined,
+    contact:
+      scope === 'all' ? { email: contactEmail || null, phone: contactPhone || null } : undefined,
     customerAccountsEnabled: includesScope('booking') ? customerAccounts : undefined,
     notifications,
     googleReviewUrl,
@@ -1667,9 +1737,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   })
   type TenantSettingsInsert = Database['public']['Tables']['tenant_settings']['Insert']
   const storedSettings = settings as TenantSettingsInsert['settings']
-  const settingsWrite: TenantSettingsInsert = scope === 'all'
-    ? { tenant_id: ctx.tenant.id, payment_mode: paymentMode, settings: storedSettings }
-    : { tenant_id: ctx.tenant.id, settings: storedSettings }
+  const settingsWrite: TenantSettingsInsert =
+    scope === 'all'
+      ? { tenant_id: ctx.tenant.id, payment_mode: paymentMode, settings: storedSettings }
+      : { tenant_id: ctx.tenant.id, settings: storedSettings }
   const s = await supabase
     .from('tenant_settings')
     .upsert(settingsWrite, { onConflict: 'tenant_id' })
@@ -1780,9 +1851,16 @@ export async function createCustomer(_p: ActionState, fd: FormData): Promise<Act
   const ctx = await adminCtx('kunder')
   if (!ctx) return { error: NO_TENANT }
 
-  const fullName = String(fd.get('full_name') ?? '').trim().slice(0, 120)
-  const email = String(fd.get('email') ?? '').trim().toLowerCase().slice(0, 160)
-  const phone = String(fd.get('phone') ?? '').trim().slice(0, 40)
+  const fullName = String(fd.get('full_name') ?? '')
+    .trim()
+    .slice(0, 120)
+  const email = String(fd.get('email') ?? '')
+    .trim()
+    .toLowerCase()
+    .slice(0, 160)
+  const phone = String(fd.get('phone') ?? '')
+    .trim()
+    .slice(0, 40)
   if (!fullName) return { error: 'Ange kundens namn.' }
   if (email && !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
 

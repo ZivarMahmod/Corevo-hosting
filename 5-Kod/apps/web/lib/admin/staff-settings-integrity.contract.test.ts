@@ -12,7 +12,7 @@ describe('personalinställningarnas integritet', () => {
     const page = readWeb('app/(admin)/admin/personal/page.tsx')
     const roster = readWeb('components/admin/StaffRoster.tsx')
 
-    expect(data).toContain("bookings(count)")
+    expect(data).toContain('bookings(count)')
     expect(data).toContain('includeBookingCount = false')
     expect(page).toContain('listStaff(tenant.id, { includeBookingCount: true })')
     expect(data).toContain('bookingCount: bookings?.[0]?.count ?? 0')
@@ -49,13 +49,15 @@ describe('personalinställningarnas integritet', () => {
     expect(roster).toContain('disabled={pending || chosen}')
   })
 
-  it('djuplänkar till rätt person och plats i schemat', () => {
-    // Schema-djuplänken flyttade från drawern till den centrerade detaljsidan.
+  it('djuplänkar till rätt person och plats utan att falla tillbaka till fel person', () => {
     const detail = readWeb('components/admin/StaffDetail.tsx')
     const schedule = readWeb('app/(admin)/admin/scheman/page.tsx')
 
-    expect(detail).toContain("&plats=${member.locationId}")
+    expect(detail).toContain('&plats=${member.locationId}')
     expect(schedule).toContain('sp.plats')
-    expect(schedule).toContain('const selected = staff.find((s) => s.id === sp.staff)')
+    expect(schedule).toContain('requestedTenantStaff')
+    expect(schedule).toContain('!sp.plats && requestedTenantStaff?.location_id')
+    expect(schedule).toContain('if (sp.staff && !requestedStaff) notFound()')
+    expect(schedule).toContain('const selected = requestedStaff ?? staff[0]!')
   })
 })

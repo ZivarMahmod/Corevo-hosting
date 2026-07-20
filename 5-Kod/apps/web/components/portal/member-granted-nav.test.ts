@@ -67,6 +67,24 @@ describe('isNavItemVisible + grantedAreas', () => {
     expect(withoutGrant.some((i) => i.href === '/admin/statistik')).toBe(false)
     expect(withGrant.some((i) => i.href === '/admin/statistik')).toBe(true)
   })
+
+  it('döljer personliga självservicevägar när kontot saknar personalprofil', () => {
+    const personalItem = {
+      href: '/personal/arbetstider',
+      label: 'Mitt schema',
+      icon: 'clock',
+      requiresStaffProfile: true,
+    } as const
+
+    expect(isNavItemVisible(personalItem, { roleLevel: 6, hasStaffProfile: false })).toBe(false)
+    expect(isNavItemVisible(personalItem, { roleLevel: 6, hasStaffProfile: true })).toBe(true)
+    expect(paletteFromNav('admin', undefined, 6, undefined, false)).not.toContainEqual(
+      expect.objectContaining({ href: '/personal/arbetstider' }),
+    )
+    expect(paletteFromNav('admin', undefined, 6, undefined, true)).toContainEqual(
+      expect.objectContaining({ href: '/personal/arbetstider' }),
+    )
+  })
 })
 
 describe('adminAreas (topnav) + grantedAreas', () => {

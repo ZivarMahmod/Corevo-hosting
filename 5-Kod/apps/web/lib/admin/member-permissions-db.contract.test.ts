@@ -19,6 +19,14 @@ const schedulePage = readFileSync(
   resolve(process.cwd(), 'app/(admin)/admin/scheman/page.tsx'),
   'utf8',
 )
+const staffDetailPage = readFileSync(
+  resolve(process.cwd(), 'app/(admin)/admin/personal/[id]/page.tsx'),
+  'utf8',
+)
+const staffDetail = readFileSync(
+  resolve(process.cwd(), 'components/admin/StaffDetail.tsx'),
+  'utf8',
+)
 const permissionLoader = readFileSync(
   resolve(process.cwd(), 'lib/admin/member-permissions.ts'),
   'utf8',
@@ -53,11 +61,15 @@ describe('tenant member permission database enforcement', () => {
     expect(migration).toContain("session_user in ('postgres', 'supabase_admin')")
     expect(migration).toContain('private.has_organization_scope()')
     expect(migration).toContain('v_old_tenant = v_session_tenant')
-    expect(schedulePage).toContain(
-      'const canManageStaff = user.platformAdmin || user.roleLevel >= 6',
+    expect(schedulePage).not.toContain('<StaffBookability')
+    expect(staffDetailPage).toContain(
+      "const canManageRoles = canAccessPersonal && preferences.accessScope === 'organization'",
     )
-    expect(schedulePage).toContain('canManageStaff ? (')
-    expect(schedulePage).toContain('<ScheduleLock hasBackup={canManageStaff}>')
+    expect(staffDetailPage).toContain('const canManageStaff = canAccessPersonal &&')
+    expect(staffDetail).toContain('canManageRoles ? (')
+    expect(staffDetail).toContain('canManageStaff ? (')
+    expect(staffDetail).toContain('<StaffBookability')
+    expect(staffDetail).toContain('<DangerSection')
   })
 
   it('uses the explicit site grant for tenant-bound revisions', () => {

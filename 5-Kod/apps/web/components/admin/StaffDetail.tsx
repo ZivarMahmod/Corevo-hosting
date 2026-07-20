@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { statusLabel } from '@/lib/admin/format'
+import type { LocationRow, SlotRow, WorkingHourRow } from '@/lib/admin/data'
 import { Badge, Callout, Card, Icon, type BadgeTone } from '@/components/portal/ui'
 import type { MemberPermissions as PermissionValue } from '@/lib/admin/member-permissions'
 import {
   RenameSection,
   PhotoSection,
-  ServicesSection,
   LocationSection,
   EgetKontoSection,
   DangerSection,
@@ -17,6 +17,15 @@ import {
   type LocationOption,
 } from './StaffRoster'
 import { StaffRolePicker } from './StaffRolePicker'
+import { StaffBookability } from './StaffBookability'
+import {
+  ScheduleActions,
+  SlotManager,
+  WorkingHoursEditor,
+  type WeekCol,
+} from './SlotManager'
+import { ScheduleLock } from './ScheduleLock'
+import { TimeOffManager, type TimeOffItem } from './TimeOffManager'
 
 // Booking-status → portal Badge tone (lyft ur StaffDrawer — samma dämpade toner).
 const STATUS_TONE: Record<string, BadgeTone> = {
@@ -44,7 +53,17 @@ export function StaffDetail({
   tz,
   staffNoun,
   permissions,
+  canManagePersonal,
+  canManageStaff,
   canManageRoles,
+  canManageSchedule,
+  canLinkCurrentUser,
+  openingHoursConfirmed,
+  workingHours,
+  slots,
+  weekCols,
+  editorLocations,
+  timeOffItems,
 }: {
   member: StaffCard
   services: ServiceOption[]
@@ -52,17 +71,32 @@ export function StaffDetail({
   tz: string
   staffNoun: string
   permissions: PermissionValue
+  canManagePersonal: boolean
+  canManageStaff: boolean
   canManageRoles: boolean
+  canManageSchedule: boolean
+  canLinkCurrentUser: boolean
+  openingHoursConfirmed: boolean
+  workingHours: WorkingHourRow[]
+  slots: SlotRow[]
+  weekCols: WeekCol[]
+  editorLocations: LocationRow[]
+  timeOffItems: TimeOffItem[]
 }) {
   const router = useRouter()
   const refresh = () => router.refresh()
   // Efter borttagning finns denna [id] inte längre — refresh skulle notFound:a.
   const backToList = () => router.push('/admin/personal')
+  const backHref = canManagePersonal
+    ? '/admin/personal'
+    : member.locationId
+      ? `/admin/scheman?staff=${member.id}&plats=${member.locationId}`
+      : '/admin/scheman'
 
   return (
     <section className="portal-section" style={{ maxWidth: '640px' }}>
       <Link
-        href="/admin/personal"
+        href={backHref}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -73,7 +107,8 @@ export function StaffDetail({
           marginBottom: 14,
         }}
       >
-        <Icon name="arrowLeft" size={15} /> Tillbaka till {staffNoun.toLowerCase()}
+        <Icon name="arrowLeft" size={15} /> Tillbaka till{' '}
+        {canManagePersonal ? staffNoun.toLowerCase() : 'schemat'}
       </Link>
 
       <div style={{ marginBottom: 18 }}>
@@ -94,51 +129,9 @@ export function StaffDetail({
       </div>
 
       <div style={{ display: 'grid', gap: 16 }}>
-        <Card>
-          <RenameSection member={member} onSaved={refresh} />
-        </Card>
-
-        {canManageRoles && (
-          <Card>
-            <StaffRolePicker
-              staffId={member.id}
-              hasAccount={member.hasAccount}
-              permissions={permissions}
-            />
-          </Card>
-        )}
-
-        <Card>
-          <PhotoSection member={member} onSaved={refresh} />
-        </Card>
-
-        <Card>
-          <ServicesSection member={member} services={services} onSaved={refresh} />
-        </Card>
-
-        {/* Tider — bor på Schema-sidan (en sanning). Djuplänken öppnar den
-            direkt på DEN HÄR medarbetaren så hoppandet försvinner. */}
-        <Card>
-          <section>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>
-              Tider &amp; schema
-            </div>
-            <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: '0 0 10px', lineHeight: 1.55 }}>
-              Vilka tider {member.displayName} kan bokas ställs i schemat — veckoschema, arbetstider
-              och frånvaro på ett ställe.
-            </p>
-            <Link
-              href={`/admin/scheman?staff=${member.id}${member.locationId ? `&plats=${member.locationId}` : ''}#mallar`}
-              style={{ color: 'var(--c-forest)', fontWeight: 600, fontSize: 13.5 }}
-            >
-              Öppna {member.displayName}s tider →
-            </Link>
-          </section>
-        </Card>
-
         {/* Multi-place selector, also shown as a repair path for legacy staff with
             no place. With one already-selected place there is nothing to choose. */}
-        {locations.length > 0 && (locations.length > 1 || !member.locationId) && (
+        {canManageRoles && locations.length > 0 && (locations.length > 1 || !member.locationId) && (
           <Card>
             <Callout tone="info" icon="mapPin">
               {member.locationName ? (
@@ -159,9 +152,122 @@ export function StaffDetail({
           </Card>
         )}
 
-        <Card>
-          <EgetKontoSection member={member} onInvited={refresh} />
-        </Card>
+        {canManageStaff ? (
+          <StaffBookability
+            staffId={member.id}
+            staffName={member.displayName}
+            active={member.active}
+            serviceIds={member.serviceIds}
+            services={services}
+            workingDays={new Set(workingHours.map((row) => row.weekday)).size}
+            locationId={member.locationId ?? null}
+            openingHoursConfirmed={openingHoursConfirmed}
+          />
+        ) : (
+          <Card>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>
+              Bokningsbarhet
+            </div>
+            <Badge tone={member.readiness.bookable ? 'success' : 'warning'}>
+              {member.readiness.label}
+            </Badge>
+            <p className="small" style={{ margin: '10px 0 0', color: 'var(--c-ink-3)' }}>
+              Tjänster och aktiv status ändras av organisationsägaren.
+            </p>
+          </Card>
+        )}
+
+        {!canManageSchedule ? (
+          <Callout tone="info" icon="lock">
+            Ditt konto kan se personkortet men saknar behörighet att ändra schema och frånvaro.
+          </Callout>
+        ) : member.locationId && editorLocations.length === 1 ? (
+          <Card>
+            <section id="arbetstider" style={{ scrollMarginTop: 90 }}>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>
+                Individuellt schema
+              </div>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'var(--c-ink-3)',
+                  margin: '0 0 14px',
+                  lineHeight: 1.55,
+                }}
+              >
+                Först väljer du när {member.displayName} arbetar. Därefter kan du begränsa vilka
+                exakta starttider kunder får boka. Platsens öppettider är alltid den yttre ramen.
+              </p>
+              <ScheduleLock hasBackup={false}>
+                <WorkingHoursEditor
+                  staffId={member.id}
+                  staffName={member.displayName}
+                  rows={workingHours}
+                  locations={editorLocations}
+                  defaultLocationId={member.locationId}
+                />
+
+                <div style={{ margin: '28px 0 14px' }}>
+                  <span className="eyebrow" style={{ color: 'var(--c-gold-600)' }}>
+                    Bokbara starttider
+                  </span>
+                  <h2 className="h2" style={{ margin: '6px 0 4px' }}>
+                    Bokbara starttider
+                  </h2>
+                  <p className="small" style={{ margin: 0, color: 'var(--c-ink-3)' }}>
+                    Lämna tomt för alla lediga starter inom arbetstiden, eller välj exakta tider.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+                  <ScheduleActions staffId={member.id} />
+                </div>
+                <SlotManager
+                  staffId={member.id}
+                  staff={[{ id: member.id, displayName: member.displayName, active: member.active }]}
+                  rows={slots}
+                  weekCols={weekCols}
+                  locations={editorLocations}
+                  defaultLocationId={member.locationId}
+                  showStaffSelector={false}
+                />
+              </ScheduleLock>
+              <p style={{ margin: '14px 0 0', fontSize: 12.5 }}>
+                <Link
+                  href={`/admin/scheman?staff=${member.id}&plats=${member.locationId}`}
+                  style={{ color: 'var(--c-forest)', fontWeight: 600 }}
+                >
+                  Visa hela teamets schema →
+                </Link>
+              </p>
+            </section>
+          </Card>
+        ) : (
+          <Callout tone="warning" icon="mapPin">
+            Välj en aktiv plats innan individuella arbetstider kan redigeras.
+          </Callout>
+        )}
+
+        {canManageSchedule ? (
+          <section>
+            <div style={{ marginBottom: 10 }}>
+              <span className="eyebrow" style={{ color: 'var(--c-gold-600)' }}>
+                Avvikelser
+              </span>
+              <h2 className="h2" style={{ margin: '6px 0 4px' }}>
+                Frånvaro för {member.displayName}
+              </h2>
+              <p className="small" style={{ margin: 0, color: 'var(--c-ink-3)' }}>
+                Semester, sjukdom och annan ledighet stänger personens tider i bokningen.
+              </p>
+            </div>
+            <TimeOffManager
+              items={timeOffItems}
+              staffOptions={[{ id: member.id, name: member.displayName }]}
+              staffNoun={staffNoun}
+              defaultStaffId={member.id}
+            />
+          </section>
+        ) : null}
 
         <Card>
           <section>
@@ -211,9 +317,37 @@ export function StaffDetail({
           </section>
         </Card>
 
-        <Card>
-          <DangerSection member={member} onDeleted={backToList} />
-        </Card>
+        {canManageRoles ? (
+          <>
+            <Card>
+              <RenameSection member={member} onSaved={refresh} />
+            </Card>
+
+            <Card>
+              <PhotoSection member={member} onSaved={refresh} />
+            </Card>
+
+            <Card>
+              <StaffRolePicker
+                staffId={member.id}
+                hasAccount={member.hasAccount}
+                permissions={permissions}
+              />
+            </Card>
+
+            <Card>
+              <EgetKontoSection
+                member={member}
+                onInvited={refresh}
+                canLinkCurrentUser={canLinkCurrentUser}
+              />
+            </Card>
+
+            <Card>
+              <DangerSection member={member} onDeleted={backToList} />
+            </Card>
+          </>
+        ) : null}
       </div>
     </section>
   )

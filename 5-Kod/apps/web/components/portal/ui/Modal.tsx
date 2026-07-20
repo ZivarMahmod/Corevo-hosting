@@ -102,15 +102,40 @@ export function Modal({
     // inte stängs av en senare fokusflytt till stängknappen.
     if (!cardRef.current?.contains(document.activeElement)) {
       const target =
-        cardRef.current?.querySelector<HTMLElement>('input, select, textarea, button') ??
+        cardRef.current?.querySelector<HTMLElement>(
+          'input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+        ) ??
+        cardRef.current?.querySelector<HTMLElement>('button:not([disabled]), a[href]') ??
         cardRef.current
       target?.focus()
+    }
+
+    // iOS/Safari och Samsung/Gboard kan ändra visualViewport utan att `dvh`
+    // hinner följa med. Variablerna ägs av just den öppna overlayn — aldrig av
+    // documentElement — så flera dialoger eller andra sidor kan inte läcka state.
+    const viewport = window.visualViewport
+    const syncVisualViewport = () => {
+      if (!viewport || !overlayRef.current) return
+      overlayRef.current.style.setProperty('--modal-visual-height', `${viewport.height}px`)
+      overlayRef.current.style.setProperty(
+        '--modal-visual-offset-top',
+        `${viewport.offsetTop}px`,
+      )
+    }
+    syncVisualViewport()
+    if (viewport) {
+      viewport.addEventListener('resize', syncVisualViewport)
+      viewport.addEventListener('scroll', syncVisualViewport)
     }
 
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
+      if (viewport) {
+        viewport.removeEventListener('resize', syncVisualViewport)
+        viewport.removeEventListener('scroll', syncVisualViewport)
+      }
       document.body.style.overflow = prevOverflow
     }
     // mount/unmount only
