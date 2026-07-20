@@ -38,7 +38,7 @@ const presets: VerticalPresetData = {
     {
       key: 'frisor',
       name: 'Frisörsalong',
-      defaultTemplate: 'salvia',
+      defaultTemplate: 'kalla',
       defaultModules: { booking: 'live', lojalitet: 'draft', shop: 'off' },
       terminology: { service: 'Behandling', staff: 'Stylist' },
     },
@@ -49,7 +49,7 @@ const presets: VerticalPresetData = {
     { key: 'lojalitet', name: 'Lojalitet' },
     { key: 'shop', name: 'Webshop' },
   ],
-  templatesByVertical: { frisor: [{ key: 'salvia', name: 'Salvia' }], generell: [{ key: 'edit', name: 'Edit' }] },
+  templatesByVertical: { frisor: [{ key: 'kalla', name: 'Källa' }], generell: [{ key: 'edit', name: 'Edit' }] },
 }
 
 const noopDispatch = (() => {}) as Dispatch<StudioAction>
@@ -216,6 +216,6 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     )
     expect(html).toContain('Välj mall')
     expect(html).not.toContain('Temamall') // gamla platta listans rubrik
-    expect(html).toContain('Branschens förval') // salvia = frisör-branschens default i presets
+    expect(html).toContain('Branschens förval') // kalla = frisör-branschens default i presets
   })
 })

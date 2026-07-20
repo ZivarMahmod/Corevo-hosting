@@ -7,7 +7,7 @@
 import type { ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant, DEFAULT_BOOKING_VARIANT } from '@/lib/platform/booking-variant'
 import { modulesForVertical, type VerticalPresetData } from '@/lib/platform/verticals-shared'
-import { isSelectableTheme } from '@/lib/platform/theme-palettes'
+import { COREVO_12_THEME_KEYS, isSelectableTheme } from '@/lib/platform/theme-palettes'
 
 /** One onboarding service row (W4). `price` is the kr string the operator types (UI-
  *  friendly — no controlled-number fight); buildCreateTenantFormData converts it to
@@ -67,8 +67,9 @@ export function initStudioCfg(
 
 /**
  * Pick a bransch: set it, prefill the theme from the bransch's default_template (else
- * its first bransch-filtered template, else keep the current theme), and seed the
- * per-module states from the preset. Unknown key → only the branch is set (mirrors
+ * its first approved bransch-filtered template, else the current approved theme,
+ * else the first approved platform theme), and seed the per-module states from the
+ * preset. Unknown key → only the branch is set (mirrors
  * chooseVertical's early return). Operator can still override theme + modules after.
  */
 export function applyBranch(cfg: StudioCfg, verticalKey: string, presets: VerticalPresetData): StudioCfg {
@@ -79,11 +80,9 @@ export function applyBranch(cfg: StudioCfg, verticalKey: string, presets: Vertic
   // (t.ex. barbershops default_template 'zigge') droppas till '' → lansering failar
   // med "Välj en av de 12 godkända mallarna". Förfyll därför alltid ett selectable
   // tema: branschens default om giltigt, annars första selectable bransch-mall,
-  // annars nuvarande cfg-tema.
-  const candidate = v.defaultTemplate ?? branschTemplates[0]?.key ?? cfg.theme
-  const theme = isSelectableTheme(candidate)
-    ? candidate
-    : (branschTemplates.find((t) => isSelectableTheme(t.key))?.key ?? cfg.theme)
+  // annars nuvarande cfg-tema, annars plattformens första godkända tema.
+  const theme = [v.defaultTemplate, ...branschTemplates.map((t) => t.key), cfg.theme, COREVO_12_THEME_KEYS[0]]
+    .find((candidate): candidate is string => !!candidate && isSelectableTheme(candidate))!
   const moduleStates: Record<string, ModuleState> = {}
   for (const m of modulesForVertical(presets, verticalKey)) moduleStates[m.key] = m.defaultState
   return { ...cfg, branch: verticalKey, theme, moduleStates }

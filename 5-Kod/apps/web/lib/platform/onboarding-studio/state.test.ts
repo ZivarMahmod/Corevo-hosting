@@ -10,7 +10,7 @@ const presets: VerticalPresetData = {
     {
       key: 'frisor',
       name: 'Frisörsalong',
-      defaultTemplate: 'salvia',
+      defaultTemplate: 'aurora',
       defaultModules: { booking: 'live', lojalitet: 'live', presentkort: 'live' },
       terminology: { service: 'Behandling' },
     },
@@ -21,7 +21,7 @@ const presets: VerticalPresetData = {
     { key: 'lojalitet', name: 'Lojalitet' },
     { key: 'shop', name: 'Webshop' },
   ],
-  templatesByVertical: { generell: [{ key: 'edit', name: 'Edit' }] },
+  templatesByVertical: { generell: [{ key: 'calytrix', name: 'Calytrix' }] },
 }
 
 const reducer = makeStudioReducer(presets)
@@ -49,7 +49,7 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
   it('applyBranch prefills theme + module states from the vertical defaults', () => {
     const cfg = reducer(initStudioCfg('edit'), { type: 'applyBranch', key: 'frisor' })
     expect(cfg.branch).toBe('frisor')
-    expect(cfg.theme).toBe('salvia') // vertical.defaultTemplate
+    expect(cfg.theme).toBe('aurora') // vertical.defaultTemplate
     expect(cfg.moduleStates.booking).toBe('live')
     expect(cfg.moduleStates.lojalitet).toBe('live')
   })

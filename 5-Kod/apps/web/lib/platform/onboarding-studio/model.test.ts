@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { initStudioCfg, applyBranch, resolveModuleState, studioSlugify } from './model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
+import { COREVO_12_THEME_KEYS } from '@/lib/platform/theme-palettes'
 
 // Minimal real-shaped presets: VerticalPreset has NO hero/services/defaultPos (those
 // were cfg-data mockup) — only key/name/defaultTemplate/defaultModules/terminology.
@@ -9,7 +10,7 @@ const presets: VerticalPresetData = {
     {
       key: 'frisor',
       name: 'Frisörsalong',
-      defaultTemplate: 'salvia',
+      defaultTemplate: 'aurora',
       defaultModules: { booking: 'live', lojalitet: 'live', presentkort: 'live' },
       terminology: { service: 'Behandling' },
     },
@@ -20,7 +21,7 @@ const presets: VerticalPresetData = {
     { key: 'lojalitet', name: 'Lojalitet' },
     { key: 'shop', name: 'Webshop' },
   ],
-  templatesByVertical: { generell: [{ key: 'edit', name: 'Edit' }] },
+  templatesByVertical: { generell: [{ key: 'calytrix', name: 'Calytrix' }] },
 }
 
 describe('initStudioCfg', () => {
@@ -39,7 +40,7 @@ describe('applyBranch', () => {
   it('sets the bransch, prefills the theme from defaultTemplate and seeds module states', () => {
     const cfg = applyBranch(initStudioCfg('salvia'), 'frisor', presets)
     expect(cfg.branch).toBe('frisor')
-    expect(cfg.theme).toBe('salvia')
+    expect(cfg.theme).toBe('aurora')
     expect(cfg.moduleStates.booking).toBe('live')
     expect(cfg.moduleStates.lojalitet).toBe('live')
     // not in the bransch preset → modulesForVertical fallback 'off'
@@ -49,13 +50,23 @@ describe('applyBranch', () => {
   it('falls back to the first bransch-filtered template when defaultTemplate is null', () => {
     const cfg = applyBranch(initStudioCfg('salvia'), 'generell', presets)
     expect(cfg.branch).toBe('generell')
-    expect(cfg.theme).toBe('edit') // templatesByVertical.generell[0]
+    expect(cfg.theme).toBe('calytrix') // templatesByVertical.generell[0]
   })
 
   it('keeps the current theme when the bransch has neither defaultTemplate nor templates', () => {
     const bare: VerticalPresetData = { ...presets, templatesByVertical: {} }
-    const cfg = applyBranch(initStudioCfg('salvia'), 'generell', bare)
-    expect(cfg.theme).toBe('salvia')
+    const cfg = applyBranch(initStudioCfg('sivsav'), 'generell', bare)
+    expect(cfg.theme).toBe('sivsav')
+  })
+
+  it('falls back to the first approved theme when every supplied theme is legacy', () => {
+    const legacy: VerticalPresetData = {
+      ...presets,
+      verticals: [{ ...presets.verticals[1]!, defaultTemplate: 'zigge' }],
+      templatesByVertical: { generell: [{ key: 'edit', name: 'Edit' }] },
+    }
+    const cfg = applyBranch(initStudioCfg('salvia'), 'generell', legacy)
+    expect(cfg.theme).toBe(COREVO_12_THEME_KEYS[0])
   })
 })
 
