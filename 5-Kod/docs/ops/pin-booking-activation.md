@@ -1,8 +1,10 @@
 # PIN-verifierad bokning — aktivering och drift
 
-Gäller goal-74. Koden är byggd för både SMS via Giada och e-postfallback, men
-aktiveras först när migration, secrets och respektive canary är verifierade i
-ordningen nedan.
+Gäller goal-74. Migration `0118` och Worker-version
+`37cbbc09-57d0-4b14-9f7c-a4e80a4cae3f` driftsattes 2026-07-21 genom deploy-run
+`29836132825`. Med frånkopplat modem nådde ett read-only liveprov FreshCuts
+kontaktsteg och visade endast Namn + E-post, utan mobilfält eller konsolfel.
+E-postens verkliga leveranscanary och SIM-canary följer fortfarande ordningen nedan.
 
 ## Verkligt dataflöde
 
