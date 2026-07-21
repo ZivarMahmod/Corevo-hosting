@@ -8,7 +8,7 @@ import {
   intersectWorkingWindows,
 } from '@/lib/booking/availability'
 import { loadLocationAvailability } from '@/lib/booking/location-rules'
-import { weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
+import { canonicalInstant, weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
 import { getStripe } from '@/lib/stripe/client'
 import { requestOrigin } from '@/lib/url'
 import {
@@ -296,10 +296,11 @@ export async function getAvailableSlots(
 
   const byStart = new Map<string, string[]>()
   for (const row of bookableRows ?? []) {
-    if (!candidateByStart.get(row.start_ts)?.includes(row.staff_id)) continue
-    const list = byStart.get(row.start_ts)
+    const start = canonicalInstant(row.start_ts)
+    if (!candidateByStart.get(start)?.includes(row.staff_id)) continue
+    const list = byStart.get(start)
     if (list) list.push(row.staff_id)
-    else byStart.set(row.start_ts, [row.staff_id])
+    else byStart.set(start, [row.staff_id])
   }
 
   // Fler kvarvarande lediga starter betyder lägre belastning utan att exponera
