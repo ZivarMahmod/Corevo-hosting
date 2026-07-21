@@ -86,3 +86,6 @@ mappar i katalog-roten (numrerade 01–100
 5-Kod/apps/web/_sweep/
 5-Kod/apps/web/_geom-*.json
 5-Kod/docs/ops/INLOGGNINGAR.md
+
+# Isolerade Codex-arbetsytor — får aldrig versionshanteras som projektinnehåll.
+.worktrees/
