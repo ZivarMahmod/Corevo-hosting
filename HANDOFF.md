@@ -59,17 +59,18 @@ tenant och ett testfall, aldrig produktdefinitionen.
   `1-Planering/18-sms-direktoperator/`. `notifications_outbox` förblir enda kö;
   ingen parallell `sms_jobs` får byggas. Inget SMS har aktiverats av beslutet.
 - Giadas lokala SMS-gateway är driftsatt 2026-07-21 från
-  `ZivarMahmod/corevo-sms` `master`-SHA `09a6dab`. API och modem-worker är aktiva;
+  `ZivarMahmod/corevo-sms` `master`-SHA `0b27d50`. API och modem-worker är aktiva;
   den gamla Supabase-pollern är maskerad. Read-only deploy-nyckel, fast-forward-
   uppdatering var femte minut med test/rollback, hälsokontroll varje minut, daglig
   SQLite-backup och Huawei-route/DNS-skydd är installerade. Claude Code finns på
   Giada för manuell SSH-användning men körs inte som daemon. Produktions-Workern
-  är kopplad till gatewayen med en separat, hashad API-identitet. Modemet var inte
-  fysiskt anslutet vid slutverifieringen och gatewayen hade noll väntande jobb.
+  är kopplad till gatewayen med en separat, hashad API-identitet.
   RM550V-stöd, fail-closed sändgrind, strikt NetworkManager-isolering och
-  SMS-only radioaktivering är mergade i gateway-`master` `835cb60` med 76 gröna
-  tester. Giadan är avstängd och har ännu inte hämtat eller hårdvaruverifierat den
-  revisionen; senaste verifierade drift-SHA är därför fortsatt `09a6dab`.
+  SMS-only radioaktivering är installerade och verifierade med 77 gröna tester
+  på både Windows och Giada/Linux. RM550V-GL är registrerad på Tele2 med LTE/5G,
+  stark signal och SMS-stöd; ingen databärare finns, WWAN är `unmanaged` och
+  internet går via kabel-LAN `eno1`. `COREVO_LIVE_SEND_ENABLED=false` håller
+  sändning fysiskt avstängd och den publika kön är tom. Inget SMS har skickats.
 - Personalpanelen är härdad: oförändrade formulär ger inget falskt fel,
   kalenderfärg skickas explicit och historisk personal kan inte erbjudas permanent
   radering. Personkortet äger nu personens bokningsbarhet, tjänster, arbetspass,
@@ -93,12 +94,13 @@ tenant och ett testfall, aldrig produktdefinitionen.
   bekräftelse-outbox är atomiska; de exakta raderna CAS-claimas och dispatchas
   direkt, överlappande holds serialiseras per tenant/personal och den gamla
   overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
-  fel, produktionsbuild, SQL-parser och gateway 76 tester är gröna. Migration `0118`
-  och Worker är produktionsverifierade. Liveprovet på FreshCut nådde en verklig
-  ledig tid och visade endast Namn + E-post, utan mobilfält eller konsolfel, när
-  modemet var frånkopplat. Ett autentiserat offline-anrop gav `503 modem_offline`
-  utan att skapa ett köjobb. En riktig e-postleverans, fysisk RM550V-kallstart och
-  exakt en godkänd SIM-canary återstår.
+  fel, produktionsbuild, SQL-parser och gateway 77 tester är gröna. Migration `0118`
+  och Worker är produktionsverifierade. Efter fysisk RM550V-kallstart nådde ett
+  nytt liveprov FreshCuts verkliga lediga tider den 22 juli och visade endast
+  Namn + E-post, utan mobilfält, eftersom sändgrinden är av. Gatewayens adapter
+  ser samtidigt modemet som online; publik health maskerar det avsiktligt till
+  `modem_online=false`, `send_enabled=false` och tom kö. En riktig
+  e-postleverans, exakt en godkänd SIM-canary och därefter en PIN-bokning återstår.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
   `6-Testing/goal-74-pin-bokning-testlista.md`.

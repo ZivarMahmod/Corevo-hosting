@@ -15,7 +15,7 @@
 ## Giada-grund driftsatt 2026-07-21
 
 Den lokala gatewaygrunden är installerad på Giada från
-`ZivarMahmod/corevo-sms` `master`-SHA `09a6dab`:
+`ZivarMahmod/corevo-sms` `master`-SHA `0b27d50`:
 
 - API och ensam modem-worker är aktiva; den tidigare Supabase-pollern är
   borttagen ur koden och maskerad i systemd.
@@ -28,21 +28,22 @@ Den lokala gatewaygrunden är installerad på Giada från
 - Claude Code finns på Giada för manuell SSH-användning. Ingen Claude-tjänst,
   timer eller lokal LLM körs permanent.
 
-Verifiering på Giada: 55 tester passerade; API-hälsan var `ok`, kön hade noll
-väntande jobb och update/health/backup rapporterade `success`. Modemet var inte
-fysiskt anslutet och rapporterades därför offline. Inget SMS skickades.
+Verifiering på Giada: 77 tester passerade; API-hälsan var `ok`, kön hade noll
+väntande jobb och update/health/backup rapporterade `success`. RM550V-GL är
+registrerad på Tele2 med LTE/5G, stark signal och SMS-stöd. Ingen databärare finns,
+WWAN är `unmanaged` och internet går via kabel-LAN `eno1`. Inget SMS skickades.
 
 Produktions-Workern är nu kopplad till Giada med en separat API-identitet och
 server-only secrets. Gatewayen får aldrig Supabase-credentials eller claima
 affärskön själv. Ett autentiserat offlineprov gav `503 modem_offline` utan lokalt
-köjobb, så e-postfallbacken förblir aktiv tills modemet är friskt. Fysisk
-RM550V-kallstart och ett uttryckligt canary-SMS är två separata kvarvarande driftprov.
+köjobb. `COREVO_LIVE_SEND_ENABLED=false` maskerar fortfarande den publika
+modemstatusen som offline, så e-postfallbacken förblir aktiv tills ett uttryckligt
+canary-SMS har godkänts.
 
-RM550V-stödet, den fysiska sändgrinden och strikt SMS-only nätisolering är mergade
-i gatewayens `master`-SHA `835cb60` med 76 gröna tester. Giadan var avstängd vid
-merge och har därför inte hämtat eller verifierat revisionen ännu. Vid nästa start
-ska update-timern installera revisionen; providerbytet och den enda fysiska
-canaryn görs därefter enligt `pin-booking-activation.md`.
+RM550V-stödet, den fysiska sändgrinden och strikt SMS-only nätisolering är
+installerade och hårdvaruverifierade. Gatewayprovidern rapporterar modemet online,
+men sändgrinden är fortsatt av. Den enda fysiska canaryn görs enligt
+`pin-booking-activation.md`.
 
 Status 2026-07-18: transport och delivery-webhook är byggda men **fysiskt AV** i
 både produktion och staging. `SMS_DELIVERY_MODE` är committad som `off` i

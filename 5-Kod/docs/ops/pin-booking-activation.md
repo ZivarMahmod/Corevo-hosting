@@ -6,14 +6,19 @@ Gäller goal-74. Migration `0118` och Worker-version
 API-nyckel. Med frånkopplat modem nådde ett liveprov FreshCuts kontaktsteg och
 visade endast Namn + E-post, utan mobilfält eller konsolfel.
 
-Quectel RM550V-GL-stödet är mergat i gatewayens `master`-SHA `835cb60` med 76
-gröna tester, men är ännu inte installerat eller hårdvaruverifierat på den
-avstängda Giadan. Senast verifierade drift-SHA där är `09a6dab`.
+Quectel RM550V-GL-stödet är installerat på Giada från gatewayens `master`-SHA
+`0b27d50` med 77 gröna tester på både Windows och Giada/Linux. Modemet är
+registrerat på Tele2 med LTE/5G, stark signal och SMS-lagring `sm`/`me`. Ingen
+databärare finns, `cdc-wdm0` är `unmanaged` och internet går via kabel-LAN
+`eno1`; Wi-Fi är endast reserv.
 
 Ett autentiserat offline-anrop mot gatewayen gav `503 modem_offline`, skapade
 inget köjobb och lämnade kön på noll. `sms.corevo.se/health` rapporterade samtidigt
-`status=ok` och `modem_online=false`. E-postens verkliga leveranscanary, fysisk
-RM550V-kallstart och SIM-canary återstår.
+`status=ok`, `send_enabled=false`, `modem_online=false` och tom kö. Gatewayens
+provider ser samtidigt modemet som online; den publika statusen maskeras
+avsiktligt medan `COREVO_LIVE_SEND_ENABLED=false`. FreshCuts produktionsflöde
+visade verkliga lediga tider den 22 juli och därefter Namn + E-post utan att skapa
+en bokning. E-postens verkliga leveranscanary och SIM-canary återstår.
 
 ## Verkligt dataflöde
 
@@ -84,21 +89,19 @@ API-nyckeln ska roteras samordnat: skapa/rotera på Giada, uppdatera Worker-secr
 och verifiera health/send innan den gamla vägen avvecklas. Skriv aldrig ut den i
 driftlogg eller dokument.
 
-## Kvarvarande aktiveringsordning
+## Aktiveringsordning och nuvarande checkpoint
 
 1. Kör e-postfallback-testlistan i
    `6-Testing/goal-74-pin-bokning-testlista.md`, inklusive verklig e-postleverans.
-2. Montera RM550V-GL i en WWAN-kompatibel M.2 B-key 3052-plats med SIM och rätt
-   antenner medan Giadan är helt strömlös. Starta därefter Giadan.
-3. Låt update-timern hämta gateway-SHA `835cb60`. Sätt på Giada
-   `COREVO_PROVIDER=modemmanager` och behåll `COREVO_LIVE_SEND_ENABLED=false`;
-   starta om API och worker.
-4. Verifiera att `mmcli` ser modemet och ett upplåst SIM, att radiodelen når
-   `registered`, att ingen databärare finns och att GSM/CDMA visas som
-   `unmanaged` i NetworkManager.
-5. Verifiera att `ip route get 1.1.1.1` fortfarande går via `eno1`, att
+2. **Klar 2026-07-21:** RM550V-GL monterades med SIM och antenn i strömlös Giada.
+3. **Klar 2026-07-21:** update-timern hämtade gateway-SHA `0b27d50`. Giada kör
+   `COREVO_PROVIDER=modemmanager` och `COREVO_LIVE_SEND_ENABLED=false`;
+   API och worker är omstartade och aktiva.
+4. **Klar 2026-07-21:** `mmcli` ser modemet och SIM, radiodelen är `registered`,
+   SMS stöds, ingen databärare finns och GSM visas som `unmanaged`.
+5. **Klar 2026-07-21:** `ip route get 1.1.1.1` går via `eno1`,
    `/health` visar `send_enabled=false`, `modem_online=false` och
-   `queue_pending=0`, samt att bokningssidan därför fortfarande visar e-post.
+   `queue_pending=0`; bokningssidan visar därför fortfarande e-post.
 6. Pausa för Zivars uttryckliga ja. Kör gatewayens interaktiva canary och skicka
    exakt ett SMS till Zivars tillåtna nummer.
 7. Efter godkänd canary: sätt `COREVO_LIVE_SEND_ENABLED=true`, starta om API och
@@ -126,8 +129,8 @@ Det behövs ingen permanent Claude-/Codex-session och ingen lokal LLM för drift
 RM550V-enheten görs strikt `unmanaged` i NetworkManager. En root-ägd minutkontroll
 slår endast på radiodelen via `mmcli --enable` och skapar ingen databärare.
 Profil- och dispatcherskydd för `never-default`, route metric `900` och ignorerad
-DNS ligger kvar som försvar på flera nivåer. Den senaste verifieringen utan modem
-visade internet/default route via kabel-LAN `eno1` (`192.168.50.1`).
+DNS ligger kvar som försvar på flera nivåer. Hårdvaruverifieringen med RM550V
+visade fortsatt internet/default route via kabel-LAN `eno1` (`192.168.50.1`).
 
 ## Rollback
 
