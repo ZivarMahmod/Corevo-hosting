@@ -15,7 +15,7 @@
 ## Giada-grund driftsatt 2026-07-21
 
 Den lokala gatewaygrunden är installerad på Giada från
-`ZivarMahmod/corevo-sms` `master`-SHA `b365065`:
+`ZivarMahmod/corevo-sms` `master`-SHA `09a6dab`:
 
 - API och ensam modem-worker är aktiva; den tidigare Supabase-pollern är
   borttagen ur koden och maskerad i systemd.
@@ -23,20 +23,26 @@ Den lokala gatewaygrunden är installerad på Giada från
   kontrollerar `master` var femte minut, accepterar endast fast-forward, kör hela
   testsuiten och rullar tillbaka kod och tjänster om aktiveringen inte blir frisk.
 - Hälsokontroll körs varje minut och daglig online-backup av SQLite körs 03:00.
-- NetworkManager-/udev-skydd hindrar Huawei HiLink från att ta default route eller
-  DNS när USB-modemet ansluts. Vid verifieringen gick internet via kabel-LAN.
+- NetworkManager-/udev-skydd hindrar modem från att ta default route eller DNS.
+  Vid verifieringen gick internet via kabel-LAN.
 - Claude Code finns på Giada för manuell SSH-användning. Ingen Claude-tjänst,
   timer eller lokal LLM körs permanent.
 
-Verifiering på Giada: 49 tester passerade; API-hälsan var `ok`, kön hade noll
+Verifiering på Giada: 55 tester passerade; API-hälsan var `ok`, kön hade noll
 väntande jobb och update/health/backup rapporterade `success`. Modemet var inte
 fysiskt anslutet och rapporterades därför offline. Inget SMS skickades.
 
-Detta aktiverar inte Corevos SMS-transport. `notifications_outbox` ska senare
-pusha autentiserade jobb till Giada; gatewayen ska aldrig få Supabase-credentials
-eller claima affärskön själv. Den kopplingen byggs först vid ett godkänt byggskifte
-från aktiva goal-73. Fysisk USB-hotplug och ett uttryckligt canary-SMS är två
-separata kvarvarande driftprov.
+Produktions-Workern är nu kopplad till Giada med en separat API-identitet och
+server-only secrets. Gatewayen får aldrig Supabase-credentials eller claima
+affärskön själv. Ett autentiserat offlineprov gav `503 modem_offline` utan lokalt
+köjobb, så e-postfallbacken förblir aktiv tills modemet är friskt. Fysisk
+RM550V-kallstart och ett uttryckligt canary-SMS är två separata kvarvarande driftprov.
+
+RM550V-stödet, den fysiska sändgrinden och strikt SMS-only nätisolering är mergade
+i gatewayens `master`-SHA `835cb60` med 76 gröna tester. Giadan var avstängd vid
+merge och har därför inte hämtat eller verifierat revisionen ännu. Vid nästa start
+ska update-timern installera revisionen; providerbytet och den enda fysiska
+canaryn görs därefter enligt `pin-booking-activation.md`.
 
 Status 2026-07-18: transport och delivery-webhook är byggda men **fysiskt AV** i
 både produktion och staging. `SMS_DELIVERY_MODE` är committad som `off` i

@@ -59,13 +59,17 @@ tenant och ett testfall, aldrig produktdefinitionen.
   `1-Planering/18-sms-direktoperator/`. `notifications_outbox` förblir enda kö;
   ingen parallell `sms_jobs` får byggas. Inget SMS har aktiverats av beslutet.
 - Giadas lokala SMS-gateway är driftsatt 2026-07-21 från
-  `ZivarMahmod/corevo-sms` `master`-SHA `b365065`. API och modem-worker är aktiva;
+  `ZivarMahmod/corevo-sms` `master`-SHA `09a6dab`. API och modem-worker är aktiva;
   den gamla Supabase-pollern är maskerad. Read-only deploy-nyckel, fast-forward-
   uppdatering var femte minut med test/rollback, hälsokontroll varje minut, daglig
   SQLite-backup och Huawei-route/DNS-skydd är installerade. Claude Code finns på
-  Giada för manuell SSH-användning men körs inte som daemon. Modemet var inte
-  fysiskt anslutet vid slutverifieringen, gatewayen hade noll väntande jobb och
-  Corevos `notifications_outbox` är ännu inte kopplad till gatewayen.
+  Giada för manuell SSH-användning men körs inte som daemon. Produktions-Workern
+  är kopplad till gatewayen med en separat, hashad API-identitet. Modemet var inte
+  fysiskt anslutet vid slutverifieringen och gatewayen hade noll väntande jobb.
+  RM550V-stöd, fail-closed sändgrind, strikt NetworkManager-isolering och
+  SMS-only radioaktivering är mergade i gateway-`master` `835cb60` med 76 gröna
+  tester. Giadan är avstängd och har ännu inte hämtat eller hårdvaruverifierat den
+  revisionen; senaste verifierade drift-SHA är därför fortsatt `09a6dab`.
 - Personalpanelen är härdad: oförändrade formulär ger inget falskt fel,
   kalenderfärg skickas explicit och historisk personal kan inte erbjudas permanent
   radering. Personkortet äger nu personens bokningsbarhet, tjänster, arbetspass,
@@ -81,19 +85,20 @@ tenant och ett testfall, aldrig produktdefinitionen.
   eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
   innehåller även keyboard-safe kalenderträffar och explicit Ja/Nej till
   kundmeddelande vid flytt. Goal-73 arkiveras inte förrän Zivar godkänt den live.
-- Goal-74 är den aktiva byggdelen och är driftsatt från `main`-SHA `e5b2db4`
-  (deploy-run `29836132825`, Worker `37cbbc09-57d0-4b14-9f7c-a4e80a4cae3f`):
+- Goal-74 är den aktiva byggdelen och är driftsatt från `main`-SHA `645ae7b`
+  (deploy-run `29840569825`, Worker `0d440c6f-fbfa-433a-b8f5-c5f39f72d3da`):
   publik bokning kräver PIN via direkt SMS när
   Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
   Challenge + hold + anonym PIN-outbox samt PIN-verifierad bokning +
   bekräftelse-outbox är atomiska; de exakta raderna CAS-claimas och dispatchas
   direkt, överlappande holds serialiseras per tenant/personal och den gamla
   overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
-  fel, produktionsbuild, SQL-parser och gateway 54 tester är gröna. Migration `0118`
+  fel, produktionsbuild, SQL-parser och gateway 76 tester är gröna. Migration `0118`
   och Worker är produktionsverifierade. Liveprovet på FreshCut nådde en verklig
   ledig tid och visade endast Namn + E-post, utan mobilfält eller konsolfel, när
-  modemet var frånkopplat. En riktig e-postleverans samt SIM-canary återstår;
-  gatewayrevisionen är ännu inte driftsatt.
+  modemet var frånkopplat. Ett autentiserat offline-anrop gav `503 modem_offline`
+  utan att skapa ett köjobb. En riktig e-postleverans, fysisk RM550V-kallstart och
+  exakt en godkänd SIM-canary återstår.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
   `6-Testing/goal-74-pin-bokning-testlista.md`.

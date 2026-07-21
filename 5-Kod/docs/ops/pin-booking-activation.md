@@ -1,10 +1,19 @@
 # PIN-verifierad bokning — aktivering och drift
 
 Gäller goal-74. Migration `0118` och Worker-version
-`37cbbc09-57d0-4b14-9f7c-a4e80a4cae3f` driftsattes 2026-07-21 genom deploy-run
-`29836132825`. Med frånkopplat modem nådde ett read-only liveprov FreshCuts
-kontaktsteg och visade endast Namn + E-post, utan mobilfält eller konsolfel.
-E-postens verkliga leveranscanary och SIM-canary följer fortfarande ordningen nedan.
+`0d440c6f-fbfa-433a-b8f5-c5f39f72d3da` driftsattes 2026-07-21 genom deploy-run
+`29840569825`. Produktions-Workern har server-only Giada-bas och en separat
+API-nyckel. Med frånkopplat modem nådde ett liveprov FreshCuts kontaktsteg och
+visade endast Namn + E-post, utan mobilfält eller konsolfel.
+
+Quectel RM550V-GL-stödet är mergat i gatewayens `master`-SHA `835cb60` med 76
+gröna tester, men är ännu inte installerat eller hårdvaruverifierat på den
+avstängda Giadan. Senast verifierade drift-SHA där är `09a6dab`.
+
+Ett autentiserat offline-anrop mot gatewayen gav `503 modem_offline`, skapade
+inget köjobb och lämnade kön på noll. `sms.corevo.se/health` rapporterade samtidigt
+`status=ok` och `modem_online=false`. E-postens verkliga leveranscanary, fysisk
+RM550V-kallstart och SIM-canary återstår.
 
 ## Verkligt dataflöde
 
@@ -75,26 +84,27 @@ API-nyckeln ska roteras samordnat: skapa/rotera på Giada, uppdatera Worker-secr
 och verifiera health/send innan den gamla vägen avvecklas. Skriv aldrig ut den i
 driftlogg eller dokument.
 
-## Aktiveringsordning
+## Kvarvarande aktiveringsordning
 
-1. Deploya den granskade `corevo-sms`-revisionen till Giada med befintlig
-   fast-forward/test/rollback-mekanism. Kontrollera att hela gateway-testsuiten är
-   grön.
-2. Applicera och verifiera
-   `supabase/migrations/0118_pin_booking_verification.sql` i staging.
-3. Sätt `BOOKING_PIN_PEPPER` och fungerande e-postrelay i staging, men utelämna
-   Giada-nyckeln. Då måste bokningssidan välja e-post före kontaktsteget.
-4. Kör hela e-postfallback-testlistan i
-   `6-Testing/goal-74-pin-bokning-testlista.md`.
-5. Sätt Giada-bas och API-nyckel i staging. Med frånkopplat/offline modem ska
-   e-post fortfarande väljas inom health-timeouten.
-6. Anslut SIM/modem och kör Giadas lokala modemverifiering. Kontrollera samtidigt
-   att Giada behåller kabel-LAN/default route och DNS.
-7. Pausa för Zivars uttryckliga ja. Skicka därefter exakt en SMS-canary till
-   Zivars tillåtna nummer och verifiera samma bokning i DB, outbox och Giada.
-8. Först efter godkänd staging-canary: applicera migrationen i produktion,
-   uppdatera migrationscheckpoint, sätt produktionens secrets och deploya via
-   ordinarie `scripts/deploy-prod.mjs` med Environment approval.
+1. Kör e-postfallback-testlistan i
+   `6-Testing/goal-74-pin-bokning-testlista.md`, inklusive verklig e-postleverans.
+2. Montera RM550V-GL i en WWAN-kompatibel M.2 B-key 3052-plats med SIM och rätt
+   antenner medan Giadan är helt strömlös. Starta därefter Giadan.
+3. Låt update-timern hämta gateway-SHA `835cb60`. Sätt på Giada
+   `COREVO_PROVIDER=modemmanager` och behåll `COREVO_LIVE_SEND_ENABLED=false`;
+   starta om API och worker.
+4. Verifiera att `mmcli` ser modemet och ett upplåst SIM, att radiodelen når
+   `registered`, att ingen databärare finns och att GSM/CDMA visas som
+   `unmanaged` i NetworkManager.
+5. Verifiera att `ip route get 1.1.1.1` fortfarande går via `eno1`, att
+   `/health` visar `send_enabled=false`, `modem_online=false` och
+   `queue_pending=0`, samt att bokningssidan därför fortfarande visar e-post.
+6. Pausa för Zivars uttryckliga ja. Kör gatewayens interaktiva canary och skicka
+   exakt ett SMS till Zivars tillåtna nummer.
+7. Efter godkänd canary: sätt `COREVO_LIVE_SEND_ENABLED=true`, starta om API och
+   worker och verifiera `modem_online=true` med färsk tid.
+8. Bekräfta att en ny bokningssession visar mobilnummer och genomför en enda
+   demo-bokning genom PIN, DB, outbox och Giada.
 
 SIM-spåret visar telefonnummer som avsändare. `FRESHCUT` eller annat
 alfanumeriskt tenantnamn kräver ett framtida godkänt A2P/REST- eller SMPP-avtal.
@@ -113,14 +123,22 @@ Det byter transportadapter bakom samma kontrakt och ändrar inte PIN-/bokningsfl
 
 Giadas systemd healthcheck kör varje minut och update-timern var femte minut.
 Det behövs ingen permanent Claude-/Codex-session och ingen lokal LLM för driften.
+RM550V-enheten görs strikt `unmanaged` i NetworkManager. En root-ägd minutkontroll
+slår endast på radiodelen via `mmcli --enable` och skapar ingen databärare.
+Profil- och dispatcherskydd för `never-default`, route metric `900` och ignorerad
+DNS ligger kvar som försvar på flera nivåer. Den senaste verifieringen utan modem
+visade internet/default route via kabel-LAN `eno1` (`192.168.50.1`).
 
 ## Rollback
 
-1. Ta bort/rotera `GIADA_SMS_API_KEY` i Worker-miljön. Health-kontraktet faller då
-   stängt till e-post; inga nya SMS-anrop kan autentiseras.
-2. Behåll e-postrelay och `BOOKING_PIN_PEPPER`. Bokning fortsätter verifierat via
+1. Sätt först `COREVO_LIVE_SEND_ENABLED=false` på Giada och starta om API och
+   worker. Health maskerar då modemet som offline, alla sändvägar ger 503 och
+   väntande gatewayjobb makuleras innan en senare återaktivering.
+2. Ta vid behov bort `GIADA_SMS_BASE_URL` eller `GIADA_SMS_API_KEY` från Workern
+   för ytterligare isolering. Enbart nyckelrotation är inte en health-kill-switch.
+3. Behåll e-postrelay och `BOOKING_PIN_PEPPER`. Bokning fortsätter verifierat via
    e-post utan att PIN-skyddet stängs av.
-3. Rulla tillbaka webbversionen endast via ordinarie deploy-runbook. Rulla inte
+4. Rulla tillbaka webbversionen endast via ordinarie deploy-runbook. Rulla inte
    tillbaka databasmigrationen så länge någon challenge/outboxrad kan finnas.
-4. Granska `notifications_outbox`, Giadas lokala journal och slutlig bokningsstatus
+5. Granska `notifications_outbox`, Giadas lokala journal och slutlig bokningsstatus
    utan att skriva ut kontakt eller meddelandetext.
