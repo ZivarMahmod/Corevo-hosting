@@ -58,6 +58,14 @@ tenant och ett testfall, aldrig produktdefinitionen.
   magic-link/PWA-flöde och Claude-handoff finns i
   `1-Planering/18-sms-direktoperator/`. `notifications_outbox` förblir enda kö;
   ingen parallell `sms_jobs` får byggas. Inget SMS har aktiverats av beslutet.
+- Giadas lokala SMS-gateway är driftsatt 2026-07-21 från
+  `ZivarMahmod/corevo-sms` `master`-SHA `b365065`. API och modem-worker är aktiva;
+  den gamla Supabase-pollern är maskerad. Read-only deploy-nyckel, fast-forward-
+  uppdatering var femte minut med test/rollback, hälsokontroll varje minut, daglig
+  SQLite-backup och Huawei-route/DNS-skydd är installerade. Claude Code finns på
+  Giada för manuell SSH-användning men körs inte som daemon. Modemet var inte
+  fysiskt anslutet vid slutverifieringen, gatewayen hade noll väntande jobb och
+  Corevos `notifications_outbox` är ännu inte kopplad till gatewayen.
 - Personalpanelen är härdad: oförändrade formulär ger inget falskt fel,
   kalenderfärg skickas explicit och historisk personal kan inte erbjudas permanent
   radering. Personkortet äger nu personens bokningsbarhet, tjänster, arbetspass,

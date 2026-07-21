@@ -8,6 +8,32 @@
 > `1-Planering/18-sms-direktoperator/CLAUDE-HANDOFF.md`. Befintlig
 > `notifications_outbox` förblir den enda beständiga kön.
 
+## Giada-grund driftsatt 2026-07-21
+
+Den lokala gatewaygrunden är installerad på Giada från
+`ZivarMahmod/corevo-sms` `master`-SHA `b365065`:
+
+- API och ensam modem-worker är aktiva; den tidigare Supabase-pollern är
+  borttagen ur koden och maskerad i systemd.
+- Giada hämtar privat repo med en separat read-only deploy-nyckel. En timer
+  kontrollerar `master` var femte minut, accepterar endast fast-forward, kör hela
+  testsuiten och rullar tillbaka kod och tjänster om aktiveringen inte blir frisk.
+- Hälsokontroll körs varje minut och daglig online-backup av SQLite körs 03:00.
+- NetworkManager-/udev-skydd hindrar Huawei HiLink från att ta default route eller
+  DNS när USB-modemet ansluts. Vid verifieringen gick internet via kabel-LAN.
+- Claude Code finns på Giada för manuell SSH-användning. Ingen Claude-tjänst,
+  timer eller lokal LLM körs permanent.
+
+Verifiering på Giada: 49 tester passerade; API-hälsan var `ok`, kön hade noll
+väntande jobb och update/health/backup rapporterade `success`. Modemet var inte
+fysiskt anslutet och rapporterades därför offline. Inget SMS skickades.
+
+Detta aktiverar inte Corevos SMS-transport. `notifications_outbox` ska senare
+pusha autentiserade jobb till Giada; gatewayen ska aldrig få Supabase-credentials
+eller claima affärskön själv. Den kopplingen byggs först vid ett godkänt byggskifte
+från aktiva goal-73. Fysisk USB-hotplug och ett uttryckligt canary-SMS är två
+separata kvarvarande driftprov.
+
 Status 2026-07-18: transport och delivery-webhook är byggda men **fysiskt AV** i
 både produktion och staging. `SMS_DELIVERY_MODE` är committad som `off` i
 `apps/web/wrangler.jsonc`. Credentials, tenantinställning eller en kodväg kan
