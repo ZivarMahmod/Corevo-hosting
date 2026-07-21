@@ -82,8 +82,8 @@ jobs:
         run: |
           supabase migration list --linked > "$RUNNER_TEMP/staging-migrations.txt"
           node scripts/verify-database-release.mjs \
-            --expected-latest 0117 \
-            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117 \
+            --expected-latest 0118 \
+            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118 \
             --history-file "$RUNNER_TEMP/staging-migrations.txt" \
             --history-side remote
 
@@ -186,8 +186,8 @@ jobs:
           PROD_DB_MIGRATION: ${{ vars.PROD_DB_MIGRATION }}
         run: >-
           node scripts/verify-database-release.mjs
-          --expected-latest 0117
-          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117
+          --expected-latest 0118
+          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118
           --production-checkpoint docs/ops/production-schema-checkpoint.json
           --declared-latest "$PROD_DB_MIGRATION"
 
@@ -209,6 +209,17 @@ jobs:
           node scripts/check-worker-bundle.mjs \
             --input "$RUNNER_TEMP/wrangler-dry-run.txt" \
             --max-gzip-bytes 3145728
+
+      - name: Require e-mail fallback and set PIN pepper
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BOOKING_PIN_PEPPER: ${{ secrets.BOOKING_PIN_PEPPER }}
+        run: |
+          test -n "$BOOKING_PIN_PEPPER"
+          pnpm --filter @corevo/web exec wrangler secret list --format json > "$RUNNER_TEMP/worker-secrets.json"
+          node -e "const s=require(process.argv[1]); for (const n of ['EMAIL_RELAY_URL','EMAIL_RELAY_SECRET']) if (!s.some(x=>x.name===n)) throw Error('missing '+n)" "$RUNNER_TEMP/worker-secrets.json"
+          printf '%s' "$BOOKING_PIN_PEPPER" | pnpm --filter @corevo/web exec wrangler secret put BOOKING_PIN_PEPPER
 
       # fix-35 — deploy via deploy-prod.mjs, NOT bare `wrangler deploy`. Customer domains
       # now live in COMMITTED wrangler.jsonc (top-level routes[], alongside the 3 fixed

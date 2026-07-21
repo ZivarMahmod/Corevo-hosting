@@ -79,7 +79,7 @@ driftlogg eller dokument.
    fast-forward/test/rollback-mekanism. Kontrollera att hela gateway-testsuiten är
    grön.
 2. Applicera och verifiera
-   `supabase/migrations/20260721111357_pin_booking_verification.sql` i staging.
+   `supabase/migrations/0118_pin_booking_verification.sql` i staging.
 3. Sätt `BOOKING_PIN_PEPPER` och fungerande e-postrelay i staging, men utelämna
    Giada-nyckeln. Då måste bokningssidan välja e-post före kontaktsteget.
 4. Kör hela e-postfallback-testlistan i

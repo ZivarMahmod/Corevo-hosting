@@ -79,7 +79,7 @@ describe('pilot commerce release fence', () => {
         '..',
         'supabase',
         'migrations',
-        '20260721111357_pin_booking_verification.sql',
+        '0118_pin_booking_verification.sql',
       ),
       'utf8',
     )

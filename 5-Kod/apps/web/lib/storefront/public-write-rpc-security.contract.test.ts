@@ -56,7 +56,7 @@ describe('publika skriv-RPC:er', () => {
     expect(release).toContain('to service_role')
 
     const pinBooking = read(
-      'supabase/migrations/20260721111357_pin_booking_verification.sql',
+      'supabase/migrations/0118_pin_booking_verification.sql',
     ).toLowerCase()
     const verifiedStorefront =
       'finalize_verified_storefront_booking(uuid,uuid,text,text,text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid,boolean)'

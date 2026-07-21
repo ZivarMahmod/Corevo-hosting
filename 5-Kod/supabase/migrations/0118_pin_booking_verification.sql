@@ -1,4 +1,4 @@
--- Goal 74: verified storefront booking through SMS or e-mail.
+-- 0118 / Goal 74: verified storefront booking through SMS or e-mail.
 -- The private table stores HMAC digests only. Every callable write function is
 -- service-role-only; the browser never receives database credentials.
 

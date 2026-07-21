@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(fileURLToPath(new URL(
-  '../../../../supabase/migrations/20260721111357_pin_booking_verification.sql',
+  '../../../../supabase/migrations/0118_pin_booking_verification.sql',
   import.meta.url,
 )), 'utf8').toLowerCase()
 
