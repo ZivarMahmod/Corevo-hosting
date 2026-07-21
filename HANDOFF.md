@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-20.
+Senast uppdaterad: 2026-07-21.
 
 ## Läsordning
 
@@ -72,7 +72,8 @@ tenant och ett testfall, aldrig produktdefinitionen.
   bokbara starter och frånvaro; Scheman är platsens öppettider + teamöversikt och
   länkar vidare till personkortet. Ägarkonto kan länkas via kanoniska
   `staff.profile_id`; döda självservice-länkar döljs utan aktiv personalkoppling.
-- Goal-73 för kundadminens mobilchrome och kalendergester finns och är aktiv.
+- Goal-73 för kundadminens mobilchrome och kalendergester är implementerad och
+  mekaniskt verifierad men väntar på Zivars fysiska liveacceptans.
   Mobilkalendern använder hela bokningskortet för långtryck och drag; inget separat
   touch-handtag finns. Kalendern visar måltid/resurs och kräver bekräftelse innan
   skrivning. Dagvyn landar vid schemats start utan fördröjda vertikala hopp och
@@ -80,6 +81,9 @@ tenant och ett testfall, aldrig produktdefinitionen.
   eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
   innehåller även keyboard-safe kalenderträffar och explicit Ja/Nej till
   kundmeddelande vid flytt. Goal-73 arkiveras inte förrän Zivar godkänt den live.
+- Goal-74 är den aktiva byggdelen: publik bokning kräver PIN via direkt SMS när
+  Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
+  Design och exekveringsplan finns i `1-Planering/18-sms-direktoperator/`.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
@@ -100,10 +104,10 @@ så goal-72 ligger kvar i `goals/` tills dess. Det senast inkomna designpaketet
 `Dagens genomgångar/Mobil pwa/` styr den aktiva goal-73 och är fortsatt designlag.
 Provider-konfigurationen per partner finns, men `SMS_DELIVERY_MODE=off`; provider-dry-run
 och live-SMS är fortsatt separata, uttryckligen godkända driftsteg.
-Direktoperatörsspåret i `1-Planering/18-sms-direktoperator/` är nu planerat men
-blir inte ett konkurrerande aktivt goal medan goal-73 fortfarande pågår. Den
-externa förutsättningen är ett undertecknat svenskt A2P/Bulk-avtal, en aktiv
-SMS-tjänst, dynamiskt alfanumeriskt Sender ID och tekniska testcredentials.
+Direktoperatörsspåret i `1-Planering/18-sms-direktoperator/` byggs nu som goal-74
+mot den befintliga SIM/Giada-transporten med nummerbaserad avsändare och
+e-postfallback. Ett framtida svenskt A2P/Bulk-avtal och godkänt Sender ID byter
+adapter bakom samma kontrakt; det blockerar inte PIN-flödet eller e-postfallbacken.
 
 ## Hårda regler
 
