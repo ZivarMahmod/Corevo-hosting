@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
@@ -6,6 +6,13 @@ const migration = readFileSync(fileURLToPath(new URL(
   '../../../../supabase/migrations/0118_pin_booking_verification.sql',
   import.meta.url,
 )), 'utf8').toLowerCase()
+const migrationsDir = fileURLToPath(new URL('../../../../supabase/migrations/', import.meta.url))
+const latestClaimMigration = readdirSync(migrationsDir)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
+  .reverse()
+  .map((name) => readFileSync(`${migrationsDir}/${name}`, 'utf8').toLowerCase())
+  .find((source) => source.includes('create or replace function public.claim_notification_outbox_by_id'))
 
 describe('verified public booking migration contract', () => {
   it('keeps challenges private and never stores a clear pin', () => {
@@ -92,6 +99,11 @@ describe('verified public booking migration contract', () => {
     expect(migration).toContain("o.chosen_channel in ('sms', 'email')")
     expect(migration).toContain("'booking_verification_pin'")
     expect(migration).toContain('to service_role')
+  })
+
+  it('keeps the immediate claim executable on postgres built-in expressions', () => {
+    expect(latestClaimMigration).toBeTruthy()
+    expect(latestClaimMigration).not.toMatch(/pg_catalog\.(?:coalesce|least|greatest)\s*\(/)
   })
 
   it('allows exactly one verified guest contact channel and keeps hold overlap protection', () => {
