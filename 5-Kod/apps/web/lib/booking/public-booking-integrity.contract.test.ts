@@ -17,6 +17,15 @@ const notificationRoutingMigration = fs.readFileSync(
   path.join(CODE_ROOT, 'supabase', 'migrations', '0100_notification_event_routing.sql'),
   'utf8',
 )
+const pinBookingMigration = fs.readFileSync(
+  path.join(
+    CODE_ROOT,
+    'supabase',
+    'migrations',
+    '0118_pin_booking_verification.sql',
+  ),
+  'utf8',
+)
 const finalAvailabilityFence = fs.readFileSync(
   path.join(
     CODE_ROOT,
@@ -65,7 +74,16 @@ describe('public booking write integrity', () => {
     expect(migration).not.toMatch(
       /grant execute on function public\.create_public_booking[\s\S]{0,180}to service_role/,
     )
-    expect(action).toContain("rpc('create_storefront_booking_with_release'")
+    expect(action).toContain("'finalize_verified_storefront_booking'")
+    expect(action).not.toContain("rpc('create_storefront_booking_with_release'")
+    expect(pinBookingMigration).toContain(
+      'create or replace function public.finalize_verified_storefront_booking',
+    )
+    expect(pinBookingMigration).toContain('perform private.assert_storefront_booking_start(')
+    expect(pinBookingMigration).toContain(
+      'grant execute on function public.finalize_verified_storefront_booking',
+    )
+    expect(pinBookingMigration).toContain('to service_role')
     expect(action).not.toContain("writer.rpc('create_public_booking'")
     expect(kundActions).toContain("supabase.rpc('create_public_booking'")
     expect(finalAvailabilityFence).toContain(

@@ -7,7 +7,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/platform/service', () => ({ createServiceClient: mocks.createServiceClient }))
 
-import { dispatchNotificationOutbox, enqueueNotification } from './outbox'
+import {
+  dispatchNotificationOutbox,
+  dispatchNotificationOutboxById,
+  enqueueNotification,
+} from './outbox'
 
 const claimed = {
   id: '10000000-0000-0000-0000-000000000001',
@@ -127,6 +131,25 @@ describe('durable notification outbox', () => {
       p_cost_currency: 'EUR',
       p_parts: 1,
       p_skip_reason: null,
+    })
+  })
+
+  it('claims exactly one returned outbox id for immediate delivery', async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: [claimed], error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+    const deliver = vi.fn().mockResolvedValue({ status: 'sent', providerRef: 'giada:42' })
+
+    await expect(dispatchNotificationOutboxById(claimed.id, deliver)).resolves.toMatchObject({
+      claimed: 1,
+      sent: 1,
+    })
+    expect(mocks.rpc).toHaveBeenNthCalledWith(1, 'claim_notification_outbox_by_id', {
+      p_id: claimed.id,
+      p_lease_token: expect.any(String),
+      p_now: expect.any(String),
+      p_lease_seconds: 120,
     })
   })
 

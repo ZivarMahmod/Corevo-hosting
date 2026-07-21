@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), warn: vi.fn(), createServiceClient: vi.fn() }))
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/platform/service', () => ({
   createServiceClient: mocks.createServiceClient,
 }))
 vi.mock('@/lib/observability', () => ({ logger: { warn: mocks.warn } }))
 vi.mock('next/headers', () => ({ headers: vi.fn() }))
 
-import { checkRateLimit, checkRateLimitFailClosed } from './rate-limit'
+import { checkRateLimit, checkRateLimitFailClosed, LIMITS } from './rate-limit'
 
 const limit = { max: 8, windowSecs: 300 }
 
@@ -52,5 +53,13 @@ describe('rate limit error policy', () => {
     mocks.createServiceClient.mockReturnValue(null)
     await expect(checkRateLimit('kontakt:key', limit)).resolves.toBe(true)
     await expect(checkRateLimitFailClosed('login:key', limit)).resolves.toBe(false)
+  })
+})
+
+describe('booking PIN limits', () => {
+  it('har separata snåla start-, resend- och verify-buckets', () => {
+    expect(LIMITS.bookingPinStart).toEqual({ max: 5, windowSecs: 300 })
+    expect(LIMITS.bookingPinResend).toEqual({ max: 3, windowSecs: 300 })
+    expect(LIMITS.bookingPinVerify).toEqual({ max: 10, windowSecs: 300 })
   })
 })

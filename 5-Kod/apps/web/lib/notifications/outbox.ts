@@ -243,6 +243,7 @@ function nextRetryAt(row: ClaimedNotificationOutboxRow, now: Date): string {
 export async function dispatchNotificationOutbox(options: {
   deliver?: NotificationDelivery
   channel?: 'sms'
+  outboxId?: string
   limit?: number
   leaseSeconds?: number
   now?: Date
@@ -254,15 +255,44 @@ export async function dispatchNotificationOutbox(options: {
 
   const now = options.now ?? new Date()
   const leaseToken = crypto.randomUUID()
-  const claimRpc = options.channel === 'sms'
-    ? 'claim_sms_notification_outbox'
-    : 'claim_notification_outbox'
-  const { data, error } = await admin.rpc(claimRpc, {
-    p_lease_token: leaseToken,
-    p_now: now.toISOString(),
-    p_lease_seconds: options.leaseSeconds ?? 120,
-    p_limit: options.limit ?? 50,
-  })
+  let data: unknown
+  let error: { message: string } | null
+  if (options.outboxId) {
+    type ClaimByIdRpc = {
+      rpc: (
+        name: 'claim_notification_outbox_by_id',
+        args: {
+          p_id: string
+          p_lease_token: string
+          p_now: string
+          p_lease_seconds: number
+        },
+      ) => Promise<{ data: unknown; error: { message: string } | null }>
+    }
+    const result = await (admin as unknown as ClaimByIdRpc).rpc(
+      'claim_notification_outbox_by_id',
+      {
+        p_id: options.outboxId,
+        p_lease_token: leaseToken,
+        p_now: now.toISOString(),
+        p_lease_seconds: options.leaseSeconds ?? 120,
+      },
+    )
+    data = result.data
+    error = result.error
+  } else {
+    const claimRpc = options.channel === 'sms'
+      ? 'claim_sms_notification_outbox'
+      : 'claim_notification_outbox'
+    const result = await admin.rpc(claimRpc, {
+      p_lease_token: leaseToken,
+      p_now: now.toISOString(),
+      p_lease_seconds: options.leaseSeconds ?? 120,
+      p_limit: options.limit ?? 50,
+    })
+    data = result.data
+    error = result.error
+  }
   if (error) {
     logger.warn('outbox.claim_failed', { error: error.message })
     throw new Error('outbox_claim_failed')
@@ -394,6 +424,17 @@ export async function dispatchNotificationOutbox(options: {
 
   logger.info('outbox.dispatch', run)
   return run
+}
+
+/** Dispatch the exact event returned by the atomic verified-booking RPC. */
+export async function dispatchNotificationOutboxById(
+  outboxId: string,
+  deliver: NotificationDelivery,
+): Promise<OutboxDispatchRun> {
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(outboxId)) {
+    throw new Error('outbox_id_invalid')
+  }
+  return dispatchNotificationOutbox({ outboxId, deliver })
 }
 
 export type OutboxWrite = {

@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-20.
+Senast uppdaterad: 2026-07-21.
 
 ## Läsordning
 
@@ -19,7 +19,7 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 - Produktionens boknings-, schema- och personalgrund är live. Inställningar v2 och
   Frisöradmin PWA driftsattes 2026-07-17. Produktionsdatabasen är numeriskt
-  avstämd och runtime-verifierad genom migration `0117`; checkpoint och bevis
+  avstämd och runtime-verifierad genom migration `0118`; checkpoint och bevis
   finns i `5-Kod/docs/ops/database-migration-drift.md`.
 - Superadmin v2 och partnerrollen är live på Worker-version
   `5613f4bb-a4ed-4665-bb6a-b5175ce7cae3` från `main`-SHA `88d59b5`
@@ -72,7 +72,8 @@ tenant och ett testfall, aldrig produktdefinitionen.
   bokbara starter och frånvaro; Scheman är platsens öppettider + teamöversikt och
   länkar vidare till personkortet. Ägarkonto kan länkas via kanoniska
   `staff.profile_id`; döda självservice-länkar döljs utan aktiv personalkoppling.
-- Goal-73 för kundadminens mobilchrome och kalendergester finns och är aktiv.
+- Goal-73 för kundadminens mobilchrome och kalendergester är implementerad och
+  mekaniskt verifierad men väntar på Zivars fysiska liveacceptans.
   Mobilkalendern använder hela bokningskortet för långtryck och drag; inget separat
   touch-handtag finns. Kalendern visar måltid/resurs och kräver bekräftelse innan
   skrivning. Dagvyn landar vid schemats start utan fördröjda vertikala hopp och
@@ -80,6 +81,19 @@ tenant och ett testfall, aldrig produktdefinitionen.
   eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
   innehåller även keyboard-safe kalenderträffar och explicit Ja/Nej till
   kundmeddelande vid flytt. Goal-73 arkiveras inte förrän Zivar godkänt den live.
+- Goal-74 är den aktiva byggdelen och är implementerad på
+  `codex/pin-booking-sim-fallback`: publik bokning kräver PIN via direkt SMS när
+  Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
+  Challenge + hold + anonym PIN-outbox samt PIN-verifierad bokning +
+  bekräftelse-outbox är atomiska; de exakta raderna CAS-claimas och dispatchas
+  direkt, överlappande holds serialiseras per tenant/personal och den gamla
+  overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
+  fel, produktionsbuild, SQL-parser och gateway 54 tester är gröna. Migration `0118` är
+  applicerad och produktionsverifierad; Worker och gatewayrevision är ännu inte
+  driftsatta, och e-post- samt SIM-canary återstår.
+  Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
+  och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
+  `6-Testing/goal-74-pin-bokning-testlista.md`.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
@@ -94,16 +108,16 @@ Goal-72 Superadmin v2 S1–S7 är implementerad, oberoende granskad och driftsat
 kommunikation, drift, workspace/genvägar, PII, tvåstegsarm, sann statistik,
 kundkortets master–detalj, mobilparitet, IA-svängen till `/kunder` +
 `/slutkunder` samt partnerrollen. Automatisk release proof, migrationscheckpoint
-`0117`, Worker-budget och extern oautentiserad prod-rök är gröna. Zivars
+`0118`, Worker-budget och extern oautentiserad prod-rök är gröna. Zivars
 autentiserade manuella acceptans som superadmin och en verklig partner återstår,
 så goal-72 ligger kvar i `goals/` tills dess. Det senast inkomna designpaketet
 `Dagens genomgångar/Mobil pwa/` styr den aktiva goal-73 och är fortsatt designlag.
 Provider-konfigurationen per partner finns, men `SMS_DELIVERY_MODE=off`; provider-dry-run
 och live-SMS är fortsatt separata, uttryckligen godkända driftsteg.
-Direktoperatörsspåret i `1-Planering/18-sms-direktoperator/` är nu planerat men
-blir inte ett konkurrerande aktivt goal medan goal-73 fortfarande pågår. Den
-externa förutsättningen är ett undertecknat svenskt A2P/Bulk-avtal, en aktiv
-SMS-tjänst, dynamiskt alfanumeriskt Sender ID och tekniska testcredentials.
+Direktoperatörsspåret i `1-Planering/18-sms-direktoperator/` byggs nu som goal-74
+mot den befintliga SIM/Giada-transporten med nummerbaserad avsändare och
+e-postfallback. Ett framtida svenskt A2P/Bulk-avtal och godkänt Sender ID byter
+adapter bakom samma kontrakt; det blockerar inte PIN-flödet eller e-postfallbacken.
 
 ## Hårda regler
 

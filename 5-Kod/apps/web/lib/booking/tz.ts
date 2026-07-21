@@ -3,6 +3,9 @@
 // (which ship full ICU). DB stores UTC; the salon's working hours are wall-clock
 // times in the location's IANA timezone (e.g. Europe/Stockholm, DST-aware).
 
+/** Canonical key for the same UTC instant across Postgres and JavaScript ISO formats. */
+export const canonicalInstant = (value: string): string => new Date(value).toISOString()
+
 /**
  * UTC offset (ms) of `timeZone` at the given instant. Computed by asking Intl
  * what wall-clock time the instant maps to in the zone, then diffing against the

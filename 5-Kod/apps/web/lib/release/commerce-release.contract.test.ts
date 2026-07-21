@@ -72,14 +72,25 @@ describe('pilot commerce release fence', () => {
       path.resolve(web, '..', '..', 'supabase', 'migrations', '0103_storefront_booking_release_truth.sql'),
       'utf8',
     )
+    const pinMigration = fs.readFileSync(
+      path.resolve(
+        web,
+        '..',
+        '..',
+        'supabase',
+        'migrations',
+        '0118_pin_booking_verification.sql',
+      ),
+      'utf8',
+    )
     expect(migration).toContain('p_online_payment_released boolean default false')
     expect(migration).toContain('new.requires_online_payment := v_online_payment_released and v_online_pay')
     expect(migration).toContain('v_require_approval or new.requires_online_payment')
     expect(migration).toContain('requires_online_payment boolean not null default false')
     expect(migration).toContain('returns table (booking_id uuid, requires_payment boolean, booking_status text)')
-    expect(source).toContain('requiresPayment: Boolean(rpcRow.requires_payment)')
-    expect(source).toContain("rpcRow.booking_status === 'confirmed'")
-    expect(source).toContain("'booking_request_received'")
+    expect(source).toContain('requiresPayment: Boolean(row.requires_payment)')
+    expect(source).toContain("row.booking_status === 'confirmed'")
+    expect(pinMigration).toContain("then 'booking_confirmation' else 'booking_request_received' end")
     expect(source).not.toContain('getPaymentGate')
   })
 

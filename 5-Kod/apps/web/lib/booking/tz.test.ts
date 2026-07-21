@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { zonedTimeToUtc, weekdayOf } from './tz'
+import { canonicalInstant, zonedTimeToUtc, weekdayOf } from './tz'
+
+describe('canonicalInstant', () => {
+  it('ger samma nyckel för Postgres +00:00 och JavaScript Z', () => {
+    expect(canonicalInstant('2026-07-21T07:00:00+00:00')).toBe(
+      '2026-07-21T07:00:00.000Z',
+    )
+  })
+})
 
 describe('zonedTimeToUtc (Europe/Stockholm)', () => {
   it('winter wall time is CET (UTC+1)', () => {

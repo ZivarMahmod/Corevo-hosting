@@ -1,5 +1,9 @@
 # SMS / 46elks — aktivering, canary och rollback
 
+> Goal-74:s aktuella SIM/Giada-PIN-flöde aktiveras enligt
+> `pin-booking-activation.md`. Dokumentet nedan bevarar 46elks-spårets historiska,
+> fortsatt avstängda grindar och ska inte användas för att aktivera Giada.
+
 > **Strategiskt ersättningsbeslut 2026-07-20:** 46elks-koden nedan beskriver den
 > befintliga, fortsatt avstängda transporten. Den ska inte bli Corevos långsiktiga
 > produktionsväg och ska inte aktiveras i väntan på egen gateway med direkt
