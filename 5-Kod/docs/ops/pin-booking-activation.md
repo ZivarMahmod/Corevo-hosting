@@ -1,6 +1,6 @@
 # PIN-verifierad bokning — aktivering och drift
 
-Gäller goal-74. Migration `0118` och Worker-version
+Gäller goal-74. Migrationerna `0118–0119` och Worker-version
 `0d440c6f-fbfa-433a-b8f5-c5f39f72d3da` driftsattes 2026-07-21 genom deploy-run
 `29840569825`. Produktions-Workern har server-only Giada-bas och en separat
 API-nyckel. Med frånkopplat modem nådde ett liveprov FreshCuts kontaktsteg och
@@ -17,9 +17,11 @@ inget köjobb och lämnade kön på noll. `sms.corevo.se/health` rapporterade sa
 `status=ok`, `send_enabled=false`, `modem_online=false` och tom kö. Därefter
 accepterades exakt ett maskerat canary-SMS av mobilnätet och Zivar bekräftade
 mottagandet. `COREVO_LIVE_SEND_ENABLED=true` aktiverades; publik health visar nu
-`send_enabled=true`, `modem_online=true` och tom kö. En ny FreshCut-session visar
-Namn + Telefon utan att skapa en bokning. E-postens verkliga leveranscanary och
-en fullständig PIN-bokning återstår.
+`send_enabled=true`, `modem_online=true` och tom kö. Migration `0119` rättade
+den omedelbara outbox-claimen. Ett nytt Demo-prov skickade PIN via gatewayens
+API, fick `sent` i både Supabase och Giada och visade fältet **Verifieringskod**.
+Provet avbröts före bokning. E-postens verkliga leveranscanary och en fullständig
+PIN-finalisering återstår.
 
 ## Verkligt dataflöde
 
@@ -107,8 +109,9 @@ driftlogg eller dokument.
    canary-SMS; mobilnätet accepterade det och Zivar bekräftade mottagandet.
 7. **Klar 2026-07-21:** `COREVO_LIVE_SEND_ENABLED=true`; API och worker är
    omstartade och publik health visar `modem_online=true` med färsk tid.
-8. **Delvis klar 2026-07-21:** en ny bokningssession visar mobilnummer. Genomför
-   fortfarande en enda demo-bokning genom PIN, DB, outbox och Giada.
+8. **Delvis klar 2026-07-21:** en ny Demo-session skickade PIN genom DB, outbox
+   och Giada och visade PIN-fältet. Testet backades ur och skapade ingen bokning;
+   slutlig PIN-inmatning och bokningsskapande återstår.
 
 SIM-spåret visar telefonnummer som avsändare. `FRESHCUT` eller annat
 alfanumeriskt tenantnamn kräver ett framtida godkänt A2P/REST- eller SMPP-avtal.

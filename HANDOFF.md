@@ -19,7 +19,7 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 - Produktionens boknings-, schema- och personalgrund är live. Inställningar v2 och
   Frisöradmin PWA driftsattes 2026-07-17. Produktionsdatabasen är numeriskt
-  avstämd och runtime-verifierad genom migration `0118`; checkpoint och bevis
+  avstämd och runtime-verifierad genom migration `0119`; checkpoint och bevis
   finns i `5-Kod/docs/ops/database-migration-drift.md`.
 - Superadmin v2 och partnerrollen är live på Worker-version
   `5613f4bb-a4ed-4665-bb6a-b5175ce7cae3` från `main`-SHA `88d59b5`
@@ -96,13 +96,15 @@ tenant och ett testfall, aldrig produktdefinitionen.
   bekräftelse-outbox är atomiska; de exakta raderna CAS-claimas och dispatchas
   direkt, överlappande holds serialiseras per tenant/personal och den gamla
   overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
-  fel, produktionsbuild, SQL-parser och gateway 77 tester är gröna. Migration `0118`
-  och Worker är produktionsverifierade. Efter fysisk RM550V-kallstart nådde ett
+  fel, produktionsbuild, SQL-parser och gateway 77 tester är gröna. Migrationerna
+  `0118–0119` och Worker är produktionsverifierade. `0119` rättar den omedelbara
+  PIN-outbox-claimen som tidigare stannade före Giada. Efter fysisk RM550V-kallstart nådde ett
   liveprov FreshCuts verkliga lediga tider den 22 juli. Före aktivering visades
   Namn + E-post. Efter mottagen SIM-canary och aktiverad sändgrind visar en ny
-  bokningssession Namn + Telefon; publik health visar `modem_online=true`,
-  `send_enabled=true` och tom kö. En riktig e-postleverans och en fullständig
-  PIN-bokning genom DB, outbox och Giada återstår.
+  bokningssession Namn + Telefon. Ett Demo-prov skickade därefter PIN genom DB,
+  outbox och Giada, visade PIN-fältet och avslutades utan bokning; gatewayen
+  bekräftade `sent`. En riktig e-postleverans och en fullständig PIN-finalisering
+  till skapad bokning återstår.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
   `6-Testing/goal-74-pin-bokning-testlista.md`.

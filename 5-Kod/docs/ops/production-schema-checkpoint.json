@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "0118",
-  "observedHistoryLatest": "0118",
+  "requiredLatest": "0119",
+  "observedHistoryLatest": "0119",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-07-21T13:34:44Z",
+  "verifiedAt": "2026-07-21T17:27:16Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:c3d0c1f6507e1633d41ff1c4854aa8ef3a1b8297c24a780596e36907aaebe44c",
-  "verificationEvidence": "docs/ops/database-migration-drift.md#pin-bokning-0118-2026-07-21",
+  "migrationFingerprint": "sha256:747df86d6bea021be61094557137e1817901ed84d3909b06e36c267a053fdde2",
+  "verificationEvidence": "docs/ops/database-migration-drift.md#pin-claim-hotfix-0119-2026-07-21",
   "reason": null
 }
