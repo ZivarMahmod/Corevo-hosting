@@ -20,6 +20,7 @@ befintliga 15-minuterskörningen för schemalagda notifieringar.
 
 - Klartext-PIN finns bara i serverminnet under det omedelbara transportanropet.
 - PIN gäller i fem minuter, max fem försök och resend tidigast efter 30 sekunder.
+- PIN-utskick begränsas fail-closed både per IP och per kontaktmål/challenge.
 - Fel, utgången eller redan använd PIN kan aldrig skapa en bokning.
 - Challenge, hold, bokning och outboxevent har en atomisk DB-sanning.
 - `notifications_outbox` är fortsatt enda durabla notifieringsledgern.

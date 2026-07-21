@@ -37,5 +37,7 @@ describe('public booking PIN action contract', () => {
     expect(source).toContain('LIMITS.bookingPinResend')
     expect(source).toContain('LIMITS.bookingPinVerify')
     expect(source).toContain('checkRateLimitFailClosed')
+    expect(source).toContain("rateLimitKey(bucket, ctx.tenantId, 'ip', ip)")
+    expect(source).toContain("rateLimitKey(bucket, ctx.tenantId, 'target', limiterPart)")
   })
 })

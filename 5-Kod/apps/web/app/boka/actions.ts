@@ -578,10 +578,11 @@ async function startBookingVerificationInternal(
   const limit = previous ? LIMITS.bookingPinResend : LIMITS.bookingPinStart
   const bucket = previous ? 'booking-pin-resend' : 'booking-pin-start'
   const limiterPart = previous?.challengeId ?? contactDigest.slice(0, 24)
-  if (!(await checkRateLimitFailClosed(
-    rateLimitKey(bucket, ctx.tenantId, ip, limiterPart),
-    limit,
-  ))) {
+  const [ipAllowed, targetAllowed] = await Promise.all([
+    checkRateLimitFailClosed(rateLimitKey(bucket, ctx.tenantId, 'ip', ip), limit),
+    checkRateLimitFailClosed(rateLimitKey(bucket, ctx.tenantId, 'target', limiterPart), limit),
+  ])
+  if (!ipAllowed || !targetAllowed) {
     return { ok: false, reason: 'rate_limited', message: 'För många försök. Vänta en stund och försök igen.' }
   }
 

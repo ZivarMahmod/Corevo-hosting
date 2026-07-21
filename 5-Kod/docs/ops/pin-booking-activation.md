@@ -37,6 +37,9 @@ crontrigger har skapats.
 
 - PIN är sex siffror, gäller fem minuter, kan provas högst fem gånger och kan
   skickas om tidigast efter 30 sekunder.
+- Start och omskick begränsas fail-closed i två separata lager: per klient-IP
+  och per maskerat kontaktmål/challenge. Byte av nummer eller IP kringgår därför
+  inte utskicksgränsen.
 - Klartext-PIN finns endast i serverminnet medan transportanropet görs. Databasen
   lagrar HMAC-digest, maskerad kontakt och leveransstatus.
 - En tids-hold skapas tillsammans med challenge och visas som upptagen för andra.
