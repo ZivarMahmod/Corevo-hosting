@@ -40,6 +40,9 @@
   nya FK-/unused-indexnotiser är informationsnivå före faktisk trafik.
 - Releaseinventeringen verifierades med fingeravtrycket
   `sha256:c3d0c1f6507e1633d41ff1c4854aa8ef3a1b8297c24a780596e36907aaebe44c`.
+- Merge-SHA `e5b2db4` passerade main-CI `29835690511` och driftsattes genom
+  produktionsrun `29836132825`; schema-, secret-, domän- och externa smoke-grindar
+  passerade före och efter Worker-version `37cbbc09-57d0-4b14-9f7c-a4e80a4cae3f`.
 
 ## Superadmin v2-avstämning 2026-07-18 (`0110–0117`)
 
