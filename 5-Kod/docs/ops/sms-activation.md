@@ -15,7 +15,7 @@
 ## Giada-grund driftsatt 2026-07-21
 
 Den lokala gatewaygrunden är installerad på Giada från
-`ZivarMahmod/corevo-sms` `master`-SHA `0b27d50`:
+`ZivarMahmod/corevo-sms` `master`-SHA `8f136e7`:
 
 - API och ensam modem-worker är aktiva; den tidigare Supabase-pollern är
   borttagen ur koden och maskerad i systemd.
@@ -31,18 +31,18 @@ Den lokala gatewaygrunden är installerad på Giada från
 Verifiering på Giada: 77 tester passerade; API-hälsan var `ok`, kön hade noll
 väntande jobb och update/health/backup rapporterade `success`. RM550V-GL är
 registrerad på Tele2 med LTE/5G, stark signal och SMS-stöd. Ingen databärare finns,
-WWAN är `unmanaged` och internet går via kabel-LAN `eno1`. Inget SMS skickades.
+WWAN är `unmanaged` och internet går via kabel-LAN `eno1`.
 
 Produktions-Workern är nu kopplad till Giada med en separat API-identitet och
 server-only secrets. Gatewayen får aldrig Supabase-credentials eller claima
 affärskön själv. Ett autentiserat offlineprov gav `503 modem_offline` utan lokalt
-köjobb. `COREVO_LIVE_SEND_ENABLED=false` maskerar fortfarande den publika
-modemstatusen som offline, så e-postfallbacken förblir aktiv tills ett uttryckligt
-canary-SMS har godkänts.
+köjobb. Efter Zivars uttryckliga godkännande accepterades ett maskerat canary-SMS
+av mobilnätet och bekräftades mottaget. `COREVO_LIVE_SEND_ENABLED=true`; publik
+health visar modemet online och bokningssidan visar telefonfältet.
 
 RM550V-stödet, den fysiska sändgrinden och strikt SMS-only nätisolering är
-installerade och hårdvaruverifierade. Gatewayprovidern rapporterar modemet online,
-men sändgrinden är fortsatt av. Den enda fysiska canaryn görs enligt
+installerade och hårdvaruverifierade. Gatewayprovidern och den publika healthen
+rapporterar modemet online. Fullständig PIN-bokningscanary görs enligt
 `pin-booking-activation.md`.
 
 Status 2026-07-18: transport och delivery-webhook är byggda men **fysiskt AV** i

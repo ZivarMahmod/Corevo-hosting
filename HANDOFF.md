@@ -44,9 +44,9 @@ tenant och ett testfall, aldrig produktdefinitionen.
   ett separat designpaket och ska inte beskrivas som en 04-lucka.
 - Första kundens relationspaket ligger samlat på `main`: säker gäst→kund-claim,
   kund-/personalrelation, sann bokningsstatus, durable notifieringsoutbox,
-  notifieringscron, driftgrindar och fail-closed handel. Skarpt SMS är byggt bakom
-  tre grindar men `SMS_DELIVERY_MODE=off`; inget provideranrop ska ske före Zivars
-  separata canarybeslut.
+  notifieringscron, driftgrindar och fail-closed handel. Det historiska
+  46elks-spåret ligger fortsatt bakom tre grindar med `SMS_DELIVERY_MODE=off`;
+  Giadas separata SIM-transport aktiverades först efter Zivars godkända canary.
 - Zivar har låst den långsiktiga SMS-riktningen: Corevo ska äga gateway och kod,
   utan CPaaS-återförsäljare, och ansluta direkt till en operatörs A2P/Bulk-SMSC
   via direkt REST först när kraven klaras, annars SMPP på ett bevisat behov.
@@ -57,9 +57,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
   Operatörsbeställning, SMPP-arkitektur, Sender ID-policy, PIN före bokning,
   magic-link/PWA-flöde och Claude-handoff finns i
   `1-Planering/18-sms-direktoperator/`. `notifications_outbox` förblir enda kö;
-  ingen parallell `sms_jobs` får byggas. Inget SMS har aktiverats av beslutet.
+  ingen parallell `sms_jobs` får byggas. Direkt A2P/Sender ID är inte aktiverat;
+  det nu aktiva SIM-spåret använder nummerbaserad avsändare.
 - Giadas lokala SMS-gateway är driftsatt 2026-07-21 från
-  `ZivarMahmod/corevo-sms` `master`-SHA `0b27d50`. API och modem-worker är aktiva;
+  `ZivarMahmod/corevo-sms` `master`-SHA `8f136e7`. API och modem-worker är aktiva;
   den gamla Supabase-pollern är maskerad. Read-only deploy-nyckel, fast-forward-
   uppdatering var femte minut med test/rollback, hälsokontroll varje minut, daglig
   SQLite-backup och Huawei-route/DNS-skydd är installerade. Claude Code finns på
@@ -69,8 +70,9 @@ tenant och ett testfall, aldrig produktdefinitionen.
   SMS-only radioaktivering är installerade och verifierade med 77 gröna tester
   på både Windows och Giada/Linux. RM550V-GL är registrerad på Tele2 med LTE/5G,
   stark signal och SMS-stöd; ingen databärare finns, WWAN är `unmanaged` och
-  internet går via kabel-LAN `eno1`. `COREVO_LIVE_SEND_ENABLED=false` håller
-  sändning fysiskt avstängd och den publika kön är tom. Inget SMS har skickats.
+  internet går via kabel-LAN `eno1`. Ett maskerat canary-SMS accepterades av
+  mobilnätet och bekräftades mottaget av Zivar. `COREVO_LIVE_SEND_ENABLED=true`;
+  publik health visar modemet online och kön är tom.
 - Personalpanelen är härdad: oförändrade formulär ger inget falskt fel,
   kalenderfärg skickas explicit och historisk personal kan inte erbjudas permanent
   radering. Personkortet äger nu personens bokningsbarhet, tjänster, arbetspass,
@@ -96,11 +98,11 @@ tenant och ett testfall, aldrig produktdefinitionen.
   overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
   fel, produktionsbuild, SQL-parser och gateway 77 tester är gröna. Migration `0118`
   och Worker är produktionsverifierade. Efter fysisk RM550V-kallstart nådde ett
-  nytt liveprov FreshCuts verkliga lediga tider den 22 juli och visade endast
-  Namn + E-post, utan mobilfält, eftersom sändgrinden är av. Gatewayens adapter
-  ser samtidigt modemet som online; publik health maskerar det avsiktligt till
-  `modem_online=false`, `send_enabled=false` och tom kö. En riktig
-  e-postleverans, exakt en godkänd SIM-canary och därefter en PIN-bokning återstår.
+  liveprov FreshCuts verkliga lediga tider den 22 juli. Före aktivering visades
+  Namn + E-post. Efter mottagen SIM-canary och aktiverad sändgrind visar en ny
+  bokningssession Namn + Telefon; publik health visar `modem_online=true`,
+  `send_enabled=true` och tom kö. En riktig e-postleverans och en fullständig
+  PIN-bokning genom DB, outbox och Giada återstår.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
   `6-Testing/goal-74-pin-bokning-testlista.md`.
