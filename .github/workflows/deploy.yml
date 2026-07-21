@@ -210,16 +210,22 @@ jobs:
             --input "$RUNNER_TEMP/wrangler-dry-run.txt" \
             --max-gzip-bytes 3145728
 
-      - name: Require e-mail fallback and set PIN pepper
+      - name: Require delivery secrets and set Worker runtime secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           BOOKING_PIN_PEPPER: ${{ secrets.BOOKING_PIN_PEPPER }}
+          GIADA_SMS_BASE_URL: ${{ secrets.GIADA_SMS_BASE_URL }}
+          GIADA_SMS_API_KEY: ${{ secrets.GIADA_SMS_API_KEY }}
         run: |
           test -n "$BOOKING_PIN_PEPPER"
+          test -n "$GIADA_SMS_BASE_URL"
+          test -n "$GIADA_SMS_API_KEY"
           pnpm --filter @corevo/web exec wrangler secret list --format json > "$RUNNER_TEMP/worker-secrets.json"
           node -e "const s=require(process.argv[1]); for (const n of ['EMAIL_RELAY_URL','EMAIL_RELAY_SECRET']) if (!s.some(x=>x.name===n)) throw Error('missing '+n)" "$RUNNER_TEMP/worker-secrets.json"
           printf '%s' "$BOOKING_PIN_PEPPER" | pnpm --filter @corevo/web exec wrangler secret put BOOKING_PIN_PEPPER
+          printf '%s' "$GIADA_SMS_BASE_URL" | pnpm --filter @corevo/web exec wrangler secret put GIADA_SMS_BASE_URL
+          printf '%s' "$GIADA_SMS_API_KEY" | pnpm --filter @corevo/web exec wrangler secret put GIADA_SMS_API_KEY
 
       # fix-35 — deploy via deploy-prod.mjs, NOT bare `wrangler deploy`. Customer domains
       # now live in COMMITTED wrangler.jsonc (top-level routes[], alongside the 3 fixed
