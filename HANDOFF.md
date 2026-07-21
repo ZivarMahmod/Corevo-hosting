@@ -84,10 +84,11 @@ tenant och ett testfall, aldrig produktdefinitionen.
 - Goal-74 är den aktiva byggdelen och är implementerad på
   `codex/pin-booking-sim-fallback`: publik bokning kräver PIN via direkt SMS när
   Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
-  Challenge + hold samt PIN-verifierad bokning + notifieringsoutbox är atomiska;
-  exakt bekräftelserad dispatchas direkt och den gamla overifierade create-vägen
-  är borttagen. Web 2 193 tester, typecheck, lint utan fel, produktionsbuild,
-  SQL-parser och gateway 54 tester är gröna. Migration, Worker och
+  Challenge + hold + anonym PIN-outbox samt PIN-verifierad bokning +
+  bekräftelse-outbox är atomiska; de exakta raderna CAS-claimas och dispatchas
+  direkt, överlappande holds serialiseras per tenant/personal och den gamla
+  overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
+  fel, produktionsbuild, SQL-parser och gateway 54 tester är gröna. Migration, Worker och
   gatewayrevision är ännu inte driftsatta; e-post- och SIM-canary återstår.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och

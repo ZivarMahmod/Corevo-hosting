@@ -37,6 +37,8 @@ befintliga 15-minuterskörningen för schemalagda notifieringar.
 
 - Riktade TDD-test för Giada API/auth, health, HMAC/PIN, rate limits, holds,
   atomisk finalize, actions, UI och omedelbar outboxdispatch.
+- Ett tvåklientstest i staging bevisar att olika men överlappande starter för
+  samma personal serialiseras; körs efter att migrationen applicerats.
 - Full web-Vitest, typecheck, lint och build.
 - Full gateway-pytest.
 - Manuell e-postfallback-canary utan modem.
@@ -54,7 +56,7 @@ Driftordning och manuella canary-steg finns i
 `6-Testing/goal-74-pin-bokning-testlista.md`. Ingen migration eller Worker-version
 är driftsatt av implementationen.
 
-Mekaniskt bevis 2026-07-21: web 270 testfiler/2 194 tester, typecheck,
-lint utan fel och Next-produktionsbuild passerar; migrationen parsas som 29
+Mekaniskt bevis 2026-07-21: web 271 testfiler/2 197 tester, typecheck,
+lint utan fel och Next-produktionsbuild passerar; migrationen parsas som 30
 PostgreSQL-statements; gateway 54/54 tester passerar. Lintens sju varningar är
 befintliga och ligger utanför goal-74:s filer.

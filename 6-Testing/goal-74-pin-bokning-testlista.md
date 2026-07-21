@@ -37,8 +37,8 @@ en ledig tid. Produktion och skarpt SMS kräver separat godkännande.
 - [ ] Använd endast det godkända canary-numret och boka en verklig demotid.
 - [ ] PIN-SMS kommer direkt och innehåller rätt tenantnamn och fem minuters giltighet.
 - [ ] Rätt PIN skapar exakt en bokning; bekräftelse-SMS kommer direkt.
-- [ ] Giada visar samma stabila nycklar `pin:<challenge-id>` och
-      `outbox:<outbox-id>` utan dubbla modemjobb.
+- [ ] Giada visar stabila nycklar `outbox:<outbox-id>` för både PIN och
+      bekräftelse utan dubbla modemjobb.
 - [ ] Kontrollera sann status i bokning, `notifications_outbox` och Giadas journal.
 - [ ] Bekräfta uttryckligen att SIM-SMS visar nummerbaserad avsändare; namn väntar
       på framtida A2P-avtal.
@@ -51,6 +51,21 @@ en ledig tid. Produktion och skarpt SMS kräver separat godkännande.
 - [ ] Låt modemet dö efter att telefonsteget visats men före PIN-send. Ingen
       bokning ska skapas, holden ska släppas och UI ska erbjuda e-postvägen.
 - [ ] Återställ Giada och ladda om sidan. SMS-vägen ska återkomma utan kodändring.
+
+## E. Samtidiga överlappande holds i staging
+
+- [ ] Applicera PIN-migrationen i staging och exportera
+      `NEXT_PUBLIC_SUPABASE_URL` samt `SUPABASE_SERVICE_ROLE_KEY` lokalt.
+- [ ] Kör från `5-Kod/`:
+      `node supabase/tests/concurrent_overlapping_holds.mjs`.
+- [ ] Kontrollera `PASS`: två separata klienter begär starter 15 minuter isär
+      för samma 30-minuterstjänst; exakt en hold lyckas och den andra får `23P01`.
+- [ ] Kontrollera att testets `finally` har släppt den vinnande holden.
+
+PIN-outboxraden innehåller bara challenge-ID, mall och kanal — aldrig klar PIN
+eller full kontakt. Den exakta raden claimas med CAS i samma webbrequest och har
+max ett transportförsök. En övergiven rad blir synlig för ordinarie städning först
+när PIN-koden redan har gått ut och kan då inte skickas.
 
 ## Godkännandebevis
 

@@ -15,6 +15,7 @@ describe('public booking PIN action contract', () => {
 
   it('starts and records delivery through the private service-role contract', () => {
     expect(source).toMatch(/\.rpc\(\s*'start_booking_verification'/)
+    expect(source).toContain('dispatchNotificationOutboxById(row.pin_outbox_id')
     expect(source).toContain('deliverBookingPin({')
     expect(source).toMatch(/\.rpc\(\s*'record_booking_verification_delivery'/)
     expect(source).toMatch(/\.rpc\(\s*'release_slot_hold'/)

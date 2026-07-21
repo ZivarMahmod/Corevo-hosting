@@ -404,6 +404,7 @@ type RpcError = { code?: string; message?: string }
 type StartVerificationRow = {
   challenge_id: string
   hold_id: string
+  pin_outbox_id: string
   expires_at: string
   resend_after: string
 }
@@ -429,7 +430,7 @@ type StartVerificationRpc = {
 type DeliveryVerificationRpc = {
   rpc: (
     name: 'record_booking_verification_delivery',
-    args: { p_challenge: string; p_session_token: string; p_delivered: boolean },
+    args: { p_challenge: string; p_session_token: string },
   ) => Promise<{ data: boolean | null; error: RpcError | null }>
 }
 
@@ -615,7 +616,7 @@ async function startBookingVerificationInternal(
   const { data, error } = startResult
   if (error) return startRpcError(error)
   const row = data?.[0]
-  if (!row?.challenge_id || !row.expires_at || !row.resend_after) {
+  if (!row?.challenge_id || !row.pin_outbox_id || !row.expires_at || !row.resend_after) {
     await safeReleaseSlotHold(writer, {
       p_staff: input.staffId,
       p_start: startISO,
@@ -624,17 +625,40 @@ async function startBookingVerificationInternal(
     return { ok: false, reason: 'error', message: 'Kunde inte skapa verifieringen. Försök igen.' }
   }
 
-  let delivery: Awaited<ReturnType<typeof deliverBookingPin>>
+  let deliveryAccepted = false
   try {
-    delivery = await deliverBookingPin({
-      channel,
-      contact,
-      pin,
-      challengeId: row.challenge_id,
-      tenantName: ctx.name,
+    const run = await dispatchNotificationOutboxById(row.pin_outbox_id, async (claimed) => {
+      if (
+        claimed.event_type !== 'booking_verification_pin'
+        || claimed.chosen_channel !== channel
+      ) return { status: 'failed', reason: 'payload_invalid' }
+
+      const delivery = await deliverBookingPin({
+        channel,
+        contact,
+        pin,
+        outboxId: claimed.id,
+        tenantName: ctx.name,
+      })
+      if (delivery.accepted) {
+        return { status: 'sent', providerRef: delivery.providerRef }
+      }
+      if (
+        delivery.reason === 'disabled'
+        || delivery.reason === 'offline'
+        || delivery.reason === 'transport_unavailable'
+      ) return { status: 'skipped', reason: 'transport_off' }
+      if (delivery.reason === 'rejected' || delivery.reason === 'unauthorized') {
+        return { status: 'failed', reason: 'provider_rejected' }
+      }
+      return { status: 'failed', reason: 'delivery_uncertain' }
     })
+    deliveryAccepted = run.sent === 1
   } catch {
-    delivery = { accepted: false, reason: 'transport_error' }
+    logger.warn('booking_verification.pin_dispatch_failed', {
+      outboxId: row.pin_outbox_id,
+      error: 'pin_dispatch_failed',
+    })
   }
   let recorded: Awaited<ReturnType<DeliveryVerificationRpc['rpc']>>
   try {
@@ -643,14 +667,13 @@ async function startBookingVerificationInternal(
       {
         p_challenge: row.challenge_id,
         p_session_token: sessionToken,
-        p_delivered: delivery.accepted,
       },
     )
   } catch {
     logger.warn('booking_verification.delivery_record_failed', { error: 'delivery_record_transport_failed' })
     recorded = { data: false, error: { code: 'transport_error' } }
   }
-  if (!delivery.accepted || recorded.error || recorded.data !== true) {
+  if (!deliveryAccepted || recorded.error || recorded.data !== true) {
     await safeReleaseSlotHold(writer, {
       p_staff: input.staffId,
       p_start: startISO,

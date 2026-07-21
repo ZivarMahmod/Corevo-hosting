@@ -23,6 +23,7 @@ create table private.booking_verification_challenges (
   expires_at timestamptz not null default (statement_timestamp() + interval '5 minutes'),
   consumed_at timestamptz,
   booking_id uuid references public.bookings(id) on delete set null,
+  pin_outbox_id uuid references public.notifications_outbox(id) on delete set null,
   outbox_id uuid references public.notifications_outbox(id) on delete set null,
   created_at timestamptz not null default statement_timestamp(),
   updated_at timestamptz not null default statement_timestamp(),
@@ -277,6 +278,115 @@ grant execute on function public.get_public_bookable_starts(
   uuid,uuid,uuid,uuid[],timestamptz[]
 ) to anon, authenticated;
 
+-- Serialize every hold decision for one tenant/staff pair. The older helper
+-- locked the exact start instant, which allowed overlapping starts such as
+-- 10:00 and 10:15 to pass their checks concurrently.
+create or replace function public.place_slot_hold(
+  p_tenant_slug text,
+  p_staff uuid,
+  p_service uuid,
+  p_start timestamptz,
+  p_token text,
+  p_ttl_min integer default 5
+) returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_tenant uuid;
+  v_duration integer;
+  v_end timestamptz;
+  v_id uuid;
+begin
+  if p_token is null or pg_catalog.btrim(p_token) = '' or pg_catalog.char_length(p_token) > 200 then
+    raise exception 'invalid_token' using errcode = '22023';
+  end if;
+  if p_ttl_min is null or p_ttl_min <= 0 or p_ttl_min > 60 then
+    raise exception 'invalid_ttl' using errcode = '22023';
+  end if;
+  if p_start < pg_catalog.now() - interval '2 minutes' then
+    raise exception 'start_in_past' using errcode = '22023';
+  end if;
+
+  select t.id into v_tenant
+    from public.tenants t
+   where t.slug = pg_catalog.lower(pg_catalog.btrim(p_tenant_slug))
+     and t.status = 'active';
+  if v_tenant is null then
+    raise exception 'unknown_or_inactive_tenant' using errcode = 'P0002';
+  end if;
+
+  select s.duration_min into v_duration
+    from public.services s
+   where s.id = p_service
+     and s.tenant_id = v_tenant
+     and s.active = true;
+  if v_duration is null then
+    raise exception 'invalid_service' using errcode = 'P0002';
+  end if;
+
+  if not exists (
+    select 1
+      from public.staff st
+      join public.staff_services ss
+        on ss.tenant_id = st.tenant_id
+       and ss.staff_id = st.id
+       and ss.service_id = p_service
+     where st.id = p_staff
+       and st.tenant_id = v_tenant
+       and st.active = true
+  ) then
+    raise exception 'invalid_staff' using errcode = 'P0002';
+  end if;
+
+  v_end := p_start + pg_catalog.make_interval(mins => v_duration);
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(v_tenant::text || ':' || p_staff::text, 0)
+  );
+
+  if exists (
+    select 1
+      from public.bookings b
+     where b.tenant_id = v_tenant
+       and b.staff_id = p_staff
+       and b.status in ('pending', 'confirmed', 'completed')
+       and pg_catalog.tstzrange(b.start_ts, b.end_ts)
+           && pg_catalog.tstzrange(p_start, v_end)
+  ) then
+    raise exception 'slot_taken' using errcode = '23P01';
+  end if;
+
+  if exists (
+    select 1
+      from public.slot_holds h
+     where h.tenant_id = v_tenant
+       and h.staff_id = p_staff
+       and h.expires_at > pg_catalog.now()
+       and h.session_token <> p_token
+       and pg_catalog.tstzrange(h.start_ts, h.end_ts)
+           && pg_catalog.tstzrange(p_start, v_end)
+  ) then
+    raise exception 'slot_held' using errcode = '23P01';
+  end if;
+
+  insert into public.slot_holds (
+    tenant_id, staff_id, service_id, start_ts, end_ts, session_token, expires_at
+  ) values (
+    v_tenant, p_staff, p_service, p_start, v_end, p_token,
+    pg_catalog.now() + pg_catalog.make_interval(mins => p_ttl_min)
+  )
+  on conflict (staff_id, start_ts, session_token) do update set
+    expires_at = pg_catalog.now() + pg_catalog.make_interval(mins => p_ttl_min),
+    end_ts = excluded.end_ts,
+    service_id = excluded.service_id
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
 -- Create/replace one five-minute challenge and its slot hold in one transaction.
 create or replace function public.start_booking_verification(
   p_tenant_slug text,
@@ -292,6 +402,7 @@ create or replace function public.start_booking_verification(
 ) returns table (
   challenge_id uuid,
   hold_id uuid,
+  pin_outbox_id uuid,
   expires_at timestamptz,
   resend_after timestamptz
 )
@@ -304,6 +415,7 @@ declare
   v_previous private.booking_verification_challenges%rowtype;
   v_hold uuid;
   v_challenge uuid;
+  v_pin_outbox uuid;
   v_expires timestamptz := pg_catalog.statement_timestamp() + interval '5 minutes';
   v_resend timestamptz := pg_catalog.statement_timestamp() + interval '30 seconds';
 begin
@@ -368,14 +480,53 @@ begin
     v_expires, v_resend
   ) returning id into v_challenge;
 
-  return query select v_challenge, v_hold, v_expires, v_resend;
+  -- The durable row deliberately stores no clear PIN and no full recipient.
+  -- Those values exist only in the server action's request memory while this
+  -- exact outbox id is CAS-claimed and delivered.
+  select n.id into v_pin_outbox
+    from public.enqueue_notification(
+      p_tenant => v_tenant,
+      p_customer => null,
+      p_booking => null,
+      p_staff => p_staff,
+      p_event_type => 'booking_verification_pin',
+      p_event_key => 'booking-verification:' || v_challenge::text || ':pin',
+      p_category => 'transactional',
+      p_channel => p_channel,
+      p_fallback_channel => null,
+      p_consent_state => pg_catalog.jsonb_build_object(
+        'category', 'transactional',
+        'verified_channel', false
+      ),
+      p_payload => pg_catalog.jsonb_build_object(
+        'template', 'booking_verification_pin',
+        'challenge_id', v_challenge
+      ),
+      p_max_attempts => 1
+    ) n;
+  if v_pin_outbox is null then
+    raise exception 'booking_verification_pin_outbox_missing' using errcode = 'P0002';
+  end if;
+
+  -- Batch workers must not claim a PIN whose clear value is intentionally not
+  -- durable. The expiry timestamp lets a later worker terminalize an abandoned
+  -- queued row without ever attempting transport.
+  update public.notifications_outbox o
+     set available_at = v_expires
+   where o.id = v_pin_outbox;
+
+  update private.booking_verification_challenges c
+     set pin_outbox_id = v_pin_outbox,
+         updated_at = pg_catalog.statement_timestamp()
+   where c.id = v_challenge;
+
+  return query select v_challenge, v_hold, v_pin_outbox, v_expires, v_resend;
 end;
 $$;
 
 create or replace function public.record_booking_verification_delivery(
   p_challenge uuid,
-  p_session_token uuid,
-  p_delivered boolean
+  p_session_token uuid
 ) returns boolean
 language plpgsql
 security definer
@@ -385,14 +536,29 @@ declare
   v_updated uuid;
 begin
   update private.booking_verification_challenges c
-     set delivery_state = case when p_delivered then 'delivered' else 'failed' end,
+     set delivery_state = case
+           when o.status in ('sent', 'delivered') then 'delivered'
+           else 'failed'
+         end,
          updated_at = pg_catalog.statement_timestamp()
+    from public.notifications_outbox o
    where c.id = p_challenge
      and c.session_token = p_session_token
      and c.consumed_at is null
      and c.expires_at > pg_catalog.statement_timestamp()
+     and o.id = c.pin_outbox_id
+     and o.tenant_id = c.tenant_id
+     and o.event_type = 'booking_verification_pin'
+     and o.status in ('sent', 'delivered', 'failed', 'skipped')
   returning c.id into v_updated;
-  return v_updated is not null;
+  return v_updated is not null and exists (
+    select 1
+      from private.booking_verification_challenges c
+      join public.notifications_outbox o on o.id = c.pin_outbox_id
+     where c.id = v_updated
+       and c.delivery_state = 'delivered'
+       and o.status in ('sent', 'delivered')
+  );
 end;
 $$;
 
@@ -435,6 +601,17 @@ begin
    where h.id = v_challenge.hold_id
      and h.tenant_id = v_tenant
      and h.session_token = p_session_token::text;
+
+  update public.notifications_outbox o
+     set status = 'failed',
+         last_error = 'delivery_failed',
+         lease_token = null,
+         lease_expires_at = null,
+         updated_at = pg_catalog.statement_timestamp()
+   where o.id = v_challenge.pin_outbox_id
+     and o.tenant_id = v_tenant
+     and o.event_type = 'booking_verification_pin'
+     and o.status in ('queued', 'attempting');
 
   update private.booking_verification_challenges c
      set delivery_state = 'failed',
@@ -640,8 +817,8 @@ begin
 end;
 $$;
 
--- The booking request immediately dispatches exactly the outbox row returned by
--- finalize. It must never sweep unrelated tenants/events or wait for a batch cron.
+-- PIN start and verified booking immediately dispatch exactly the outbox id
+-- returned by their RPC. They never sweep unrelated rows or wait for batch cron.
 create or replace function public.claim_notification_outbox_by_id(
   p_id uuid,
   p_lease_token uuid,
@@ -674,11 +851,19 @@ begin
       from public.notifications_outbox o
      where o.id = p_id
        and o.category = 'transactional'
-       and o.event_type in ('booking_confirmation', 'booking_request_received')
+       and o.event_type in (
+         'booking_verification_pin', 'booking_confirmation', 'booking_request_received'
+       )
        and o.chosen_channel in ('sms', 'email')
        and o.attempt_count < o.max_attempts
        and (
-         (o.status = 'queued' and o.available_at <= p_now)
+         (
+           o.status = 'queued'
+           and (
+             o.event_type = 'booking_verification_pin'
+             or o.available_at <= p_now
+           )
+         )
          or (o.status = 'attempting' and o.lease_expires_at <= p_now)
        )
      for update skip locked
@@ -706,7 +891,7 @@ revoke all on function public.start_booking_verification(
   text,uuid,uuid,timestamptz,uuid,text,text,text,text,uuid
 ) from public, anon, authenticated, service_role;
 revoke all on function public.record_booking_verification_delivery(
-  uuid,uuid,boolean
+  uuid,uuid
 ) from public, anon, authenticated, service_role;
 revoke all on function public.cancel_booking_verification(
   text,uuid,uuid
@@ -722,7 +907,7 @@ grant execute on function public.start_booking_verification(
   text,uuid,uuid,timestamptz,uuid,text,text,text,text,uuid
 ) to service_role;
 grant execute on function public.record_booking_verification_delivery(
-  uuid,uuid,boolean
+  uuid,uuid
 ) to service_role;
 grant execute on function public.cancel_booking_verification(
   text,uuid,uuid

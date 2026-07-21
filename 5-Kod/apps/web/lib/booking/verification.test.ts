@@ -68,20 +68,20 @@ describe('booking contact', () => {
 })
 
 describe('deliverBookingPin', () => {
-  it('skickar SMS direkt med challenge-id som stabil idempotens', async () => {
+  it('skickar SMS direkt med outbox-id som stabil idempotens', async () => {
     sendGiadaMessage.mockResolvedValue({ ok: true, id: 42, created: true })
 
     await expect(deliverBookingPin({
       channel: 'sms',
       contact: '+46701234567',
       pin: '123456',
-      challengeId: 'challenge-1',
+      outboxId: 'outbox-1',
       tenantName: 'Demo',
     })).resolves.toEqual({ accepted: true, providerRef: 'giada:42' })
     expect(sendGiadaMessage).toHaveBeenCalledWith({
       to: '+46701234567',
       message: 'Demo: Din verifieringskod är 123456. Koden gäller i 5 minuter.',
-      idempotencyKey: 'pin:challenge-1',
+      idempotencyKey: 'outbox:outbox-1',
     })
   })
 
@@ -92,7 +92,7 @@ describe('deliverBookingPin', () => {
       channel: 'email',
       contact: 'kund@example.com',
       pin: '123456',
-      challengeId: 'challenge-2',
+      outboxId: 'outbox-2',
       tenantName: 'Demo & Co',
     })
 

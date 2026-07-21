@@ -40,6 +40,36 @@ describe('verified public booking migration contract', () => {
     expect(migration).toContain('public.place_slot_hold(')
   })
 
+  it('serializes every overlapping hold for the same tenant and staff member', () => {
+    const holdFunction = migration.match(
+      /create or replace function public\.place_slot_hold[\s\S]*?\n\$\$;/,
+    )?.[0]
+
+    expect(holdFunction).toBeTruthy()
+    expect(holdFunction).toContain(
+      "pg_catalog.hashtextextended(v_tenant::text || ':' || p_staff::text, 0)",
+    )
+    expect(holdFunction).not.toContain("p_staff::text || ':' || p_start::text")
+    expect(holdFunction?.indexOf('pg_advisory_xact_lock')).toBeLessThan(
+      holdFunction?.indexOf('from public.slot_holds') ?? -1,
+    )
+  })
+
+  it('records each PIN attempt in the outbox without persisting PIN or full contact', () => {
+    expect(migration).toContain('pin_outbox_id uuid')
+    expect(migration).toContain("'booking_verification_pin'")
+    expect(migration).toContain("'template', 'booking_verification_pin'")
+    expect(migration).toContain("'challenge_id', v_challenge")
+    expect(migration).toContain('p_max_attempts => 1')
+    expect(migration).toContain('set available_at = v_expires')
+    expect(migration).toMatch(
+      /record_booking_verification_delivery[\s\S]*?o\.id = c\.pin_outbox_id[\s\S]*?o\.status in \('sent', 'delivered'\)/,
+    )
+    expect(migration).not.toMatch(
+      /jsonb_build_object\([\s\S]{0,220}('pin'|'contact'|'phone'|'email')/,
+    )
+  })
+
   it('atomically expires an abandoned challenge and releases only its matching hold', () => {
     expect(migration).toContain('create or replace function public.cancel_booking_verification')
     expect(migration).toContain('v_challenge.session_token <> p_session_token')
@@ -60,6 +90,7 @@ describe('verified public booking migration contract', () => {
     expect(migration).toContain('public.claim_notification_outbox_by_id')
     expect(migration).toContain('where o.id = p_id')
     expect(migration).toContain("o.chosen_channel in ('sms', 'email')")
+    expect(migration).toContain("'booking_verification_pin'")
     expect(migration).toContain('to service_role')
   })
 
