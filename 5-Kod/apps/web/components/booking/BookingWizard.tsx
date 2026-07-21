@@ -6,8 +6,12 @@ import { bookingStatusPresentation } from '@/lib/booking/confirmation-status'
 import { useRouter } from 'next/navigation'
 import {
   getAvailableSlots,
-  createBooking,
+  getBookingContactModeAction,
+  resendBookingVerification,
+  startBookingVerification,
   startBookingCheckout,
+  verifyAndCreateBooking,
+  type BookingVerificationStarted,
   type SlotOption,
 } from '@/app/boka/actions'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
@@ -213,6 +217,10 @@ export function BookingWizard({
   const [slot, setSlot] = useState<SlotOption | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
   const [error, setError] = useState<string | null>(null)
+  const [contactMode, setContactMode] = useState<'sms' | 'email' | null>(null)
+  const [verification, setVerification] = useState<BookingVerificationStarted | null>(null)
+  const [pin, setPin] = useState('')
+  const [clock, setClock] = useState(() => Date.now())
   // Bekräftelse-steget (in-page): satt när bokningen lyckats utan online-betalning.
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [bookingStatus, setBookingStatus] = useState<'pending' | 'confirmed' | null>(null)
@@ -224,6 +232,28 @@ export function BookingWizard({
   const [slotTakenNotice, setSlotTakenNotice] = useState<string | null>(null)
   // Kalender-vyns månadsmarkör: index i calMonths (månader som bokningsfönstret rör).
   const [calCursor, setCalCursor] = useState(0)
+
+  // Giada-health bestämmer vilket ENDA kontaktfält som visas. Servern gör om
+  // kontrollen när koden skickas; ett modem som dör mellan render och klick kan
+  // därför aldrig skapa en SMS-bokning utan levererad kod.
+  useEffect(() => {
+    let active = true
+    getBookingContactModeAction()
+      .then(({ mode: liveMode }) => {
+        if (active) setContactMode(liveMode)
+      })
+      .catch(() => {
+        if (active) setContactMode('email')
+      })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!verification) return
+    setClock(Date.now())
+    const timer = window.setInterval(() => setClock(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [verification])
 
   // Bokningsfönstret (Zivar 2026-07-09: "borde kunna väljas månadsvis …
   // åtminstone några månader fram"): 90 dagar ≈ 3 månader. Tiderna hämtas
@@ -379,77 +409,151 @@ export function BookingWizard({
   const requestIdRef = useRef<string | null>(null)
   useEffect(() => {
     requestIdRef.current = null
+    setVerification(null)
+    setPin('')
   }, [slot])
 
-  function submit() {
+  function selectedContact(): string {
+    return contactMode === 'sms' ? form.phone : form.email
+  }
+
+  async function finishCreatedBooking(res: Extract<Awaited<ReturnType<typeof verifyAndCreateBooking>>, { ok: true }>) {
+    // Online-betalning på (payments_enabled && charges_enabled) → Stripe Checkout.
+    // Bokningen är redan durabel; ett betalningsfel degraderar till betala på plats.
+    if (res.requiresPayment) {
+      try {
+        const pay = await startBookingCheckout(res.bookingId)
+        if (pay.ok) {
+          window.location.href = pay.url
+          return
+        }
+      } catch {
+        // degradera till betala-på-plats-bekräftelsen
+      }
+    }
+    if (onClose) {
+      setBookingId(res.bookingId)
+      setBookingStatus(res.bookingStatus)
+      setStep(5)
+    } else {
+      router.push(`/boka/bekraftelse/${res.bookingId}`)
+    }
+  }
+
+  function beginVerification() {
     if (!service || !slot) return
+    if (!contactMode) {
+      setError('Vänta ett ögonblick medan vi kontrollerar hur koden ska skickas.')
+      return
+    }
     setError(null)
     if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID()
     startTransition(async () => {
-      // Transport-fel (nät dör mitt i anropet) får ALDRIG bubbla till error-
-      // boundaryn — den unmountar drawern, slänger allt kunden skrivit och
-      // lockar till en OM-bokning fast den första kan ha gått igenom (audit
-      // P0-2/P1-4). Fånga, behåll allt state, säg sanningen.
-      let res: Awaited<ReturnType<typeof createBooking>>
+      let res: Awaited<ReturnType<typeof startBookingVerification>>
       try {
-        res = await createBooking({
+        res = await startBookingVerification({
           serviceId: service.id,
           staffId: slot.staffId,
           startISO: slot.start,
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          note: form.note,
-          // Vald plats (VÅG 4b); null → servern faller tillbaka på primär plats.
+          contact: selectedContact(),
           locationId,
-          requestId: requestIdRef.current ?? undefined,
         })
       } catch {
-        setError(
-          'Något gick fel med uppkopplingen. Din bokning KAN ha gått igenom — kolla din e-post efter en bekräftelse innan du försöker igen.',
-        )
+        setError('Koden kunde inte skickas. Kontrollera uppkopplingen och försök igen.')
         return
       }
       if (res.ok) {
-        // Online-betalning på (payments_enabled && charges_enabled) → Stripe Checkout.
-        // Allt fel/degrade landar tyst på bekräftelsen (betala på plats) — sant
-        // efter P0-1-fixen: en misslyckad checkout lämnar ingen payment-rad, så
-        // bokningen överlever som vanlig betala-på-plats. Ett KAST här får inte
-        // unwinda — bokningen är redan durabel, visa bekräftelsen.
-        if (res.requiresPayment) {
-          try {
-            const pay = await startBookingCheckout(res.bookingId)
-            if (pay.ok) {
-              window.location.href = pay.url
-              return
-            }
-          } catch {
-            // degradera till betala-på-plats-bekräftelsen
-          }
-        }
-        if (onClose) {
-          // ⭐ KÄRNKRAV (Zivar): inbäddat i storefront-drawern sker bekräftelsen
-          // IN-PAGE — vi byter till steg 5 i samma wizard istället för att navigera
-          // bort. Rutten /boka/bekraftelse/[id] finns kvar som delbar djuplänk.
-          setBookingId(res.bookingId)
-          setBookingStatus(res.bookingStatus)
-          setStep(5)
-        } else {
-          // Fristående /boka-rutten: behåll den rika kvittosidan (med .ics +
-          // betalstatus) — finding #11 gäller drawer-flödet, inte denna route.
-          router.push(`/boka/bekraftelse/${res.bookingId}`)
-        }
+        setVerification(res)
+        setContactMode(res.channel)
+        setPin('')
       } else {
+        if (res.channel) setContactMode(res.channel)
         if (res.reason === 'slot_taken' && date) {
-          // Krock: gå tillbaka till tidsvalet, visa notisen, ladda om tiderna.
-          // pickDate nollställer error/slotsError men INTE slotTakenNotice.
           setStep(3)
-          pickDate(date) // refresh slots
+          pickDate(date)
           setSlotTakenNotice(res.message)
         } else {
           setError(res.message)
         }
       }
+    })
+  }
+
+  function verifyPin() {
+    if (!service || !slot || !verification || pin.length !== 6) return
+    setError(null)
+    startTransition(async () => {
+      let res: Awaited<ReturnType<typeof verifyAndCreateBooking>>
+      try {
+        res = await verifyAndCreateBooking({
+          serviceId: service.id,
+          staffId: slot.staffId,
+          startISO: slot.start,
+          locationId,
+          challengeId: verification.challengeId,
+          sessionToken: verification.sessionToken,
+          channel: verification.channel,
+          contact: selectedContact(),
+          pin,
+          name: form.name,
+          note: form.note,
+          requestId: requestIdRef.current ?? undefined,
+        })
+      } catch {
+        setError('Vi kunde inte läsa svaret. Kontrollera ditt SMS eller mejl innan du försöker igen.')
+        return
+      }
+      if (res.ok) {
+        await finishCreatedBooking(res)
+        return
+      }
+      if (res.reason === 'slot_taken' && date) {
+        setVerification(null)
+        setPin('')
+        setStep(3)
+        pickDate(date)
+        setSlotTakenNotice(res.message)
+        return
+      }
+      if (res.reason === 'expired') {
+        setVerification(null)
+        setPin('')
+      }
+      setError(res.message)
+    })
+  }
+
+  function resendPin() {
+    if (!service || !slot || !verification) return
+    setError(null)
+    startTransition(async () => {
+      let res: Awaited<ReturnType<typeof resendBookingVerification>>
+      try {
+        res = await resendBookingVerification({
+          serviceId: service.id,
+          staffId: slot.staffId,
+          startISO: slot.start,
+          locationId,
+          contact: selectedContact(),
+          channel: verification.channel,
+          challengeId: verification.challengeId,
+          sessionToken: verification.sessionToken,
+        })
+      } catch {
+        setError('Koden kunde inte skickas igen. Försök om en stund.')
+        return
+      }
+      if (res.ok) {
+        setVerification(res)
+        setPin('')
+        return
+      }
+      if (res.reason === 'delivery_unavailable' && verification.channel === 'sms') {
+        setVerification(null)
+        setPin('')
+        setContactMode('email')
+      }
+      setError(res.message)
     })
   }
 
@@ -471,6 +575,8 @@ export function BookingWizard({
     setSlotTakenNotice(null)
     setBookingId(null)
     setBookingStatus(null)
+    setVerification(null)
+    setPin('')
     setCalCursor(0)
     // Platsval nollställs till sitt utgångsläge (≤1 plats → auto; >1 wizard → grind;
     // >1 compact → default förvald).
@@ -502,7 +608,9 @@ export function BookingWizard({
         : step === 3
           ? !!slot
           : step === 4
-            ? !!(form.name && form.email && form.phone)
+            ? verification
+              ? pin.length === 6
+              : !!(form.name && contactMode && selectedContact())
             : true
 
   // Vad SAKNAS för att gå vidare? Bärs av den låsta CTA:ns sub-rad. Steg 2 kan
@@ -513,11 +621,21 @@ export function BookingWizard({
       : step === 3
         ? 'Välj en tid'
         : step === 4
-          ? 'Fyll i namn, e-post och telefon'
+          ? verification
+            ? 'Fyll i den sexsiffriga koden'
+            : contactMode === 'sms'
+              ? 'Fyll i namn och telefon'
+              : contactMode === 'email'
+                ? 'Fyll i namn och e-post'
+                : 'Kontrollerar kontaktväg…'
           : ''
 
   function goNext() {
     if (step === 4) {
+      if (verification) {
+        verifyPin()
+        return
+      }
       // Trigger native form validation + submit (keeps required + types).
       formRef.current?.requestSubmit()
       return
@@ -525,6 +643,12 @@ export function BookingWizard({
     if (step < 4) setStep((s) => s + 1)
   }
   function goBack() {
+    if (verification) {
+      setVerification(null)
+      setPin('')
+      setError(null)
+      return
+    }
     if (step > 1) setStep((s) => s - 1)
   }
 
@@ -532,19 +656,21 @@ export function BookingWizard({
   // One CTA at the bottom. Validates name + phone (the only two required fields
   // compact shows) before delegating to the shared submit() — same engine, same
   // Stripe / in-page-confirmation / slot-collision behaviour.
-  const compactReady = !!(service && slot && form.name && form.phone)
+  const compactReady = !!(service && slot && form.name && contactMode && selectedContact())
   function submitCompact() {
     if (!compactReady) {
-      setError('Fyll i tjänst, tid, namn och telefon.')
+      setError(contactMode === 'email'
+        ? 'Fyll i tjänst, tid, namn och e-post.'
+        : 'Fyll i tjänst, tid, namn och telefon.')
       return
     }
-    submit()
+    beginVerification()
   }
 
   // Spec-copy: mono steglabel + display-frågor. Steglabel 2 = bransch-nounet
   // (FreshCut → 'Barberare') — aldrig hårdkodad bransch (goal-46-guardrail).
-  const stepLabels = ['Tjänst', staffNoun, 'Tid', 'Uppgifter']
-  const stepTitles = ['Vad vill du boka?', 'Hos vem?', 'När passar det?', 'Dina uppgifter']
+  const stepLabels = ['Tjänst', staffNoun, 'Tid', verification ? 'Verifiera' : 'Uppgifter']
+  const stepTitles = ['Vad vill du boka?', 'Hos vem?', 'När passar det?', verification ? 'Ange koden' : 'Dina uppgifter']
 
   // Platsfiltrerad personal (VÅG 4b): en frisör erbjuds BARA på en plats hen
   // faktiskt jobbar på (≥1 working_hours-rad med location_id = vald plats). Speglar
@@ -626,11 +752,82 @@ export function BookingWizard({
     </div>
   )
 
+  const resendWaitSeconds = verification
+    ? Math.max(0, Math.ceil((Date.parse(verification.resendAt) - clock) / 1000))
+    : 0
+  const verificationPanel = verification ? (
+    <div className="fc-step">
+      <div className="fc-summary">
+        <span className="fc-summary-main">
+          <span className="fc-summary-name">Kod skickad</span>
+          <span className="fc-summary-meta">
+            {verification.channel === 'sms' ? 'SMS' : 'E-post'} till {verification.maskedContact}
+          </span>
+        </span>
+        <span className="fc-summary-price" aria-hidden>✓</span>
+      </div>
+      <p className="wizard-muted" style={{ marginTop: 0 }}>
+        Skriv in den sexsiffriga koden. Tiden bokas först när koden är godkänd.
+      </p>
+      <label className="fc-field">
+        <span>Verifieringskod</span>
+        <input
+          required
+          autoFocus
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          placeholder="000000"
+          value={pin}
+          onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))}
+        />
+      </label>
+      <button
+        type="button"
+        className="fc-retry"
+        disabled={pending || resendWaitSeconds > 0}
+        onClick={resendPin}
+      >
+        {resendWaitSeconds > 0 ? `Skicka ny kod om ${resendWaitSeconds} s` : 'Skicka ny kod'}
+      </button>
+      {error ? <p className="fc-alert" role="alert">{error}</p> : null}
+    </div>
+  ) : null
+
   // ── Variant 4 (compact) — kompakt snabbboka, allt på en skärm ───────────────
   // The whole booking on one scroll: chip rows for tjänst/personal/dag, a 4-col
   // slot grid (disabled until getAvailableSlots resolves), name+phone side by
   // side, and a single bottom "Boka tid" CTA with a mono summary sub-line. After
   // a successful booking the shared step-5 ticket takes over (below).
+  if (compact && step !== 5 && verification) {
+    return (
+      <div className="wizard wizard--compact fc-scope">
+        <div className="wizard-head">
+          <h2 className="ckompakt-title">Bekräfta din bokning</h2>
+          <p className="ckompakt-lede">Ett sista snabbt steg.</p>
+        </div>
+        <div className="wizard-stepbody">{verificationPanel}</div>
+        <div className="wizard-actionbar">
+          <button type="button" className="wizard-back-btn" onClick={goBack} aria-label="Ändra uppgifter">
+            <span aria-hidden>←</span>
+          </button>
+          <button
+            type="button"
+            className="wizard-cta"
+            disabled={pin.length !== 6 || pending}
+            onClick={verifyPin}
+          >
+            <span className="wizard-cta-label">{pending ? 'Verifierar…' : 'Verifiera & boka'}</span>
+            {pin.length !== 6 && !pending ? <span className="wizard-cta-sub">Fyll i 6 siffror</span> : null}
+          </button>
+          <ConsentLine />
+        </div>
+      </div>
+    )
+  }
+
   if (compact && step !== 5) {
     return (
       <div className="wizard wizard--compact fc-scope">
@@ -772,7 +969,7 @@ export function BookingWizard({
                 </div>
               )}
 
-              {/* Namn + Telefon sida vid sida; e-post under (krävs av createBooking). */}
+              {/* Exakt en kontaktväg: SMS när Giada är frisk, annars e-post. */}
               <div className="ckompakt-fields">
                 <label className="fc-field">
                   <span>Namn</span>
@@ -782,25 +979,34 @@ export function BookingWizard({
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
                 </label>
-                <label className="fc-field">
-                  <span>Telefon</span>
-                  <input
-                    type="tel"
-                    autoComplete="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  />
-                </label>
+                {contactMode === 'sms' ? (
+                  <label className="fc-field">
+                    <span>Telefon</span>
+                    <input
+                      required
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="070-000 00 00"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    />
+                  </label>
+                ) : contactMode === 'email' ? (
+                  <label className="fc-field">
+                    <span>E-post</span>
+                    <input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      placeholder="du@exempel.se"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    />
+                  </label>
+                ) : (
+                  <p className="wizard-muted">Kontrollerar kontaktväg…</p>
+                )}
               </div>
-              <label className="fc-field" style={{ marginTop: 11 }}>
-                <span>E-post</span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </label>
 
               {slotTakenNotice ? (
                 <p className="fc-alert" role="alert" style={{ marginTop: 14 }}>
@@ -825,13 +1031,15 @@ export function BookingWizard({
               disabled={!compactReady || pending}
               onClick={submitCompact}
             >
-              <span className="wizard-cta-label">{pending ? 'Bokar…' : bokaCta}</span>
+              <span className="wizard-cta-label">{pending ? 'Skickar kod…' : bokaCta}</span>
               {compactReady && slot && service ? (
                 <span className="wizard-cta-sub">
                   {service.name} · {fmtTime(slot.start)}
                 </span>
               ) : (
-                <span className="wizard-cta-sub">Välj tjänst, tid &amp; fyll i namn + telefon</span>
+                <span className="wizard-cta-sub">
+                  Välj tjänst, tid &amp; fyll i namn + {contactMode === 'email' ? 'e-post' : 'telefon'}
+                </span>
               )}
             </button>
             <ConsentLine />
@@ -1180,7 +1388,7 @@ export function BookingWizard({
         {/* Step 4 — details. The submit BUTTON lives in the bottom action bar;
             the <form> stays (with a ref) so required-field + type validation still
             runs when the bar's "Bekräfta bokning" calls requestSubmit(). */}
-        {step === 4 && service && slot && (
+        {step === 4 && service && slot && (verification ? verificationPanel : (
           <div className="fc-step">
             <div className="fc-summary">
               <span className="fc-summary-main">
@@ -1198,7 +1406,7 @@ export function BookingWizard({
               className="wizard-form"
               onSubmit={(e) => {
                 e.preventDefault()
-                submit()
+                beginVerification()
               }}
             >
               {/* Steg 4 var fyra NAKNA fält i rad — kassan grupperar sina, det här
@@ -1215,28 +1423,33 @@ export function BookingWizard({
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </label>
-              <label className="fc-field">
-                <span>E-post</span>
-                <input
-                  required
-                  type="email"
-                  autoComplete="email"
-                  placeholder="du@exempel.se"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </label>
-              <label className="fc-field">
-                <span>Telefon</span>
-                <input
-                  required
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="070-000 00 00"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </label>
+              {contactMode === 'sms' ? (
+                <label className="fc-field">
+                  <span>Telefon</span>
+                  <input
+                    required
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="070-000 00 00"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </label>
+              ) : contactMode === 'email' ? (
+                <label className="fc-field">
+                  <span>E-post</span>
+                  <input
+                    required
+                    type="email"
+                    autoComplete="email"
+                    placeholder="du@exempel.se"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
+                </label>
+              ) : (
+                <p className="wizard-muted">Kontrollerar kontaktväg…</p>
+              )}
               <div className="fc-label" style={{ marginTop: 4 }}>
                 Något vi bör veta?
               </div>
@@ -1258,11 +1471,11 @@ export function BookingWizard({
               {/* Hidden submit keeps requestSubmit() + Enter-to-submit working;
                   the visible CTA is the sticky bottom action bar. */}
               <button type="submit" className="wizard-form-submit" tabIndex={-1} aria-hidden>
-                Bekräfta bokning
+                Skicka verifieringskod
               </button>
             </form>
           </div>
-        )}
+        ))}
 
         {/* Step 5 — statusbiljetten. RPC-statusen styr all copy: en pending
             förfrågan får aldrig presenteras som bokad eller kalenderklar. */}
@@ -1360,7 +1573,11 @@ export function BookingWizard({
             onClick={goNext}
           >
             <span className="wizard-cta-label">
-              {step === 4 ? (pending ? 'Bokar…' : 'Bekräfta bokning') : 'Fortsätt'}
+              {step === 4
+                ? verification
+                  ? pending ? 'Verifierar…' : 'Verifiera & boka'
+                  : pending ? 'Skickar kod…' : 'Skicka kod'
+                : 'Fortsätt'}
             </span>
             {/* Den låsta knappen SÄGER vad som fattas i stället för att bara vara
                 grå — compact-läget gjorde redan det, stegläget lämnade kunden i

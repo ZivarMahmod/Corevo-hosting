@@ -20,6 +20,8 @@ describe('verified public booking migration contract', () => {
   it('locks ttl, attempts, resend and one-time consumption in postgres', () => {
     expect(migration).toContain("interval '5 minutes'")
     expect(migration).toContain("interval '30 seconds'")
+    expect(migration).toContain('v_previous.channel <> p_channel')
+    expect(migration).toContain('v_previous.contact_digest <> p_contact_digest')
     expect(migration).toContain('attempt_count >= 5')
     expect(migration).toContain('consumed_at is not null')
     expect(migration).toContain('for update')
@@ -43,6 +45,13 @@ describe('verified public booking migration contract', () => {
     expect(migration).toContain("'booking_confirmation'")
     expect(migration).toContain('booking_id = v_booking')
     expect(migration).toContain('consumed_at = pg_catalog.statement_timestamp()')
+  })
+
+  it('can claim only the returned outbox id for immediate delivery', () => {
+    expect(migration).toContain('public.claim_notification_outbox_by_id')
+    expect(migration).toContain('where o.id = p_id')
+    expect(migration).toContain("o.chosen_channel in ('sms', 'email')")
+    expect(migration).toContain('to service_role')
   })
 
   it('allows exactly one verified guest contact channel and keeps hold overlap protection', () => {

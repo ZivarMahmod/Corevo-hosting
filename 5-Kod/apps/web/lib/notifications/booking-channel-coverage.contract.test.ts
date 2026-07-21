@@ -17,7 +17,13 @@ describe('booking notification event coverage', () => {
   it('routes every booking mutation surface through the same durable producer', () => {
     for (const file of mutationFiles) {
       const source = web(file)
-      expect(source, file).toContain('queueBookingEvent')
+      if (file === 'app/boka/actions.ts') {
+        // PIN-finalize skapar bokning + outbox i samma DB-transaktion. En separat
+        // queueBookingEvent här skulle både bryta atomiciteten och kunna dubbla.
+        expect(source, file).toContain('finalize_verified_storefront_booking')
+      } else {
+        expect(source, file).toContain('queueBookingEvent')
+      }
       expect(source, file).not.toMatch(/\bsendBooking(?:Confirmation|Cancellation|Rebook|Reminder)\s*\(/)
       expect(source, file).not.toMatch(/\bsendSms\s*\(/)
       expect(source, file).not.toMatch(/\bsendEmail\s*\(/)

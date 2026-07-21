@@ -43,7 +43,17 @@ befintliga 15-minuterskörningen för schemalagda notifieringar.
 
 ## Status
 
-- [ ] Implementerad
-- [ ] Mekaniskt verifierad
+- [x] Implementerad på `codex/pin-booking-sim-fallback`
+- [x] Mekaniskt verifierad
 - [ ] E-postfallback-canary godkänd
 - [ ] Fysisk SIM-canary godkänd
+
+Driftordning och manuella canary-steg finns i
+`5-Kod/docs/ops/pin-booking-activation.md` respektive
+`6-Testing/goal-74-pin-bokning-testlista.md`. Ingen migration eller Worker-version
+är driftsatt av implementationen.
+
+Mekaniskt bevis 2026-07-21: web 270 testfiler/2 191 tester, typecheck,
+lint utan fel och Next-produktionsbuild passerar; migrationen parsas som 26
+PostgreSQL-statements; gateway 54/54 tester passerar. Lintens sju varningar är
+befintliga och ligger utanför goal-74:s filer.

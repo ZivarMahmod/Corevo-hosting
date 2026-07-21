@@ -8,7 +8,7 @@ const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace
 describe('publika skriv-RPC:er', () => {
   it('går genom server-only writer efter appens rate-limit och validering', () => {
     const cases = [
-      ['apps/web/app/boka/actions.ts', "rpc('create_storefront_booking_with_release'"],
+      ['apps/web/app/boka/actions.ts', "'finalize_verified_storefront_booking'"],
       ['apps/web/app/butik/actions.ts', "writer.rpc('reserve_shop_order'"],
       ['apps/web/lib/storefront/lojalitet/intake.ts', "writer.rpc('join_loyalty_club'"],
     ] as const
@@ -54,5 +54,15 @@ describe('publika skriv-RPC:er', () => {
     expect(release).toContain('from service_role')
     expect(compactRelease).toContain(`grantexecuteonfunctionpublic.${releasedStorefront}`)
     expect(release).toContain('to service_role')
+
+    const pinBooking = read(
+      'supabase/migrations/20260721111357_pin_booking_verification.sql',
+    ).toLowerCase()
+    const verifiedStorefront =
+      'finalize_verified_storefront_booking(uuid,uuid,text,text,text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid,boolean)'
+    const compactPinBooking = pinBooking.replace(/\s+/g, '')
+    expect(compactPinBooking).toContain(`revokeallonfunctionpublic.${verifiedStorefront}`)
+    expect(compactPinBooking).toContain(`grantexecuteonfunctionpublic.${verifiedStorefront}`)
+    expect(pinBooking).toContain('to service_role')
   })
 })

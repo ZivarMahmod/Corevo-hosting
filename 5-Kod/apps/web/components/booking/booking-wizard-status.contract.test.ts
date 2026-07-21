@@ -10,7 +10,8 @@ describe('BookingWizard status contract', () => {
     const action = read('app/boka/actions.ts')
     const wizard = read('components/booking/BookingWizard.tsx')
 
-    expect(action).toContain("bookingStatus: rpcRow.booking_status === 'confirmed'")
+    expect(action).toContain("const bookingStatus = row.booking_status === 'confirmed'")
+    expect(action).toContain('finalize_verified_storefront_booking')
     expect(wizard).toContain('setBookingStatus(res.bookingStatus)')
     expect(wizard).toContain('const bookingPresentation = bookingStatusPresentation(bookingStatus)')
     expect(wizard).toContain('{bookingPresentation.heading}')

@@ -18,6 +18,9 @@ export type RateLimit = { max: number; windowSecs: number }
 export const LIMITS = {
   login: { max: 8, windowSecs: 300 } as RateLimit, // 8 attempts / 5 min per IP
   booking: { max: 12, windowSecs: 300 } as RateLimit, // 12 booking writes / 5 min per IP+tenant
+  bookingPinStart: { max: 5, windowSecs: 300 } as RateLimit,
+  bookingPinResend: { max: 3, windowSecs: 300 } as RateLimit,
+  bookingPinVerify: { max: 10, windowSecs: 300 } as RateLimit,
   offert: { max: 12, windowSecs: 300 } as RateLimit, // 12 offert submissions / 5 min per IP+tenant
   event: { max: 12, windowSecs: 300 } as RateLimit, // 12 kurs-anmälningar / 5 min per IP+tenant
   // goal-64: "GÅ MED" i klubben. Snålare än de andra — en riktig människa går med EN

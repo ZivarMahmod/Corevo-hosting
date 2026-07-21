@@ -11,20 +11,37 @@ import { loadLocationAvailability } from '@/lib/booking/location-rules'
 import { canonicalInstant, weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
 import { getStripe } from '@/lib/stripe/client'
 import { requestOrigin } from '@/lib/url'
+import type { BookingNotificationQueueResult } from '@/lib/notifications/booking-events'
 import {
-  queueBookingEvent,
-  type BookingNotificationQueueResult,
-} from '@/lib/notifications/booking-events'
-import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
+  checkRateLimitFailClosed,
+  getClientIp,
+  rateLimitKey,
+  LIMITS,
+} from '@/lib/security/rate-limit'
 import { sanitizeBookingNote } from '@/lib/booking/note'
 import { getTenantModuleStates } from '@/lib/tenant-modules'
 import { bookingModuleAccess } from '@/components/storefront/layouts/booking-access'
 import { commerceReleaseGate } from '@/lib/release/commerce'
+import {
+  getBookingContactMode,
+  type BookingContactMode,
+} from '@/lib/notifications/giada'
+import {
+  bookingContactDigest,
+  bookingPinDigest,
+  deliverBookingPin,
+  generateBookingPin,
+  maskBookingContact,
+  normalizeBookingContact,
+} from '@/lib/booking/verification'
+import { dispatchNotificationOutboxById } from '@/lib/notifications/outbox'
+import { deliverImmediateBookingOutbox } from '@/lib/notifications/booking-immediate'
+import { logger } from '@/lib/observability'
 
 // Public reads run as anon. Proposed starts are filtered through
 // get_public_bookable_starts (never raw busy intervals). The rate-limited server
-// write uses service-role only through create_storefront_booking_with_release, whose DB contract
-// repeats the full availability check and never inherits the admin slot exception.
+// verified write uses service-role only through the atomic PIN/booking/outbox DB
+// contract, which repeats availability checks and never inherits admin exceptions.
 // Tenant identity comes from the middleware-resolved header, never the client.
 
 export type SlotOption = { start: string; staffId: string; staffTitle: string | null }
@@ -32,37 +49,74 @@ export type SlotsResult =
   | { ok: true; timeZone: string; slots: SlotOption[] }
   | { ok: false; error: string }
 
-export type CreateBookingInput = {
+export type BookingVerificationSelection = {
   serviceId: string
   staffId: string
   startISO: string
-  name: string
-  email: string
-  phone: string
-  note?: string
-  /** Vald plats (VÅG 4b). Utelämnad → create_public_booking faller tillbaka på
-   *  tenantens primära aktiva plats (oförändrat för en-plats-salonger). */
   locationId?: string | null
-  /** Idempotens-nyckel (0048): klient-genererad per boknings-INTENT och stabil
-   *  över retries. Samma id igen ⇒ RPC:n returnerar den befintliga bokningen i
-   *  stället för dubblett/23P01. Utelämnad → exakt gamla beteendet. */
+}
+
+export type StartBookingVerificationInput = BookingVerificationSelection & {
+  contact: string
+}
+
+export type ResendBookingVerificationInput = StartBookingVerificationInput & {
+  channel: BookingContactMode
+  challengeId: string
+  sessionToken: string
+}
+
+export type BookingVerificationStarted = {
+  ok: true
+  channel: BookingContactMode
+  challengeId: string
+  sessionToken: string
+  maskedContact: string
+  expiresAt: string
+  resendAt: string
+}
+
+export type BookingVerificationStartResult =
+  | BookingVerificationStarted
+  | {
+      ok: false
+      reason: 'invalid' | 'slot_taken' | 'rate_limited' | 'delivery_unavailable' | 'error'
+      message: string
+      channel?: BookingContactMode
+    }
+
+export type VerifyBookingInput = BookingVerificationSelection & {
+  challengeId: string
+  sessionToken: string
+  channel: BookingContactMode
+  contact: string
+  pin: string
+  name: string
+  note?: string
   requestId?: string
 }
-export type CreateResult =
+
+export type VerifyBookingResult =
   | {
       ok: true
       bookingId: string
+      outboxId: string
       requiresPayment: boolean
       bookingStatus: 'pending' | 'confirmed'
       notification: BookingNotificationQueueResult
     }
-  | { ok: false; reason: 'slot_taken' | 'invalid' | 'error'; message: string }
-
+  | {
+      ok: false
+      reason: 'invalid_pin' | 'expired' | 'slot_taken' | 'rate_limited' | 'invalid' | 'error'
+      message: string
+      attemptsRemaining?: number
+    }
 const SLOT_STEP_MIN = 15
 
 type TenantContext = {
   tenantId: string
   slug: string
+  name: string
   timeZone: string
   /** Primary active location — the default scope when a caller omits a location
    *  (single-location tenants, /boka back-compat, rebok-flödet). May be null on
@@ -78,7 +132,7 @@ async function getTenantContext(): Promise<TenantContext | null> {
   const supabase = createPublicClient()
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, slug')
+    .select('id, slug, name')
     .eq('slug', slug)
     .eq('status', 'active')
     .maybeSingle()
@@ -95,6 +149,7 @@ async function getTenantContext(): Promise<TenantContext | null> {
   return {
     tenantId: tenant.id,
     slug: tenant.slug,
+    name: tenant.name,
     timeZone: loc?.timezone ?? 'Europe/Stockholm',
     locationId: loc?.id ?? null,
   }
@@ -336,126 +391,398 @@ export async function getAvailableSlots(
   return { ok: true, timeZone, slots }
 }
 
-/** Create a public booking through the storefront-only DB integrity contract. */
-export async function createBooking(input: CreateBookingInput): Promise<CreateResult> {
+type RpcError = { code?: string; message?: string }
+type StartVerificationRow = {
+  challenge_id: string
+  hold_id: string
+  expires_at: string
+  resend_after: string
+}
+
+type StartVerificationRpc = {
+  rpc: (
+    name: 'start_booking_verification',
+    args: {
+      p_tenant_slug: string
+      p_staff: string
+      p_service: string
+      p_start: string
+      p_session_token: string
+      p_channel: BookingContactMode
+      p_contact_digest: string
+      p_contact_masked: string
+      p_pin_digest: string
+      p_previous_challenge?: string
+    },
+  ) => Promise<{ data: StartVerificationRow[] | null; error: RpcError | null }>
+}
+
+type DeliveryVerificationRpc = {
+  rpc: (
+    name: 'record_booking_verification_delivery',
+    args: { p_challenge: string; p_session_token: string; p_delivered: boolean },
+  ) => Promise<{ data: boolean | null; error: RpcError | null }>
+}
+
+type ReleaseHoldRpc = {
+  rpc: (
+    name: 'release_slot_hold',
+    args: { p_staff: string; p_start: string; p_token: string },
+  ) => Promise<{ data: unknown; error: RpcError | null }>
+}
+
+type FinalizeVerificationRow = {
+  outcome: string
+  booking_id: string | null
+  outbox_id: string | null
+  requires_payment: boolean
+  booking_status: string | null
+  attempts_remaining: number
+}
+
+type FinalizeVerificationRpc = {
+  rpc: (
+    name: 'finalize_verified_storefront_booking',
+    args: {
+      p_challenge: string
+      p_session_token: string
+      p_contact_digest: string
+      p_pin_digest: string
+      p_tenant_slug: string
+      p_service: string
+      p_staff: string
+      p_start: string
+      p_note?: string
+      p_guest_name: string
+      p_guest_email?: string
+      p_guest_phone?: string
+      p_location?: string
+      p_request_id?: string
+      p_online_payment_released: boolean
+    },
+  ) => Promise<{ data: FinalizeVerificationRow[] | null; error: RpcError | null }>
+}
+
+const invalidContext = (): Extract<BookingVerificationStartResult, { ok: false }> => ({
+  ok: false,
+  reason: 'invalid',
+  message: 'Något gick fel — ladda om sidan och försök igen.',
+})
+
+function validSelection(input: BookingVerificationSelection): boolean {
+  if (!input.serviceId || !input.staffId || !input.startISO) return false
+  const start = Date.parse(input.startISO)
+  return Number.isFinite(start)
+}
+
+function startRpcError(error: RpcError): BookingVerificationStartResult {
+  if (error.code === '23P01') {
+    return { ok: false, reason: 'slot_taken', message: 'Tyvärr, tiden togs precis. Välj en annan tid.' }
+  }
+  if (error.code === 'P0001' && error.message?.includes('resend_too_soon')) {
+    return { ok: false, reason: 'rate_limited', message: 'Vänta en liten stund innan du skickar en ny kod.' }
+  }
+  if (error.code === 'P0001') {
+    return { ok: false, reason: 'slot_taken', message: 'Den tiden är inte längre ledig — välj en ny tid.' }
+  }
+  if (error.code === 'P0002' || error.code === '42501' || error.code === '22023') {
+    return { ok: false, reason: 'invalid', message: 'Bokningen har ändrats. Börja om och välj tiden igen.' }
+  }
+  return { ok: false, reason: 'error', message: 'Kunde inte skicka verifieringskoden. Försök igen.' }
+}
+
+async function safeReleaseSlotHold(
+  writer: unknown,
+  args: { p_staff: string; p_start: string; p_token: string },
+): Promise<void> {
+  try {
+    const released = await (writer as ReleaseHoldRpc).rpc('release_slot_hold', args)
+    if (released.error) throw new Error('release_rejected')
+  } catch {
+    // The hold still self-expires in the database. Never leak contact, PIN or token.
+    logger.warn('booking_verification.hold_release_failed', { error: 'hold_release_failed' })
+  }
+}
+
+/** The UI asks this before rendering its one allowed contact field. */
+export async function getBookingContactModeAction(): Promise<{ mode: BookingContactMode }> {
+  return { mode: await getBookingContactMode() }
+}
+
+async function startBookingVerificationInternal(
+  input: StartBookingVerificationInput,
+  previous?: Pick<ResendBookingVerificationInput, 'channel' | 'challengeId' | 'sessionToken'>,
+): Promise<BookingVerificationStartResult> {
   const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, reason: 'invalid', message: 'Något gick fel — ladda om sidan och försök igen.' }
+  if (!ctx) return invalidContext()
   if (!(await publicBookingIsLive(ctx))) {
     return { ok: false, reason: 'invalid', message: 'Onlinebokningen är inte öppen just nu.' }
   }
-
-  // Rate-limit booking writes per IP+tenant (G10) — guards the public, unauthed
-  // create path against spam. Fails open on DB error.
-  const ip = await getClientIp()
-  if (!(await checkRateLimit(rateLimitKey('booking', ctx.tenantId, ip), LIMITS.booking))) {
-    return { ok: false, reason: 'error', message: 'För många bokningsförsök. Vänta en stund och försök igen.' }
-  }
-
-  const name = input.name.trim()
-  const email = input.email.trim()
-  const phone = input.phone.trim()
-  if (!name || !email || !phone) {
-    return { ok: false, reason: 'invalid', message: 'Fyll i namn, e-post och telefon.' }
-  }
-  if (!input.serviceId || !input.staffId || !input.startISO) {
+  if (!validSelection(input)) {
     return { ok: false, reason: 'invalid', message: 'Ofullständig bokning. Börja om.' }
   }
 
+  const channel = previous?.channel ?? await getBookingContactMode()
+  // A challenge is locked to one contact channel. If SMS died after the first
+  // send, the customer starts a fresh email challenge instead of silently
+  // changing identity under an existing challenge.
+  if (previous?.channel === 'sms' && await getBookingContactMode() !== 'sms') {
+    return {
+      ok: false,
+      reason: 'delivery_unavailable',
+      message: 'SMS är tillfälligt nere. Gå tillbaka och fortsätt med e-post i stället.',
+    }
+  }
+
+  const contact = normalizeBookingContact(channel, input.contact)
+  if (!contact) {
+    return {
+      ok: false,
+      reason: 'invalid',
+      message: channel === 'sms' ? 'Skriv ett giltigt mobilnummer.' : 'Skriv en giltig e-postadress.',
+      channel,
+    }
+  }
+
+  let sessionToken: string
+  let contactDigest: string
+  let pinDigest: string
+  const pin = generateBookingPin()
+  try {
+    sessionToken = previous?.sessionToken ?? crypto.randomUUID()
+    contactDigest = await bookingContactDigest(channel, contact)
+    pinDigest = await bookingPinDigest(sessionToken, pin)
+  } catch {
+    return { ok: false, reason: 'error', message: 'Verifieringen är inte tillgänglig just nu.' }
+  }
+
+  const ip = await getClientIp()
+  const limit = previous ? LIMITS.bookingPinResend : LIMITS.bookingPinStart
+  const bucket = previous ? 'booking-pin-resend' : 'booking-pin-start'
+  const limiterPart = previous?.challengeId ?? contactDigest.slice(0, 24)
+  if (!(await checkRateLimitFailClosed(
+    rateLimitKey(bucket, ctx.tenantId, ip, limiterPart),
+    limit,
+  ))) {
+    return { ok: false, reason: 'rate_limited', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
+
   const writer = createServiceClient()
-  if (!writer) {
-    return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
+  if (!writer) return { ok: false, reason: 'error', message: 'Verifieringen är inte tillgänglig just nu.' }
+  const startISO = canonicalInstant(input.startISO)
+  let startResult: Awaited<ReturnType<StartVerificationRpc['rpc']>>
+  try {
+    startResult = await (writer as unknown as StartVerificationRpc).rpc('start_booking_verification', {
+      p_tenant_slug: ctx.slug,
+      p_staff: input.staffId,
+      p_service: input.serviceId,
+      p_start: startISO,
+      p_session_token: sessionToken,
+      p_channel: channel,
+      p_contact_digest: contactDigest,
+      p_contact_masked: maskBookingContact(channel, contact),
+      p_pin_digest: pinDigest,
+      ...(previous ? { p_previous_challenge: previous.challengeId } : {}),
+    })
+  } catch {
+    await safeReleaseSlotHold(writer, {
+      p_staff: input.staffId,
+      p_start: startISO,
+      p_token: sessionToken,
+    })
+    logger.warn('booking_verification.start_rpc_failed', { error: 'start_rpc_transport_failed' })
+    return { ok: false, reason: 'error', message: 'Kunde inte skapa verifieringen. Försök igen.' }
   }
-  type StorefrontBookingRpc = {
-    rpc: (
-      name: 'create_storefront_booking_with_release',
-      args: {
-        p_tenant_slug: string
-        p_service: string
-        p_staff: string
-        p_start: string
-        p_note?: string
-        p_guest_name: string
-        p_guest_email: string
-        p_guest_phone: string
-        p_location?: string
-        p_request_id?: string
-        p_online_payment_released: boolean
+  const { data, error } = startResult
+  if (error) return startRpcError(error)
+  const row = data?.[0]
+  if (!row?.challenge_id || !row.expires_at || !row.resend_after) {
+    await safeReleaseSlotHold(writer, {
+      p_staff: input.staffId,
+      p_start: startISO,
+      p_token: sessionToken,
+    })
+    return { ok: false, reason: 'error', message: 'Kunde inte skapa verifieringen. Försök igen.' }
+  }
+
+  let delivery: Awaited<ReturnType<typeof deliverBookingPin>>
+  try {
+    delivery = await deliverBookingPin({
+      channel,
+      contact,
+      pin,
+      challengeId: row.challenge_id,
+      tenantName: ctx.name,
+    })
+  } catch {
+    delivery = { accepted: false, reason: 'transport_error' }
+  }
+  let recorded: Awaited<ReturnType<DeliveryVerificationRpc['rpc']>>
+  try {
+    recorded = await (writer as unknown as DeliveryVerificationRpc).rpc(
+      'record_booking_verification_delivery',
+      {
+        p_challenge: row.challenge_id,
+        p_session_token: sessionToken,
+        p_delivered: delivery.accepted,
       },
-    ) => Promise<{
-      data: { booking_id: string; requires_payment: boolean; booking_status: string }[] | null
-      error: { code?: string; message?: string } | null
-    }>
+    )
+  } catch {
+    logger.warn('booking_verification.delivery_record_failed', { error: 'delivery_record_transport_failed' })
+    recorded = { data: false, error: { code: 'transport_error' } }
   }
-  const { data, error } = await (writer as unknown as StorefrontBookingRpc).rpc('create_storefront_booking_with_release', {
-    p_tenant_slug: ctx.slug,
-    p_service: input.serviceId,
-    p_staff: input.staffId,
-    p_start: input.startISO,
-    p_note: sanitizeBookingNote(input.note) ?? undefined,
-    p_guest_name: name,
-    p_guest_email: email,
-    p_guest_phone: phone,
-    // Vald plats → validerad tenant+aktiv i RPC:n. Utelämnad (undefined) → RPC:ns
-    // DEFAULT NULL → primär plats (back-compat). p_location är `string | undefined`
-    // i de genererade typerna, så vi coalescear bort null.
-    p_location: input.locationId ?? ctx.locationId ?? undefined,
-    p_request_id: input.requestId ?? undefined,
-    // Samma effektiva release-sanning som svaret nedan går in i RPC-transaktionen.
-    // Då kan gamla Stripe-flaggor aldrig lämna en pay-on-site-bokning som pending.
-    p_online_payment_released: commerceReleaseGate(ctx.tenantId).bookingPayment,
-  })
-  const rpcRow = data?.[0]
-  const bookingId = rpcRow?.booking_id ?? null
-
-  if (error) {
-    if (error.code === '23P01') {
-      return { ok: false, reason: 'slot_taken', message: 'Tyvärr, tiden togs precis. Välj en annan tid.' }
+  if (!delivery.accepted || recorded.error || recorded.data !== true) {
+    await safeReleaseSlotHold(writer, {
+      p_staff: input.staffId,
+      p_start: startISO,
+      p_token: sessionToken,
+    })
+    return {
+      ok: false,
+      reason: 'delivery_unavailable',
+      message: channel === 'sms'
+        ? 'SMS kunde inte skickas. Försök igen eller fortsätt med e-post.'
+        : 'Mejlet kunde inte skickas. Kontrollera adressen och försök igen.',
     }
-    // P0001 = start_in_past (migr 0009): kunden satt på en gammal sida och valde en
-    // tid som hunnit passera. Mappa till samma graceful "välj ny tid"-familj som
-    // 23P01 i stället för ett kryptiskt "Något gick fel" (M3-bygg-item 1, stale-sida).
-    if (error.code === 'P0001') {
-      return { ok: false, reason: 'slot_taken', message: 'Den tiden är inte längre ledig — välj en ny tid.' }
-    }
-    // P0002 location-family (VÅG 5): the picked location was deactivated, or the
-    // staff's working_hours at it were removed (0022 staff↔location fence), between
-    // page-load and submit. A real user on a stale page can hit this → degrade to the
-    // same "pick a new time" family as a taken slot, not a cryptic "something went
-    // wrong". Other P0002s (invalid_service/invalid_staff) are start-over cases.
-    if (error.code === 'P0002' && /invalid_staff_location|invalid_location/.test(error.message ?? '')) {
-      return { ok: false, reason: 'slot_taken', message: 'Den tiden är inte längre ledig — välj en ny tid.' }
-    }
-    return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
-  }
-  if (!bookingId || !rpcRow) {
-    return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
 
-  // Affärsmutationen är redan committad. Bekräftelsen blir ett separat,
-  // idempotent domänevent; inget provideranrop sker i bokningsrequesten.
-  const notification = await queueBookingEvent({
-    tenantId: ctx.tenantId,
-    bookingId,
-    type: rpcRow.booking_status === 'confirmed'
-      ? 'booking_confirmation'
-      : 'booking_request_received',
-    occurredAt: new Date().toISOString(),
-    startISO: input.startISO,
-    includeManageLink: true,
-    includeAccountClaim: true,
-  })
-
-  // DB-raden är samma atomiska snapshot som valde initial status. Gör aldrig en
-  // separat flaggläsning efter commit: ett transient läsfel får inte förvandla en
-  // pending onlinebokning till ett falskt "betala på plats"-svar.
   return {
     ok: true,
-    bookingId,
-    requiresPayment: Boolean(rpcRow.requires_payment),
-    // Initialstatusen kan bara vara pending/confirmed. Ett okänt DB-värde får
-    // aldrig bli en falsk bekräftelse i klienten, så det degraderar till pending.
-    bookingStatus: rpcRow.booking_status === 'confirmed' ? 'confirmed' : 'pending',
-    notification,
+    channel,
+    challengeId: row.challenge_id,
+    sessionToken,
+    maskedContact: maskBookingContact(channel, contact),
+    expiresAt: row.expires_at,
+    resendAt: row.resend_after,
+  }
+}
+
+export async function startBookingVerification(
+  input: StartBookingVerificationInput,
+): Promise<BookingVerificationStartResult> {
+  return startBookingVerificationInternal(input)
+}
+
+export async function resendBookingVerification(
+  input: ResendBookingVerificationInput,
+): Promise<BookingVerificationStartResult> {
+  return startBookingVerificationInternal(input, {
+    channel: input.channel,
+    challengeId: input.challengeId,
+    sessionToken: input.sessionToken,
+  })
+}
+
+export async function verifyAndCreateBooking(
+  input: VerifyBookingInput,
+): Promise<VerifyBookingResult> {
+  const ctx = await getTenantContext()
+  if (!ctx) return { ...invalidContext(), reason: 'invalid' }
+  if (!(await publicBookingIsLive(ctx))) {
+    return { ok: false, reason: 'invalid', message: 'Onlinebokningen är inte öppen just nu.' }
+  }
+  const name = input.name.trim()
+  const contact = normalizeBookingContact(input.channel, input.contact)
+  if (!validSelection(input) || !name || name.length > 200 || !contact || !/^\d{6}$/.test(input.pin)) {
+    return { ok: false, reason: 'invalid', message: 'Kontrollera uppgifterna och den sexsiffriga koden.' }
+  }
+
+  const ip = await getClientIp()
+  if (!(await checkRateLimitFailClosed(
+    rateLimitKey('booking-pin-verify', ctx.tenantId, ip, input.challengeId),
+    LIMITS.bookingPinVerify,
+  ))) {
+    return { ok: false, reason: 'rate_limited', message: 'För många kodförsök. Vänta en stund och försök igen.' }
+  }
+
+  let contactDigest: string
+  let pinDigest: string
+  try {
+    contactDigest = await bookingContactDigest(input.channel, contact)
+    pinDigest = await bookingPinDigest(input.sessionToken, input.pin)
+  } catch {
+    return { ok: false, reason: 'error', message: 'Verifieringen är inte tillgänglig just nu.' }
+  }
+
+  const writer = createServiceClient()
+  if (!writer) return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
+  let finalizeResult: Awaited<ReturnType<FinalizeVerificationRpc['rpc']>>
+  try {
+    finalizeResult = await (writer as unknown as FinalizeVerificationRpc).rpc(
+      'finalize_verified_storefront_booking',
+      {
+        p_challenge: input.challengeId,
+        p_session_token: input.sessionToken,
+        p_contact_digest: contactDigest,
+        p_pin_digest: pinDigest,
+        p_tenant_slug: ctx.slug,
+        p_service: input.serviceId,
+        p_staff: input.staffId,
+        p_start: canonicalInstant(input.startISO),
+        p_note: sanitizeBookingNote(input.note) ?? undefined,
+        p_guest_name: name,
+        ...(input.channel === 'email' ? { p_guest_email: contact } : { p_guest_phone: contact }),
+        p_location: input.locationId ?? ctx.locationId ?? undefined,
+        p_request_id: input.requestId ?? undefined,
+        p_online_payment_released: commerceReleaseGate(ctx.tenantId).bookingPayment,
+      },
+    )
+  } catch {
+    logger.warn('booking_finalize.rpc_transport_failed', { error: 'finalize_rpc_transport_failed' })
+    return {
+      ok: false,
+      reason: 'error',
+      message: 'Svaret kunde inte hämtas. Tryck på bekräfta igen — samma bokning återanvänds.',
+    }
+  }
+  const { data, error } = finalizeResult
+  if (error) {
+    if (error.code === '23P01' || error.code === 'P0001') {
+      return { ok: false, reason: 'slot_taken', message: 'Den tiden är inte längre ledig — välj en ny tid.' }
+    }
+    return { ok: false, reason: 'error', message: 'Kunde inte slutföra bokningen. Försök igen.' }
+  }
+
+  const row = data?.[0]
+  if (!row) return { ok: false, reason: 'error', message: 'Kunde inte slutföra bokningen. Försök igen.' }
+  if (row.outcome === 'invalid_pin') {
+    return {
+      ok: false,
+      reason: 'invalid_pin',
+      message: 'Koden stämmer inte. Försök igen.',
+      attemptsRemaining: row.attempts_remaining,
+    }
+  }
+  if (row.outcome === 'attempts_exhausted') {
+    return { ok: false, reason: 'expired', message: 'För många felaktiga försök. Skicka en ny kod.' }
+  }
+  if (row.outcome === 'expired' || row.outcome === 'hold_expired') {
+    return { ok: false, reason: 'expired', message: 'Koden eller reservationen har gått ut. Börja om.' }
+  }
+  if (row.outcome !== 'booked' || !row.booking_id || !row.outbox_id) {
+    return { ok: false, reason: 'invalid', message: 'Verifieringen matchar inte bokningen. Börja om.' }
+  }
+
+  // Direct path: claim ONLY the outbox id created in the same DB transaction and
+  // await transport now. A transport failure never rolls back or disguises the
+  // booking; the outbox row remains the auditable retry/reconciliation truth.
+  try {
+    await dispatchNotificationOutboxById(row.outbox_id, deliverImmediateBookingOutbox)
+  } catch {
+    logger.warn('booking_confirmation.immediate_dispatch_failed', {
+      outboxId: row.outbox_id,
+      error: 'immediate_dispatch_failed',
+    })
+  }
+
+  const bookingStatus = row.booking_status === 'confirmed' ? 'confirmed' : 'pending'
+  return {
+    ok: true,
+    bookingId: row.booking_id,
+    outboxId: row.outbox_id,
+    requiresPayment: Boolean(row.requires_payment),
+    bookingStatus,
+    notification: { state: 'queued', channel: input.channel, inserted: true },
   }
 }
 

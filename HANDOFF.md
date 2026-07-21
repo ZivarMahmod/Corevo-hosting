@@ -81,9 +81,17 @@ tenant och ett testfall, aldrig produktdefinitionen.
   eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
   innehåller även keyboard-safe kalenderträffar och explicit Ja/Nej till
   kundmeddelande vid flytt. Goal-73 arkiveras inte förrän Zivar godkänt den live.
-- Goal-74 är den aktiva byggdelen: publik bokning kräver PIN via direkt SMS när
+- Goal-74 är den aktiva byggdelen och är implementerad på
+  `codex/pin-booking-sim-fallback`: publik bokning kräver PIN via direkt SMS när
   Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
-  Design och exekveringsplan finns i `1-Planering/18-sms-direktoperator/`.
+  Challenge + hold samt PIN-verifierad bokning + notifieringsoutbox är atomiska;
+  exakt bekräftelserad dispatchas direkt och den gamla overifierade create-vägen
+  är borttagen. Web 2 191 tester, typecheck, lint utan fel, produktionsbuild,
+  SQL-parser och gateway 54 tester är gröna. Migration, Worker och
+  gatewayrevision är ännu inte driftsatta; e-post- och SIM-canary återstår.
+  Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
+  och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
+  `6-Testing/goal-74-pin-bokning-testlista.md`.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
