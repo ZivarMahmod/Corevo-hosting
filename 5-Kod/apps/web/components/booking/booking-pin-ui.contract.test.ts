@@ -25,6 +25,12 @@ describe('booking wizard PIN gate', () => {
     expect(source).toContain('inputMode="numeric"')
   })
 
+  it('falls back to the e-mail field when the first SMS delivery fails', () => {
+    expect(source).toMatch(
+      /res\.reason === 'delivery_unavailable' && contactMode === 'sms'[\s\S]*?setContactMode\('email'\)/,
+    )
+  })
+
   it('does not call a booking successful before PIN finalize succeeds', () => {
     expect(source).toContain('verifyAndCreateBooking({')
     expect(source).toMatch(

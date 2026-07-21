@@ -54,7 +54,7 @@ Driftordning och manuella canary-steg finns i
 `6-Testing/goal-74-pin-bokning-testlista.md`. Ingen migration eller Worker-version
 är driftsatt av implementationen.
 
-Mekaniskt bevis 2026-07-21: web 270 testfiler/2 193 tester, typecheck,
+Mekaniskt bevis 2026-07-21: web 270 testfiler/2 194 tester, typecheck,
 lint utan fel och Next-produktionsbuild passerar; migrationen parsas som 29
 PostgreSQL-statements; gateway 54/54 tester passerar. Lintens sju varningar är
 befintliga och ligger utanför goal-74:s filer.

@@ -469,6 +469,12 @@ export function BookingWizard({
         setPin('')
       } else {
         if (res.channel) setContactMode(res.channel)
+        if (res.reason === 'delivery_unavailable' && contactMode === 'sms') {
+          // The hold has already been released server-side. Switch the single
+          // visible contact field immediately so the customer can continue via
+          // e-mail without reloading after a modem/send failure.
+          setContactMode('email')
+        }
         if (res.reason === 'slot_taken' && date) {
           setStep(3)
           pickDate(date)
