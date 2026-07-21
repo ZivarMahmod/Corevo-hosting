@@ -1,10 +1,10 @@
 # Databasmigrationer — driftgrind och säker avstämning
 
-## Bekräftat nuläge 2026-07-18
+## Bekräftat nuläge 2026-07-21
 
 - Supabase-projektet är `ACTIVE_HEALTHY`, PostgreSQL 17.6.1 och organisationen
   ligger på Pro.
-- Produktionshistoriken är avstämd till 116 numeriska versioner `0001–0117`
+- Produktionshistoriken är avstämd till 117 numeriska versioner `0001–0118`
   (projektets historiska lucka `0013` finns varken lokalt eller remote), utan
   datumversioner eller andra ogiltiga versionsnamn.
 - De 14 gamla datumversionerna som motsvarade `0069–0082` har bevisats motsvara
@@ -20,8 +20,26 @@
   `db push --dry-run` exakt `0092–0106`; den senare driftluckan erbjöd exakt
   `0107` och inget annat. Den senare Data API-avstämningen erbjöd därefter
   exakt `0108` och sedan den avgränsade kompletteringen `0109`.
-- Produktionscheckpointen är verifierad till `0117`. Det tar bort just
+- Produktionscheckpointen är verifierad till `0118`. Det tar bort just
   migrationsdriftgrinden, inte de övriga lanseringsgrindarna.
+
+## PIN-bokning 0118 2026-07-21
+
+- Pull requestens exakta SHA `6975ab9` passerade fresh Supabase, samtliga SQL/RLS-prov,
+  lint, typecheck, enhet/acceptans, produktionsbuild och Worker-budget i CI-run
+  `29834316557`.
+- `0118_pin_booking_verification.sql` applicerades i produktion genom Supabase MCP.
+  MCP:s enda tidsstämplade historikrad normaliserades med exakta radgrindar till
+  kanonversion `0118`; efterkontrollen visade 117 numeriska versioner, senaste
+  `0118` och noll ogiltiga versionsnamn.
+- `pin_booking_verification_0118_test.sql` passerade direkt mot produktion i en egen
+  `BEGIN/ROLLBACK`. Kontrollfrågan bekräftade privat challenge-tabell, befintlig RPC,
+  nekad execute för `anon`/`authenticated` och execute enbart för `service_role`.
+- Supabase Advisors gav inga nya `WARN`/`ERROR` kopplade till 0118. INFO om en privat
+  RLS-tabell utan policies är avsiktlig eftersom tabellen saknar Data API-grants;
+  nya FK-/unused-indexnotiser är informationsnivå före faktisk trafik.
+- Releaseinventeringen verifierades med fingeravtrycket
+  `sha256:c3d0c1f6507e1633d41ff1c4854aa8ef3a1b8297c24a780596e36907aaebe44c`.
 
 ## Superadmin v2-avstämning 2026-07-18 (`0110–0117`)
 
@@ -67,13 +85,13 @@ migration.
 CI gör tre separata kontroller:
 
 1. unika migrationsnummer + förväntad senaste version,
-2. en SQL-runtimefil för varje lanseringsmigration 0092–0117,
+2. en SQL-runtimefil för varje lanseringsmigration 0092–0118,
 3. fresh Supabase från 0001 till senaste följt av `supabase test db` och lokal
    historikparitet.
 
 Staging kör dessutom `supabase migration list --linked` efter `db push` och
 jämför den länkade historiken med repots hela migrationslista. Produktion kräver
-både `PROD_DB_MIGRATION=0117` och ett granskat `verified`-checkpoint. Checkpointen
+både `PROD_DB_MIGRATION=0118` och ett granskat `verified`-checkpoint. Checkpointen
 måste bära exakt `sha256:`-fingeravtryck som verifieringskommandot skriver ut samt
 en referens till det sparade read-only schema-/historikbeviset. En ensam GitHub-
 variabel eller en gammal checkpoint kan alltså inte låtsas att databasen är klar.
@@ -141,7 +159,7 @@ från denna dokumentationskontroll. Efteråt:
 
 ```text
 supabase migration list --linked
-node scripts/verify-database-release.mjs --expected-latest 0117 --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117 --history-file <migration-list.txt> --history-side remote
+node scripts/verify-database-release.mjs --expected-latest 0118 --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118 --history-file <migration-list.txt> --history-side remote
 ```
 
 Uppdatera därefter checkpoint-filen till `verified`, sätt både
@@ -149,7 +167,7 @@ Uppdatera därefter checkpoint-filen till `verified`, sätt både
 kopiera kommandots utskrivna `sha256:` till `migrationFingerprint` och sätt
 `verificationEvidence` till CI-/ärende-/artefaktreferensen där rå historiklista
 och schemadiff sparats. Sätt sedan GitHub Environment-variabeln
-`PROD_DB_MIGRATION=0117`. Ändringarna granskas i samma release. Kopiera aldrig
+`PROD_DB_MIGRATION=0118`. Ändringarna granskas i samma release. Kopiera aldrig
 fingeravtrycket från en äldre commit.
 
 Källor: [Supabase migration list/repair](https://supabase.com/docs/reference/cli/supabase-migration-list),
