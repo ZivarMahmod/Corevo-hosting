@@ -396,6 +396,60 @@ begin
 end;
 $$;
 
+-- Leaving the PIN panel must not strand the customer's own slot for five
+-- minutes. Challenge identity and hold release are checked and changed inside
+-- one service-only transaction.
+create or replace function public.cancel_booking_verification(
+  p_tenant_slug text,
+  p_challenge uuid,
+  p_session_token uuid
+) returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_tenant uuid;
+  v_challenge private.booking_verification_challenges%rowtype;
+begin
+  if p_session_token is null then return false; end if;
+
+  select t.id into v_tenant
+    from public.tenants t
+   where t.slug = pg_catalog.lower(pg_catalog.btrim(p_tenant_slug))
+     and t.status = 'active';
+  if v_tenant is null then return false; end if;
+
+  select c.* into v_challenge
+    from private.booking_verification_challenges c
+   where c.id = p_challenge
+     and c.tenant_id = v_tenant
+   for update;
+  if not found
+     or v_challenge.session_token <> p_session_token
+     or v_challenge.consumed_at is not null then
+    return false;
+  end if;
+
+  delete from public.slot_holds h
+   where h.id = v_challenge.hold_id
+     and h.tenant_id = v_tenant
+     and h.session_token = p_session_token::text;
+
+  update private.booking_verification_challenges c
+     set delivery_state = 'failed',
+         expires_at = greatest(
+           c.created_at + interval '1 microsecond',
+           pg_catalog.statement_timestamp()
+         ),
+         hold_id = null,
+         updated_at = pg_catalog.statement_timestamp()
+   where c.id = v_challenge.id;
+
+  return true;
+end;
+$$;
+
 create or replace function public.finalize_verified_storefront_booking(
   p_challenge uuid,
   p_session_token uuid,
@@ -654,6 +708,9 @@ revoke all on function public.start_booking_verification(
 revoke all on function public.record_booking_verification_delivery(
   uuid,uuid,boolean
 ) from public, anon, authenticated, service_role;
+revoke all on function public.cancel_booking_verification(
+  text,uuid,uuid
+) from public, anon, authenticated, service_role;
 revoke all on function public.finalize_verified_storefront_booking(
   uuid,uuid,text,text,text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid,boolean
 ) from public, anon, authenticated, service_role;
@@ -666,6 +723,9 @@ grant execute on function public.start_booking_verification(
 ) to service_role;
 grant execute on function public.record_booking_verification_delivery(
   uuid,uuid,boolean
+) to service_role;
+grant execute on function public.cancel_booking_verification(
+  text,uuid,uuid
 ) to service_role;
 grant execute on function public.finalize_verified_storefront_booking(
   uuid,uuid,text,text,text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid,boolean

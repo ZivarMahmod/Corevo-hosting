@@ -9,6 +9,7 @@ describe('public booking PIN action contract', () => {
     expect(source).toContain('export async function getBookingContactModeAction')
     expect(source).toContain('export async function startBookingVerification')
     expect(source).toContain('export async function resendBookingVerification')
+    expect(source).toContain('export async function cancelBookingVerification')
     expect(source).toContain('export async function verifyAndCreateBooking')
   })
 
@@ -17,6 +18,7 @@ describe('public booking PIN action contract', () => {
     expect(source).toContain('deliverBookingPin({')
     expect(source).toMatch(/\.rpc\(\s*'record_booking_verification_delivery'/)
     expect(source).toMatch(/\.rpc\(\s*'release_slot_hold'/)
+    expect(source).toMatch(/\.rpc\(\s*'cancel_booking_verification'/)
     expect(source).toContain('safeReleaseSlotHold')
     expect(source).toContain('booking_verification.delivery_record_failed')
   })

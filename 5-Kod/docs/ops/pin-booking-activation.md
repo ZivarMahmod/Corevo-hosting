@@ -40,7 +40,8 @@ crontrigger har skapats.
 - Klartext-PIN finns endast i serverminnet medan transportanropet görs. Databasen
   lagrar HMAC-digest, maskerad kontakt och leveransstatus.
 - En tids-hold skapas tillsammans med challenge och visas som upptagen för andra.
-  Den släpps vid känt leveransfel och löper annars ut automatiskt.
+  Den släpps atomiskt när kunden backar eller vid känt leveransfel och löper
+  annars ut automatiskt.
 - Bokningen kan bara skapas av den service-role-skyddade finalize-RPC:n efter
   korrekt PIN. Samma challenge/request kan köras igen efter ett tappat svar utan
   dubbelbokning.

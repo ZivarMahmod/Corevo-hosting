@@ -86,7 +86,7 @@ tenant och ett testfall, aldrig produktdefinitionen.
   Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
   Challenge + hold samt PIN-verifierad bokning + notifieringsoutbox är atomiska;
   exakt bekräftelserad dispatchas direkt och den gamla overifierade create-vägen
-  är borttagen. Web 2 191 tester, typecheck, lint utan fel, produktionsbuild,
+  är borttagen. Web 2 193 tester, typecheck, lint utan fel, produktionsbuild,
   SQL-parser och gateway 54 tester är gröna. Migration, Worker och
   gatewayrevision är ännu inte driftsatta; e-post- och SIM-canary återstår.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering

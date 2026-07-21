@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { bookingStatusPresentation } from '@/lib/booking/confirmation-status'
 import { useRouter } from 'next/navigation'
 import {
+  cancelBookingVerification,
   getAvailableSlots,
   getBookingContactModeAction,
   resendBookingVerification,
@@ -642,11 +643,33 @@ export function BookingWizard({
     }
     if (step < 4) setStep((s) => s + 1)
   }
+
+  async function leaveVerification() {
+    const activeVerification = verification
+    if (!activeVerification) return
+    let res: Awaited<ReturnType<typeof cancelBookingVerification>>
+    try {
+      res = await cancelBookingVerification({
+        challengeId: activeVerification.challengeId,
+        sessionToken: activeVerification.sessionToken,
+      })
+    } catch {
+      setError('Tiden kunde inte släppas ännu. Försök igen om en stund.')
+      return
+    }
+    if (!res.ok) {
+      setError(res.message)
+      return
+    }
+    setVerification(null)
+    setPin('')
+    setError(null)
+  }
+
   function goBack() {
     if (verification) {
-      setVerification(null)
-      setPin('')
       setError(null)
+      startTransition(leaveVerification)
       return
     }
     if (step > 1) setStep((s) => s - 1)
@@ -810,7 +833,13 @@ export function BookingWizard({
         </div>
         <div className="wizard-stepbody">{verificationPanel}</div>
         <div className="wizard-actionbar">
-          <button type="button" className="wizard-back-btn" onClick={goBack} aria-label="Ändra uppgifter">
+          <button
+            type="button"
+            className="wizard-back-btn"
+            disabled={pending}
+            onClick={goBack}
+            aria-label="Ändra uppgifter"
+          >
             <span aria-hidden>←</span>
           </button>
           <button
@@ -1562,7 +1591,13 @@ export function BookingWizard({
       {step < 5 && (
         <div className="wizard-actionbar">
           {step > 1 ? (
-            <button type="button" className="wizard-back-btn" onClick={goBack} aria-label="Tillbaka">
+            <button
+              type="button"
+              className="wizard-back-btn"
+              disabled={pending}
+              onClick={goBack}
+              aria-label="Tillbaka"
+            >
               <span aria-hidden>←</span>
             </button>
           ) : null}

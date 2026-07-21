@@ -30,6 +30,7 @@ describe('verified public booking migration contract', () => {
   it('starts a hold and only finalizes a delivered matching challenge', () => {
     expect(migration).toContain('public.start_booking_verification')
     expect(migration).toContain('public.record_booking_verification_delivery')
+    expect(migration).toContain('public.cancel_booking_verification')
     expect(migration).toContain('public.finalize_verified_storefront_booking')
     expect(migration).toContain("delivery_state <> 'delivered'")
     expect(migration).toContain('v_challenge.pin_digest <> p_pin_digest')
@@ -37,6 +38,14 @@ describe('verified public booking migration contract', () => {
     expect(migration).toContain('p_pin_digest is null or v_challenge.pin_digest <> p_pin_digest')
     expect(migration).toContain('p_session_token is null')
     expect(migration).toContain('public.place_slot_hold(')
+  })
+
+  it('atomically expires an abandoned challenge and releases only its matching hold', () => {
+    expect(migration).toContain('create or replace function public.cancel_booking_verification')
+    expect(migration).toContain('v_challenge.session_token <> p_session_token')
+    expect(migration).toContain('delete from public.slot_holds h')
+    expect(migration).toContain('where h.id = v_challenge.hold_id')
+    expect(migration).toContain('hold_id = null')
   })
 
   it('atomically creates booking, consumes challenge and writes the outbox event', () => {
@@ -68,6 +77,6 @@ describe('verified public booking migration contract', () => {
   it('exposes write RPCs only to service_role', () => {
     expect(migration).toContain('from public, anon, authenticated, service_role')
     expect(migration).toContain('to service_role')
-    expect(migration).not.toMatch(/grant execute on function public\.(start_booking_verification|record_booking_verification_delivery|finalize_verified_storefront_booking)[\s\s]*to (anon|authenticated)/)
+    expect(migration).not.toMatch(/grant execute on function public\.(start_booking_verification|record_booking_verification_delivery|cancel_booking_verification|finalize_verified_storefront_booking)[\s\s]*to (anon|authenticated)/)
   })
 })

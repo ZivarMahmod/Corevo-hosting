@@ -8,8 +8,14 @@ describe('booking wizard PIN gate', () => {
   it('starts, resends and finalizes through the verified actions', () => {
     expect(source).toContain('startBookingVerification')
     expect(source).toContain('resendBookingVerification')
+    expect(source).toContain('cancelBookingVerification')
     expect(source).toContain('verifyAndCreateBooking')
     expect(source).not.toContain('createBooking,')
+  })
+
+  it('releases the verification hold before returning to editable contact details', () => {
+    expect(source).toContain('await cancelBookingVerification({')
+    expect(source).toMatch(/async function leaveVerification[\s\S]*?if \(!res\.ok\)[\s\S]*?setVerification\(null\)/)
   })
 
   it('renders exactly the live contact channel and a one-time-code field', () => {

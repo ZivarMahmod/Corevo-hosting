@@ -66,6 +66,15 @@ export type ResendBookingVerificationInput = StartBookingVerificationInput & {
   sessionToken: string
 }
 
+export type CancelBookingVerificationInput = {
+  challengeId: string
+  sessionToken: string
+}
+
+export type CancelBookingVerificationResult =
+  | { ok: true }
+  | { ok: false; message: string }
+
 export type BookingVerificationStarted = {
   ok: true
   channel: BookingContactMode
@@ -424,6 +433,13 @@ type DeliveryVerificationRpc = {
   ) => Promise<{ data: boolean | null; error: RpcError | null }>
 }
 
+type CancelVerificationRpc = {
+  rpc: (
+    name: 'cancel_booking_verification',
+    args: { p_tenant_slug: string; p_challenge: string; p_session_token: string },
+  ) => Promise<{ data: boolean | null; error: RpcError | null }>
+}
+
 type ReleaseHoldRpc = {
   rpc: (
     name: 'release_slot_hold',
@@ -474,6 +490,8 @@ function validSelection(input: BookingVerificationSelection): boolean {
   const start = Date.parse(input.startISO)
   return Number.isFinite(start)
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function startRpcError(error: RpcError): BookingVerificationStartResult {
   if (error.code === '23P01') {
@@ -666,11 +684,51 @@ export async function startBookingVerification(
 export async function resendBookingVerification(
   input: ResendBookingVerificationInput,
 ): Promise<BookingVerificationStartResult> {
-  return startBookingVerificationInternal(input, {
+  const result = await startBookingVerificationInternal(input, {
     channel: input.channel,
     challengeId: input.challengeId,
     sessionToken: input.sessionToken,
   })
+  if (!result.ok && result.reason === 'delivery_unavailable' && input.channel === 'sms') {
+    const cancelled = await cancelBookingVerification(input)
+    if (!cancelled.ok) {
+      return {
+        ok: false,
+        reason: 'error',
+        message: 'SMS är nere, men tiden kunde inte släppas ännu. Försök igen om en stund.',
+      }
+    }
+  }
+  return result
+}
+
+export async function cancelBookingVerification(
+  input: CancelBookingVerificationInput,
+): Promise<CancelBookingVerificationResult> {
+  if (!UUID_RE.test(input.challengeId) || !UUID_RE.test(input.sessionToken)) {
+    return { ok: false, message: 'Verifieringen kunde inte avslutas. Ladda om sidan och försök igen.' }
+  }
+  const ctx = await getTenantContext()
+  if (!ctx) return { ok: false, message: 'Verifieringen kunde inte avslutas. Ladda om sidan och försök igen.' }
+  const writer = createServiceClient()
+  if (!writer) return { ok: false, message: 'Verifieringen kunde inte avslutas. Försök igen.' }
+  try {
+    const { data, error } = await (writer as unknown as CancelVerificationRpc).rpc(
+      'cancel_booking_verification',
+      {
+        p_tenant_slug: ctx.slug,
+        p_challenge: input.challengeId,
+        p_session_token: input.sessionToken,
+      },
+    )
+    if (error || data !== true) {
+      return { ok: false, message: 'Tiden kunde inte släppas ännu. Försök igen om en stund.' }
+    }
+    return { ok: true }
+  } catch {
+    logger.warn('booking_verification.cancel_failed', { error: 'cancel_rpc_transport_failed' })
+    return { ok: false, message: 'Tiden kunde inte släppas ännu. Försök igen om en stund.' }
+  }
 }
 
 export async function verifyAndCreateBooking(
