@@ -13,16 +13,19 @@ vi.mock('@/lib/customer-portal/data', () => mocks)
 import HomePage, {
   dynamic as homeDynamic,
   fetchCache as homeFetchCache,
+  generateMetadata as generateHomeMetadata,
   revalidate as homeRevalidate,
 } from './page'
 import HistoryPage, {
   dynamic as historyDynamic,
   fetchCache as historyFetchCache,
+  generateMetadata as generateHistoryMetadata,
   revalidate as historyRevalidate,
 } from './historik/page'
 import DetailPage, {
   dynamic as detailDynamic,
   fetchCache as detailFetchCache,
+  generateMetadata as generateDetailMetadata,
   revalidate as detailRevalidate,
 } from './bokningar/[id]/page'
 
@@ -59,6 +62,12 @@ describe('personal portal route cache contract', () => {
     expect([homeFetchCache, historyFetchCache, detailFetchCache]).toEqual([
       'force-no-store', 'force-no-store', 'force-no-store',
     ])
+  })
+
+  it('builds the canonical tenant-aware document titles for every route', async () => {
+    await expect(generateHomeMetadata()).resolves.toMatchObject({ title: 'Bokningar – FreshCut' })
+    await expect(generateHistoryMetadata()).resolves.toMatchObject({ title: 'Historik – FreshCut' })
+    await expect(generateDetailMetadata()).resolves.toMatchObject({ title: 'Bokning – FreshCut' })
   })
 })
 
@@ -118,6 +127,7 @@ describe('/mina/historik', () => {
     expect(html).toContain('Övriga bokningar')
     expect(html).toContain('Status uppdateras')
     expect(html).toContain('Visa fler')
+    expect(html).toContain(`/mina/bokningar/${bookingId}?from=history`)
     expect(html.match(/<h1/g)).toHaveLength(1)
     expect(visibleText(html)).not.toContain('new_internal_state')
   })
@@ -140,6 +150,16 @@ describe('/mina/bokningar/[id]', () => {
     expect(mocks.getPortalBooking).toHaveBeenCalledTimes(1)
     expect(html).toContain('Service från RPC')
     expect(visibleText(html)).not.toContain(bookingId)
+  })
+
+  it('preserves the documented history origin in both detail back controls', async () => {
+    mocks.getPortalBooking.mockResolvedValue({ outcome: 'ok', booking: booking() })
+    const html = renderToStaticMarkup(await DetailPage({
+      params: Promise.resolve({ id: bookingId }),
+      searchParams: Promise.resolve({ from: 'history' }),
+    }))
+    expect(html).toMatch(/class="cp-top-action cp-mobile-user" href="\/mina\/historik"/)
+    expect(html).toMatch(/class="cp-btn cp-btn-ghost cp-back" href="\/mina\/historik"/)
   })
 
   it.each(['not_found', 'expired', 'unavailable'] as const)(

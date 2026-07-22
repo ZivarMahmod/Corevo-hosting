@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { PortalBookingProjection, PortalSessionSnapshot } from '@/lib/customer-portal/types'
 import {
   formatPortalBooking,
+  portalRebookAction,
   portalStatusPresentation,
 } from '@/lib/customer-portal/presentation'
 
@@ -107,6 +108,7 @@ export function NextBookingCard({
   }
 
   const formatted = formatPortalBooking(next, snapshot)
+  const rebookAction = portalRebookAction(next)
   return (
     <>
       <article className="cp-card cp-next-booking" aria-labelledby="nasta-bokning">
@@ -127,10 +129,11 @@ export function NextBookingCard({
               return (
                 <li key={item.id}>
                   <Link className="cp-booking-link" href={`/mina/bokningar/${item.id}`}>
-                    <span className="cp-booking-copy">
-                      <span className="cp-mono">{date.homeDateTime}</span>
-                      <span>{item.serviceName}</span>
-                    </span>
+                      <span className="cp-booking-copy">
+                        <span className="cp-mono">{date.homeDateTime}</span>
+                        <span>{item.serviceName}</span>
+                        {item.staffTitle && <small>{item.staffTitle}</small>}
+                      </span>
                     <BookingStatusChip booking={item} />
                     <Chevron />
                   </Link>
@@ -140,7 +143,7 @@ export function NextBookingCard({
           </ul>
         </section>
       )}
-      {next.publicRebookUrl && (
+      {next.publicRebookUrl && rebookAction === 'active' && (
         <div className="cp-actions">
           <a className="cp-btn" href={next.publicRebookUrl} rel="noopener">Boka en tid till</a>
         </div>
@@ -174,8 +177,7 @@ export function BookingDetail({
 }) {
   const formatted = formatPortalBooking(booking, snapshot)
   const deadline = deadlineText(booking, snapshot)
-  const active = booking.presentationStatus === 'pending' || booking.presentationStatus === 'confirmed'
-  const historic = booking.presentationStatus === 'completed' || booking.presentationStatus === 'cancelled'
+  const rebookAction = portalRebookAction(booking)
   return (
     <article className="cp-detail">
       <Link className="cp-btn cp-btn-ghost cp-back" href={backTarget}>
@@ -201,10 +203,10 @@ export function BookingDetail({
         {formatted.price && <section className="cp-card"><span className="cp-label">Pris</span><p className="cp-mono">{formatted.price}</p></section>}
         {deadline && <section className="cp-card"><span className="cp-label">Avbokningsvillkor</span><p>{deadline}</p></section>}
       </div>
-      {booking.publicRebookUrl && (active || historic) && (
+      {booking.publicRebookUrl && rebookAction && (
         <div className="cp-actions">
           <a className="cp-btn" href={booking.publicRebookUrl} rel="noopener">
-            {active ? 'Boka en tid till' : 'Boka igen'}
+            {rebookAction === 'active' ? 'Boka en tid till' : 'Boka igen'}
           </a>
         </div>
       )}

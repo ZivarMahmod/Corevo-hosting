@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { PortalShell } from '@/components/customer-portal/PortalShell'
 import { PortalErrorState } from '@/components/customer-portal/PortalViews'
 import { BookingHistoryListClient } from '@/components/customer-portal/BookingHistoryListClient'
@@ -7,6 +8,14 @@ import { loadMorePortalHistory } from './actions'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const fetchCache = 'force-no-store'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await getPortalSessionSnapshot()
+  return {
+    title: session.outcome === 'ok' ? `Historik – ${session.snapshot.tenantName}` : 'Historik – Corevo',
+    robots: { index: false, follow: false },
+  }
+}
 
 export default async function CustomerPortalHistoryPage() {
   const session = await getPortalSessionSnapshot()

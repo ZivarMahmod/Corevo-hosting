@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { PortalShell } from '@/components/customer-portal/PortalShell'
 import {
   NextBookingCard,
@@ -9,6 +10,14 @@ import { getPortalSessionSnapshot, listPortalBookings } from '@/lib/customer-por
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const fetchCache = 'force-no-store'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await getPortalSessionSnapshot()
+  return {
+    title: session.outcome === 'ok' ? `Bokningar – ${session.snapshot.tenantName}` : 'Bokningar – Corevo',
+    robots: { index: false, follow: false },
+  }
+}
 
 export default async function CustomerPortalHomePage() {
   const session = await getPortalSessionSnapshot()

@@ -32,6 +32,21 @@ export function portalStatusPresentation(
   return STATUS[booking.presentationStatus]
 }
 
+export function portalRebookAction(
+  booking: PortalBookingProjection,
+  now = Date.now(),
+): 'active' | 'historic' | null {
+  if (
+    (booking.presentationStatus === 'pending' || booking.presentationStatus === 'confirmed') &&
+    Date.parse(booking.startTs) > now
+  ) return 'active'
+  if (
+    booking.presentationStatus === 'completed' ||
+    booking.presentationStatus === 'cancelled'
+  ) return 'historic'
+  return null
+}
+
 export function formatPortalBooking(
   booking: PortalBookingProjection,
   snapshot: PortalSessionSnapshot,

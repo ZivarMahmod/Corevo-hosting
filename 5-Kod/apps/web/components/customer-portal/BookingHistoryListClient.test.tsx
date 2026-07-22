@@ -69,6 +69,36 @@ describe('BookingHistoryListClient', () => {
     expect(document.activeElement).toBe(button)
   })
 
+  it('locks rapid duplicate clicks and maps a rejected action to the intact canonical error state', async () => {
+    let rejectLoad: (reason?: unknown) => void = () => undefined
+    const loadMore = vi.fn(() => new Promise<never>((_resolve, reject) => {
+      rejectLoad = reject
+    }))
+    await act(async () => root.render(
+      <BookingHistoryListClient
+        snapshot={snapshot}
+        initialItems={[first]}
+        initialCursor={{ startTs: first.startTs, id: first.id }}
+        loadMore={loadMore}
+      />,
+    ))
+
+    const button = container.querySelector<HTMLButtonElement>('button')!
+    button.focus()
+    act(() => {
+      button.click()
+      button.click()
+    })
+    expect(loadMore).toHaveBeenCalledTimes(1)
+    expect(button.disabled).toBe(true)
+
+    await act(async () => rejectLoad(new Error('network rejected')))
+    expect(container.textContent).toContain('Fler bokningar kunde inte hämtas. Försök igen.')
+    expect(container.textContent).toContain('Första besöket')
+    expect(button.disabled).toBe(false)
+    expect(document.activeElement).toBe(button)
+  })
+
   it('appends the next page and focuses its first row when the button disappears', async () => {
     const loadMore = vi.fn(async () => ({
       outcome: 'ok' as const,

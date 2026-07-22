@@ -50,7 +50,7 @@ const booking = (overrides: Partial<PortalBookingProjection> = {}): PortalBookin
 const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
 
 describe('CustomerPortalShell', () => {
-  it('renders the canonical landmarks once and exactly three links in each responsive nav', () => {
+  it('renders the canonical landmarks once and exactly one three-link responsive nav', () => {
     const html = renderToStaticMarkup(
       <PortalShell active="bookings" customerName="Alex">
         <h1>Nordverk Bilservice</h1>
@@ -60,7 +60,7 @@ describe('CustomerPortalShell', () => {
     expect(html.indexOf('Hoppa till innehåll')).toBeLessThan(html.indexOf('<header'))
     expect(html.match(/<header/g)).toHaveLength(1)
     expect(html.match(/<main id="huvudinnehall"/g)).toHaveLength(1)
-    expect(html.match(/<nav[^>]+aria-label="Huvudmeny"/g)).toHaveLength(2)
+    expect(html.match(/<nav[^>]+aria-label="Huvudmeny"/g)).toHaveLength(1)
     for (const nav of html.match(/<nav[^>]+aria-label="Huvudmeny"[\s\S]*?<\/nav>/g) ?? []) {
       expect(nav.match(/<li>/g)).toHaveLength(3)
       expect(nav.indexOf('Bokningar')).toBeLessThan(nav.indexOf('Historik'))
@@ -85,6 +85,8 @@ describe('customer portal views', () => {
       id: '423e4567-e89b-42d3-a456-426614174000',
       status: 'awaiting_internal_review',
       presentationStatus: 'unknown',
+      publicRebookUrl: 'https://nordverk.corevo.se/boka',
+      staffTitle: 'Tekniker Sam',
     })
     const one = renderToStaticMarkup(
       <NextBookingCard snapshot={snapshot} items={[booking()]} hasHistory />,
@@ -92,14 +94,37 @@ describe('customer portal views', () => {
     const two = renderToStaticMarkup(
       <NextBookingCard snapshot={snapshot} items={[booking(), unknown]} hasHistory />,
     )
+    const unknownNext = renderToStaticMarkup(
+      <NextBookingCard snapshot={snapshot} items={[unknown]} hasHistory />,
+    )
 
     expect(one).toContain('NÄSTA BOKNING')
     expect(one).toContain('Visa bokningen')
     expect(one).not.toContain('Fler kommande')
     expect(two).toContain('Fler kommande')
     expect(two).toContain('Status uppdateras')
+    expect(two).toContain('Tekniker Sam')
     expect(visibleText(two)).not.toContain('awaiting_internal_review')
+    expect(unknownNext).not.toContain('Boka en tid till')
     expect(two).not.toMatch(/Lägg i kalender|Avboka/)
+  })
+
+  it('hides rebook actions while a passed booking is waiting for an outcome', () => {
+    const passed = booking({
+      startTs: '2026-06-23T12:30:00.000Z',
+      endTs: '2026-06-23T13:15:00.000Z',
+      publicRebookUrl: 'https://nordverk.corevo.se/boka',
+    })
+
+    const home = renderToStaticMarkup(
+      <NextBookingCard snapshot={snapshot} items={[passed]} hasHistory />,
+    )
+    const detail = renderToStaticMarkup(<BookingDetail snapshot={snapshot} booking={passed} />)
+
+    expect(home).toContain('Väntar på avslut')
+    expect(detail).toContain('Väntar på avslut')
+    expect(home).not.toContain('Boka en tid till')
+    expect(detail).not.toMatch(/Boka en tid till|Boka igen/)
   })
 
   it('uses the canonical honest empty state without an invented next step', () => {

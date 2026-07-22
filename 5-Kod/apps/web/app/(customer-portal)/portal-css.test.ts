@@ -31,6 +31,13 @@ describe('customer portal canonical CSS', () => {
     expect(source).toMatch(/@media \(min-width:1024px\)[\s\S]*\.cp-sidenav\s*\{[^}]*display:\s*block/)
   })
 
+  it('keeps the exact avatar, card-gap and centered desktop topbar contracts', () => {
+    const source = css()
+    expect(source).toMatch(/\.cp-tenant-avatar\s*\{[^}]*background:\s*var\(--surface-2\);[^}]*color:\s*var\(--ink-1\)/s)
+    expect(source).not.toContain('.cp-card+.cp-card')
+    expect(source).toMatch(/\.cp-topbar-inner\s*\{[^}]*max-width:\s*var\(--container-desktop\);[^}]*margin:\s*(?:0\s+)?auto/s)
+  })
+
   it('keeps focus visible and disables motion when the user requests it', () => {
     const source = css()
     expect(source).toContain(':focus-visible')

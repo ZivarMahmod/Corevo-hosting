@@ -42,6 +42,7 @@ export function BookingHistoryListClient({
   const [error, setError] = useState(false)
   const [focusTargetId, setFocusTargetId] = useState<string | null>(null)
   const focusTargetRef = useRef<HTMLAnchorElement>(null)
+  const requestPendingRef = useRef(false)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -49,18 +50,25 @@ export function BookingHistoryListClient({
   }, [focusTargetId])
 
   function requestMore() {
-    if (!cursor || isPending) return
+    if (!cursor || requestPendingRef.current) return
+    requestPendingRef.current = true
     setError(false)
     startTransition(async () => {
-      const result = await loadMore(cursor)
-      if (result.outcome !== 'ok') {
-        setError(true)
-        return
-      }
+      try {
+        const result = await loadMore(cursor)
+        if (result.outcome !== 'ok') {
+          setError(true)
+          return
+        }
 
-      setItems((current) => [...current, ...result.items])
-      setCursor(result.hasMore ? result.nextCursor : null)
-      if (!result.hasMore) setFocusTargetId(result.items[0]?.id ?? null)
+        setItems((current) => [...current, ...result.items])
+        setCursor(result.hasMore ? result.nextCursor : null)
+        if (!result.hasMore) setFocusTargetId(result.items[0]?.id ?? null)
+      } catch {
+        setError(true)
+      } finally {
+        requestPendingRef.current = false
+      }
     })
   }
 
@@ -84,7 +92,7 @@ export function BookingHistoryListClient({
                   <li key={item.id}>
                     <Link
                       className="cp-booking-link"
-                      href={`/mina/bokningar/${item.id}`}
+                      href={`/mina/bokningar/${item.id}?from=history`}
                       ref={item.id === focusTargetId ? focusTargetRef : undefined}
                     >
                       <span className="cp-booking-copy">
@@ -107,6 +115,7 @@ export function BookingHistoryListClient({
         <button
           className="cp-btn cp-history-more"
           type="button"
+          disabled={isPending}
           aria-disabled={isPending ? 'true' : undefined}
           onClick={requestMore}
         >

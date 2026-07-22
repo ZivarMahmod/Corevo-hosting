@@ -101,7 +101,8 @@
 .customer-portal :focus-visible{outline:var(--focus-ring-width) solid var(--focus-ring);outline-offset:var(--focus-ring-offset)}
 .cp-skip{position:fixed;z-index:var(--z-toast);top:var(--space-2);left:var(--space-2);padding:var(--space-3) var(--space-4);background:var(--surface-3);transform:translateY(-200%)}
 .cp-skip:focus{transform:none}
-.cp-topbar{height:calc(var(--topbar-h-mobile) + env(safe-area-inset-top));padding:env(safe-area-inset-top) var(--gutter-mobile) 0;position:sticky;top:0;z-index:var(--z-sticky);display:flex;align-items:center;justify-content:space-between;background:var(--surface-1);border-bottom:var(--border-width) solid var(--line-1)}
+.cp-topbar{height:calc(var(--topbar-h-mobile) + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);position:sticky;top:0;z-index:var(--z-sticky);background:var(--surface-1);border-bottom:var(--border-width) solid var(--line-1)}
+.cp-topbar-inner{width:100%;max-width:var(--container-desktop);height:var(--topbar-h-mobile);margin:0 auto;padding:0 var(--gutter-mobile);display:flex;align-items:center;justify-content:space-between}
 .cp-brand{display:flex;align-items:center;gap:var(--space-2);color:var(--ink-1)!important;text-decoration:none;font-weight:var(--text-h2-weight)}
 .cp-brand small{font:var(--text-meta-weight) var(--text-meta-size)/var(--text-meta-line) var(--font-mono);color:var(--ink-2)}
 .cp-top-action{min-width:var(--tap-min);display:inline-flex;align-items:center;justify-content:center;padding:var(--space-2) var(--space-3);border:var(--border-width) solid var(--line-2);border-radius:var(--radius-pill);background:var(--surface-2);color:var(--ink-1)!important;text-decoration:none}
@@ -113,12 +114,11 @@
 .cp-sidenav ul,.cp-bottomnav ul,.cp-booking-list ul{margin:0;padding:0;list-style:none}
 .cp-icon{width:var(--icon-md);height:var(--icon-md);flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .cp-card{padding:var(--space-4);background:var(--surface-1);border:var(--border-width) solid var(--line-1);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
-.cp-card+.cp-card{margin-top:var(--space-3)}
 .cp-identity{display:flex;align-items:flex-start;gap:var(--space-3)}
 .cp-identity-copy{min-width:0;flex:1}
 .cp-identity h1{margin-bottom:var(--space-1)}
 .cp-identity p{margin-bottom:var(--space-1)}
-.cp-tenant-avatar{width:var(--logo-max);height:var(--logo-max);flex:none;display:grid;place-items:center;object-fit:contain;border-radius:var(--radius-pill);background:var(--action);color:var(--action-text);font-weight:var(--text-h2-weight)}
+.cp-tenant-avatar{width:var(--logo-max);height:var(--logo-max);flex:none;display:grid;place-items:center;object-fit:contain;border-radius:var(--radius-pill);background:var(--surface-2);color:var(--ink-1);font-weight:var(--text-h2-weight)}
 .cp-meta{font:var(--text-meta-weight) var(--text-meta-size)/var(--text-meta-line) var(--font-mono);color:var(--ink-2)}
 .cp-mono{font-family:var(--font-mono)!important}
 .cp-eyebrow{font:var(--text-meta-weight) var(--text-meta-size)/var(--text-meta-line) var(--font-mono)!important;color:var(--ink-2);letter-spacing:.12em!important}
@@ -169,7 +169,7 @@
   .cp-identity{flex-direction:column}
 }
 @media (min-width:390px){
-  .cp-topbar{padding-left:var(--space-5);padding-right:var(--space-5)}
+  .cp-topbar-inner{padding-left:var(--space-5);padding-right:var(--space-5)}
   .cp-layout main{padding-left:var(--space-5);padding-right:var(--space-5)}
 }
 @media (min-width:768px){
@@ -178,7 +178,8 @@
   .cp-actions .cp-btn{width:auto;padding-left:var(--space-6);padding-right:var(--space-6)}
 }
 @media (min-width:1024px){
-  .cp-topbar{height:var(--topbar-h-desktop);padding:0 var(--space-6)}
+  .cp-topbar{height:var(--topbar-h-desktop);padding-top:0}
+  .cp-topbar-inner{height:var(--topbar-h-desktop);padding:0}
   .cp-mobile-user,.cp-bottomnav{display:none}
   .cp-desktop-user{display:flex;align-items:center;gap:var(--space-3)}
   .cp-layout{max-width:var(--container-desktop);display:grid;grid-template-columns:var(--col-left) minmax(0,var(--col-main));gap:var(--layout-gap);padding:var(--space-6) 0}
