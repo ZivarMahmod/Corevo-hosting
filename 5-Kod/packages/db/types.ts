@@ -1452,6 +1452,7 @@ export type Database = {
           order_id: string | null
           status: string
           stripe_checkout_session_id: string | null
+          stripe_connected_account_id: string | null
           stripe_payment_intent_id: string | null
           tenant_id: string
           updated_at: string | null
@@ -1465,6 +1466,7 @@ export type Database = {
           order_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
+          stripe_connected_account_id?: string | null
           stripe_payment_intent_id?: string | null
           tenant_id: string
           updated_at?: string | null
@@ -1478,6 +1480,7 @@ export type Database = {
           order_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
+          stripe_connected_account_id?: string | null
           stripe_payment_intent_id?: string | null
           tenant_id?: string
           updated_at?: string | null
@@ -3447,7 +3450,70 @@ export type Database = {
         }[]
       }
       confirm_booking_payment: {
-        Args: { p_booking: string; p_payment_intent: string; p_tenant: string }
+        Args: {
+          p_booking: string
+          p_connected_account: string
+          p_payment_intent: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      booking_payment_event_matches: {
+        Args: {
+          p_booking: string
+          p_connected_account: string
+          p_payment_intent: string
+          p_tenant: string
+        }
+        Returns: boolean
+      }
+      finalize_customer_booking_rebook: {
+        Args: {
+          p_customer: string | null
+          p_customer_profile: string
+          p_new_booking: string
+          p_old_booking: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      compensate_customer_booking_rebook: {
+        Args: {
+          p_customer: string | null
+          p_customer_profile: string
+          p_new_booking: string
+          p_old_booking: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      confirm_shop_order_payment: {
+        Args: {
+          p_connected_account: string
+          p_order: string
+          p_payment_intent: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      prepare_booking_checkout_payment: {
+        Args: {
+          p_amount_cents: number
+          p_booking: string
+          p_checkout_session: string
+          p_connected_account: string
+          p_currency: string
+          p_tenant: string
+        }
+        Returns: boolean
+      }
+      record_payment_refund_webhook: {
+        Args: {
+          p_connected_account: string
+          p_payment_intent: string
+          p_provider_ref: string
+          p_tenant: string
+        }
         Returns: Json
       }
       create_public_booking: {

@@ -9,8 +9,8 @@ const env = {
   SUPABASE_SERVICE_ROLE_KEY: 'service-secret',
 }
 
-describe('primary reminder scheduler', () => {
-  it('records start/success and only queues reminders through the secret-gated app route', async () => {
+describe('primary booking scheduler', () => {
+  it('records start/success after reminders and refunds both succeed internally', async () => {
     const heartbeat = []
     const appRequests = []
     const fetchImpl = async (request) => {
@@ -30,17 +30,27 @@ describe('primary reminder scheduler', () => {
       now: () => new Date('2026-07-18T10:00:00Z'),
     })
 
-    assert.equal(appRequests.length, 1)
+    assert.equal(appRequests.length, 2)
     assert.equal(new URL(appRequests[0].url).pathname, '/api/cron/reminders')
-    assert.equal(appRequests[0].headers.get('authorization'), 'Bearer cron-secret')
+    assert.equal(new URL(appRequests[1].url).pathname, '/api/cron/payment-refunds')
+    for (const request of appRequests) {
+      assert.equal(request.method, 'POST')
+      assert.equal(request.headers.get('authorization'), 'Bearer cron-secret')
+    }
     assert.deepEqual(heartbeat.map((entry) => entry.p_phase), ['started', 'succeeded'])
   })
 
   it('records a closed failure code and rejects the scheduled run on a non-2xx app response', async () => {
     const heartbeat = []
+    const paths = []
     await assert.rejects(() => runPrimaryScheduler({
       env,
-      appFetch: async () => new Response('failed', { status: 500 }),
+      appFetch: async (request) => {
+        paths.push(new URL(request.url).pathname)
+        return new URL(request.url).pathname.endsWith('payment-refunds')
+          ? new Response('failed', { status: 503 })
+          : new Response('{}', { status: 200 })
+      },
       fetchImpl: async (request) => {
         heartbeat.push(await request.json())
         return new Response(JSON.stringify(true), { status: 200 })
@@ -51,6 +61,21 @@ describe('primary reminder scheduler', () => {
 
     assert.deepEqual(heartbeat.map((entry) => entry.p_phase), ['started', 'failed'])
     assert.equal(heartbeat[1].p_error_code, 'route_failed')
+    assert.deepEqual(paths, ['/api/cron/reminders', '/api/cron/payment-refunds'])
+  })
+
+  it('attempts refunds even when reminders fail, then fails the composite heartbeat closed', async () => {
+    const paths = []
+    await assert.rejects(() => runPrimaryScheduler({
+      env,
+      appFetch: async (request) => {
+        const path = new URL(request.url).pathname
+        paths.push(path)
+        return new Response('{}', { status: path.endsWith('/reminders') ? 500 : 200 })
+      },
+      fetchImpl: async () => new Response(JSON.stringify(true), { status: 200 }),
+    }), /primary_scheduler_route_failed/)
+    assert.deepEqual(paths, ['/api/cron/reminders', '/api/cron/payment-refunds'])
   })
 
   it('fails before any app call when a required secret is missing', async () => {

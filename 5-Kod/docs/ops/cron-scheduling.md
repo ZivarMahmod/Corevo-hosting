@@ -4,9 +4,9 @@
 
 - Rena databas-sweeps (pending, shop-reservationer, slot-holds och retention)
   ligger i `pg_cron` via migration 0090.
-- Tidskritisk reminder-produktion ligger primärt i Cloudflare Cron Triggers var
-  15:e minut. `custom-worker.mjs` återanvänder OpenNexts fetch-handler och anropar
-  bara den secret-gatade reminder-rutten.
+- Tidskritisk reminder-produktion och bokningsåterbetalningar ligger primärt i
+  Cloudflare Cron Triggers var 15:e minut. `custom-worker.mjs` återanvänder
+  OpenNexts fetch-handler och anropar de två secret-gatade rutterna internt.
 - Migration 0102 lagrar ett PII-fritt heartbeat i `private`; en service-only RPC
   rapporterar stale/failure till `/api/cron/scheduler-health`.
 - GitHub `cron-booking.yml` behålls under verifieringsperioden som nödräls och
@@ -21,8 +21,9 @@ primär; GitHub-overlap skyddar kunden och larmar på dess uteblivna heartbeat.
 Reminder-svepet kräver migration 0088. Den atomiska DB-claimen använder
 `FOR UPDATE SKIP LOCKED`, unik körningstoken och en 15-minuters lease, så två
 overlappande körningar inte kan skapa samma reminder samtidigt. 0100:s stabila
-eventnyckel ger ytterligare idempotens i outboxen. Rutten skickar ingen provider-
-trafik; den köar bara durabla events. Ett icke-200 är alltid ett driftfel.
+eventnyckel ger ytterligare idempotens i outboxen. Reminder-rutten skickar ingen
+providertrafik; den köar bara durabla events. Refund-rutten får anropa Stripe men
+aldrig SMS-/notifikationsdispatchern. Ett icke-200 är alltid ett driftfel.
 
 ## Cloudflare Cron Triggers — utredning
 

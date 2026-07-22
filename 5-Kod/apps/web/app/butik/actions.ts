@@ -498,7 +498,10 @@ export async function startShopCheckout(
         success_url: `${origin}/bekraftelse/${orderId}?betald=1`,
         cancel_url: `${origin}/bekraftelse/${orderId}?avbruten=1`,
       },
-      { stripeAccount: tenant.stripe_account_id }, // DIRECT charge på salongens konto
+      {
+        stripeAccount: tenant.stripe_account_id,
+        idempotencyKey: `shop_checkout_${orderId}`,
+      }, // DIRECT charge på salongens konto; stabil replay-nyckel per order
     )
   } catch {
     return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }

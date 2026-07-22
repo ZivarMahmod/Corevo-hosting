@@ -31,8 +31,8 @@ jobs:
       - name: Verify migration and SQL test inventory
         run: >-
           node scripts/verify-database-release.mjs
-          --expected-latest 0120
-          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120
+          --expected-latest 0121
+          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121
       # Local disposable stack: migrations + seed are applied before the SQL
       # suites run. No production/staging credentials or data are used.
       - name: Start disposable Supabase (fresh 0001-latest)
@@ -41,8 +41,8 @@ jobs:
         run: |
           supabase migration list --local > "$RUNNER_TEMP/local-migrations.txt"
           node scripts/verify-database-release.mjs \
-            --expected-latest 0120 \
-            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120 \
+            --expected-latest 0121 \
+            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121 \
             --history-file "$RUNNER_TEMP/local-migrations.txt" \
             --history-side remote
       # These files are fail-fast procedural SQL suites, not TAP output. Running
@@ -63,6 +63,7 @@ jobs:
             docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres < "$sql_test"
             echo "::endgroup::"
           done
+          bash supabase/tests/customer_portal_cancellation_refunds_0121_concurrency_test.sh "$db_container"
 
   quality:
     name: lint · typecheck · unit · contract acceptance · build

@@ -2,9 +2,11 @@ import Stripe from 'stripe'
 import { getStripe, getWebhookSecret } from '@/lib/stripe/client'
 import { createServiceClient } from '@/lib/platform/service'
 import { sendPaymentReceipt, parseGuestEmail } from '@/lib/notifications/booking'
-import { refundBookingPayment, refundShopOrder } from '@/lib/stripe/refund'
+import { refundShopOrder } from '@/lib/stripe/refund'
+import { dispatchPaymentRefundJobById } from '@/lib/payments/refund-outbox'
 import { deliverIssuedGiftCards } from '@/lib/notifications/gift'
 import { captureException } from '@/lib/observability'
+import { after } from 'next/server'
 
 // Stripe Connect webhook (G09 step 4).
 //
@@ -63,6 +65,23 @@ async function accountOwnsTenant(
   return Boolean(data?.stripe_account_id) && data?.stripe_account_id === account
 }
 
+async function accountOwnsBookingPayment(
+  admin: AdminClient,
+  account: string | null,
+  tenantId: string,
+  bookingId: string,
+  paymentIntentId: string,
+): Promise<boolean> {
+  if (!account) return false
+  const { data } = requireDbResult(await admin.rpc('booking_payment_event_matches', {
+    p_tenant: tenantId,
+    p_booking: bookingId,
+    p_payment_intent: paymentIntentId,
+    p_connected_account: account,
+  }))
+  return data === true
+}
+
 export async function POST(req: Request): Promise<Response> {
   const stripe = getStripe()
   const secret = getWebhookSecret()
@@ -116,7 +135,7 @@ export async function POST(req: Request): Promise<Response> {
         // Webshop-order (Fas 3): account-fence → markera payment succeeded →
         // mark_shop_order_paid committar lagret + status pending/paid (idempotent).
         if (orderId && tenantId) {
-          if (!(await accountOwnsTenant(admin, account, tenantId))) {
+          if (!account || !(await accountOwnsTenant(admin, account, tenantId))) {
             await captureException(new Error('stripe webhook account mismatch'), {
               where: 'webhook.account_guard',
               type: event.type,
@@ -145,30 +164,20 @@ export async function POST(req: Request): Promise<Response> {
             })
             break
           }
-          const { data: updatedPayment } = requireDbResult(
-            await admin
-              .from('payments')
-              .update({ status: 'succeeded', stripe_payment_intent_id: pi.id })
-              .eq('order_id', orderId)
-              .eq('tenant_id', tenantId)
-              .neq('status', 'refunded')
-              .select('status')
-              .maybeSingle(),
+          const { data: paymentSettlement } = requireDbResult(
+            await admin.rpc('confirm_shop_order_payment', {
+              p_order: orderId,
+              p_tenant: tenantId,
+              p_payment_intent: pi.id,
+              p_connected_account: account,
+            }),
           )
-          if (!updatedPayment) {
-            const { data: existingPayment } = requireDbResult(
-              await admin
-                .from('payments')
-                .select('status')
-                .eq('order_id', orderId)
-                .eq('tenant_id', tenantId)
-                .maybeSingle(),
-            )
-            // Ett sent/omlevererat succeeded-event får aldrig återuppliva en
-            // redan återbetald order. Saknas raden helt är det däremot ett
-            // behandlingsfel som Stripe ska försöka igen.
-            if (existingPayment?.status === 'refunded') break
-            throw new Error('stripe webhook payment row missing after succeeded update')
+          const settlementOutcome = (paymentSettlement as { outcome?: string } | null)?.outcome
+          // Ett sent succeeded-event får aldrig återuppliva redan återbetalda
+          // pengar. Exakt replay av samma provideridentitet är däremot säker.
+          if (settlementOutcome === 'refunded') break
+          if (settlementOutcome !== 'succeeded' && settlementOutcome !== 'already_succeeded') {
+            throw new Error('stripe webhook shop payment settlement invalid')
           }
           requireDbResult(await admin.rpc('mark_shop_order_paid', { p_order_id: orderId }))
           // goal-64: betalningen gick igenom → mark_shop_order_paid har UTFÄRDAT ordens
@@ -190,8 +199,9 @@ export async function POST(req: Request): Promise<Response> {
           break
         }
         if (bookingId && tenantId) {
-          // Account-fence: tenant (från metadata) MÅSTE äga `event.account`.
-          if (!(await accountOwnsTenant(admin, account, tenantId))) {
+          // Booking-betalningens historiska account-snapshot äger facit. Fallback
+          // till live tenant finns endast för gamla payment-rader utan snapshot.
+          if (!(await accountOwnsBookingPayment(admin, account, tenantId, bookingId, pi.id))) {
             await captureException(new Error('stripe webhook account mismatch'), {
               where: 'webhook.account_guard',
               type: event.type,
@@ -207,21 +217,33 @@ export async function POST(req: Request): Promise<Response> {
               p_booking: bookingId,
               p_tenant: tenantId,
               p_payment_intent: pi.id,
+              p_connected_account: account!,
             }),
           )
           const confirmationState = confirmation as {
             booking_status?: string
             payment_status?: string
+            effective_booking_id?: string
           } | null
           const bookingStatus = confirmationState?.booking_status ?? null
           const paymentStatus = confirmationState?.payment_status ?? null
+          const receiptBookingId = typeof confirmationState?.effective_booking_id === 'string'
+            ? confirmationState.effective_booking_id
+            : bookingId
+          const refundJobId = typeof (confirmationState as { refund_job_id?: unknown } | null)?.refund_job_id === 'string'
+            ? (confirmationState as { refund_job_id: string }).refund_job_id
+            : null
 
-          // Sen betalning på en redan AVBOKAD bokning: confirm-UPDATE ovan no-oppade
-          // (WHERE status='pending'), så bokningen står kvar cancelled. Återbetala
-          // då pengarna (refundBookingPayment är idempotent — no-op om redan refunded).
-          if (bookingStatus === 'cancelled' && paymentStatus === 'succeeded') {
-            await refundBookingPayment(bookingId, tenantId)
-            await requireRefundPersisted(admin, tenantId, 'booking_id', bookingId)
+          // DB-transaktionen ovan har redan köat sen cancelled+succeeded. Detta är
+          // endast en accelerator; GitHub-cron är durable backup.
+          if (bookingStatus === 'cancelled' && paymentStatus === 'succeeded' && refundJobId) {
+            try {
+              after(async () => {
+                try { await dispatchPaymentRefundJobById(refundJobId) } catch { /* cron retries */ }
+              })
+            } catch {
+              // Raden är redan durable och plockas av cron.
+            }
           }
 
           // Kvitto (G10) — gästkontakt rider på note (G04-sömmen). Best-effort.
@@ -232,7 +254,7 @@ export async function POST(req: Request): Promise<Response> {
                 await admin
                   .from('bookings')
                   .select('note, start_ts, services(name), tenants(name), locations(timezone)')
-                  .eq('id', bookingId)
+                  .eq('id', receiptBookingId)
                   .eq('tenant_id', tenantId)
                   .maybeSingle(),
               )
@@ -352,13 +374,18 @@ export async function POST(req: Request): Promise<Response> {
           const { data: pay } = requireDbResult(
             await admin
               .from('payments')
-              .select('tenant_id, order_id, tenants(stripe_account_id)')
+              .select('tenant_id, order_id, booking_id, stripe_connected_account_id, tenants(stripe_account_id)')
               .eq('stripe_payment_intent_id', piId)
+              .eq('stripe_connected_account_id', account ?? '')
               .maybeSingle(),
           )
-          const acctId = (pay as { tenants?: { stripe_account_id?: string | null } | null } | null)?.tenants
-            ?.stripe_account_id
-          if (!pay || !account || !acctId || acctId !== account) {
+          const paymentAccount = (pay as {
+            stripe_connected_account_id?: string | null
+            tenants?: { stripe_account_id?: string | null } | null
+          } | null)?.stripe_connected_account_id
+            ?? (pay as { tenants?: { stripe_account_id?: string | null } | null } | null)?.tenants
+              ?.stripe_account_id
+          if (!pay || !account || !paymentAccount || paymentAccount !== account) {
             await captureException(new Error('stripe webhook account mismatch'), {
               where: 'webhook.account_guard',
               type: event.type,
@@ -367,10 +394,15 @@ export async function POST(req: Request): Promise<Response> {
             })
             break
           }
-          // State-set: markera refunded. Matchar på PI-id (satt vid succeeded).
-          requireDbResult(
-            await admin.from('payments').update({ status: 'refunded' }).eq('stripe_payment_intent_id', piId),
-          )
+          const recorded = requireDbResult(await admin.rpc('record_payment_refund_webhook', {
+            p_tenant: (pay as { tenant_id: string }).tenant_id,
+            p_payment_intent: piId,
+            p_provider_ref: charge.id,
+            p_connected_account: account,
+          }))
+          if ((recorded.data as { outcome?: string } | null)?.outcome !== 'recorded') {
+            throw new Error('stripe webhook refund was not persisted')
+          }
           // Webshop-order: spegla payment_status → refunded OCH ta ordern ur fulfilment-
           // kön (status cancelled) så återbetalda ordrar inte skickas. Full refund (v1
           // har ingen delrefund).
@@ -479,6 +511,7 @@ export async function POST(req: Request): Promise<Response> {
               .from('payments')
               .select('id, tenant_id, tenants(stripe_account_id)')
               .eq('stripe_payment_intent_id', piId)
+              .eq('stripe_connected_account_id', account ?? '')
               .maybeSingle(),
           )
           const acctId = (pay as { tenants?: { stripe_account_id?: string | null } | null } | null)?.tenants

@@ -935,7 +935,10 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
         success_url: `${origin}/boka/bekraftelse/${bookingId}?betald=1`,
         cancel_url: `${origin}/boka/bekraftelse/${bookingId}?avbruten=1`,
       },
-      { stripeAccount: tenant.stripe_account_id }, // DIRECT charge på salongens konto
+      {
+        stripeAccount: tenant.stripe_account_id,
+        idempotencyKey: `booking_checkout_${bookingId}`,
+      }, // DIRECT charge på salongens konto
     )
   } catch {
     return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
@@ -948,16 +951,22 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
   // svepet (0018) matchar booking.pending + payments.pending och skulle annars
   // avboka en bokning kunden fått bekräftad som betala-på-plats. En payment-rad
   // per bokning (UNIQUE(booking_id) → idempotensgrund för webhooken).
-  const { error: payErr } = await admin.from('payments').upsert(
+  const { data: paymentPrepared, error: payErr } = await admin.rpc(
+    'prepare_booking_checkout_payment',
     {
-      tenant_id: ctx.tenantId, booking_id: bookingId, amount_cents: amount, currency: 'sek',
-      status: 'pending', stripe_checkout_session_id: session.id,
+      p_booking: bookingId,
+      p_tenant: ctx.tenantId,
+      p_amount_cents: amount,
+      p_currency: 'sek',
+      p_checkout_session: session.id,
+      p_connected_account: tenant.stripe_account_id,
     },
-    { onConflict: 'booking_id' },
   )
   // Utan payment-rad ska kunden inte skickas till Stripe (webhooken skulle sakna
   // sin rad) — degradera till betala-på-plats; sessionen självdör hos Stripe.
-  if (payErr) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  if (payErr || paymentPrepared !== true) {
+    return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  }
 
   return { ok: true, url: session.url }
 }

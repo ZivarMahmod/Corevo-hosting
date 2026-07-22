@@ -9,7 +9,7 @@ import { currentKundTenant } from './tenant'
 import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
 import { refundBookingPayment } from '@/lib/stripe/refund'
-import { carryBookingPayment } from '@/lib/stripe/rebook-payment'
+import { finalizeCustomerRebookSafely } from './rebook-finalization'
 import { queueBookingEvent } from '@/lib/notifications/booking-events'
 import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'
 import {
@@ -446,50 +446,23 @@ export async function rebookBooking(
     return { error: 'Kunde inte omboka. Försök igen.' }
   }
 
-  // 2) New slot secured → release the old one. Result-kontrollerad: .select('id')
-  // ger tillbaka de uppdaterade raderna (RLS låter kunden läsa egna rader). Fel
-  // eller 0 rader = den gamla bokningen släpptes ALDRIG → kompensera genom att
-  // avboka den nyss skapade, annars hänger kunden på två aktiva bokningar.
+  // 2) New slot secured → atomically release old + carry settled money + confirm
+  // the replacement. Pending/ambiguous money fails closed in the RPC.
   const admin = createAdminClient()
-  const { data: released, error: releaseErr } = await admin
-    .from('bookings')
-    .update({
-      status: 'cancelled',
-      cancelled_at: new Date().toISOString(),
-      cancelled_by: 'customer',
-    })
-    .eq('id', bookingId)
-    .eq('tenant_id', tenantId)
-    .or(
-      old.customerId
-        ? `customer_profile_id.eq.${user.id},customer_id.eq.${old.customerId}`
-        : `customer_profile_id.eq.${user.id}`,
-    )
-    .in('status', ACTIVE_STATUSES)
-    .select('id')
-  if (releaseErr || !released || released.length === 0) {
-    // Rollback (best-effort): avboka den nya bokningen så slutläget är "ingen
-    // ändring". Samma RLS-klient + ägar-/status-fence som ordinarie avbokning.
-    await admin
-      .from('bookings')
-      .update({
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: 'customer',
-      })
-      .eq('id', newId)
-      .eq('tenant_id', tenantId)
-      .eq('customer_profile_id', user.id)
-      .in('status', ACTIVE_STATUSES)
+  const finalizationArgs = {
+    p_tenant: tenantId,
+    p_old_booking: bookingId,
+    p_new_booking: newId,
+    p_customer_profile: user.id,
+    p_customer: old.customerId ?? null,
+  }
+  const finalization = await finalizeCustomerRebookSafely({
+    finalize: () => admin.rpc('finalize_customer_booking_rebook', finalizationArgs),
+    compensate: () => admin.rpc('compensate_customer_booking_rebook', finalizationArgs),
+  })
+  if (!finalization.ok) {
     return { error: 'Kunde inte omboka. Försök igen.' }
   }
-
-  // Flytt av betald bokning (M8 §2.3): den nya tiden är säkrad OCH den gamla är
-  // result-bekräftat släppt → flytta en ev. lyckad betalning från gamla bokningen
-  // till den nya (re-point + bekräfta), ingen refund-rundgång, ingen dubbel-charge.
-  // MÅSTE ligga EFTER släppet (annars strandar betalningen på newId om släppet
-  // failar och rollbacken avbokar newId). No-op för salonger utan betalning/Stripe.
-  await carryBookingPayment(bookingId, newId, tenantId)
 
   const notification = await queueBookingEvent({
     tenantId,

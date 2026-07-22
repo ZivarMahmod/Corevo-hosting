@@ -4,7 +4,7 @@
   // Isolated from corevo.se + POS (no routes; see commented block below).
   "name": "bokningsplatformen",
   // OpenNext custom Worker: preserves fetch and adds the durable primary
-  // reminder scheduler. The scheduled handler only queues outbox events.
+  // booking scheduler: reminder queue + refund rail. Never SMS/notification dispatch.
   "main": "./custom-worker.mjs",
   "triggers": { "crons": ["*/15 * * * *"] },
   "compatibility_date": "2026-05-01",
