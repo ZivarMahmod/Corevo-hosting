@@ -42,7 +42,12 @@ const validBooking = {
   currency: 'SEK',
   canCancel: true,
   cancelDeadline: '2026-07-31T10:00:00.000Z',
-  publicRebookUrl: 'https://freshcut.corevo.se/boka',
+  publicRebookUrl: 'https://freshcut.boka.corevo.se/boka',
+}
+
+const binding = {
+  tenantSlug: 'freshcut',
+  bookingOrigin: 'https://freshcut.boka.corevo.se',
 }
 
 function setCookie(sessionPublicId = firstSession, secret = firstSecret) {
@@ -107,7 +112,7 @@ describe('customer portal server DAL', () => {
           phone: '+46 70 000 00 00',
           address: 'Testgatan 1',
           mapUrl: null,
-          bookingOrigin: 'https://freshcut.corevo.se',
+          bookingOrigin: 'https://freshcut.boka.corevo.se',
           timezone: 'Europe/Stockholm',
           locale: 'sv-SE',
           defaultCountry: 'SE',
@@ -131,7 +136,7 @@ describe('customer portal server DAL', () => {
         phone: '+46 70 000 00 00',
         address: 'Testgatan 1',
         mapUrl: null,
-        bookingOrigin: 'https://freshcut.corevo.se',
+        bookingOrigin: 'https://freshcut.boka.corevo.se',
         timezone: 'Europe/Stockholm',
         locale: 'sv-SE',
         defaultCountry: 'SE',
@@ -163,8 +168,8 @@ describe('customer portal server DAL', () => {
           address: null,
           mapUrl: null,
           bookingOrigin: args.p_session_public_id === firstSession
-            ? 'https://tenant-one.corevo.se'
-            : 'https://tenant-two.corevo.se',
+            ? 'https://tenant-one.boka.corevo.se'
+            : 'https://tenant-two.boka.corevo.se',
           timezone: 'Europe/Stockholm',
           locale: 'sv-SE',
           defaultCountry: 'SE',
@@ -220,7 +225,7 @@ describe('customer portal server DAL', () => {
         snapshot: {
           tenantSlug: 'freshcut', tenantName: 'FreshCut', customerName: 'Kund',
           logoUrl: 'javascript:alert(1)', verticalLabel: null, phone: null, address: null,
-          mapUrl: null, bookingOrigin: 'https://freshcut.corevo.se',
+          mapUrl: null, bookingOrigin: 'https://freshcut.boka.corevo.se',
           timezone: 'Europe/Stockholm', locale: 'sv-SE', defaultCountry: 'SE', currency: 'SEK',
           cancellationCutoffHours: 24, lastSeenAt: '2026-07-22T12:00:00.000Z',
           absoluteExpiresAt: '2027-07-22T12:00:00.000Z',
@@ -234,6 +239,7 @@ describe('customer portal server DAL', () => {
   it('clamps list page size, forwards a stable cursor and exposes a next cursor', async () => {
     rpc.mockImplementation(async (_name: string, args: { p_page_size: number; p_scope: string }) => ({
       data: {
+        ...binding,
         outcome: 'ok',
         scope: args.p_scope,
         pageSize: args.p_page_size,
@@ -275,6 +281,7 @@ describe('customer portal server DAL', () => {
   it('accepts only the server cursor that exactly matches a full visible page', async () => {
     rpc.mockResolvedValue({
       data: {
+        ...binding,
         outcome: 'ok', scope: 'upcoming', pageSize: 1, items: [validBooking], hasMore: true,
         nextCursor: { startTs: validBooking.startTs, id: validBooking.id },
       },
@@ -291,6 +298,7 @@ describe('customer portal server DAL', () => {
   it('keeps an unknown runtime status but maps it to neutral presentation with no action rights', async () => {
     rpc.mockResolvedValue({
       data: {
+        ...binding,
         outcome: 'ok',
         scope: 'history',
         pageSize: 20,
@@ -322,11 +330,12 @@ describe('customer portal server DAL', () => {
     })).resolves.toEqual({ outcome: 'unavailable' })
     expect(rpc).not.toHaveBeenCalled()
 
-    rpc.mockResolvedValue({ data: { outcome: 'ok', scope: 'history', pageSize: 20, items: [{ id: 'bad' }], hasMore: false, nextCursor: null }, error: null })
+    rpc.mockResolvedValue({ data: { ...binding, outcome: 'ok', scope: 'history', pageSize: 20, items: [{ id: 'bad' }], hasMore: false, nextCursor: null }, error: null })
     await expect(listPortalBookings({ scope: 'history' })).resolves.toEqual({ outcome: 'unavailable' })
 
     rpc.mockResolvedValue({
       data: {
+        ...binding,
         outcome: 'ok',
         scope: 'history',
         pageSize: 20,
@@ -342,6 +351,7 @@ describe('customer portal server DAL', () => {
   it('rejects inconsistent server pagination and adversarial URLs', async () => {
     rpc.mockResolvedValueOnce({
       data: {
+        ...binding,
         outcome: 'ok', scope: 'history', pageSize: 20, items: [validBooking],
         hasMore: true, nextCursor: null,
       },
@@ -351,6 +361,7 @@ describe('customer portal server DAL', () => {
 
     rpc.mockResolvedValueOnce({
       data: {
+        ...binding,
         outcome: 'ok', scope: 'history', pageSize: 20, items: [validBooking], hasMore: false,
         nextCursor: { startTs: validBooking.startTs, id: validBooking.id },
       },
@@ -360,16 +371,21 @@ describe('customer portal server DAL', () => {
 
     rpc.mockResolvedValueOnce({
       data: {
+        ...binding,
         outcome: 'ok', scope: 'history', pageSize: 20,
         items: [{ ...validBooking, publicRebookUrl: 'javascript:alert(1)' }],
         hasMore: false, nextCursor: null,
       },
       error: null,
     })
-    await expect(listPortalBookings({ scope: 'history' })).resolves.toEqual({ outcome: 'unavailable' })
+    await expect(listPortalBookings({ scope: 'history' })).resolves.toMatchObject({
+      outcome: 'ok',
+      items: [{ publicRebookUrl: null }],
+    })
 
     rpc.mockResolvedValueOnce({
       data: {
+        ...binding,
         outcome: 'ok', scope: 'history', pageSize: 20,
         items: [{
           ...validBooking,
@@ -382,8 +398,33 @@ describe('customer portal server DAL', () => {
     await expect(listPortalBookings({ scope: 'history' })).resolves.toEqual({ outcome: 'unavailable' })
   })
 
+  it('binds every booking target to the same tenant origin and hides a foreign candidate', async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        ...binding,
+        outcome: 'ok', scope: 'history', pageSize: 20,
+        items: [{ ...validBooking, publicRebookUrl: 'https://other.boka.corevo.se/boka' }],
+        hasMore: false, nextCursor: null,
+      },
+      error: null,
+    })
+    await expect(listPortalBookings({ scope: 'history' })).resolves.toMatchObject({
+      outcome: 'ok', items: [{ publicRebookUrl: null }],
+    })
+
+    rpc.mockResolvedValueOnce({
+      data: {
+        ...binding,
+        bookingOrigin: 'https://other.boka.corevo.se',
+        outcome: 'ok', booking: validBooking,
+      },
+      error: null,
+    })
+    await expect(getPortalBooking(bookingId)).resolves.toEqual({ outcome: 'unavailable' })
+  })
+
   it('returns an owned detail and keeps invalid/foreign ids observably neutral', async () => {
-    rpc.mockResolvedValueOnce({ data: { outcome: 'ok', booking: validBooking }, error: null })
+    rpc.mockResolvedValueOnce({ data: { ...binding, outcome: 'ok', booking: validBooking }, error: null })
     await expect(getPortalBooking(bookingId)).resolves.toMatchObject({
       outcome: 'ok',
       booking: { id: bookingId, presentationStatus: 'confirmed' },
@@ -402,7 +443,7 @@ describe('customer portal server DAL', () => {
     expect(rpc).not.toHaveBeenCalled()
 
     rpc.mockResolvedValueOnce({
-      data: { outcome: 'ok', booking: { ...validBooking, id: secondBookingId } },
+      data: { ...binding, outcome: 'ok', booking: { ...validBooking, id: secondBookingId } },
       error: null,
     })
 

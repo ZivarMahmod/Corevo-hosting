@@ -9,7 +9,10 @@ import {
   normalizeSlug,
   assertSafeSlug,
   patternForSlug,
+  RESERVED,
 } from './domain-routes.mjs'
+
+const CANONICAL_RESERVED = 'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(',')
 
 // A wrangler.jsonc shape with COMMENTS + top-level routes + an empty staging.routes.
 const WR = `{
@@ -69,7 +72,8 @@ describe('applyCustomDomainEdit', () => {
   })
 
   it('REFUSES reserved/POS labels', () => {
-    for (const r of ['booking', 'admin', 'kiosk', 'superbooking', 'boka', 'mina', 'www']) {
+    expect([...RESERVED]).toEqual(CANONICAL_RESERVED)
+    for (const r of RESERVED) {
       expect(() => applyCustomDomainEdit(WR, r)).toThrow(/reserved\/POS/)
     }
   })
@@ -192,7 +196,7 @@ describe('slug helpers', () => {
     expect(patternForSlug('foo')).toBe('foo.corevo.se')
   })
   it('assertSafeSlug throws on reserved/invalid', () => {
-    expect(() => assertSafeSlug('boka')).toThrow()
+    for (const reserved of RESERVED) expect(() => assertSafeSlug(reserved)).toThrow()
     expect(() => assertSafeSlug('a.b')).toThrow()
     expect(() => assertSafeSlug('ok-salon')).not.toThrow()
   })

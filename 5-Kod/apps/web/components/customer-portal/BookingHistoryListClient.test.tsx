@@ -8,16 +8,20 @@ import { BookingHistoryListClient } from './BookingHistoryListClient'
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null,
   verticalLabel: 'Frisörsalong', phone: null, address: null, mapUrl: null,
-  bookingOrigin: 'https://freshcut.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
+  bookingOrigin: 'https://freshcut.boka.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
   defaultCountry: 'SE', currency: 'SEK', cancellationCutoffHours: 24, customerName: 'Alex',
   lastSeenAt: '2026-07-22T12:00:00.000Z', absoluteExpiresAt: '2027-07-22T12:00:00.000Z',
 }
 
-const booking = (id: string, serviceName: string): PortalBookingProjection => ({
+const booking = (
+  id: string,
+  serviceName: string,
+  overrides: Partial<PortalBookingProjection> = {},
+): PortalBookingProjection => ({
   id, startTs: '2026-06-10T12:30:00.000Z', endTs: '2026-06-10T13:00:00.000Z',
   status: 'completed', presentationStatus: 'completed', serviceName, durationMinutes: 30,
   staffTitle: null, location: null, priceCents: null, currency: 'SEK', canCancel: false,
-  cancelDeadline: null, publicRebookUrl: null,
+  cancelDeadline: null, publicRebookUrl: null, ...overrides,
 })
 
 const first = booking('123e4567-e89b-42d3-a456-426614174000', 'Första besöket')
@@ -123,5 +127,38 @@ describe('BookingHistoryListClient', () => {
     expect(container.textContent).toContain('Andra besöket')
     expect(container.querySelector('button')).toBeNull()
     expect(document.activeElement?.textContent).toContain('Andra besöket')
+  })
+
+  it('shows Boka igen only for completed/cancelled rows with a bound URL and never nests anchors', async () => {
+    const publicRebookUrl = 'https://freshcut.boka.corevo.se/boka'
+    const items = [
+      booking(first.id, 'Genomförd', { publicRebookUrl }),
+      booking(second.id, 'Avbokad', {
+        status: 'cancelled', presentationStatus: 'cancelled', publicRebookUrl,
+      }),
+      booking('323e4567-e89b-42d3-a456-426614174000', 'Uteblev', {
+        status: 'no_show', presentationStatus: 'no_show', publicRebookUrl,
+      }),
+      booking('423e4567-e89b-42d3-a456-426614174000', 'Okänd', {
+        status: 'other', presentationStatus: 'unknown', publicRebookUrl,
+      }),
+      booking('523e4567-e89b-42d3-a456-426614174000', 'Inaktiv tjänst', {
+        publicRebookUrl: null,
+      }),
+    ]
+    await act(async () => root.render(
+      <BookingHistoryListClient
+        snapshot={snapshot}
+        initialItems={items}
+        initialCursor={null}
+        loadMore={vi.fn()}
+      />,
+    ))
+
+    const rebookLinks = [...container.querySelectorAll<HTMLAnchorElement>(`a[href="${publicRebookUrl}"]`)]
+    expect(rebookLinks).toHaveLength(2)
+    expect(rebookLinks.every((link) => link.textContent === 'Boka igen')).toBe(true)
+    expect(container.querySelector('.cp-booking-link a')).toBeNull()
+    expect(container.querySelector('a a')).toBeNull()
   })
 })

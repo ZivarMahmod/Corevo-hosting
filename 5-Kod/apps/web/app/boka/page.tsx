@@ -12,6 +12,7 @@ import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { branschBokning } from '@/components/storefront/bransch-copy'
 import { getTenantModuleStates } from '@/lib/tenant-modules'
 import { bookingModuleAccess } from '@/components/storefront/layouts/booking-access'
+import { resolveBookingSearchParams } from '@/lib/booking/preselection'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Boka tid' }
@@ -23,6 +24,7 @@ export const metadata: Metadata = { title: 'Boka tid' }
  *   /boka?personal=<staffId>          → medarbetaren förvald i "Hos vem?"-steget
  *   /boka?personal=<id>&tjanst=<id>   → + tjänsten förvald (wizarden startar på steg 2)
  *   /boka?tjanst=<serviceId>          → bara tjänsten (prisradens länk)
+ *   /boka?plats=<locationId>          → aktiv plats förvald
  *
  * Parametrarna är REN UI-FÖRIFYLLNAD och valideras av wizarden mot den data den redan
  * har (okänt id / personal som inte kan utföra tjänsten → tyst 'any'). Servern validerar
@@ -60,7 +62,6 @@ export default async function BokaPage({
   const one = (v: string | string[] | undefined): string | null =>
     typeof v === 'string' && v.trim() ? v.trim() : null
   const preselectStaffId = one(sp.personal)
-  const preselectServiceId = one(sp.tjanst)
 
   const services = await getServices(tenant.id, tenant.slug)
 
@@ -139,12 +140,21 @@ export default async function BokaPage({
 
   const wizardServices: WizardService[] = services.map((s) => ({
     id: s.id,
+    locationId: s.location_id,
     name: s.name,
     description: s.description,
     durationMin: s.duration_min,
     priceCents: s.price_cents,
     staff: staffByService[s.id] ?? [],
   }))
+  // Queryförval är aldrig en egen trust path. Bara id:n som finns bland de redan
+  // tenant-skopade AKTIVA raderna ovan får nå klienten. Live-dialekten är
+  // `plats`/`tjanst`; designpaketets `location`/`service` accepteras som alias.
+  const preselection = resolveBookingSearchParams({
+    searchParams: sp,
+    locations,
+    services: wizardServices,
+  })
 
   return (
     <section className="section">
@@ -162,7 +172,8 @@ export default async function BokaPage({
           pickerMode={pickerMode}
           staffAvatarMode={staffAvatarMode}
           brandName={tenant.name}
-          preselectServiceId={preselectServiceId}
+          preselectLocationId={preselection.locationId}
+          preselectServiceId={preselection.serviceId}
           preselectStaffId={preselectStaffId}
         />
       </div>

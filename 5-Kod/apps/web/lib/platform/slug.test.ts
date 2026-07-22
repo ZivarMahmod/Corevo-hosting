@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateSlug, isReservedSlug, normalizeSlug } from './slug'
+import { DEFAULT_RESERVED_SUBDOMAINS } from '@/lib/tenant'
 
 describe('validateSlug', () => {
   it('accepts a plain DNS-safe slug', () => {
@@ -12,7 +13,7 @@ describe('validateSlug', () => {
   })
 
   it('rejects reserved subdomains (DoD: "Reserverad slug avvisas")', () => {
-    for (const r of ['booking', 'admin', 'app', 'www', 'api', 'mina']) {
+    for (const r of DEFAULT_RESERVED_SUBDOMAINS) {
       const res = validateSlug(r)
       expect(res.ok).toBe(false)
     }

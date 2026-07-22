@@ -87,6 +87,7 @@ export async function getWizardServices(
   ])
   return services.map((s) => ({
     id: s.id,
+    locationId: s.location_id,
     name: s.name,
     description: s.description,
     durationMin: s.duration_min,

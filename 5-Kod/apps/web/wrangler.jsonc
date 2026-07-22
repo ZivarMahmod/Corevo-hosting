@@ -31,7 +31,7 @@
     "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
     "NEXT_PUBLIC_STAFF_HOST": "minbooking.corevo.se",
     "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
-    "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina",
+    "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms",
     // goal-28 — salon storefronts live on the dedicated wildcard branch
     // <slug>.boka.corevo.se (see the *.boka.corevo.se route below). lib/tenant.ts
     // reads this at runtime to map a boka host → tenant slug; the bare apex
@@ -162,7 +162,7 @@
         "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
         "NEXT_PUBLIC_STAFF_HOST": "minbooking.corevo.se",
         "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
-        "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina",
+        "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms",
         "NEXT_PUBLIC_TENANT_HOST_SUFFIX": "boka.corevo.se",
         "NEXT_PUBLIC_SITE_URL": "https://bokningsplatformen-staging.zivar68.workers.dev",
         // Mirrored from top-level so wrangler doesn't warn about un-inherited vars and

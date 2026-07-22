@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createServiceClient } from '@/lib/platform/service'
 import { portalSessionDigest } from './crypto'
 import { PORTAL_UUID_PATTERN } from './link'
+import { buildPortalRebookUrl, validatePortalBookingOrigin } from './rebook'
 import { PORTAL_SESSION_COOKIE, parsePortalSessionCookie } from './session'
 import type {
   PortalBookingCursor,
@@ -125,13 +126,6 @@ function safeHttpsUrl(value: unknown): string | null | undefined {
   }
 }
 
-function safeOrigin(value: unknown): string | null {
-  const parsed = safeHttpsUrl(value)
-  if (!parsed) return null
-  const url = new URL(parsed)
-  return url.port === '' && url.origin === parsed ? parsed : null
-}
-
 function safeMapUrl(value: unknown): string | null | undefined {
   const parsed = safeHttpsUrl(value)
   if (parsed === null || parsed === undefined) return parsed
@@ -148,15 +142,6 @@ function safeMapUrl(value: unknown): string | null | undefined {
   const lon = Number(url.searchParams.get('mlon'))
   return Number.isFinite(lat) && lat >= -90 && lat <= 90 &&
     Number.isFinite(lon) && lon >= -180 && lon <= 180
-    ? parsed
-    : undefined
-}
-
-function safeRebookUrl(value: unknown): string | null | undefined {
-  const parsed = safeHttpsUrl(value)
-  if (parsed === null || parsed === undefined) return parsed
-  const url = new URL(parsed)
-  return url.port === '' && url.pathname === '/boka' && url.search === '' && url.hash === ''
     ? parsed
     : undefined
 }
@@ -179,7 +164,23 @@ function parseLocation(value: unknown): PortalBookingProjection['location'] | un
   return { name, address, phone, mapUrl, timezone: value.timezone }
 }
 
-function parseBooking(value: unknown): PortalBookingProjection | null {
+function parseBinding(
+  tenantSlug: unknown,
+  bookingOrigin: unknown,
+): Pick<PortalSessionSnapshot, 'tenantSlug' | 'bookingOrigin'> | null {
+  if (
+    typeof tenantSlug !== 'string' ||
+    !TENANT_SLUG_PATTERN.test(tenantSlug) ||
+    typeof bookingOrigin !== 'string'
+  ) return null
+  const origin = validatePortalBookingOrigin({ tenantSlug, bookingOrigin })
+  return origin ? { tenantSlug, bookingOrigin: origin } : null
+}
+
+function parseBooking(
+  value: unknown,
+  binding: Pick<PortalSessionSnapshot, 'tenantSlug' | 'bookingOrigin'>,
+): PortalBookingProjection | null {
   if (!isRecord(value) || !hasOnlyKeys(value, [
     'canCancel',
     'cancelDeadline',
@@ -201,7 +202,10 @@ function parseBooking(value: unknown): PortalBookingProjection | null {
   const serviceName = normalizedText(value.serviceName, 1, 200)
   const staffTitle = optionalText(value.staffTitle, 160)
   const location = parseLocation(value.location)
-  const publicRebookUrl = safeRebookUrl(value.publicRebookUrl)
+  const publicRebookUrl = buildPortalRebookUrl({
+    ...binding,
+    bookingUrl: typeof value.publicRebookUrl === 'string' ? value.publicRebookUrl : null,
+  })
   if (
     typeof value.id !== 'string' ||
     !PORTAL_UUID_PATTERN.test(value.id) ||
@@ -219,8 +223,7 @@ function parseBooking(value: unknown): PortalBookingProjection | null {
     typeof value.currency !== 'string' ||
     !CURRENCY_PATTERN.test(value.currency) ||
     typeof value.canCancel !== 'boolean' ||
-    (value.cancelDeadline !== null && !validTimestamp(value.cancelDeadline)) ||
-    publicRebookUrl === undefined
+    (value.cancelDeadline !== null && !validTimestamp(value.cancelDeadline))
   ) {
     return null
   }
@@ -290,7 +293,7 @@ function parseSnapshot(value: unknown): PortalSessionSnapshot | null {
   const phone = optionalText(value.phone, 40)
   const address = optionalText(value.address, 500)
   const mapUrl = safeMapUrl(value.mapUrl)
-  const bookingOrigin = safeOrigin(value.bookingOrigin)
+  const binding = parseBinding(value.tenantSlug, value.bookingOrigin)
   if (
     typeof value.tenantSlug !== 'string' ||
     !TENANT_SLUG_PATTERN.test(value.tenantSlug) ||
@@ -301,7 +304,7 @@ function parseSnapshot(value: unknown): PortalSessionSnapshot | null {
     phone === undefined ||
     address === undefined ||
     mapUrl === undefined ||
-    !bookingOrigin ||
+    !binding ||
     !validTimezone(value.timezone) ||
     typeof value.locale !== 'string' || !LOCALE_PATTERN.test(value.locale) ||
     typeof value.defaultCountry !== 'string' || !COUNTRY_PATTERN.test(value.defaultCountry) ||
@@ -323,7 +326,7 @@ function parseSnapshot(value: unknown): PortalSessionSnapshot | null {
     phone,
     address,
     mapUrl,
-    bookingOrigin,
+    bookingOrigin: binding.bookingOrigin,
     timezone: value.timezone,
     locale: value.locale,
     defaultCountry: value.defaultCountry,
@@ -444,9 +447,11 @@ export async function listPortalBookings({
       return { outcome: 'unavailable' }
     }
 
+    const binding = parseBinding(data.tenantSlug, data.bookingOrigin)
+    if (!binding) return { outcome: 'unavailable' }
     const items: PortalBookingProjection[] = []
     for (const item of data.items) {
-      const parsed = parseBooking(item)
+      const parsed = parseBooking(item, binding)
       if (!parsed) return { outcome: 'unavailable' }
       items.push(parsed)
     }
@@ -504,7 +509,9 @@ export async function getPortalBooking(bookingPublicId: string): Promise<PortalB
     if (data.outcome === 'not_found') return { outcome: 'not_found' }
     if (data.outcome !== 'ok') return { outcome: 'unavailable' }
 
-    const booking = parseBooking(data.booking)
+    const binding = parseBinding(data.tenantSlug, data.bookingOrigin)
+    if (!binding) return { outcome: 'unavailable' }
+    const booking = parseBooking(data.booking, binding)
     if (!booking) return { outcome: 'unavailable' }
     return booking.id === bookingPublicId.toLowerCase()
       ? { outcome: 'ok', booking }

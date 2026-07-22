@@ -51,8 +51,28 @@ const DEFAULT_ROOT = 'localhost:3000'
 // a tenant. Reserving it stops the slug validator (lib/platform/slug.ts) from ever
 // minting a salon named 'boka'. The branch apex is also caught by host-equality in
 // getTenantFromHost (so <slug>.boka.corevo.se still resolves the <slug>, not 'boka').
-const DEFAULT_RESERVED =
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina'
+export const DEFAULT_RESERVED_SUBDOMAINS = [
+  'booking',
+  'admin',
+  'app',
+  'www',
+  'api',
+  'superadmin',
+  'kiosk',
+  'dev',
+  'odoo',
+  'superbooking',
+  'minbooking',
+  'boka',
+  'mina',
+  // Security-only labels used by internal surfaces or origin firewalls. They are
+  // reserved here too so TS host resolution and SQL URL synthesis cannot drift.
+  'internal',
+  'localhost',
+  'portal',
+  'sms',
+] as const
+const DEFAULT_RESERVED = DEFAULT_RESERVED_SUBDOMAINS.join(',')
 const DEFAULT_PLATFORM = 'booking.corevo.se'
 const DEFAULT_SUPERADMIN = 'superbooking.corevo.se'
 const DEFAULT_STAFF = 'minbooking.corevo.se'

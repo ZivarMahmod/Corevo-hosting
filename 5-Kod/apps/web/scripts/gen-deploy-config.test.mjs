@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildRoutes, fetchActiveSlugs, validateDomains, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
+import { RESERVED } from './domain-routes.mjs'
 
 // The fixed infra routes as they appear in wrangler.jsonc (the generator's base).
 const BASE = [
@@ -30,14 +31,14 @@ describe('buildRoutes', () => {
   })
 
   it('NEVER mints a reserved/POS label as a tenant domain', () => {
-    const routes = buildRoutes(BASE, ['booking', 'admin', 'kiosk', 'superbooking', 'boka', 'mina', 'realsalon'])
+    const routes = buildRoutes(BASE, [...RESERVED, 'realsalon'])
     const patterns = routes.map((r) => r.pattern)
     expect(patterns).toContain('realsalon.corevo.se')
-    // none of the reserved labels become a NEW <label>.corevo.se customer route
-    expect(patterns.filter((p) => p === 'admin.corevo.se')).toHaveLength(0)
-    expect(patterns.filter((p) => p === 'kiosk.corevo.se')).toHaveLength(0)
-    expect(patterns.filter((p) => p === 'boka.corevo.se')).toHaveLength(0)
-    expect(patterns.filter((p) => p === 'mina.corevo.se')).toHaveLength(1)
+    // Reserved fixed hosts survive exactly once; every other reserved label is absent.
+    for (const label of RESERVED) {
+      const expected = BASE.some((route) => route.pattern === `${label}.corevo.se`) ? 1 : 0
+      expect(patterns.filter((p) => p === `${label}.corevo.se`)).toHaveLength(expected)
+    }
   })
 
   it('handles an empty slug list — just the fixed infra survives', () => {

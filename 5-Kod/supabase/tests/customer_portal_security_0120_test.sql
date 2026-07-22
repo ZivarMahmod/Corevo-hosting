@@ -535,7 +535,9 @@ begin
   select public.customer_portal_get_booking(
     v_session, repeat('b', 64), v_booking_a
   ) into v_payload;
-  if v_payload #>> '{booking,publicRebookUrl}' <> 'https://portal-test-a.example/boka'
+  if v_payload #>> '{booking,publicRebookUrl}'
+       <> ('https://portal-test-a.example/boka?plats=' || v_location_a::text
+           || '&tjanst=' || v_service_a::text)
      or not (v_payload #>> '{booking,canCancel}')::boolean
      or v_payload #>> '{booking,durationMinutes}' <> '30'
      or v_payload #>> '{booking,location,timezone}' <> 'Europe/Stockholm'

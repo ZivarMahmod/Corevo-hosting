@@ -16,6 +16,12 @@ import {
   type SlotOption,
 } from '@/app/boka/actions'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
+import {
+  buildTenantBookingPath,
+  resolveLocationSelection,
+  serviceAvailableAtLocation,
+  servicesAvailableAtLocation,
+} from '@/lib/booking/preselection'
 import styles from './booking.module.css'
 
 type WizardStaff = {
@@ -27,6 +33,8 @@ type WizardStaff = {
 }
 export type WizardService = {
   id: string
+  /** null/undefined = tenant-global; UUID = only bookable at that active location. */
+  locationId?: string | null
   name: string
   description: string | null
   durationMin: number
@@ -116,6 +124,7 @@ export function BookingWizard({
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   brandName,
+  preselectLocationId = null,
   preselectServiceId = null,
   preselectStaffId = null,
 }: {
@@ -154,6 +163,8 @@ export function BookingWizard({
   /** Salongens wordmark på biljettens huvudrad (steg 5). OPTIONAL — mounts som
    *  inte skickar den får den neutrala fallbacken 'Bokning'. */
   brandName?: string
+  /** Aktiv same-tenant plats ur /boka?plats=<locationId>. Okänt id ignoreras. */
+  preselectLocationId?: string | null
   /** goal-64: förvald tjänst ur /boka?tjanst=<serviceId> (prisraden vet sin tjänst).
    *  Okänt id ignoreras tyst. */
   preselectServiceId?: string | null
@@ -174,13 +185,20 @@ export function BookingWizard({
     () => locations.find((l) => l.isPrimary)?.id ?? locations[0]?.id ?? null,
     [locations],
   )
+  const validPreselectLocationId = useMemo(
+    () => locations.find((location) => location.id === preselectLocationId)?.id ?? null,
+    [locations, preselectLocationId],
+  )
+  const initialLocationId = validPreselectLocationId ?? (
+    multiLocation && !compact ? null : defaultLocationId
+  )
   // Startval:
   //  • ≤1 plats → auto-väljs (eller null vid 0 platser → servern tar primär).
   //  • >1 i WIZARD → null, så grind-skärmen tvingar ett aktivt platsval först.
   //  • >1 i COMPACT → default förvald (single-screen ska vara användbar direkt;
   //    chip-raden låter kunden byta).
   const [locationId, setLocationId] = useState<string | null>(
-    multiLocation && !compact ? null : defaultLocationId,
+    initialLocationId,
   )
   // Picker-grinden (BARA wizard): visa platsvalet före steg-maskinen tills en plats
   // är vald. ≤1 plats eller compact → alltid false → ingen grind.
@@ -197,8 +215,13 @@ export function BookingWizard({
   // aldrig låsa eller krascha bokningen. Servern validerar ändå allt igen vid submit;
   // detta är ren UI-förifyllnad.
   const preService = useMemo(
-    () => services.find((s) => s.id === preselectServiceId) ?? null,
-    [services, preselectServiceId],
+    () => {
+      const candidate = services.find((s) => s.id === preselectServiceId) ?? null
+      return candidate && serviceAvailableAtLocation(candidate, initialLocationId)
+        ? candidate
+        : null
+    },
+    [services, preselectServiceId, initialLocationId],
   )
   // Personalen förväljs bara när hen FAKTISKT kan utföra den valda tjänsten. Utan
   // tjänst i länken hålls valet kvar och appliceras när kunden väljer tjänst (se
@@ -326,7 +349,17 @@ export function BookingWizard({
   // i flerplatsläget; i en-plats-läget rörs detta aldrig.
   function pickLocation(id: string) {
     setLocationId(id)
-    setService(compact && services.length > 0 ? services[0]! : null)
+    const next = resolveLocationSelection({
+      services,
+      currentService: service,
+      locationId: id,
+      compact,
+    })
+    setService(next.service)
+    // If a new location invalidates the current/deep-linked service, return to
+    // service selection. Keeping step=2 with service=null produces a blank,
+    // impossible-to-advance wizard.
+    if (!compact) setStep(next.step)
     setStaffChoice('any')
     setDate(compact ? ymd(days[0]!) : null)
     setSlots([])
@@ -392,10 +425,11 @@ export function BookingWizard({
     // Seed defaults on first compact mount: first service + today, like the
     // handoff VCompact. (Re-seeding after a confirmation is handled directly in
     // resetWizard, since this effect won't re-run on that render.)
-    if (!service && services.length > 0) setService(services[0]!)
+    const compatible = servicesAvailableAtLocation(services, locationId)
+    if (!service && compatible.length > 0) setService(compatible[0]!)
     if (!date) setDate(ymd(days[0]!))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compact, services])
+  }, [compact, services, locationId])
 
   useEffect(() => {
     if (!compact || !service || !date) return
@@ -565,13 +599,16 @@ export function BookingWizard({
   }
 
   // Nollställ hela wizarden till steg 1. Körs på en stängd→öppen flank EFTER en
-  // klar bokning (se effekten nedan) och av biljettens "Boka en till tid".
+  // klar bokning (se effekten nedan). Steg 5 navigerar i stället med en riktig
+  // tenantbunden bokningslänk enligt kundportalkontraktet.
   function resetWizard() {
+    const resetLocationId = multiLocation && !compact ? null : defaultLocationId
+    const resetServices = servicesAvailableAtLocation(services, resetLocationId)
     setStep(1)
     // Compact reopens straight back into the one-page form, so re-seed its
     // defaults (first service + today) here rather than clearing to null — the
     // seed effect won't re-run on the post-reset render (its deps are unchanged).
-    setService(compact && services.length > 0 ? services[0]! : null)
+    setService(compact ? (resetServices[0] ?? null) : null)
     setStaffChoice('any')
     setDate(compact ? ymd(days[0]!) : null)
     setSlots([])
@@ -587,7 +624,7 @@ export function BookingWizard({
     setCalCursor(0)
     // Platsval nollställs till sitt utgångsläge (≤1 plats → auto; >1 wizard → grind;
     // >1 compact → default förvald).
-    setLocationId(multiLocation && !compact ? null : defaultLocationId)
+    setLocationId(resetLocationId)
   }
 
   // Reset på ÅTERÖPPNING (inte på stängning): så att drawern glider ut med
@@ -709,6 +746,11 @@ export function BookingWizard({
   // identisk (filtret släpper igenom alla). Beräknas en gång, används i båda
   // render-lägena (compact + wizard). OBS: staffChoice nollställs redan i
   // pickLocation (→ 'any'), så ett gammalt fel-plats-val kan aldrig släpa med.
+  const servicesHere = servicesAvailableAtLocation(services, locationId)
+  const bookAgainPath = buildTenantBookingPath({
+    locationId,
+    serviceId: service?.id ?? null,
+  })
   const staffHere = (service?.staff ?? []).filter(
     (m) => !locationId || m.locationIds.includes(locationId),
   )
@@ -872,7 +914,7 @@ export function BookingWizard({
         </div>
 
         <div className="wizard-stepbody">
-          {services.length === 0 ? (
+          {servicesHere.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyIcon} aria-hidden>
                 ✂️
@@ -912,7 +954,7 @@ export function BookingWizard({
               {/* Tjänst — chip row (namn + mono-pris) */}
               <div className="ckompakt-label">Tjänst</div>
               <div className="ckompakt-chiprow" role="group" aria-label="Välj tjänst">
-                {services.map((s) => {
+                {servicesHere.map((s) => {
                   const on = service?.id === s.id
                   return (
                     <button
@@ -1058,7 +1100,7 @@ export function BookingWizard({
         </div>
 
         {/* Single bottom CTA — thumb reach, with a live mono summary sub-line. */}
-        {services.length > 0 && (
+        {servicesHere.length > 0 && (
           <div className="wizard-actionbar">
             <button
               type="button"
@@ -1182,7 +1224,7 @@ export function BookingWizard({
       <div className={`wizard-stepbody${step === 5 ? ' fc-stepbody--ticket' : ''}`}>
         {/* Step 1 — service */}
         {step === 1 &&
-          (services.length === 0 ? (
+          (servicesHere.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyIcon} aria-hidden>
                 ✂️
@@ -1195,7 +1237,7 @@ export function BookingWizard({
           ) : (
             <div className="fc-step">
               <ul className="wizard-list">
-                {services.map((s) => (
+                {servicesHere.map((s) => (
                   <li key={s.id}>
                     <button
                       type="button"
@@ -1580,9 +1622,9 @@ export function BookingWizard({
                   Lägg till i kalender
                 </Link>
               ) : null}
-              <button type="button" className="fc-btn-outline" onClick={resetWizard}>
-                Boka en till tid
-              </button>
+              <Link href={bookAgainPath} className="fc-btn-outline">
+                Boka en tid till
+              </Link>
               {/* "Avboka eller boka om"-länken kräver den token-signerade avboka-URL:en
                   (cancel-token, finns bara i mejlet) — ingen giltig länk kan byggas här,
                   och en död länk är förbjuden. Mejlet bär avboka-vägen. */}

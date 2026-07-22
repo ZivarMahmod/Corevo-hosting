@@ -10,6 +10,7 @@ import {
   CalendarBookingProvider,
   CalendarDownloadButton,
 } from './CalendarDownloadButton'
+import { BookAgainButton, BookAgainProvider } from './BookAgainButton'
 
 function StatusIcon({ icon }: { icon: ReturnType<typeof portalStatusPresentation>['icon'] }) {
   return (
@@ -128,16 +129,31 @@ function PolicyBlockedCancellation({
   )
 }
 
+function ActiveBookAgainButton({
+  snapshot,
+  booking,
+}: {
+  snapshot: PortalSessionSnapshot
+  booking: PortalBookingProjection
+}) {
+  const button = <BookAgainButton label="Boka en tid till" />
+  // An active booking always keeps the tenant base fallback. When SQL supplied
+  // a validated context URL, bind that exact service/location instead.
+  return booking.publicRebookUrl ? (
+    <BookAgainProvider snapshot={snapshot} booking={booking}>{button}</BookAgainProvider>
+  ) : (
+    <BookAgainProvider snapshot={snapshot}>{button}</BookAgainProvider>
+  )
+}
+
 export function NextBookingCard({
   snapshot,
   items,
   hasHistory,
-  emptyRebookUrl,
 }: {
   snapshot: PortalSessionSnapshot
   items: PortalBookingProjection[]
   hasHistory: boolean
-  emptyRebookUrl?: string | null
 }) {
   const next = items[0]
   if (!next) {
@@ -148,13 +164,14 @@ export function NextBookingCard({
         <p>{hasHistory
           ? 'Du har ingen bokning på gång just nu.'
           : `Du har inga bokningar hos ${snapshot.tenantName} ännu.`}</p>
-        {emptyRebookUrl && <a className="cp-btn cp-btn-primary" href={emptyRebookUrl} rel="noopener">Boka ny tid</a>}
+        <BookAgainProvider snapshot={snapshot}>
+          <BookAgainButton label="Boka ny tid" variant="primary" />
+        </BookAgainProvider>
       </section>
     )
   }
 
   const formatted = formatPortalBooking(next, snapshot)
-  const rebookAction = portalRebookAction(next)
   const canCancel = next.canCancel && isFutureActiveBooking(next)
   return (
     <>
@@ -207,9 +224,9 @@ export function NextBookingCard({
           </ul>
         </section>
       )}
-      {next.publicRebookUrl && rebookAction === 'active' && (
+      {isFutureActiveBooking(next) && (
         <div className="cp-actions">
-          <a className="cp-btn" href={next.publicRebookUrl} rel="noopener">Boka en tid till</a>
+          <ActiveBookAgainButton snapshot={snapshot} booking={next} />
         </div>
       )}
     </>
@@ -277,11 +294,6 @@ export function BookingDetail({
               <CalendarDownloadButton />
             </CalendarBookingProvider>
           )}
-          {booking.publicRebookUrl && rebookAction && (
-            <a className="cp-btn" href={booking.publicRebookUrl} rel="noopener">
-              {rebookAction === 'active' ? 'Boka en tid till' : 'Boka igen'}
-            </a>
-          )}
           {canCancel && (
             <PortalBookingCancellation
               bookingPublicId={booking.id}
@@ -293,6 +305,14 @@ export function BookingDetail({
               blockedContact={cancellationContact(booking, snapshot)}
               variant="detail"
             />
+          )}
+          {rebookAction === 'active' && (
+            <ActiveBookAgainButton snapshot={snapshot} booking={booking} />
+          )}
+          {rebookAction === 'historic' && booking.publicRebookUrl && (
+            <BookAgainProvider snapshot={snapshot} booking={booking}>
+              <BookAgainButton label="Boka igen" />
+            </BookAgainProvider>
           )}
         </div>
       )}

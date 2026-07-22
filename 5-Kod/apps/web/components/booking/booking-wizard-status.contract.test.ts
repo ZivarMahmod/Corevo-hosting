@@ -19,4 +19,13 @@ describe('BookingWizard status contract', () => {
     expect(wizard).toContain('bookingPresentation.canAddToCalendar')
     expect(wizard).not.toContain('Din tid är bokad.')
   })
+
+  it('uses a real tenant-bound same-tab link for the step-five book-again action', () => {
+    const wizard = read('components/booking/BookingWizard.tsx')
+
+    expect(wizard).toContain('buildTenantBookingPath')
+    expect(wizard).toMatch(/<Link[^>]+href=\{bookAgainPath\}[^>]*>/)
+    expect(wizard).toContain('Boka en tid till')
+    expect(wizard).not.toMatch(/<button[^>]+onClick=\{resetWizard\}[\s\S]{0,120}Boka en till tid/)
+  })
 })

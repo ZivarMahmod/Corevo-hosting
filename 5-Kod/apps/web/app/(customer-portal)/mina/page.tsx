@@ -41,7 +41,6 @@ export default async function CustomerPortalHomePage() {
   }
 
   let hasHistory = true
-  let emptyRebookUrl: string | null = null
   if (upcoming.items.length === 0) {
     const history = await listPortalBookings({ scope: 'history', pageSize: 1 })
     if (history.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
@@ -54,7 +53,6 @@ export default async function CustomerPortalHomePage() {
       )
     }
     hasHistory = history.items.length > 0
-    emptyRebookUrl = history.items[0]?.publicRebookUrl ?? null
   }
 
   return (
@@ -64,7 +62,6 @@ export default async function CustomerPortalHomePage() {
         snapshot={session.snapshot}
         items={upcoming.items}
         hasHistory={hasHistory}
-        emptyRebookUrl={emptyRebookUrl}
       />
     </PortalShell>
   )

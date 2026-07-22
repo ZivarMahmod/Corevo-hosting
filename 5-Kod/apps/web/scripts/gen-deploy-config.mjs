@@ -27,7 +27,7 @@
 
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { readCustomDomainPatterns, readAllRoutePatterns, REQUIRED_FIXED_ROUTES } from './domain-routes.mjs'
+import { readCustomDomainPatterns, readAllRoutePatterns, REQUIRED_FIXED_ROUTES, RESERVED } from './domain-routes.mjs'
 import { cfApi, resolveAccountId, listWorkerDomains } from './cf-domains.mjs'
 
 const ROOT_DOMAIN = 'corevo.se'
@@ -41,11 +41,8 @@ export const REQUIRED_FIXED_HOSTS = [
   'mina.corevo.se',
 ]
 
-// Reserved labels that can never be minted as a tenant subdomain. Mirrors
-// lib/tenant.ts DEFAULT_RESERVED + domain-routes.RESERVED.
-const RESERVED = new Set(
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina'.split(','),
-)
+// Reserved labels come from the route editor's canonical JS set. The parity
+// contract keeps that set aligned with lib/tenant.ts and tracked environments.
 
 /**
  * Merge the fixed infra routes with one custom_domain route per active slug.

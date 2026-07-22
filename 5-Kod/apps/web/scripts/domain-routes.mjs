@@ -35,7 +35,7 @@ export const REQUIRED_FIXED_ROUTES = [
 // gen-deploy-config.mjs RESERVED / lib/tenant.ts DEFAULT_RESERVED so neither the
 // generator nor this editor can ever attach a POS host.
 export const RESERVED = new Set(
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina'.split(','),
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(','),
 )
 
 /** A valid customer DNS label: lowercase letters/digits/hyphen only (no dots, no `*`). */

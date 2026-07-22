@@ -18,7 +18,7 @@ vi.mock('./CalendarDownloadButton', () => ({
 
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null, verticalLabel: null,
-  phone: null, address: null, mapUrl: null, bookingOrigin: 'https://freshcut.corevo.se',
+  phone: null, address: null, mapUrl: null, bookingOrigin: 'https://freshcut.boka.corevo.se',
   timezone: 'Europe/Stockholm', locale: 'sv-SE', defaultCountry: 'SE', currency: 'SEK',
   cancellationCutoffHours: 24, customerName: 'Alex', lastSeenAt: '2026-07-22T10:00:00.000Z',
   absoluteExpiresAt: '2027-07-22T10:00:00.000Z',

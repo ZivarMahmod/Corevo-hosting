@@ -7,7 +7,12 @@ import type {
   PortalBookingProjection,
   PortalSessionSnapshot,
 } from '@/lib/customer-portal/types'
-import { formatPortalBooking, groupPortalHistory } from '@/lib/customer-portal/presentation'
+import {
+  formatPortalBooking,
+  groupPortalHistory,
+  portalRebookAction,
+} from '@/lib/customer-portal/presentation'
+import { BookAgainButton, BookAgainProvider } from './BookAgainButton'
 import { BookingStatusChip } from './PortalViews'
 
 type LoadMoreResult =
@@ -89,7 +94,7 @@ export function BookingHistoryListClient({
                 const formatted = formatPortalBooking(item, snapshot)
                 const location = locationText(item)
                 return (
-                  <li key={item.id}>
+                  <li className="cp-history-row" key={item.id}>
                     <Link
                       className="cp-booking-link"
                       href={`/mina/bokningar/${item.id}?from=history`}
@@ -104,6 +109,13 @@ export function BookingHistoryListClient({
                       <BookingStatusChip booking={item} />
                       <Chevron />
                     </Link>
+                    {portalRebookAction(item) === 'historic' && item.publicRebookUrl && (
+                      <div className="cp-history-rebook">
+                        <BookAgainProvider snapshot={snapshot} booking={item}>
+                          <BookAgainButton label="Boka igen" />
+                        </BookAgainProvider>
+                      </div>
+                    )}
                   </li>
                 )
               })}
