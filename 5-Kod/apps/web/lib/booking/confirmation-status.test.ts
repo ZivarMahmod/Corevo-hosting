@@ -12,6 +12,14 @@ describe('public booking status presentation', () => {
     expect(pending.canManage).toBe(true)
   })
 
+  it('does not promise e-mail when the verified booking may use SMS', () => {
+    for (const status of ['pending', 'confirmed']) {
+      const presentation = bookingStatusPresentation(status)
+
+      expect(presentation.message.toLowerCase()).not.toContain('e-post')
+    }
+  })
+
   it('offers calendar export only for a confirmed future booking', () => {
     expect(bookingStatusPresentation('confirmed').canAddToCalendar).toBe(true)
 
