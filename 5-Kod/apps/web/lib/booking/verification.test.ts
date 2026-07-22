@@ -77,11 +77,13 @@ describe('deliverBookingPin', () => {
       pin: '123456',
       outboxId: 'outbox-1',
       tenantName: 'Demo',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })).resolves.toEqual({ accepted: true, providerRef: 'giada:42' })
     expect(sendGiadaMessage).toHaveBeenCalledWith({
       to: '+46701234567',
       message: 'Demo: Din verifieringskod är 123456. Koden gäller i 5 minuter.',
       idempotencyKey: 'outbox:outbox-1',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })
   })
 
@@ -94,6 +96,7 @@ describe('deliverBookingPin', () => {
       pin: '123456',
       outboxId: 'outbox-2',
       tenantName: 'Demo & Co',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })
 
     expect(result).toEqual({ accepted: true, providerRef: 'email:mail-1' })

@@ -12,6 +12,7 @@ type SendInput = {
   to: string
   message: string
   idempotencyKey: string
+  expiresAt?: string
   senderId?: string
 }
 
@@ -68,6 +69,7 @@ export async function sendGiadaMessage(input: SendInput): Promise<GiadaSendResul
         message: input.message,
         idempotency_key: input.idempotencyKey,
         require_online: true,
+        ...(input.expiresAt ? { expires_at: input.expiresAt } : {}),
         ...(input.senderId ? { sender_id: input.senderId } : {}),
       }),
       signal: AbortSignal.timeout(positiveInt(process.env.GIADA_SEND_TIMEOUT_MS, 4000)),

@@ -85,6 +85,7 @@ export async function deliverBookingPin(input: {
   pin: string
   outboxId: string
   tenantName: string
+  expiresAt: string
 }): Promise<{ accepted: true; providerRef?: string } | { accepted: false; reason: string }> {
   const tenantName = input.tenantName.trim() || 'Corevo'
   if (input.channel === 'sms') {
@@ -92,6 +93,7 @@ export async function deliverBookingPin(input: {
       to: input.contact,
       message: `${tenantName}: Din verifieringskod är ${input.pin}. Koden gäller i 5 minuter.`,
       idempotencyKey: `outbox:${input.outboxId}`,
+      expiresAt: input.expiresAt,
     })
     return result.ok
       ? { accepted: true, providerRef: `giada:${result.id}` }

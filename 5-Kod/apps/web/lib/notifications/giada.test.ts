@@ -61,6 +61,7 @@ describe('sendGiadaMessage', () => {
       to: '+46701234567',
       message: 'Din kod är 123456',
       idempotencyKey: 'pin:challenge-1',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })).resolves.toEqual({ ok: true, id: 42, created: true })
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
@@ -71,6 +72,7 @@ describe('sendGiadaMessage', () => {
       message: 'Din kod är 123456',
       idempotency_key: 'pin:challenge-1',
       require_online: true,
+      expires_at: '2026-07-21T12:05:00.000Z',
     })
     expect(String(init.body)).not.toContain('test-secret')
     expect(init.signal).toBeDefined()

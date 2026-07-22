@@ -17,6 +17,7 @@ describe('public booking PIN action contract', () => {
     expect(source).toMatch(/\.rpc\(\s*'start_booking_verification'/)
     expect(source).toContain('dispatchNotificationOutboxById(row.pin_outbox_id')
     expect(source).toContain('deliverBookingPin({')
+    expect(source).toContain('expiresAt: row.expires_at')
     expect(source).toMatch(/\.rpc\(\s*'record_booking_verification_delivery'/)
     expect(source).toMatch(/\.rpc\(\s*'release_slot_hold'/)
     expect(source).toMatch(/\.rpc\(\s*'cancel_booking_verification'/)

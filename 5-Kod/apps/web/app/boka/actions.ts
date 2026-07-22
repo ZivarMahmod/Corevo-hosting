@@ -639,6 +639,7 @@ async function startBookingVerificationInternal(
         pin,
         outboxId: claimed.id,
         tenantName: ctx.name,
+        expiresAt: row.expires_at,
       })
       if (delivery.accepted) {
         return { status: 'sent', providerRef: delivery.providerRef }
