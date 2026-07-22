@@ -40,9 +40,8 @@ läcka mellan sessioner.
 
 - [x] D0 designgrind oberoende verifierad
 - [x] T1 portalhost och route-brandvägg implementerad och oberoende granskad
-- [ ] T2 privata tabeller och service-role-RPC:er
-- [ ] T3 magic-link exchange och portalsession
+- [x] T2 privata tabeller och service-role-RPC:er
+- [x] T3 magic-link exchange och portalsession
 - [ ] T4–T8 bokningsdata, detalj, avbokning, kalender och boka igen
 - [ ] T9–T11 profil, recovery, säkerhet och PWA
 - [ ] T12 full regression, oberoende verifiering och kontrollerad release
-

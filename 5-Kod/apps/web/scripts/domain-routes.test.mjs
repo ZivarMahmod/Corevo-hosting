@@ -164,6 +164,7 @@ describe('customer portal environment mirrors', () => {
   const envExample = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8')
   const envProduction = readFileSync(new URL('../.env.production', import.meta.url), 'utf8')
   const turbo = parseJsonc(readFileSync(new URL('../../../turbo.json', import.meta.url), 'utf8'))
+  const wrangler = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8')
 
   it('keeps the customer portal host and reserved slug in both tracked env files', () => {
     for (const source of [envExample, envProduction]) {
@@ -175,6 +176,13 @@ describe('customer portal environment mirrors', () => {
 
   it('passes the customer portal host through Turborepo', () => {
     expect(turbo.globalPassThroughEnv).toContain('NEXT_PUBLIC_CUSTOMER_PORTAL_HOST')
+  })
+
+  it('declares only an empty server-only HMAC placeholder and passes it through Turborepo', () => {
+    expect(envExample).toMatch(/^CUSTOMER_PORTAL_HMAC_KEY=$/m)
+    expect(turbo.globalPassThroughEnv).toContain('CUSTOMER_PORTAL_HMAC_KEY')
+    expect(envProduction).not.toMatch(/^CUSTOMER_PORTAL_HMAC_KEY=/m)
+    expect(wrangler).not.toContain('CUSTOMER_PORTAL_HMAC_KEY')
   })
 })
 
