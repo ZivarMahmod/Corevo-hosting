@@ -50,6 +50,12 @@ const booking = (overrides: Partial<PortalBookingProjection> = {}): PortalBookin
 const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
 
 describe('CustomerPortalShell', () => {
+  it('stays a server component and leaves recovery routes free of client focus/logout controllers', () => {
+    const source = readFileSync(resolve(process.cwd(), 'components/customer-portal/PortalShell.tsx'), 'utf8')
+    expect(source).not.toMatch(/^['"]use client['"]/)
+    expect(source).toMatch(/recovery[\s\S]*return[\s\S]*PortalShellFrame|variant === 'recovery'/)
+  })
+
   it('renders the canonical landmarks once and exactly one three-link responsive nav', () => {
     const html = renderToStaticMarkup(
       <PortalShell active="bookings" customerName="Alex">
@@ -67,6 +73,21 @@ describe('CustomerPortalShell', () => {
       expect(nav.indexOf('Historik')).toBeLessThan(nav.indexOf('Profil'))
     }
     expect(html).toContain('aria-current="page"')
+  })
+
+  it('renders the recovery shell with one main and without portal navigation or account actions', () => {
+    const html = renderToStaticMarkup(
+      <PortalShell variant="recovery">
+        <h1>Kom åt dina bokningar</h1>
+      </PortalShell>,
+    )
+
+    expect(html.match(/<main id="huvudinnehall"/g)).toHaveLength(1)
+    expect(html).toContain('COREVO')
+    expect(html).toContain('MINA BOKNINGAR')
+    expect(html).not.toMatch(/aria-label="Huvudmeny"|Öppna profil|Logga ut|cp-support/)
+    expect(html.match(/<a\b/g)).toHaveLength(1)
+    expect(html).toContain('href="#huvudinnehall"')
   })
 })
 
@@ -179,3 +200,5 @@ describe('customer portal views', () => {
     expect(html).not.toMatch(/Logga in|\/konto/)
   })
 })
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'

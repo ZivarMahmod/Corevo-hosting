@@ -25,7 +25,10 @@ import {
 } from './session'
 
 type RecoveryChannel = 'sms' | 'email'
-type RecoveryStartResult = { state: 'accepted' | 'cooldown' | 'max_attempts' | 'unavailable' }
+type RecoveryStartResult =
+  | { state: 'accepted'; retryAfterSeconds: number }
+  | { state: 'unavailable' }
+  | { state: 'cooldown' | 'max_attempts'; retryAfterSeconds: number }
 type RpcClient = {
   rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>
 }
@@ -98,7 +101,7 @@ async function start(input: {
         rateLimitKey('portal-recovery-start-contact', input.tenantSlug, contactDigest),
         LIMITS.portalRecoveryStart,
       )
-    ) return { state: 'max_attempts' }
+    ) return { state: 'max_attempts', retryAfterSeconds: LIMITS.portalRecoveryStart.windowSecs }
 
     const client = createServiceClient() as unknown as RpcClient | null
     if (!client) return { state: 'unavailable' }
@@ -118,12 +121,12 @@ async function start(input: {
     if (error) return { state: 'unavailable' }
     const queued = parseQueuedRecovery(data, credential.challengePublicId)
     if (!queued) return { state: 'unavailable' }
-    if (queued.outcome === 'cooldown') return { state: 'cooldown' }
+    if (queued.outcome === 'cooldown') return { state: 'cooldown', retryAfterSeconds: 30 }
 
     const store = await cookies()
     store.set(PORTAL_RECOVERY_COOKIE, credential.cookieValue, portalRecoveryCookieOptions)
     scheduleRecoveryDelivery(queued.outboxId)
-    return { state: 'accepted' }
+    return { state: 'accepted', retryAfterSeconds: 30 }
   } catch {
     return { state: 'unavailable' }
   }
@@ -149,7 +152,7 @@ export async function resendPortalRecovery(input: {
     if (!await checkRateLimitFailClosed(
       rateLimitKey('portal-recovery-resend', input.tenantSlug, input.ip, previous.challengePublicId),
       LIMITS.portalRecoveryResend,
-    )) return { state: 'max_attempts' }
+    )) return { state: 'max_attempts', retryAfterSeconds: LIMITS.portalRecoveryResend.windowSecs }
 
     const client = createServiceClient() as unknown as RpcClient | null
     if (!client) return { state: 'unavailable' }
@@ -166,11 +169,11 @@ export async function resendPortalRecovery(input: {
     if (error) return { state: 'unavailable' }
     const queued = parseQueuedRecovery(data, credential.challengePublicId)
     if (!queued) return { state: 'unavailable' }
-    if (queued.outcome === 'cooldown') return { state: 'cooldown' }
+    if (queued.outcome === 'cooldown') return { state: 'cooldown', retryAfterSeconds: 30 }
 
     store.set(PORTAL_RECOVERY_COOKIE, credential.cookieValue, portalRecoveryCookieOptions)
     scheduleRecoveryDelivery(queued.outboxId)
-    return { state: 'accepted' }
+    return { state: 'accepted', retryAfterSeconds: 30 }
   } catch {
     return { state: 'unavailable' }
   }
@@ -178,7 +181,8 @@ export async function resendPortalRecovery(input: {
 
 export async function getPortalRecoveryState(input: { tenantSlug: string }): Promise<
   | { state: 'sent'; attemptsRemaining: number; resendAfter: string }
-  | { state: 'expired' | 'max_attempts' | 'unavailable' }
+  | { state: 'expired' | 'unavailable' }
+  | { state: 'max_attempts'; retryAfterSeconds: number }
 > {
   if (!TENANT_SLUG_PATTERN.test(input.tenantSlug)) return { state: 'unavailable' }
   try {
@@ -195,7 +199,10 @@ export async function getPortalRecoveryState(input: { tenantSlug: string }): Pro
     }
     const row = data[0]
     if (row.tenant_slug !== input.tenantSlug) return { state: 'unavailable' }
-    if (row.outcome === 'expired' || row.outcome === 'max_attempts') return { state: row.outcome }
+    if (row.outcome === 'expired') return { state: 'expired' }
+    if (row.outcome === 'max_attempts') {
+      return { state: 'max_attempts', retryAfterSeconds: LIMITS.portalRecoveryVerify.windowSecs }
+    }
     if (
       row.outcome !== 'sent'
       || typeof row.attempts_remaining !== 'number'
@@ -221,7 +228,12 @@ export async function verifyPortalRecovery(input: {
   ip: string
 }): Promise<
   | { ok: true }
-  | { ok: false; reason?: 'invalid' | 'expired' | 'max_attempts'; attemptsRemaining?: number }
+  | {
+      ok: false
+      reason?: 'invalid' | 'expired' | 'max_attempts'
+      attemptsRemaining?: number
+      retryAfterSeconds?: number
+    }
 > {
   if (!TENANT_SLUG_PATTERN.test(input.tenantSlug) || !/^\d{6}$/.test(input.code)) {
     return { ok: false, reason: 'invalid' }
@@ -268,6 +280,9 @@ export async function verifyPortalRecovery(input: {
       ok: false,
       reason: row.outcome as 'invalid' | 'expired' | 'max_attempts',
       attemptsRemaining: row.attempts_remaining,
+      ...(row.outcome === 'max_attempts'
+        ? { retryAfterSeconds: LIMITS.portalRecoveryVerify.windowSecs }
+        : {}),
     }
   } catch {
     return { ok: false }

@@ -83,7 +83,7 @@ describe('portal recovery orchestration', () => {
     }))
 
     const known = await startPortalRecovery({ tenantSlug, lookup: '0729408522', ip: '203.0.113.1' })
-    expect(known).toEqual({ state: 'accepted' })
+    expect(known).toEqual({ state: 'accepted', retryAfterSeconds: 30 })
     expect(rpc.mock.calls.map(([name]) => name)).toEqual(['customer_portal_start_recovery'])
     expect(mocks.sendGiadaMessage).not.toHaveBeenCalled()
     expect(mocks.sendEmail).not.toHaveBeenCalled()
@@ -125,14 +125,14 @@ describe('portal recovery orchestration', () => {
     }))
 
     await expect(startPortalRecovery({ tenantSlug, lookup: '0729408522', ip: '203.0.113.1' }))
-      .resolves.toEqual({ state: 'accepted' })
+      .resolves.toEqual({ state: 'accepted', retryAfterSeconds: 30 })
     expect(mocks.dispatchPortalRecoveryOutboxById).not.toHaveBeenCalled()
   })
 
   it('checks both start buckets and fails closed before database or transport work', async () => {
     mocks.checkRateLimitFailClosed.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
     await expect(startPortalRecovery({ tenantSlug, lookup: '0729408522', ip: '203.0.113.1' }))
-      .resolves.toEqual({ state: 'max_attempts' })
+      .resolves.toEqual({ state: 'max_attempts', retryAfterSeconds: 300 })
     expect(mocks.checkRateLimitFailClosed).toHaveBeenCalledTimes(2)
     expect(mocks.checkRateLimitFailClosed.mock.calls.map(([key]) => key)).toEqual([
       'portal-recovery-start-ip:freshcut:203.0.113.1',
@@ -153,7 +153,7 @@ describe('portal recovery orchestration', () => {
       error: null,
     })
     await expect(startPortalRecovery({ tenantSlug, lookup: '0729408522', ip: '203.0.113.1' }))
-      .resolves.toEqual({ state: 'cooldown' })
+      .resolves.toEqual({ state: 'cooldown', retryAfterSeconds: 30 })
     expect(store.set).not.toHaveBeenCalled()
   })
 
@@ -170,7 +170,7 @@ describe('portal recovery orchestration', () => {
     }))
 
     await expect(resendPortalRecovery({ tenantSlug, ip: '203.0.113.1' }))
-      .resolves.toEqual({ state: 'accepted' })
+      .resolves.toEqual({ state: 'accepted', retryAfterSeconds: 30 })
     expect(rpc.mock.calls.map(([name]) => name)).toEqual(['customer_portal_resend_recovery'])
     expect(rpc.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
       p_challenge_public_id: challengePublicId,
@@ -212,6 +212,27 @@ describe('portal recovery orchestration', () => {
       state: 'sent',
       attemptsRemaining: 5, resendAfter: '2026-07-22T18:00:00.000Z',
     })
+  })
+
+  it('returns conservative server-driven retry windows for locked challenge states', async () => {
+    const store = cookieStore(`v1.${challengePublicId}.${'A'.repeat(43)}`)
+    mocks.cookies.mockResolvedValue(store)
+    rpc.mockResolvedValueOnce({
+      data: [{ outcome: 'max_attempts', attempts_remaining: 0, tenant_slug: tenantSlug, resend_after: '2026-07-22T18:00:00.000Z' }],
+      error: null,
+    })
+    await expect(getPortalRecoveryState({ tenantSlug })).resolves.toEqual({
+      state: 'max_attempts', retryAfterSeconds: 300,
+    })
+
+    rpc.mockResolvedValueOnce({
+      data: [{ outcome: 'max_attempts', attempts_remaining: 0, tenant_slug: null }],
+      error: null,
+    })
+    await expect(verifyPortalRecovery({ tenantSlug, code: '589511', ip: '203.0.113.1' }))
+      .resolves.toEqual({
+        ok: false, reason: 'max_attempts', attemptsRemaining: 0, retryAfterSeconds: 300,
+      })
   })
 
   it('sets the ordinary portal cookie only after atomic verification succeeds', async () => {

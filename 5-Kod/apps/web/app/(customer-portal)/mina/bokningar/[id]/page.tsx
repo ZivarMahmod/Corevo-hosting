@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { PortalShell } from '@/components/customer-portal/PortalShell'
 import { BookingDetail, PortalErrorState } from '@/components/customer-portal/PortalViews'
 import { getPortalBooking, getPortalSessionSnapshot } from '@/lib/customer-portal/data'
@@ -23,6 +24,9 @@ export default async function CustomerPortalBookingPage({
   searchParams?: Promise<{ from?: string | string[] }>
 }) {
   const session = await getPortalSessionSnapshot()
+  if (session.outcome === 'expired' && session.recoveryTenantSlug) {
+    redirect(`/aterhamta/${session.recoveryTenantSlug}?session=expired`)
+  }
   if (session.outcome !== 'ok') {
     return <PortalShell active="bookings" detailBackTarget="/mina"><PortalErrorState variant="server" /></PortalShell>
   }
@@ -31,6 +35,7 @@ export default async function CustomerPortalBookingPage({
   const query = await searchParams
   const backTarget = query?.from === 'history' ? '/mina/historik' : '/mina'
   const detail = await getPortalBooking(id)
+  if (detail.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
   if (detail.outcome === 'not_found') {
     return <PortalShell active="bookings" customerName={session.snapshot.customerName} detailBackTarget="/mina"><PortalErrorState variant="not-found" /></PortalShell>
   }

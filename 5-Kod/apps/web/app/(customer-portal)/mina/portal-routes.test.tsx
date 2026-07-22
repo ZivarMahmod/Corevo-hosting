@@ -6,9 +6,15 @@ const mocks = vi.hoisted(() => ({
   getPortalSessionSnapshot: vi.fn(),
   listPortalBookings: vi.fn(),
   getPortalBooking: vi.fn(),
+  redirect: vi.fn((target: string) => { throw new Error(`NEXT_REDIRECT:${target}`) }),
 }))
 
 vi.mock('@/lib/customer-portal/data', () => mocks)
+vi.mock('next/navigation', () => ({
+  redirect: mocks.redirect,
+  usePathname: () => '/mina',
+  useRouter: () => ({ replace: vi.fn() }),
+}))
 
 import HomePage, {
   dynamic as homeDynamic,
@@ -96,7 +102,7 @@ describe('/mina', () => {
     expect(html).not.toContain('href="undefined"')
   })
 
-  it.each(['expired', 'not_found', 'unavailable'] as const)(
+  it.each(['not_found', 'unavailable'] as const)(
     'renders a neutral canonical surface when the snapshot is %s',
     async (outcome) => {
       mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome })
@@ -107,6 +113,18 @@ describe('/mina', () => {
     },
   )
 
+  it('redirects an expired tenant-bound session to the canonical recovery route', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'expired', recoveryTenantSlug: 'freshcut' })
+    await expect(HomePage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+    expect(mocks.redirect).toHaveBeenCalledWith('/aterhamta/freshcut?session=expired')
+    expect(mocks.listPortalBookings).not.toHaveBeenCalled()
+  })
+
+  it('carries the neutral session-expired flag if the session ends during the booking query', async () => {
+    mocks.listPortalBookings.mockResolvedValue({ outcome: 'expired' })
+    await expect(HomePage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+
   it('renders list failures as the canonical booking fetch surface', async () => {
     mocks.listPortalBookings.mockResolvedValue({ outcome: 'unavailable' })
     const html = renderToStaticMarkup(await HomePage())
@@ -116,6 +134,11 @@ describe('/mina', () => {
 })
 
 describe('/mina/historik', () => {
+  it('carries the neutral session-expired flag from the route guard', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'expired', recoveryTenantSlug: 'freshcut' })
+    await expect(HistoryPage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+
   it('renders the canonical grouped history and exposes pagination only from hasMore', async () => {
     mocks.listPortalBookings.mockResolvedValue({
       outcome: 'ok', scope: 'history', pageSize: 20,
@@ -133,16 +156,27 @@ describe('/mina/historik', () => {
   })
 
   it('never presents a failed history fetch as an empty state', async () => {
-    mocks.listPortalBookings.mockResolvedValue({ outcome: 'expired' })
+    mocks.listPortalBookings.mockResolvedValue({ outcome: 'unavailable' })
     const html = renderToStaticMarkup(await HistoryPage())
     expect(html).toContain('Historiken kunde inte hämtas.')
     expect(html).toContain('<h1>Historik</h1>')
     expect(html).not.toContain('Du har inga tidigare bokningar')
     expect(html.match(/<h1/g)).toHaveLength(1)
   })
+
+  it('redirects if the session expires between snapshot and history query', async () => {
+    mocks.listPortalBookings.mockResolvedValue({ outcome: 'expired' })
+    await expect(HistoryPage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
 })
 
 describe('/mina/bokningar/[id]', () => {
+  it('carries the neutral session-expired flag from the route guard', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'expired', recoveryTenantSlug: 'freshcut' })
+    await expect(DetailPage({ params: Promise.resolve({ id: bookingId }) }))
+      .rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+
   it('passes only the route id to the narrow DAL and renders the owned booking', async () => {
     mocks.getPortalBooking.mockResolvedValue({ outcome: 'ok', booking: booking() })
     const html = renderToStaticMarkup(await DetailPage({ params: Promise.resolve({ id: bookingId }) }))
@@ -162,7 +196,7 @@ describe('/mina/bokningar/[id]', () => {
     expect(html).toMatch(/class="cp-btn cp-btn-ghost cp-back" href="\/mina\/historik"/)
   })
 
-  it.each(['not_found', 'expired', 'unavailable'] as const)(
+  it.each(['not_found', 'unavailable'] as const)(
     'uses a neutral non-reflective detail surface for %s',
     async (outcome) => {
       mocks.getPortalBooking.mockResolvedValue({ outcome })
@@ -176,4 +210,10 @@ describe('/mina/bokningar/[id]', () => {
       expect(html).not.toMatch(/Logga in|\/konto/)
     },
   )
+
+  it('redirects if the session expires between snapshot and detail query', async () => {
+    mocks.getPortalBooking.mockResolvedValue({ outcome: 'expired' })
+    await expect(DetailPage({ params: Promise.resolve({ id: bookingId }) }))
+      .rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
 })

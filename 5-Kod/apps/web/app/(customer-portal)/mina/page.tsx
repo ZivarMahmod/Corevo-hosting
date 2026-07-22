@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { PortalShell } from '@/components/customer-portal/PortalShell'
 import {
   NextBookingCard,
@@ -21,11 +22,15 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CustomerPortalHomePage() {
   const session = await getPortalSessionSnapshot()
+  if (session.outcome === 'expired' && session.recoveryTenantSlug) {
+    redirect(`/aterhamta/${session.recoveryTenantSlug}?session=expired`)
+  }
   if (session.outcome !== 'ok') {
     return <PortalShell active="bookings"><PortalErrorState variant="server" /></PortalShell>
   }
 
   const upcoming = await listPortalBookings({ scope: 'upcoming', pageSize: 20 })
+  if (upcoming.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
   if (upcoming.outcome !== 'ok') {
     return (
       <PortalShell active="bookings" customerName={session.snapshot.customerName}>
@@ -39,6 +44,7 @@ export default async function CustomerPortalHomePage() {
   let emptyRebookUrl: string | null = null
   if (upcoming.items.length === 0) {
     const history = await listPortalBookings({ scope: 'history', pageSize: 1 })
+    if (history.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
     if (history.outcome !== 'ok') {
       return (
         <PortalShell active="bookings" customerName={session.snapshot.customerName}>
