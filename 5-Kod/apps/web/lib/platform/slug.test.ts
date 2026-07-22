@@ -12,7 +12,7 @@ describe('validateSlug', () => {
   })
 
   it('rejects reserved subdomains (DoD: "Reserverad slug avvisas")', () => {
-    for (const r of ['booking', 'admin', 'app', 'www', 'api']) {
+    for (const r of ['booking', 'admin', 'app', 'www', 'api', 'mina']) {
       const res = validateSlug(r)
       expect(res.ok).toBe(false)
     }

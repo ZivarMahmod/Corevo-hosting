@@ -14,7 +14,8 @@ function check(label: string, got: unknown, want: unknown) {
 const LIVE = {
   rootDomain: 'corevo.se',
   platformHost: 'booking.corevo.se',
-  reserved: ['booking', 'admin', 'app', 'www', 'api'],
+  customerPortalHost: 'mina.corevo.se',
+  reserved: ['booking', 'admin', 'app', 'www', 'api', 'mina'],
 }
 const DEV = { ...LIVE, rootDomain: 'localhost:3000' }
 
@@ -30,6 +31,7 @@ check('frisor2.corevo.se', getTenantFromHost('frisor2.corevo.se', LIVE), {
 
 // ── reserved subdomains never resolve to a tenant ──
 check('booking.corevo.se', getTenantFromHost('booking.corevo.se', LIVE), { kind: 'platform' })
+check('mina.corevo.se', getTenantFromHost('mina.corevo.se', LIVE), { kind: 'customer_portal' })
 check('admin.corevo.se', getTenantFromHost('admin.corevo.se', LIVE), {
   kind: 'reserved',
   subdomain: 'admin',

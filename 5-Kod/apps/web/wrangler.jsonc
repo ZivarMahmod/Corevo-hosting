@@ -30,7 +30,8 @@
     // minbooking = staff. booking stays salon-admin. Read at runtime by lib/tenant.ts.
     "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
     "NEXT_PUBLIC_STAFF_HOST": "minbooking.corevo.se",
-    "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka",
+    "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
+    "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina",
     // goal-28 — salon storefronts live on the dedicated wildcard branch
     // <slug>.boka.corevo.se (see the *.boka.corevo.se route below). lib/tenant.ts
     // reads this at runtime to map a boka host → tenant slug; the bare apex
@@ -84,10 +85,11 @@
   // goal-27 — ALL live production hostnames are declared here so a top-level `deploy`
   // CREATES + RE-ASSERTS them and they STOP disappearing (the FX-14 trap: a domain that
   // lives only in the CF dashboard gets detached when a deploy reconciles to config).
-  // The three back-office doors:
+  // The three back-office doors + the isolated customer portal:
   //   booking.corevo.se       — salon admin           (kind 'platform')
   //   superbooking.corevo.se  — platform/super-admin  (kind 'superadmin')
   //   minbooking.corevo.se    — staff schedule         (kind 'staff_portal')
+  //   mina.corevo.se          — customer portal        (kind 'customer_portal')
   // freshcut.corevo.se + salongzorbar.corevo.se + demo.corevo.se were dropped: those
   // tenants were deleted in the baseline reset, so binding them would RESURRECT dead
   // domains. Do NOT manage any of these in the dashboard — they ride the deploy.
@@ -100,7 +102,7 @@
   // 🛑 NEVER widen this to *.corevo.se: that would capture the POS subdomains
   // (admin/kiosk/superadmin/www/dev) on this SHARED zone and break the POS. The
   // 'boka' branch is isolated and never touches a bare POS subdomain.
-  // goal-32 — this block holds ONLY the fixed infra hosts (the 3 back-office doors +
+  // goal-32 — this block holds ONLY the fixed infra hosts (the back-office/customer portal doors +
   // the boka wildcard). PER-CUSTOMER storefront domains (<slug>.corevo.se) are NO
   // LONGER hand-listed here: scripts/gen-deploy-config.mjs reads the active tenants
   // from the DB and APPENDS one custom_domain route per salon, writing
@@ -114,6 +116,7 @@
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
     { "pattern": "minbooking.corevo.se", "custom_domain": true },
+    { "pattern": "mina.corevo.se", "custom_domain": true },
     { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" },
     { "pattern": "freshcut.corevo.se", "custom_domain": true },
     { "pattern": "florist.corevo.se", "custom_domain": true },
@@ -158,7 +161,8 @@
         "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
         "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
         "NEXT_PUBLIC_STAFF_HOST": "minbooking.corevo.se",
-        "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka",
+        "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
+        "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina",
         "NEXT_PUBLIC_TENANT_HOST_SUFFIX": "boka.corevo.se",
         "NEXT_PUBLIC_SITE_URL": "https://bokningsplatformen-staging.zivar68.workers.dev",
         // Mirrored from top-level so wrangler doesn't warn about un-inherited vars and

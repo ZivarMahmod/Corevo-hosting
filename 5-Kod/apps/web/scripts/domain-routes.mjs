@@ -20,13 +20,14 @@ import { parse as parseJsonc, parseTree, findNodeAtLocation } from 'jsonc-parser
 export const ROOT_DOMAIN = 'corevo.se'
 
 /** Routes that MUST be present in every committed wrangler.jsonc, or the platform
- *  loses a door / all storefronts. The 3 back-office custom_domains PLUS the
+ *  loses a door / all storefronts. The fixed back-office/customer-portal domains PLUS the
  *  *.boka.corevo.se/* storefront wildcard (a zone_name route — NOT a custom_domain,
  *  so it never shows up in readCustomDomainPatterns; it must be asserted separately). */
 export const REQUIRED_FIXED_ROUTES = [
   'booking.corevo.se',
   'superbooking.corevo.se',
   'minbooking.corevo.se',
+  'mina.corevo.se',
   '*.boka.corevo.se/*',
 ]
 
@@ -34,7 +35,7 @@ export const REQUIRED_FIXED_ROUTES = [
 // gen-deploy-config.mjs RESERVED / lib/tenant.ts DEFAULT_RESERVED so neither the
 // generator nor this editor can ever attach a POS host.
 export const RESERVED = new Set(
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka'.split(','),
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina'.split(','),
 )
 
 /** A valid customer DNS label: lowercase letters/digits/hyphen only (no dots, no `*`). */

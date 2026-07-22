@@ -38,12 +38,13 @@ export const REQUIRED_FIXED_HOSTS = [
   'booking.corevo.se',
   'superbooking.corevo.se',
   'minbooking.corevo.se',
+  'mina.corevo.se',
 ]
 
 // Reserved labels that can never be minted as a tenant subdomain. Mirrors
 // lib/tenant.ts DEFAULT_RESERVED + domain-routes.RESERVED.
 const RESERVED = new Set(
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka'.split(','),
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina'.split(','),
 )
 
 /**

@@ -23,6 +23,7 @@ export type TenantResolution =
   | { kind: 'platform' }
   | { kind: 'superadmin' }
   | { kind: 'staff_portal' }
+  | { kind: 'customer_portal' }
   | { kind: 'reserved'; subdomain: string }
   | { kind: 'root' }
   | { kind: 'unknown' }
@@ -33,6 +34,7 @@ export type ResolveOptions = {
   platformHost?: string
   superadminHost?: string
   staffHost?: string
+  customerPortalHost?: string
   /** goal-28 — dedicated salon-storefront branch suffix (e.g. boka.corevo.se).
    *  <slug>.<suffix> → tenant; the bare <suffix> apex → reserved (not a tenant). */
   tenantHostSuffix?: string
@@ -50,10 +52,11 @@ const DEFAULT_ROOT = 'localhost:3000'
 // minting a salon named 'boka'. The branch apex is also caught by host-equality in
 // getTenantFromHost (so <slug>.boka.corevo.se still resolves the <slug>, not 'boka').
 const DEFAULT_RESERVED =
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka'
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina'
 const DEFAULT_PLATFORM = 'booking.corevo.se'
 const DEFAULT_SUPERADMIN = 'superbooking.corevo.se'
 const DEFAULT_STAFF = 'minbooking.corevo.se'
+const DEFAULT_CUSTOMER_PORTAL = 'mina.corevo.se'
 // goal-28 — salon storefronts live on a DEDICATED wildcard branch so a blunt
 // *.corevo.se route never has to exist (it would hijack the POS subdomains on this
 // shared zone). The suffix is read from env (NEXT_PUBLIC_TENANT_HOST_SUFFIX), never
@@ -73,6 +76,8 @@ const envReserved = (): string[] =>
 const envPlatform = (): string => process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAULT_PLATFORM
 const envSuperadmin = (): string => process.env.NEXT_PUBLIC_SUPERADMIN_HOST ?? DEFAULT_SUPERADMIN
 const envStaff = (): string => process.env.NEXT_PUBLIC_STAFF_HOST ?? DEFAULT_STAFF
+const envCustomerPortal = (): string =>
+  process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST ?? DEFAULT_CUSTOMER_PORTAL
 const envTenantSuffix = (): string =>
   process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX ?? DEFAULT_TENANT_SUFFIX
 
@@ -141,6 +146,7 @@ export function getTenantFromHost(
   const platformHost = opts.platformHost ?? envPlatform()
   const superadminHost = opts.superadminHost ?? envSuperadmin()
   const staffHost = opts.staffHost ?? envStaff()
+  const customerPortalHost = opts.customerPortalHost ?? envCustomerPortal()
   const tenantHostSuffix = opts.tenantHostSuffix ?? envTenantSuffix()
 
   const classify = (raw: string): TenantResolution => {
@@ -173,6 +179,7 @@ export function getTenantFromHost(
   const platform = stripPort(platformHost).toLowerCase()
   const superadmin = stripPort(superadminHost).toLowerCase()
   const staff = stripPort(staffHost).toLowerCase()
+  const customerPortal = stripPort(customerPortalHost).toLowerCase()
 
   // goal-27 — the three back-office doors are matched by EXACT host BEFORE the
   // suffix/classify path, so 'superbooking'/'minbooking' resolve to their own
@@ -180,6 +187,7 @@ export function getTenantFromHost(
   if (hostname === platform) return { kind: 'platform' }
   if (hostname === superadmin) return { kind: 'superadmin' }
   if (hostname === staff) return { kind: 'staff_portal' }
+  if (hostname === customerPortal) return { kind: 'customer_portal' }
   if (hostname === root || hostname === 'localhost' || hostname === '127.0.0.1') {
     return { kind: 'root' }
   }

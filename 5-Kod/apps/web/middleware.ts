@@ -35,6 +35,11 @@ import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 import { decideBackofficeRoute, type BackofficeHostKind } from '@/lib/auth/host-routing'
 import { PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
 import { canonicalPreviewPlatformLegacyUrl } from '@/lib/auth/platform-route-canonical'
+import {
+  decideCustomerPortalHostRoute,
+  isCustomerPortalRequestPath,
+  isStaticRequestPath,
+} from '@/lib/customer-portal/host-routing'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
@@ -87,6 +92,33 @@ export async function middleware(request: NextRequest) {
     const cookieSlug = request.cookies.get(TENANT_OVERRIDE_COOKIE)?.value
     if (cookieSlug) tenant = { kind: 'tenant', slug: cookieSlug }
   }
+
+  // The customer portal is a host-isolated surface. Apply its allowlist before
+  // custom-domain lookup and before legacy Supabase session work. Preview hosts may
+  // exercise canonical portal routes, but malformed portal paths still fail closed.
+  const portalRouteDecision = decideCustomerPortalHostRoute({
+    hostKind: tenant.kind,
+    pathname: path,
+    preview: previewHost,
+  })
+  if (portalRouteDecision === 'deny') {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { 'cache-control': 'no-store' },
+    })
+  }
+
+  if (tenant.kind === 'customer_portal' || (previewHost && isCustomerPortalRequestPath(path))) {
+    const portalHeaders = new Headers(request.headers)
+    portalHeaders.set('x-corevo-tenant-kind', 'customer_portal')
+    portalHeaders.delete('x-corevo-tenant-slug')
+    portalHeaders.delete('x-corevo-reserved-subdomain')
+    return NextResponse.next({ request: { headers: portalHeaders } })
+  }
+
+  // matcher runs for static files too so mina cannot bypass its asset allowlist.
+  // Preserve the previous behavior for every other host by skipping session work.
+  if (isStaticRequestPath(path)) return NextResponse.next()
 
   // 1c. Custom domain (goal-16): an EXTERNAL host (a customer's own domain DNS-routed
   //     to the worker) doesn't match our *.corevo.se suffix, so it resolves to
@@ -276,8 +308,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except static assets and image optimization.
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
-  ],
+  matcher: ['/:path*'],
 }

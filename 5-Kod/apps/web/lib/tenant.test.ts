@@ -7,6 +7,7 @@ const OPTS = {
   platformHost: 'booking.corevo.se',
   superadminHost: 'superbooking.corevo.se',
   staffHost: 'minbooking.corevo.se',
+  customerPortalHost: 'mina.corevo.se',
   tenantHostSuffix: 'boka.corevo.se',
 }
 
@@ -31,6 +32,16 @@ describe('getTenantFromHost — host suffix classification', () => {
     expect(getTenantFromHost('superbooking.corevo.se', OPTS)).toEqual({ kind: 'superadmin' })
     expect(getTenantFromHost('minbooking.corevo.se', OPTS)).toEqual({ kind: 'staff_portal' })
     expect(getTenantFromHost('booking.corevo.se', OPTS)).toEqual({ kind: 'platform' })
+  })
+
+  it('classifies mina.corevo.se as the customer portal before tenant matching', () => {
+    expect(getTenantFromHost('mina.corevo.se')).toEqual({ kind: 'customer_portal' })
+    expect(
+      getTenantFromHost('mina.corevo.se', {
+        ...OPTS,
+        search: new URLSearchParams('tenant=evil'),
+      }),
+    ).toEqual({ kind: 'customer_portal' })
   })
 
   it('goal-27: superbooking/minbooking resolve to their door kind, NOT reserved', () => {
@@ -70,6 +81,10 @@ describe('getTenantFromHost — host suffix classification', () => {
 
   it('fix-29: slug "boka" is reserved (cannot be registered as a salon)', () => {
     expect(RESERVED_SUBDOMAINS).toContain('boka')
+  })
+
+  it('customer portal label "mina" is reserved (cannot be registered as a salon)', () => {
+    expect(RESERVED_SUBDOMAINS).toContain('mina')
   })
 
   it('goal-28: the boka branch is read from env, not hardcoded (suffix override honored)', () => {

@@ -44,7 +44,7 @@ function run(cmd, label) {
 run('node scripts/gen-deploy-config.mjs', 'Validate domains (committed ⊇ live + active)')
 
 // 2. Defense-in-depth: re-assert EVERY fixed route directly against wrangler.jsonc —
-//    the 3 back-office custom_domains AND the *.boka.corevo.se/* storefront wildcard
+//    the back-office/customer-portal custom_domains AND the *.boka.corevo.se/* storefront wildcard
 //    (a zone_name route, so it is checked against the FULL routes[], not just
 //    custom_domain entries). A manual edit/merge that drops any one is caught here.
 const allRoutes = new Set(readAllRoutePatterns(wranglerPath))
