@@ -187,7 +187,12 @@ export async function prepareBookingDelivery(
     if (!token) return { ok: false, reason: 'link_unavailable' }
     manageUrl = buildManageUrl(origin, booking.id, token)
   }
-  if (payload.include_account_claim === true && origin && customer.auth_user_id === null) {
+  if (
+    outbox.chosen_channel === 'email'
+    && payload.include_account_claim === true
+    && origin
+    && customer.auth_user_id === null
+  ) {
     const claim = await createCustomerClaimLink({
       tenantId: outbox.tenant_id,
       customerId: customer.id,
@@ -230,7 +235,10 @@ export async function prepareBookingDelivery(
           : outbox.event_type === 'booking_completed'
             ? 'Tack för ditt besök.'
             : `Din tid för ${serviceName} är bokad ${when}.`
-    const link = accountClaimUrl ?? manageUrl
+    // Kundportalen är ännu inte den publika, lösenordsfria bokningshanteringen.
+    // SMS-gäster ska därför alltid landa direkt på bokningens signerade
+    // hanteringssida i stället för den inloggningskrävande konto-claimen.
+    const link = manageUrl
     return {
       ok: true,
       channel: 'sms',
