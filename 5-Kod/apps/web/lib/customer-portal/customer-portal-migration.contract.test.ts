@@ -122,8 +122,45 @@ describe('customer portal 0120 migration contract', () => {
       /customer_portal_create_challenge[\s\S]*?pg_advisory_xact_lock[\s\S]*?customer_portal_challenges/,
     )
     expect(migration).toContain('least(greatest(p_page_size, 1), 20)')
+    expect(migration).toContain('limit v_limit + 1')
+    expect(migration).toContain("'hasmore'")
+    expect(migration).toContain("'nextcursor'")
     expect(migration).not.toMatch(/pg_catalog\.(?:coalesce|least|greatest)\s*\(/)
     expect(migration).toMatch(/customer_portal_gdpr_scrub[\s\S]*?update private\.customer_portal_links[\s\S]*?update private\.customer_portal_sessions/)
+  })
+
+  it('projects canonical portal identity and bookings without request-host trust or payment joins', () => {
+    const snapshot = migration.match(
+      /create or replace function public\.customer_portal_session_snapshot[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const list = migration.match(
+      /create or replace function public\.customer_portal_list_bookings[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const detail = migration.match(
+      /create or replace function public\.customer_portal_get_booking[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(snapshot).toContain("'logourl'")
+    expect(snapshot).toContain("'verticallabel'")
+    expect(snapshot).toContain("'bookingorigin'")
+    expect(snapshot).toContain("'sv-se'")
+    expect(snapshot).toContain("'se'::text")
+    expect(snapshot).toContain("'cancellationcutoffhours'")
+    expect(snapshot).toContain('public.tenant_domains')
+    expect(snapshot).toContain('public.verticals')
+    expect(snapshot).not.toContain("'tenantid'")
+    expect(snapshot).not.toContain("'customerid'")
+
+    for (const projection of [list, detail]) {
+      expect(projection).toContain("'durationminutes'")
+      expect(projection).toContain("'location'")
+      expect(projection).toContain("'cancancel'")
+      expect(projection).toContain("'canceldeadline'")
+      expect(projection).toContain("'publicrebookurl'")
+      expect(projection).toContain('left join lateral')
+      expect(projection).not.toMatch(/join public\.payments\s+pay\s+on/)
+      expect(projection).not.toContain('request.headers')
+    }
+    expect(list).toContain("b.start_ts < v_now or b.status not in ('pending', 'confirmed')")
   })
 
   it('moves the database release inventory to 0120 without pretending production is applied', () => {

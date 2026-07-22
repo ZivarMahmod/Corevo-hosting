@@ -32,6 +32,8 @@ type PortalSessionAccess = {
 const TENANT_SLUG_PATTERN = /^(?!-)[a-z0-9-]{1,63}(?<!-)$/
 const STATUS_PATTERN = /^[a-z][a-z0-9_]{0,63}$/
 const CURRENCY_PATTERN = /^[A-Z]{3}$/
+const COUNTRY_PATTERN = /^[A-Z]{2}$/
+const LOCALE_PATTERN = /^[a-z]{2}-[A-Z]{2}$/
 const TIMESTAMP_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/
 const KNOWN_STATUSES = new Set<PortalKnownBookingStatus>([
   'pending',
@@ -93,45 +95,136 @@ function presentationStatus(status: string): PortalPresentationStatus {
     : 'unknown'
 }
 
+function validTimezone(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length < 1 || value.length > 100) return false
+  try {
+    new Intl.DateTimeFormat('sv-SE', { timeZone: value }).format(0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function safeHttpsUrl(value: unknown): string | null | undefined {
+  if (value === null) return null
+  if (
+    typeof value !== 'string' || value.length > 2048 || value.trim() !== value ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) return undefined
+  try {
+    const url = new URL(value)
+    if (
+      url.protocol !== 'https:' ||
+      url.username !== '' ||
+      url.password !== '' ||
+      !url.hostname
+    ) return undefined
+    return value
+  } catch {
+    return undefined
+  }
+}
+
+function safeOrigin(value: unknown): string | null {
+  const parsed = safeHttpsUrl(value)
+  if (!parsed) return null
+  const url = new URL(parsed)
+  return url.port === '' && url.origin === parsed ? parsed : null
+}
+
+function safeMapUrl(value: unknown): string | null | undefined {
+  const parsed = safeHttpsUrl(value)
+  if (parsed === null || parsed === undefined) return parsed
+  const url = new URL(parsed)
+  if (
+    url.hostname !== 'www.openstreetmap.org' ||
+    url.pathname !== '/' ||
+    url.hash !== '' ||
+    !url.searchParams.has('mlat') ||
+    !url.searchParams.has('mlon') ||
+    [...url.searchParams.keys()].some((key) => key !== 'mlat' && key !== 'mlon')
+  ) return undefined
+  const lat = Number(url.searchParams.get('mlat'))
+  const lon = Number(url.searchParams.get('mlon'))
+  return Number.isFinite(lat) && lat >= -90 && lat <= 90 &&
+    Number.isFinite(lon) && lon >= -180 && lon <= 180
+    ? parsed
+    : undefined
+}
+
+function safeRebookUrl(value: unknown): string | null | undefined {
+  const parsed = safeHttpsUrl(value)
+  if (parsed === null || parsed === undefined) return parsed
+  const url = new URL(parsed)
+  return url.port === '' && url.pathname === '/boka' && url.search === '' && url.hash === ''
+    ? parsed
+    : undefined
+}
+
+function parseLocation(value: unknown): PortalBookingProjection['location'] | undefined {
+  if (value === null) return null
+  if (!isRecord(value) || !hasOnlyKeys(value, [
+    'address', 'mapUrl', 'name', 'phone', 'timezone',
+  ])) return undefined
+
+  const name = optionalText(value.name, 200)
+  const address = optionalText(value.address, 500)
+  const phone = optionalText(value.phone, 40)
+  const mapUrl = safeHttpsUrl(value.mapUrl)
+  if (
+    name === undefined || address === undefined || phone === undefined ||
+    mapUrl === undefined || !validTimezone(value.timezone)
+  ) return undefined
+
+  return { name, address, phone, mapUrl, timezone: value.timezone }
+}
+
 function parseBooking(value: unknown): PortalBookingProjection | null {
   if (!isRecord(value) || !hasOnlyKeys(value, [
+    'canCancel',
+    'cancelDeadline',
     'currency',
-    'endAt',
+    'durationMinutes',
+    'endTs',
     'id',
-    'locationAddress',
-    'locationName',
+    'location',
     'priceCents',
+    'publicRebookUrl',
     'serviceName',
-    'staffName',
-    'startAt',
+    'staffTitle',
+    'startTs',
     'status',
   ])) {
     return null
   }
 
   const serviceName = normalizedText(value.serviceName, 1, 200)
-  const staffName = optionalText(value.staffName, 160)
-  const locationName = optionalText(value.locationName, 200)
-  const locationAddress = optionalText(value.locationAddress, 500)
+  const staffTitle = optionalText(value.staffTitle, 160)
+  const location = parseLocation(value.location)
+  const publicRebookUrl = safeRebookUrl(value.publicRebookUrl)
   if (
     typeof value.id !== 'string' ||
     !PORTAL_UUID_PATTERN.test(value.id) ||
-    !validTimestamp(value.startAt) ||
-    !validTimestamp(value.endAt) ||
-    Date.parse(value.endAt) <= Date.parse(value.startAt) ||
+    !validTimestamp(value.startTs) ||
+    !validTimestamp(value.endTs) ||
+    Date.parse(value.endTs) <= Date.parse(value.startTs) ||
     typeof value.status !== 'string' ||
     !STATUS_PATTERN.test(value.status) ||
     !serviceName ||
-    staffName === undefined ||
-    locationName === undefined ||
-    locationAddress === undefined ||
+    typeof value.durationMinutes !== 'number' ||
+    !Number.isSafeInteger(value.durationMinutes) ||
+    value.durationMinutes !== Math.floor((Date.parse(value.endTs) - Date.parse(value.startTs)) / 60_000) ||
+    staffTitle === undefined ||
+    location === undefined ||
     typeof value.currency !== 'string' ||
-    !CURRENCY_PATTERN.test(value.currency)
+    !CURRENCY_PATTERN.test(value.currency) ||
+    typeof value.canCancel !== 'boolean' ||
+    (value.cancelDeadline !== null && !validTimestamp(value.cancelDeadline)) ||
+    publicRebookUrl === undefined
   ) {
     return null
   }
 
-  let price: PortalBookingProjection['price'] = null
   if (value.priceCents !== null) {
     if (
       typeof value.priceCents !== 'number' ||
@@ -140,41 +233,82 @@ function parseBooking(value: unknown): PortalBookingProjection | null {
     ) {
       return null
     }
-    price = { cents: value.priceCents, currency: value.currency }
+  }
+
+  const cancellableStatus = value.status === 'pending' || value.status === 'confirmed'
+  if (
+    (!cancellableStatus && (value.canCancel || value.cancelDeadline !== null)) ||
+    (cancellableStatus && value.cancelDeadline === null)
+  ) {
+    return null
   }
 
   return {
     id: value.id.toLowerCase(),
-    startAt: value.startAt,
-    endAt: value.endAt,
-    runtimeStatus: value.status,
+    startTs: value.startTs,
+    endTs: value.endTs,
+    status: value.status,
     presentationStatus: presentationStatus(value.status),
     serviceName,
-    staffName,
-    locationName,
-    locationAddress,
-    price,
+    durationMinutes: value.durationMinutes,
+    staffTitle,
+    location,
+    priceCents: value.priceCents,
+    currency: value.currency,
+    canCancel: value.canCancel,
+    cancelDeadline: value.cancelDeadline,
+    publicRebookUrl,
   }
 }
 
 function parseSnapshot(value: unknown): PortalSessionSnapshot | null {
   if (!isRecord(value) || !hasOnlyKeys(value, [
     'absoluteExpiresAt',
+    'address',
+    'bookingOrigin',
+    'cancellationCutoffHours',
+    'currency',
     'customerName',
+    'defaultCountry',
     'lastSeenAt',
+    'locale',
+    'logoUrl',
+    'mapUrl',
+    'phone',
     'tenantName',
     'tenantSlug',
+    'timezone',
+    'verticalLabel',
   ])) {
     return null
   }
 
   const tenantName = normalizedText(value.tenantName, 1, 200)
   const customerName = normalizedText(value.customerName, 0, 120)
+  const logoUrl = safeHttpsUrl(value.logoUrl)
+  const verticalLabel = optionalText(value.verticalLabel, 200)
+  const phone = optionalText(value.phone, 40)
+  const address = optionalText(value.address, 500)
+  const mapUrl = safeMapUrl(value.mapUrl)
+  const bookingOrigin = safeOrigin(value.bookingOrigin)
   if (
     typeof value.tenantSlug !== 'string' ||
     !TENANT_SLUG_PATTERN.test(value.tenantSlug) ||
     tenantName === null ||
     customerName === null ||
+    logoUrl === undefined ||
+    verticalLabel === undefined ||
+    phone === undefined ||
+    address === undefined ||
+    mapUrl === undefined ||
+    !bookingOrigin ||
+    !validTimezone(value.timezone) ||
+    typeof value.locale !== 'string' || !LOCALE_PATTERN.test(value.locale) ||
+    typeof value.defaultCountry !== 'string' || !COUNTRY_PATTERN.test(value.defaultCountry) ||
+    typeof value.currency !== 'string' || !CURRENCY_PATTERN.test(value.currency) ||
+    typeof value.cancellationCutoffHours !== 'number' ||
+    !Number.isSafeInteger(value.cancellationCutoffHours) ||
+    value.cancellationCutoffHours < 0 || value.cancellationCutoffHours > 9999 ||
     !validTimestamp(value.lastSeenAt) ||
     !validTimestamp(value.absoluteExpiresAt)
   ) {
@@ -184,6 +318,17 @@ function parseSnapshot(value: unknown): PortalSessionSnapshot | null {
   return {
     tenantSlug: value.tenantSlug,
     tenantName,
+    logoUrl,
+    verticalLabel,
+    phone,
+    address,
+    mapUrl,
+    bookingOrigin,
+    timezone: value.timezone,
+    locale: value.locale,
+    defaultCountry: value.defaultCountry,
+    currency: value.currency,
+    cancellationCutoffHours: value.cancellationCutoffHours,
     customerName,
     lastSeenAt: value.lastSeenAt,
     absoluteExpiresAt: value.absoluteExpiresAt,
@@ -222,7 +367,7 @@ function pageSize(value: number | undefined): number {
 
 function validCursor(cursor: PortalBookingCursor | undefined): boolean {
   return cursor === undefined || (
-    validTimestamp(cursor.startAt) &&
+    validTimestamp(cursor.startTs) &&
     PORTAL_UUID_PATTERN.test(cursor.id)
   )
 }
@@ -274,7 +419,7 @@ export async function listPortalBookings({
       p_session_public_id: access.sessionPublicId,
       p_secret_digest: access.secretDigest,
       p_scope: scope,
-      p_cursor_start: cursor?.startAt ?? null,
+      p_cursor_start: cursor?.startTs ?? null,
       p_cursor_id: cursor?.id.toLowerCase() ?? null,
       p_page_size: boundedPageSize,
     })
@@ -286,7 +431,8 @@ export async function listPortalBookings({
       data.scope !== scope ||
       data.pageSize !== boundedPageSize ||
       !Array.isArray(data.items) ||
-      data.items.length > boundedPageSize
+      data.items.length > boundedPageSize ||
+      typeof data.hasMore !== 'boolean'
     ) {
       return { outcome: 'unavailable' }
     }
@@ -297,12 +443,39 @@ export async function listPortalBookings({
       if (!parsed) return { outcome: 'unavailable' }
       items.push(parsed)
     }
-    const last = items.at(-1)
-    const nextCursor = items.length === boundedPageSize && last
-      ? { startAt: last.startAt, id: last.id }
-      : null
+    let nextCursor: PortalBookingCursor | null = null
+    if (data.nextCursor !== null) {
+      if (
+        !isRecord(data.nextCursor) ||
+        !hasOnlyKeys(data.nextCursor, ['id', 'startTs']) ||
+        typeof data.nextCursor.startTs !== 'string' ||
+        typeof data.nextCursor.id !== 'string'
+      ) {
+        return { outcome: 'unavailable' }
+      }
+      nextCursor = {
+        startTs: data.nextCursor.startTs,
+        id: data.nextCursor.id.toLowerCase(),
+      }
+      if (!validCursor(nextCursor)) return { outcome: 'unavailable' }
+    }
 
-    return { outcome: 'ok', scope, pageSize: boundedPageSize, items, nextCursor }
+    const last = items.at(-1)
+    if (
+      (data.hasMore && (
+        items.length !== boundedPageSize ||
+        !nextCursor ||
+        !last ||
+        nextCursor.startTs !== last.startTs ||
+        nextCursor.id !== last.id
+      )) ||
+      (!data.hasMore && nextCursor !== null)
+    ) return { outcome: 'unavailable' }
+
+    return {
+      outcome: 'ok', scope, pageSize: boundedPageSize, items,
+      hasMore: data.hasMore, nextCursor,
+    }
   } catch {
     return { outcome: 'unavailable' }
   }
@@ -325,9 +498,10 @@ export async function getPortalBooking(bookingPublicId: string): Promise<PortalB
     if (data.outcome !== 'ok') return { outcome: 'unavailable' }
 
     const booking = parseBooking(data.booking)
-    return booking?.id === bookingPublicId.toLowerCase()
+    if (!booking) return { outcome: 'unavailable' }
+    return booking.id === bookingPublicId.toLowerCase()
       ? { outcome: 'ok', booking }
-      : { outcome: 'unavailable' }
+      : { outcome: 'not_found' }
   } catch {
     return { outcome: 'unavailable' }
   }

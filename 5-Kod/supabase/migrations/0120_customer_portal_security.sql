@@ -414,9 +414,55 @@ begin
     where id = v_session.id;
   end if;
 
+  -- Portal v1 platform defaults are deliberately explicit until tenant locale/
+  -- country/currency become canonical columns: sv-SE, SE, SEK, Europe/Stockholm.
+  -- Optional identity fields are null unless backed by validated stored data.
   select pg_catalog.jsonb_build_object(
     'tenantSlug', t.slug,
     'tenantName', t.name,
+    'logoUrl', case
+      when ts.branding ->> 'logo_url' ~* '^https://[^[:space:]]{1,2000}$'
+        then ts.branding ->> 'logo_url'
+      else null
+    end,
+    'verticalLabel', nullif(btrim(v.name), ''),
+    'phone', case
+      when ts.settings #>> '{contact,phone}' ~ '^\+?[0-9][0-9 ()-]{3,39}$'
+        then btrim(ts.settings #>> '{contact,phone}')
+      else null
+    end,
+    'address', nullif(btrim(loc.address), ''),
+    'mapUrl', case
+      when loc.address is not null
+       and ts.settings #>> '{map,q}' = loc.address
+       and case when pg_catalog.jsonb_typeof(ts.settings #> '{map,lat}') = 'number'
+                then (ts.settings #>> '{map,lat}')::numeric between -90 and 90
+                else false end
+       and case when pg_catalog.jsonb_typeof(ts.settings #> '{map,lon}') = 'number'
+                then (ts.settings #>> '{map,lon}')::numeric between -180 and 180
+                else false end
+        then pg_catalog.format(
+          'https://www.openstreetmap.org/?mlat=%s&mlon=%s',
+          ts.settings #>> '{map,lat}', ts.settings #>> '{map,lon}'
+        )
+      else null
+    end,
+    'bookingOrigin', 'https://' || case
+      when dom.domain is not null then dom.domain
+      when lower(t.slug) ~ '^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'
+        or lower(t.slug) ~ '^[a-z0-9]$'
+        then lower(t.slug) || '.corevo.se'
+      else null
+    end,
+    'timezone', coalesce(nullif(btrim(loc.timezone), ''), 'Europe/Stockholm'),
+    'locale', 'sv-SE'::text,
+    'defaultCountry', 'SE'::text,
+    'currency', 'SEK'::text,
+    'cancellationCutoffHours', case
+      when ts.settings ->> 'cancellation_cutoff_hours' ~ '^[0-9]{1,4}$'
+        then greatest(0, (ts.settings ->> 'cancellation_cutoff_hours')::integer)
+      else 24
+    end,
     'customerName', case
       when c.name_hidden then coalesce(c.display_name, '')
       else coalesce(c.display_name, c.full_name, '')
@@ -426,6 +472,26 @@ begin
   ) into v_snapshot
   from public.tenants t
   join public.customers c on c.id = v_session.customer_id and c.tenant_id = t.id
+  left join public.tenant_settings ts on ts.tenant_id = t.id
+  left join public.verticals v on v.key = t.vertical_id
+  left join lateral (
+    select l.address, l.timezone
+    from public.locations l
+    where l.tenant_id = t.id and l.is_primary and l.active
+    order by l.created_at, l.id
+    limit 1
+  ) loc on true
+  left join lateral (
+    select lower(d.domain) as domain
+    from public.tenant_domains d
+    where d.tenant_id = t.id
+      and d.verified and d.is_primary
+      and lower(d.domain) ~ '^[a-z0-9][a-z0-9.-]{1,251}[a-z0-9]$'
+      and pg_catalog.strpos(lower(d.domain), '.') > 0
+      and pg_catalog.strpos(lower(d.domain), '..') = 0
+    order by d.created_at, d.id
+    limit 1
+  ) dom on true
   where t.id = v_session.tenant_id;
 
   return query select 'ok'::text, v_snapshot;
@@ -449,48 +515,55 @@ declare
   v_session record;
   v_limit integer := least(greatest(p_page_size, 1), 20);
   v_items jsonb;
+  v_has_more boolean := false;
+  v_next_cursor jsonb;
   v_now timestamptz := statement_timestamp();
 begin
   select * into v_session
   from private.customer_portal_resolve_session(
     p_session_public_id, p_secret_digest, v_now
   );
-  if not found or p_scope not in ('upcoming', 'history') then
+  if not found
+     or p_scope not in ('upcoming', 'history')
+     or ((p_cursor_start is null) <> (p_cursor_id is null)) then
     return pg_catalog.jsonb_build_object('outcome', 'expired', 'items', '[]'::jsonb);
   end if;
 
-  select coalesce(
-    pg_catalog.jsonb_agg(
-      pg_catalog.jsonb_build_object(
-        'id', q.id,
-        'startAt', q.start_ts,
-        'endAt', q.end_ts,
-        'status', q.status,
-        'serviceName', q.service_name,
-        'staffName', q.staff_name,
-        'locationName', q.location_name,
-        'locationAddress', q.location_address,
-        'priceCents', q.price_cents,
-        'currency', q.currency
-      ) order by
-        case when p_scope = 'upcoming' then q.start_ts end asc,
-        case when p_scope = 'history' then q.start_ts end desc,
-        q.id
-    ),
-    '[]'::jsonb
-  ) into v_items
-  from (
+  with fetched as (
     select
       b.id,
       b.start_ts,
       b.end_ts,
       b.status,
       sv.name as service_name,
-      coalesce(st.short_name, st.title, '') as staff_name,
+      coalesce(st.short_name, st.title, '') as staff_title,
       l.name as location_name,
       l.address as location_address,
+      l.timezone as location_timezone,
       b.price_cents,
-      upper(coalesce(pay.currency, 'sek')) as currency
+      upper(coalesce(pay.currency, 'sek')) as currency,
+      greatest(0, floor(extract(epoch from (b.end_ts - b.start_ts)) / 60)::integer) as duration_minutes,
+      b.status in ('pending', 'confirmed')
+        and b.start_ts > v_now + pg_catalog.make_interval(hours => policy.cutoff_hours)
+        as can_cancel,
+      case when b.status in ('pending', 'confirmed')
+        then b.start_ts - pg_catalog.make_interval(hours => policy.cutoff_hours)
+        else null
+      end as cancel_deadline,
+      case when t.status = 'active' and sv.active and (
+        dom.domain is not null
+        or lower(t.slug) ~ '^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'
+        or lower(t.slug) ~ '^[a-z0-9]$'
+      )
+        then 'https://' || coalesce(dom.domain, lower(t.slug) || '.corevo.se') || '/boka'
+        else null
+      end as public_rebook_url,
+      row_number() over (order by
+        case when p_scope = 'upcoming' then b.start_ts end asc,
+        case when p_scope = 'history' then b.start_ts end desc,
+        case when p_scope = 'upcoming' then b.id end asc,
+        case when p_scope = 'history' then b.id end desc
+      ) as row_number
     from public.bookings b
     join public.services sv
       on sv.id = b.service_id and sv.tenant_id = b.tenant_id
@@ -498,14 +571,39 @@ begin
       on st.id = b.staff_id and st.tenant_id = b.tenant_id
     left join public.locations l
       on l.id = b.location_id and l.tenant_id = b.tenant_id
-    left join public.payments pay
-      on pay.booking_id = b.id and pay.tenant_id = b.tenant_id
+    join public.tenants t on t.id = b.tenant_id
+    left join public.tenant_settings ts on ts.tenant_id = b.tenant_id
+    cross join lateral (
+      select case
+        when ts.settings ->> 'cancellation_cutoff_hours' ~ '^[0-9]{1,4}$'
+          then greatest(0, (ts.settings ->> 'cancellation_cutoff_hours')::integer)
+        else 24
+      end as cutoff_hours
+    ) policy
+    left join lateral (
+      select p.currency
+      from public.payments p
+      where p.booking_id = b.id and p.tenant_id = b.tenant_id
+      order by p.created_at desc, p.id desc
+      limit 1
+    ) pay on true
+    left join lateral (
+      select lower(d.domain) as domain
+      from public.tenant_domains d
+      where d.tenant_id = b.tenant_id
+        and d.verified and d.is_primary
+        and lower(d.domain) ~ '^[a-z0-9][a-z0-9.-]{1,251}[a-z0-9]$'
+        and pg_catalog.strpos(lower(d.domain), '.') > 0
+        and pg_catalog.strpos(lower(d.domain), '..') = 0
+      order by d.created_at, d.id
+      limit 1
+    ) dom on true
     where b.tenant_id = v_session.tenant_id
       and b.customer_id = v_session.customer_id
       and (
         (p_scope = 'upcoming' and b.start_ts >= v_now and b.status in ('pending', 'confirmed'))
         or
-        (p_scope = 'history' and (b.start_ts < v_now or b.status in ('cancelled', 'completed', 'no_show')))
+        (p_scope = 'history' and (b.start_ts < v_now or b.status not in ('pending', 'confirmed')))
       )
       and (
         p_cursor_start is null
@@ -515,15 +613,55 @@ begin
     order by
       case when p_scope = 'upcoming' then b.start_ts end asc,
       case when p_scope = 'history' then b.start_ts end desc,
-      b.id
-    limit v_limit
-  ) q;
+      case when p_scope = 'upcoming' then b.id end asc,
+      case when p_scope = 'history' then b.id end desc
+    limit v_limit + 1
+  )
+  select
+    coalesce(
+      pg_catalog.jsonb_agg(
+        pg_catalog.jsonb_build_object(
+          'id', f.id,
+          'startTs', f.start_ts,
+          'endTs', f.end_ts,
+          'status', f.status,
+          'serviceName', f.service_name,
+          'durationMinutes', f.duration_minutes,
+          'staffTitle', f.staff_title,
+          'location', case when f.location_timezone is null then null else
+            pg_catalog.jsonb_build_object(
+              'name', f.location_name,
+              'address', f.location_address,
+              'phone', null,
+              'mapUrl', null,
+              'timezone', f.location_timezone
+            ) end,
+          'priceCents', f.price_cents,
+          'currency', f.currency,
+          'canCancel', f.can_cancel,
+          'cancelDeadline', f.cancel_deadline,
+          'publicRebookUrl', f.public_rebook_url
+        ) order by f.row_number
+      ) filter (where f.row_number <= v_limit),
+      '[]'::jsonb
+    ),
+    count(*) > v_limit,
+    case when count(*) > v_limit then
+      (pg_catalog.jsonb_agg(
+        pg_catalog.jsonb_build_object('startTs', f.start_ts, 'id', f.id)
+        order by f.row_number
+      ) filter (where f.row_number = v_limit)) -> 0
+    else null end
+  into v_items, v_has_more, v_next_cursor
+  from fetched f;
 
   return pg_catalog.jsonb_build_object(
     'outcome', 'ok',
     'scope', p_scope,
     'pageSize', v_limit,
-    'items', v_items
+    'items', v_items,
+    'hasMore', v_has_more,
+    'nextCursor', v_next_cursor
   );
 end;
 $$;
@@ -541,10 +679,11 @@ as $$
 declare
   v_session record;
   v_booking jsonb;
+  v_now timestamptz := statement_timestamp();
 begin
   select * into v_session
   from private.customer_portal_resolve_session(
-    p_session_public_id, p_secret_digest, statement_timestamp()
+    p_session_public_id, p_secret_digest, v_now
   );
   if not found then
     return pg_catalog.jsonb_build_object('outcome', 'not_found');
@@ -552,15 +691,35 @@ begin
 
   select pg_catalog.jsonb_build_object(
     'id', b.id,
-    'startAt', b.start_ts,
-    'endAt', b.end_ts,
+    'startTs', b.start_ts,
+    'endTs', b.end_ts,
     'status', b.status,
     'serviceName', sv.name,
-    'staffName', coalesce(st.short_name, st.title, ''),
-    'locationName', l.name,
-    'locationAddress', l.address,
+    'durationMinutes', greatest(0, floor(extract(epoch from (b.end_ts - b.start_ts)) / 60)::integer),
+    'staffTitle', coalesce(st.short_name, st.title, ''),
+    'location', case when l.id is null then null else pg_catalog.jsonb_build_object(
+      'name', l.name,
+      'address', l.address,
+      'phone', null,
+      'mapUrl', null,
+      'timezone', l.timezone
+    ) end,
     'priceCents', b.price_cents,
-    'currency', upper(coalesce(pay.currency, 'sek'))
+    'currency', upper(coalesce(pay.currency, 'sek')),
+    'canCancel', b.status in ('pending', 'confirmed')
+      and b.start_ts > v_now + pg_catalog.make_interval(hours => policy.cutoff_hours),
+    'cancelDeadline', case when b.status in ('pending', 'confirmed')
+      then b.start_ts - pg_catalog.make_interval(hours => policy.cutoff_hours)
+      else null
+    end,
+    'publicRebookUrl', case when t.status = 'active' and sv.active and (
+      dom.domain is not null
+      or lower(t.slug) ~ '^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'
+      or lower(t.slug) ~ '^[a-z0-9]$'
+    )
+      then 'https://' || coalesce(dom.domain, lower(t.slug) || '.corevo.se') || '/boka'
+      else null
+    end
   ) into v_booking
   from public.bookings b
   join public.services sv
@@ -569,8 +728,33 @@ begin
     on st.id = b.staff_id and st.tenant_id = b.tenant_id
   left join public.locations l
     on l.id = b.location_id and l.tenant_id = b.tenant_id
-  left join public.payments pay
-    on pay.booking_id = b.id and pay.tenant_id = b.tenant_id
+  join public.tenants t on t.id = b.tenant_id
+  left join public.tenant_settings ts on ts.tenant_id = b.tenant_id
+  cross join lateral (
+    select case
+      when ts.settings ->> 'cancellation_cutoff_hours' ~ '^[0-9]{1,4}$'
+        then greatest(0, (ts.settings ->> 'cancellation_cutoff_hours')::integer)
+      else 24
+    end as cutoff_hours
+  ) policy
+  left join lateral (
+    select p.currency
+    from public.payments p
+    where p.booking_id = b.id and p.tenant_id = b.tenant_id
+    order by p.created_at desc, p.id desc
+    limit 1
+  ) pay on true
+  left join lateral (
+    select lower(d.domain) as domain
+    from public.tenant_domains d
+    where d.tenant_id = b.tenant_id
+      and d.verified and d.is_primary
+      and lower(d.domain) ~ '^[a-z0-9][a-z0-9.-]{1,251}[a-z0-9]$'
+      and pg_catalog.strpos(lower(d.domain), '.') > 0
+      and pg_catalog.strpos(lower(d.domain), '..') = 0
+    order by d.created_at, d.id
+    limit 1
+  ) dom on true
   where b.id = p_booking_public_id
     and b.tenant_id = v_session.tenant_id
     and b.customer_id = v_session.customer_id;

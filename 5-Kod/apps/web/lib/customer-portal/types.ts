@@ -6,6 +6,17 @@ export type PortalDataFailure =
 export type PortalSessionSnapshot = {
   tenantSlug: string
   tenantName: string
+  logoUrl: string | null
+  verticalLabel: string | null
+  phone: string | null
+  address: string | null
+  mapUrl: string | null
+  bookingOrigin: string
+  timezone: string
+  locale: string
+  defaultCountry: string
+  currency: string
+  cancellationCutoffHours: number
   customerName: string
   lastSeenAt: string
   absoluteExpiresAt: string
@@ -18,7 +29,7 @@ export type PortalSessionSnapshotResult =
 export type PortalBookingScope = 'upcoming' | 'history'
 
 export type PortalBookingCursor = {
-  startAt: string
+  startTs: string
   id: string
 }
 
@@ -33,15 +44,25 @@ export type PortalPresentationStatus = PortalKnownBookingStatus | 'unknown'
 
 export type PortalBookingProjection = {
   id: string
-  startAt: string
-  endAt: string
-  runtimeStatus: string
+  startTs: string
+  endTs: string
+  status: string
   presentationStatus: PortalPresentationStatus
   serviceName: string
-  staffName: string | null
-  locationName: string | null
-  locationAddress: string | null
-  price: { cents: number; currency: string } | null
+  durationMinutes: number
+  staffTitle: string | null
+  location: {
+    name: string | null
+    address: string | null
+    phone: string | null
+    mapUrl: string | null
+    timezone: string
+  } | null
+  priceCents: number | null
+  currency: string
+  canCancel: boolean
+  cancelDeadline: string | null
+  publicRebookUrl: string | null
 }
 
 export type PortalBookingListResult =
@@ -50,6 +71,7 @@ export type PortalBookingListResult =
       scope: PortalBookingScope
       pageSize: number
       items: PortalBookingProjection[]
+      hasMore: boolean
       nextCursor: PortalBookingCursor | null
     }
   | PortalDataFailure

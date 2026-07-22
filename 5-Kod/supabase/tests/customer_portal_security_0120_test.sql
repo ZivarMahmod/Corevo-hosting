@@ -81,19 +81,24 @@ declare
   v_result record;
   v_payload jsonb;
   v_count integer;
+  v_i integer;
 begin
   insert into public.tenants (id, slug, name, status) values
     (v_tenant_a, 'portal-test-a', 'Portal Test A', 'active'),
     (v_tenant_b, 'portal-test-b', 'Portal Test B', 'active');
-  insert into public.tenant_settings (tenant_id, settings) values
-    (v_tenant_a, '{"customer_portal":{"mode":"passwordless_tenant"},"cancellation_cutoff_hours":24}'::jsonb),
-    (v_tenant_b, '{"customer_portal":{"mode":"passwordless_tenant"},"cancellation_cutoff_hours":24}'::jsonb);
+  insert into public.tenant_settings (tenant_id, branding, settings) values
+    (v_tenant_a, '{"logo_url":"https://cdn.corevo.se/portal-test-a.png"}'::jsonb,
+     '{"customer_portal":{"mode":"passwordless_tenant"},"cancellation_cutoff_hours":24,"contact":{"phone":"+46700000001"},"map":{"lat":58.41,"lon":15.62,"q":"Testgatan 1"}}'::jsonb),
+    (v_tenant_b, '{}'::jsonb,
+     '{"customer_portal":{"mode":"passwordless_tenant"},"cancellation_cutoff_hours":24}'::jsonb);
+  insert into public.tenant_domains (tenant_id, domain, is_primary, verified) values
+    (v_tenant_a, 'portal-test-a.example', true, true);
   insert into public.customers (id, tenant_id, full_name, phone, status) values
     (v_customer_a, v_tenant_a, 'Portal A', '+46700000001', 'active'),
     (v_customer_b, v_tenant_b, 'Portal B', '+46700000002', 'active');
-  insert into public.locations (id, tenant_id, name, timezone, is_primary) values
-    (v_location_a, v_tenant_a, 'A', 'Europe/Stockholm', true),
-    (v_location_b, v_tenant_b, 'B', 'Europe/Stockholm', true);
+  insert into public.locations (id, tenant_id, name, address, timezone, is_primary) values
+    (v_location_a, v_tenant_a, 'A', 'Testgatan 1', 'Europe/Stockholm', true),
+    (v_location_b, v_tenant_b, 'B', null, 'Europe/Stockholm', true);
   insert into public.staff (id, tenant_id, location_id, title, active) values
     (v_staff_a, v_tenant_a, v_location_a, 'A', true),
     (v_staff_b, v_tenant_b, v_location_b, 'B', true);
@@ -123,6 +128,78 @@ begin
     v_link, repeat('a', 64), v_session, repeat('b', 64), 1
   );
   if v_result.outcome <> 'ok' then raise exception 'portal_exchange_failed'; end if;
+
+  select * into v_result
+  from public.customer_portal_session_snapshot(v_session, repeat('b', 64));
+  if v_result.outcome <> 'ok'
+     or v_result.snapshot ->> 'tenantSlug' <> 'portal-test-a'
+     or v_result.snapshot ->> 'bookingOrigin' <> 'https://portal-test-a.example'
+     or v_result.snapshot ->> 'logoUrl' <> 'https://cdn.corevo.se/portal-test-a.png'
+     or v_result.snapshot ->> 'mapUrl' is null
+     or v_result.snapshot ? 'tenantId'
+     or v_result.snapshot ? 'customerId' then
+    raise exception 'portal_snapshot_projection_invalid:%', v_result.snapshot;
+  end if;
+
+  for v_i in 1..20 loop
+    insert into public.bookings (
+      id, tenant_id, location_id, staff_id, service_id, customer_id,
+      start_ts, end_ts, status, price_cents
+    ) values (
+      gen_random_uuid(), v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
+      statement_timestamp() - pg_catalog.make_interval(days => v_i),
+      statement_timestamp() - pg_catalog.make_interval(days => v_i) + interval '30 minutes',
+      'completed', 10000
+    );
+  end loop;
+
+  select public.customer_portal_list_bookings(
+    v_session, repeat('b', 64), 'history', null, null, 20
+  ) into v_payload;
+  if pg_catalog.jsonb_array_length(v_payload -> 'items') <> 20
+     or (v_payload ->> 'hasMore')::boolean
+     or v_payload -> 'nextCursor' <> 'null'::jsonb then
+    raise exception 'portal_exact_page_pagination_invalid:%', v_payload;
+  end if;
+
+  insert into public.bookings (
+    id, tenant_id, location_id, staff_id, service_id, customer_id,
+    start_ts, end_ts, status, price_cents
+  ) values (
+    gen_random_uuid(), v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
+    statement_timestamp() + interval '30 days',
+    statement_timestamp() + interval '30 days 30 minutes',
+    'awaiting_review', 10000
+  );
+
+  select public.customer_portal_list_bookings(
+    v_session, repeat('b', 64), 'history', null, null, 20
+  ) into v_payload;
+  if pg_catalog.jsonb_array_length(v_payload -> 'items') <> 20
+     or not (v_payload ->> 'hasMore')::boolean
+     or v_payload -> 'nextCursor' = 'null'::jsonb
+     or v_payload #>> '{items,0,status}' <> 'awaiting_review' then
+    raise exception 'portal_history_unknown_or_cursor_invalid:%', v_payload;
+  end if;
+
+  select public.customer_portal_list_bookings(
+    v_session, repeat('b', 64), 'upcoming', null, null, 20
+  ) into v_payload;
+  if v_payload::text like '%awaiting_review%' then
+    raise exception 'portal_unknown_status_leaked_into_upcoming';
+  end if;
+
+  select public.customer_portal_get_booking(
+    v_session, repeat('b', 64), v_booking_a
+  ) into v_payload;
+  if v_payload #>> '{booking,publicRebookUrl}' <> 'https://portal-test-a.example/boka'
+     or not (v_payload #>> '{booking,canCancel}')::boolean
+     or v_payload #>> '{booking,durationMinutes}' <> '30'
+     or v_payload #>> '{booking,location,timezone}' <> 'Europe/Stockholm'
+     or v_payload #> '{booking,location,phone}' <> 'null'::jsonb
+     or v_payload #> '{booking,location,mapUrl}' <> 'null'::jsonb then
+    raise exception 'portal_booking_projection_invalid:%', v_payload;
+  end if;
 
   select * into v_result
   from public.customer_portal_exchange_link(
