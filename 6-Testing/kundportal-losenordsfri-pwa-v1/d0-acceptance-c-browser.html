@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <title>D0 Del C · browseracceptans</title>
+  <style>
+    body { margin: 0; background: #171716; color: #f5f2ea; font: 14px/1.5 system-ui, sans-serif; }
+    main { max-width: 980px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 8px; }
+    .note { color: #c9c3b8; }
+    .pill { display: inline-block; margin: 0 8px 12px 0; padding: 4px 8px; border: 1px solid #6f6a60; border-radius: 999px; }
+    .pass { color: #b9f2c5; border-color: #b9f2c5; }
+    .fail { color: #ffb8b8; border-color: #ffb8b8; }
+    .skip { color: #ffe39c; border-color: #ffe39c; }
+    table { width: 100%; border-collapse: collapse; background: #252522; }
+    th, td { padding: 8px; border: 1px solid #49463f; text-align: left; vertical-align: top; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    pre { overflow: auto; padding: 12px; background: #0d0d0c; }
+    #frames { position: fixed; left: -10000px; top: 0; width: 1px; height: 1px; overflow: hidden; }
+    iframe { display: block; border: 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>D0 Del C · browseracceptans</h1>
+  <p class="note">Same-origin iframe-harness. Endast mätbara browserkrav blir PASS; visuella eller plattformsberoende krav markeras SKIP med skäl.</p>
+  <div id="summary" aria-live="polite">Kör…</div>
+  <table><thead><tr><th>ACC-ID</th><th>Status</th><th>Bevis / skäl</th></tr></thead><tbody id="rows"></tbody></table>
+  <h2>Maskinläsbart resultat</h2>
+  <pre id="results">pending</pre>
+</main>
+<div id="frames" aria-hidden="true"></div>
+<script>
+(() => {
+  "use strict";
+  const ROOT = "/4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pwa-v1/";
+  const FILES = {
+    mobile: ROOT + "Kundportal%20Passwordless%20Mobil.dc.html",
+    desktop: ROOT + "Kundportal%20Passwordless%20Desktop.dc.html",
+    states: ROOT + "Kundportal%20Passwordless%20States.dc.html",
+  };
+  const VIEWPORTS = {
+    v320: { source: "mobile", width: 320, height: 568 },
+    v390: { source: "mobile", width: 390, height: 844 },
+    v430: { source: "mobile", width: 430, height: 932 },
+    v768: { source: "desktop", width: 768, height: 1024 },
+    v1024: { source: "desktop", width: 1024, height: 768 },
+    v1440: { source: "desktop", width: 1440, height: 900 },
+    landscape: { source: "mobile", width: 568, height: 320 },
+    states: { source: "states", width: 1440, height: 900 },
+  };
+  const frames = {};
+  const tests = [];
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const add = (id, run) => tests.push({ id, run });
+  const skip = (reason, evidence = []) => { const error = new Error(reason); error.skip = true; error.evidence = evidence; throw error; };
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const visible = (doc, element) => Boolean(element && !element.hidden && element.getClientRects().length && doc.defaultView.getComputedStyle(element).display !== "none" && doc.defaultView.getComputedStyle(element).visibility !== "hidden");
+  const q = (doc, selector) => doc.querySelector(selector);
+  const qa = (doc, selector) => [...doc.querySelectorAll(selector)];
+  const text = (element) => (element?.innerText || element?.textContent || "").replace(/\s+/g, " ").trim();
+  const focusables = (doc, root = doc) => qa(root, "a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])").filter((element) => visible(doc, element));
+  const interactive = (doc, root = doc) => qa(root, "a[href],button,input,select,textarea,[role='button']").filter((element) => visible(doc, element));
+  const accessibleName = (doc, element) => {
+    const direct = (element.getAttribute("aria-label") || element.getAttribute("title") || text(element)).trim();
+    if (direct) return direct;
+    if (element.labels?.length) return [...element.labels].map(text).join(" ").trim();
+    const wrapped = element.closest("label");
+    if (wrapped) return text(wrapped).replace(text(element), "").trim();
+    return "";
+  };
+  const dispatch = (doc, key, shiftKey = false) => doc.dispatchEvent(new doc.defaultView.KeyboardEvent("keydown", { key, shiftKey, bubbles: true, cancelable: true }));
+  const route = async (doc, name) => {
+    const link = q(doc, `[data-route="${name}"]`);
+    assert(link, `route saknas: ${name}`);
+    link.click();
+    await sleep(25);
+  };
+  const setSelect = (doc, id, value) => {
+    const select = q(doc, "#" + id);
+    assert(select, `select saknas: #${id}`);
+    select.value = value;
+    select.dispatchEvent(new doc.defaultView.Event("change", { bubbles: true }));
+  };
+  const frame = async (key, clean = false) => {
+    const item = frames[key];
+    if (!clean) return { doc: item.contentDocument, win: item.contentWindow, frame: item };
+    item.src = FILES[VIEWPORTS[key].source] + `?d0c=${Date.now()}-${Math.random()}#mina`;
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`timeout: ${key}`)), 5000);
+      item.onload = () => { clearTimeout(timer); resolve(); };
+    });
+    await sleep(20);
+    return { doc: item.contentDocument, win: item.contentWindow, frame: item };
+  };
+  const activeScreen = (doc) => qa(doc, "[data-screen]").filter((element) => visible(doc, element));
+  const noOverflow = (doc, root = doc.documentElement) => root.scrollWidth <= root.clientWidth + 1;
+  const cardWithinViewport = (doc, selector) => {
+    const node = q(doc, selector);
+    assert(node && visible(doc, node), `${selector} saknas/syns inte`);
+    const rect = node.getBoundingClientRect();
+    return rect.top >= 0 && rect.bottom <= doc.defaultView.innerHeight;
+  };
+  const reportRows = (results) => {
+    const tbody = q(document, "#rows");
+    results.forEach((result) => {
+      const tr = document.createElement("tr");
+      const detail = result.evidence.length ? result.evidence.join("; ") : result.reason;
+      tr.innerHTML = `<td><code>${result.id}</code></td><td class="${result.status === "PASS" ? "pass" : result.status.startsWith("SKIP") ? "skip" : "fail"}">${result.status}</td><td>${detail}</td>`;
+      tbody.appendChild(tr);
+    });
+  };
+
+  add("ACC-C-019", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      const skipLink = q(doc, ".app > .skip");
+      assert(skipLink && skipLink.getAttribute("href") === "#huvudinnehall", `${key}: skip-länk saknas eller har fel mål`);
+      assert(q(doc, ".app")?.firstElementChild === skipLink, `${key}: skip-länk är inte först i .app`);
+      skipLink.focus(); skipLink.click();
+      assert(doc.activeElement === q(doc, "#huvudinnehall") || doc.location.hash === "#huvudinnehall", `${key}: skip-länken når inte huvud-innehållet`);
+      for (const name of ["mina", "historik", "detalj", "profil", "sakerhet", "installera", "integritet", "hjalp", "aterhamta"]) {
+        await route(doc, name);
+        const screen = activeScreen(doc)[0];
+        const headings = qa(screen, "h1,h2,h3,h4,h5,h6").filter((node) => visible(doc, node));
+        const h1 = headings.filter((node) => node.tagName === "H1");
+        assert(h1.length === 1, `${key}/${name}: synliga h1=${h1.length}`);
+        const levels = headings.map((node) => Number(node.tagName.slice(1)));
+        assert(levels.every((level, index) => index === 0 || level <= levels[index - 1] + 1), `${key}/${name}: rubriknivå hoppad (${levels.join(",")})`);
+      }
+    }
+    return ["390×844 + 1440×900: skip-länk, 9 huvudvyer, exakt 1 synlig h1 och ingen nivåhoppning"];
+  });
+
+  add("ACC-C-020", async () => {
+    const checked = [];
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      for (const name of ["mina", "historik", "detalj", "profil", "sakerhet", "installera", "integritet", "hjalp", "aterhamta"]) {
+        await route(doc, name);
+        const nodes = focusables(doc);
+        assert(nodes.every((node) => Number(node.getAttribute("tabindex") || 0) <= 0), `${key}/${name}: positiv tabindex bryter naturlig fokusordning`);
+        const unnamed = nodes.filter((node) => !accessibleName(doc, node));
+        assert(unnamed.length === 0, `${key}/${name}: namnlösa fokusbara kontroller: ${unnamed.map((node) => node.outerHTML.slice(0, 80)).join(" | ")}`);
+        checked.push(`${key}/${name}:${nodes.length}`);
+      }
+    }
+    skip("naturlig DOM-fokusordning och namn på alla synliga kontroller är kontrollerade, men verklig Tab-förflyttning genom samtliga huvudvyer kräver browserdriven tangentbordskörning/AT-genomgång", checked);
+  });
+
+  add("ACC-C-021", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      await route(doc, "detalj");
+      const cancelTrigger = q(doc, "#detailCancel"); cancelTrigger.focus(); cancelTrigger.click();
+      const cancel = q(doc, "#cancelOverlay");
+      assert(q(cancel, "[role='dialog'][aria-modal='true']"), `${key}: avbokningsdialog saknar semantik`);
+      const cancelFocus = focusables(doc, cancel); cancelFocus.at(-1).focus(); dispatch(doc, "Tab");
+      assert(doc.activeElement === cancelFocus[0], `${key}: avbokningsdialog saknar framåt-fokusfälla`);
+      dispatch(doc, "Escape"); assert(!visible(doc, cancel) && doc.activeElement === cancelTrigger, `${key}: Escape/fokusåtergång för avbokning bruten`);
+      await route(doc, "profil"); const contactTrigger = q(doc, "#changeContact"); contactTrigger.focus(); contactTrigger.click();
+      const contact = q(doc, "#contactOverlay"); assert(q(contact, "[role='dialog'][aria-modal='true']"), `${key}: kontaktdialog saknar semantik`);
+      dispatch(doc, "Escape"); assert(!visible(doc, contact) && doc.activeElement === contactTrigger, `${key}: Escape/fokusåtergång för kontakt bruten`);
+      await route(doc, "sakerhet"); const securityTrigger = q(doc, "[data-security]"); securityTrigger.focus(); securityTrigger.click();
+      const security = q(doc, "#securityOverlay"); assert(q(security, "[role='dialog'][aria-modal='true']"), `${key}: säkerhetsdialog saknar semantik`);
+      dispatch(doc, "Escape"); assert(!visible(doc, security) && doc.activeElement === securityTrigger, `${key}: Escape/fokusåtergång för säkerhet bruten`);
+    }
+    return ["390×844 + 1440×900: cancel/contact/security har dialogsemantik, Escape och fokusåtergång; cancel har testad framåt-fokusfälla"];
+  });
+
+  add("ACC-C-022", async () => {
+    const checked = [];
+    const runtime = [];
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      await route(doc, "profil"); q(doc, "#editName").click(); q(doc, "#nameInput").value = ""; q(doc, "#nameForm").dispatchEvent(new doc.defaultView.Event("submit", { bubbles: true, cancelable: true }));
+      const input = q(doc, "#nameInput"), error = q(doc, "#nameError");
+      assert(input.getAttribute("aria-describedby")?.split(/\s+/).includes("nameError") && error.getAttribute("role") === "alert" && visible(doc, error), `${key}: namnfel saknar aria-describedby/alert`);
+      q(doc, "#nameInput").value = "Alex Testperson"; q(doc, "#nameForm").dispatchEvent(new doc.defaultView.Event("submit", { bubbles: true, cancelable: true })); await sleep(230);
+      assert(q(doc, "#toast").getAttribute("role") === "status" && text(q(doc, "#toast")) === "Namnet är sparat.", `${key}: CP-NAME-06 saknar status`);
+      await route(doc, "aterhamta"); q(doc, "#protoRecoveryOutcome").value = "cooldown"; q(doc, "#recoveryInput").value = "0701234567"; q(doc, "#recoveryForm").dispatchEvent(new doc.defaultView.Event("submit", { bubbles: true, cancelable: true })); await sleep(230);
+      const cooldown = q(doc, "#recoveryCooldown");
+      assert(q(doc, "#aterhamta").dataset.state === "cooldown" && visible(doc, cooldown) && cooldown.getAttribute("aria-live") === "polite" && text(cooldown).includes("Du kan begära en ny kod om"), `${key}: CP-REC-09 saknar nåbart runtime-state`);
+      assert(q(doc, "#recoveryInput").disabled && q(doc, "#recoverySubmit").disabled, `${key}: CP-REC-09 ska låsa fält och knapp`);
+      runtime.push(doc); checked.push(`${key}: CP-NAME-06 + nameError + CP-REC-09 runtime+lås`);
+    }
+    const { doc: states } = await frame("states", true);
+    const described = qa(states, "[aria-describedby]");
+    assert(described.every((node) => node.getAttribute("aria-describedby").split(/\s+/).every((id) => q(states, "#" + CSS.escape(id)))), "STATES: aria-describedby refererar saknat id");
+    const docs = [...runtime, states];
+    const ledger = [
+      ["CP-CAN-08", "Bokningen är avbokad.", "status", "ST-CAN-03"], ["CP-CAL-03", "Kalenderfilen är klar", "status", "ST-CAL-02"],
+      ["CP-NAME-06", "Namnet är sparat.", "status", null], ["CP-SEC-10", "Enheten är utloggad.", "status", "ST-SEC-06"],
+      ["CP-SEC-18", "PIN krävs nästa gång på enheten.", "status", "ST-SEC-06"], ["CP-CCF-30", "Telefonnumret är ändrat.", "status", "ST-CCF-11"],
+      ["CP-CCF-36", "Mobilnumret är tillagt.", "status", "ST-CCF-11"], ["CP-CCF-37", "Kontaktuppgiften är bytt.", "status", "ST-CCF-11"],
+      ["CP-PIN-20", "Verifierad", "status", "ST-PIN-11"], ["CP-VER-15", "Verifierad", "status", "ST-REC-11"],
+      ["CP-S5-07", "Bokningen är klar. Bekräftelsen är på väg", "status", "ST-S5-02"], ["CP-S5-08", "Bekräftelsen är skickad till", "status", "ST-S5-02"],
+      ["CP-S5-09", "Bekräftelse skickad till", "status", "ST-S5-01"], ["CP-S5-15", "Bokningen är klar. Vi kontrollerar leveransen", "status", "ST-S5-02"],
+      ["CP-APP-03", "Länken är kopierad", "status", "ST-PWA-09"], ["CP-REC-11", "Din session har gått ut. Verifiera dig igen.", "status", "ST-PORT-03"],
+      ["CP-PIN-11", "Skicka ny kod om", "polite", "ST-PIN-05"], ["CP-VER-09", "Skicka ny kod om", "polite", "ST-REC-07"],
+      ["CP-REC-09", "Du kan begära en ny kod om", "polite", "ST-REC-13"], ["CP-S5-13", "Du kan skicka igen om", "polite", "ST-S5-03"],
+    ];
+    for (const [id, phrase, kind, stateId] of ledger) {
+      const root = stateId ? q(states, `[data-state-id="${stateId}"]`) : null;
+      assert(!stateId || root, `${id}: statekort saknas (${stateId})`);
+      const matches = stateId ? qa(root, "[role='status'],[aria-live='polite']").filter((node) => text(node).includes(phrase)) : docs.flatMap((doc) => qa(doc, "[role='status'],[aria-live='polite']").filter((node) => text(node).includes(phrase)));
+      assert(matches.length > 0, `${id}: saknar ${kind}-region med “${phrase}”`);
+      assert(matches.every((node) => kind === "status" ? node.getAttribute("role") === "status" : node.getAttribute("aria-live") === "polite"), `${id}: fel live-semantik`);
+      checked.push(id);
+    }
+    const errorNodes = docs.flatMap((doc) => qa(doc, ".error,.alert").filter((node) => text(node)));
+    const nonAlerts = errorNodes.filter((node) => node.getAttribute("role") !== "alert");
+    assert(nonAlerts.length === 0, `fel/live utan role=alert: ${nonAlerts.map((node) => node.id || node.className || node.tagName).join(", ")}`);
+    assert(!docs.some((doc) => qa(doc, "[role='alert']").some((node) => /Bokningen är avbokad|Kalenderfilen är klar|Namnet är sparat|Verifierad|Länken är kopierad/.test(text(node)))), "icke-fel har aggressiv alert");
+    return ["COPY §23-ledger täckt: " + checked.join(", "), `${errorNodes.length} error/live = role=alert`];
+  });
+
+  add("ACC-C-023", async () => {
+    const measured = [];
+    const counts = [];
+    for (const key of ["v390", "v1440", "v320"]) {
+      const { doc } = await frame(key, true);
+      for (const name of ["mina", "historik", "detalj", "profil", "sakerhet", "installera", "integritet", "hjalp", "aterhamta"]) {
+        await route(doc, name);
+        for (const node of interactive(doc)) {
+          const rect = node.getBoundingClientRect();
+          if (rect.width < 44 || rect.height < 44) measured.push(`${key}/${name}:${node.tagName} “${text(node).slice(0, 28)}” ${Math.round(rect.width)}×${Math.round(rect.height)}`);
+        }
+        counts.push(`${key}/${name}:${interactive(doc).length}`);
+      }
+    }
+    const { doc: states } = await frame("states", true);
+    for (const node of interactive(states)) {
+      const rect = node.getBoundingClientRect();
+      if (rect.width < 44 || rect.height < 44) measured.push(`STATES:${node.tagName} “${text(node).slice(0, 28)}” ${Math.round(rect.width)}×${Math.round(rect.height)}`);
+    }
+    counts.push(`STATES:${interactive(states).length}`);
+    assert(measured.length === 0, `kontroller under 44×44: ${measured.join("; ")}`);
+    return ["alla synliga interaktiva kontroller mätta ≥44×44 i Mobil/Desktop huvudvyer och STATES", ...counts];
+  });
+
+  add("ACC-C-024", async () => skip("kontrast kräver färgpar- och visuell kontroll; den statiska sviten äger tokenmätningen"));
+  add("ACC-C-025", async () => {
+    const checked = [];
+    for (const key of ["v390", "v1440", "states"]) {
+      const { doc } = await frame(key, true);
+      const signals = qa(doc, ".pill,.chip,.status-ok,.alert,.error,[role='alert'],[role='status'],.navlink[aria-current='page']").filter((node) => visible(doc, node));
+      assert(signals.length > 0, `${key}: inga status/fel/nav-signaler hittades`);
+      const colorOnly = signals.filter((node) => !text(node) && !node.querySelector("svg") && !node.getAttribute("aria-label"));
+      assert(colorOnly.length === 0, `${key}: signal enbart via färg: ${colorOnly.map((node) => node.className).join(" | ")}`);
+      checked.push(`${key}:${signals.length} status/fel/nav med text eller ikonform`);
+    }
+    return ["strukturellt komplett: varje chip, navmarkering och felindikering med innehåll har text eller ikonform utöver färg", ...checked];
+  });
+  add("ACC-C-026", async () => {
+    const checked = [];
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      doc.documentElement.style.fontSize = "200%";
+      for (const name of ["mina", "historik", "detalj", "profil", "sakerhet", "installera", "integritet", "hjalp", "aterhamta"]) {
+        await route(doc, name);
+        assert(noOverflow(doc), `${key}/${name}: overflow vid 200% root text`);
+        const visibleControls = interactive(doc);
+        assert(visibleControls.every((node) => node.getBoundingClientRect().width > 0 && node.getBoundingClientRect().height > 0), `${key}/${name}: kontroll försvinner vid 200% root text`);
+        checked.push(`${key}/${name}`);
+      }
+    }
+    skip("200% root-textskalning passerade utan overflow/förlorade kontroller, men detta ersätter inte ett faktiskt browserzoom- och OS-textförstoringsprov", checked);
+  });
+
+  add("ACC-C-027", async () => {
+    const { doc } = await frame("landscape", true);
+    assert(noOverflow(doc), "568×320: horisontell overflow");
+    await route(doc, "detalj"); q(doc, "#detailCancel").click();
+    const dialog = q(doc, "#cancelOverlay [role='dialog']");
+    assert(visible(doc, dialog), "568×320: dialog syns inte");
+    skip("simulerat mjukt tangentbord kan inte framkallas korrekt från iframe; grundlayout utan overflow passerade men hela raden kräver manuell keyboardkontroll");
+  });
+
+  add("ACC-C-028", async () => {
+    const checked = [];
+    for (const key of ["v390", "v1440", "states"]) {
+      const { doc } = await frame(key, true);
+      const css = qa(doc, "style").map((node) => node.textContent).join("\n").replace(/\s+/g, "");
+      assert(/@media\(prefers-reduced-motion:reduce\)/.test(css), `${key}: saknar reduced-motion-regel`);
+      assert(/@media\(prefers-contrast:more\)/.test(css), `${key}: saknar prefers-contrast-regel`);
+      assert(/@media\(forced-colors:active\)/.test(css), `${key}: saknar forced-colors-regel`);
+      assert(/:focus-visible\{outline:/.test(css), `${key}: saknar deklarerad focus-visible-indikator`);
+      checked.push(`${key}: tre media-regler + deklarerad focus-visible-indikator`);
+    }
+    skip("källregler och normal fokusindikator är kontrollerade; forced-colors samt prefers-* kan inte aktiveras i denna iframe och måste emuleras visuellt", checked);
+  });
+
+  add("ACC-C-029", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      const rawIso = qa(doc, "[aria-label],[title],time").filter((node) => /\b20\d{2}-\d{2}-\d{2}(?:T\d{2}:\d{2})?\b/.test(`${node.getAttribute("aria-label") || ""} ${node.getAttribute("title") || ""} ${text(node)}`));
+      assert(rawIso.length === 0, `${key}: rått ISO-datum i synligt/tillgängligt namn`);
+    }
+    return ["390×844 + 1440×900: inga råa ISO-datum i synligt eller tillgängligt datumprov"];
+  });
+
+  add("ACC-C-030", async () => skip("paritet är redan täckt av statisk kontraktskontroll och sex-viewports-harness; denna svit undviker falsk dubbel-PASS"));
+
+  add("ACC-C-031", async () => {
+    const evidence = [];
+    for (const key of ["v320", "v390", "v430", "v768", "v1024", "v1440"]) {
+      const { doc } = await frame(key, true);
+      assert(noOverflow(doc), `${key}: horisontell overflow`);
+      const next = q(doc, "#nextBooking");
+      const primary = q(next, ".btn-primary, [data-route='detalj']");
+      const nextRect = next.getBoundingClientRect();
+      assert(nextRect.top < doc.defaultView.innerHeight && nextRect.top >= 0, `${key}: nästa bokning börjar inte i första viewporten`);
+      assert(primary && visible(doc, primary) && next.contains(primary), `${key}: primär handling saknas i nästa bokning`);
+      assert(nextRect.top <= 360, `${key}: onödigt tomrum före nästa bokning (${Math.round(nextRect.top)}px)`);
+      evidence.push(`${key}:${Math.round(next.getBoundingClientRect().top)}–${Math.round(next.getBoundingClientRect().bottom)}`);
+    }
+    return ["sex viewports: nästa bokning börjar i första viewporten, primär handling finns i kortet och inget onödigt tomrum föregår det", ...evidence];
+  });
+
+  add("ACC-C-032", async () => {
+    for (const key of ["v320", "v390"]) {
+      const { doc } = await frame(key, true);
+      await route(doc, "integritet");
+      const screen = activeScreen(doc)[0];
+      const last = Array.from(screen.children).filter((node) => visible(doc, node)).at(-1);
+      assert(last, `${key}: sista synliga innehållselement saknas`);
+      doc.defaultView.scrollTo(0, doc.documentElement.scrollHeight);
+      await sleep(25);
+      const nav = q(doc, ".bottomnav");
+      const safeBottom = doc.defaultView.innerHeight - (visible(doc, nav) ? nav.getBoundingClientRect().height : 0);
+      assert(last.getBoundingClientRect().bottom <= safeBottom, `${key}: sista kontroll täcks av bottennav`);
+    }
+    skip("det simulerade tangentbordet är fortfarande plattformsberoende; scrollbotten passerade men den sammansatta raden kräver manual keyboard-kontroll");
+  });
+
+  add("ACC-C-033", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      setSelect(doc, "protoTenant", "nordverk");
+      assert(qa(doc, "img").length === 0, `${key}: bildplats finns trots logotypfritt läge`);
+      assert(text(q(doc, "#tenantName")).includes("Nordverk"), `${key}: logotypfri Nordverk-fixtur renderas inte`);
+      assert(noOverflow(doc), `${key}: overflow i logotypfritt läge`);
+    }
+    return ["390×844 + 1440×900: Nordverk utan img/logoUrl renderar utan trasig bildplats eller overflow"];
+  });
+
+  add("ACC-C-034", async () => {
+    for (const key of ["v320", "v390", "v430", "v768", "v1024", "v1440"]) {
+      const { doc } = await frame(key, true);
+      const candidates = qa(doc, "main *").filter((node) => visible(doc, node) && /\b\d{1,3}(?:\s?kr)?\b|20\d{2}/.test(text(node)) && node.children.length === 0);
+      const clipped = candidates.filter((node) => node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1);
+      assert(clipped.length === 0, `${key}: avhuggen datum/pristext: ${clipped.map(text).join(" | ")}`);
+    }
+    return ["sex viewports: synliga datum-/pristextnoder utan overflow/klippning"];
+  });
+
+  add("ACC-C-035", async () => skip("neutralitet mellan existerande/icke-existerande resurser kräver produktens verkliga svarskontrakt; prototypen kan inte bevisa båda serverfallen"));
+  add("ACC-C-036", async () => skip("recovery-enumeration kräver två verkliga serverfall; prototypens lokala kanalfixtur bevisar inte existensneutralitet"));
+
+  add("ACC-C-037", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      const visibleText = qa(doc, "body *").filter((node) => visible(doc, node) && node.children.length === 0).map(text).join(" ");
+      assert(!/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i.test(visibleText), `${key}: UUID synligt`);
+      assert(!/\b(?:tenantId|customerId|sessionId)\b/i.test(visibleText), `${key}: internt ID-namn synligt`);
+    }
+    return ["390×844 + 1440×900: ingen synlig UUID eller tenantId/customerId/sessionId"];
+  });
+
+  add("ACC-C-038", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      q(doc, "#protoPin").click(); await sleep(250);
+      const rendered = text(q(doc, "main"));
+      assert(!/\b\d{6}\b/.test(rendered), `${key}: sexsiffrig PIN renderad`);
+      assert(!/mina\.corevo\.se\/oppna\/[^\s#]+#[A-Za-z0-9_-]+/.test(rendered), `${key}: token renderad`);
+      assert(/[•]/.test(rendered), `${key}: maskerad destination saknas`);
+    }
+    return ["390×844 + 1440×900: PIN-ytan visar ingen sexsiffrig kod/token och använder maskerad destination"];
+  });
+
+  add("ACC-C-039", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      setSelect(doc, "protoTenant", "nordverk"); await route(doc, "detalj");
+      assert(q(doc, "#detailPriceCard")?.hidden, `${key}: Nordverk får fabricerad prisrad`);
+      setSelect(doc, "protoHomeState", "empty"); await route(doc, "mina");
+      assert(q(doc, "#homeEmptyAgain")?.hidden, `${key}: historisk BookAgain syns utan canBookAgain`);
+    }
+    skip("pris och canBookAgain=false är renderade utan fabricerad fallback, men ingen fixtur saknar publicRebookUrl; den uttryckliga frånvaroregeln kan därför inte PASS-markeras");
+  });
+
+  add("ACC-C-040", async () => {
+    for (const key of ["v390", "v1440"]) {
+      const { doc } = await frame(key, true);
+      setSelect(doc, "protoTenant", "nordverk"); await route(doc, "detalj");
+      assert(q(doc, "#detailPriceCard").hidden, `${key}: prisrad inte dold`);
+      assert(text(q(doc, "#detailPlace")) === "Hälla", `${key}: bokningsplats är inte Hälla`);
+      await route(doc, "mina"); assert(text(q(doc, "#upcomingBookingPlace")).includes("Erikslund"), `${key}: kommande plats är inte Erikslund`);
+      await route(doc, "profil"); assert(text(q(doc, "#contactChannel")) === "E-post" && text(q(doc, "#contactValue")).includes("@"), `${key}: verifierad kontakt är inte e-post utan telefonrad`);
+    }
+    return ["390×844 + 1440×900: Nordverk saknar telefon/pris och visar Hälla/Erikslund utan tomma rader"];
+  });
+
+  add("ACC-C-041", async () => {
+    for (const key of ["v320", "v390"]) {
+      const { doc } = await frame(key, true);
+      setSelect(doc, "protoTenant", "nordverk");
+      for (const name of ["mina", "historik", "detalj"]) {
+        await route(doc, name);
+        const longNodes = qa(doc, "main *").filter((node) => visible(doc, node) && node.children.length === 0 && /Felsökning av motor och elektriskt system|Service och oljebyte/.test(text(node)));
+        assert(longNodes.length > 0, `${key}/${name}: lång Nordverk-copy saknas`);
+        for (const node of longNodes) {
+          const full = node.getAttribute("aria-label") || node.getAttribute("title") || text(node);
+          assert(full.includes("Felsökning av motor och elektriskt system") || full.includes("Service och oljebyte"), `${key}/${name}: långtext saknar tillgänglig fulltext`);
+          assert(node.scrollWidth <= node.clientWidth + 1 && node.scrollHeight <= node.clientHeight + 1, `${key}/${name}: overflow i “${text(node)}”`);
+        }
+      }
+    }
+    return ["320×568 + 390×844: Nordverks långa tjänstenamn har fulltext och ingen overflow i kort/lista/detalj"];
+  });
+
+  async function prepareFrames() {
+    for (const [key, viewport] of Object.entries(VIEWPORTS)) {
+      const item = document.createElement("iframe");
+      item.width = viewport.width; item.height = viewport.height;
+      item.style.width = viewport.width + "px"; item.style.height = viewport.height + "px";
+      frames[key] = item;
+      q(document, "#frames").appendChild(item);
+      await frame(key, true);
+    }
+  }
+
+  async function run() {
+    const startedAt = new Date().toISOString();
+    const results = [];
+    try { await prepareFrames(); }
+    catch (error) {
+      q(document, "#results").textContent = JSON.stringify({ schema: "corevo-d0-c-browser-v1", status: "HARNESS_ERROR", error: error.message }, null, 2);
+      throw error;
+    }
+    for (const test of tests) {
+      const result = { id: test.id, status: "FAIL", reason: "", evidence: [] };
+      try { result.evidence = await test.run(); result.status = "PASS"; result.reason = "Hela browserkriteriet bevisat."; }
+      catch (error) { result.status = error.skip ? "SKIP — " + error.message : "FAIL"; result.reason = error.message || String(error); result.evidence = error.evidence || []; }
+      results.push(result);
+    }
+    const count = (prefix) => results.filter((item) => item.status.startsWith(prefix)).length;
+    const payload = {
+      schema: "corevo-d0-c-browser-v1",
+      scope: "Del C browserkomplettering ACC-C-019–ACC-C-041",
+      startedAt, finishedAt: new Date().toISOString(),
+      sources: FILES,
+      viewports: Object.fromEntries(Object.entries(VIEWPORTS).map(([key, value]) => [key, `${value.width}x${value.height}`])),
+      summary: { total: results.length, pass: count("PASS"), fail: count("FAIL"), skip: count("SKIP") },
+      criteria: results,
+    };
+    reportRows(results);
+    q(document, "#summary").innerHTML = `<span class="pill">TOTAL ${payload.summary.total}</span><span class="pill pass">PASS ${payload.summary.pass}</span><span class="pill fail">FAIL ${payload.summary.fail}</span><span class="pill skip">SKIP ${payload.summary.skip}</span>`;
+    q(document, "#results").textContent = JSON.stringify(payload, null, 2);
+    document.documentElement.dataset.auditReady = "true";
+    document.title = `D0 C · ${payload.summary.pass} PASS · ${payload.summary.fail} FAIL · ${payload.summary.skip} SKIP`;
+  }
+  run();
+})();
+</script>
+</body>
+</html>

@@ -660,6 +660,9 @@ Kolumner: **State-ID** (slutet register, återanvänds i `ACCEPTANCE-MATRIX.md`)
 | ST-REC-02 | STATES + F11; `[data-screen="verifiera"][data-state="sent_sms"]` | PinVerificationForm (recovery) | CP-VER-01/02/03/05 | Servervald SMS-kanal; maskerad rad endast efter utskick |
 | ST-REC-03 | STATES + F13; `[data-screen="verifiera"][data-state="sent_email"]` | PinVerificationForm | CP-VER-01/02/04/05 | Servervald e-postkanal (Nordverk) |
 | ST-REC-04 | STATES + F11; `[data-screen="aterhamta"][data-state="pending"]` | RecoveryForm | CP-REC-06 | "Skickar…"; knapp låst |
+| ST-REC-12 | STATES; `[data-screen="aterhamta"][data-state="network_error"]` | RecoveryForm | CP-REC-08 | Värdet behålls; `role="alert"`; nytt försök möjligt |
+| ST-REC-13 | STATES + F11; `[data-screen="aterhamta"][data-state="cooldown"]` | RecoveryForm | CP-REC-09 | Neutral nedräkning `aria-live="polite"`; fält + knapp låsta |
+| ST-REC-14 | STATES; `[data-screen="aterhamta"][data-state="max_attempts"]` | RecoveryForm | CP-REC-10 | Neutral spärr; formuläret låst |
 | ST-REC-05 | STATES; `[data-screen="verifiera"][data-state="sending"]` | PinVerificationForm | CP-VER-02 | Kod skickas; fält låsta |
 | ST-REC-06 | STATES; `[data-screen="verifiera"][data-state="invalid"]` | PinVerificationForm | CP-VER-08 | `role="alert"`; fokus åter i fältet |
 | ST-REC-07 | STATES; `[data-screen="verifiera"][data-state="cooldown"]` | PinVerificationForm | CP-VER-09 | Nedräkning; jfr ST-PIN-05 |
@@ -831,7 +834,7 @@ Vid samtliga sex: ingen horisontell scroll, inga klippta kontroller, synligt fok
 Designleveransen är klar när, i denna ordning:
 
 1. **Alla tio kanoniska filer** finns och är interna konsistenta enligt kanonordningen §1.1: `README.md`, `SPEC.md`, `MOBIL`, `DESKTOP`, `STATES`, `TOKENS.md`, `COMPONENTS.md`, `COPY.md`, `FEATURE-MATRIX.md`, `ACCEPTANCE-MATRIX.md`.
-2. `STATES` täcker VARJE rad i §24 (97 state-ytor över 15 områden) med träffbar `[data-screen][data-state]`-selektor; `MOBIL`/`DESKTOP` täcker alla tretton flöden F1–F13 (§23) och paritetsmatrisen §25 håller.
+2. `STATES` täcker VARJE rad i §24 (100 state-ytor över 15 områden) med träffbar `[data-screen][data-state]`-selektor; `MOBIL`/`DESKTOP` täcker alla tretton flöden F1–F13 (§23) och paritetsmatrisen §25 håller.
 3. En **oberoende granskning** enligt briefens avsnitt 29 prickar av `ACCEPTANCE-MATRIX.md` mekaniskt och ger **0 blockerare** — inklusive den öppna säkerhetsblockeraren §21 som spårad öppen rad (den blockerar PRODUKTION, inte designacceptansen, men får aldrig döljas).
 4. FÖRST efter 0 blockerare: krav-ID:n och exakta visuella värden förs över till `5-Kod/e2e/acceptans/kundportal-losenordsfri-pwa-v1/` (`*.accept.spec.ts` + `probe.js`), och implementation får påbörjas.
 5. **Produktkod är FÖRBJUDEN före godkännandet** (README §Implementation; §20 ingress): designfasen ändrar ingen fil under `5-Kod/` — inga routes, komponenter, migrationer eller flaggor. Implementationen får därefter inte märkas klar förrän `accept.spec.ts` + `probe.js` båda ger mekaniskt `0 FAIL`.
