@@ -49,4 +49,45 @@ describe('customer portal canonical CSS', () => {
     expect(source).toContain('@media (prefers-contrast:more)')
     expect(source).toContain('@media (forced-colors:active)')
   })
+
+  it('implements the canonical cancellation sheet, destructive action and desktop dialog', () => {
+    const source = css()
+    expect(source).toMatch(/\.cp-cancel-layer\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*z-index:\s*var\(--z-scrim\)/s)
+    expect(source).toMatch(/\.cp-cancel-scrim\s*\{[^}]*background:\s*rgba\(0,0,0,\.56\)/s)
+    expect(source).toMatch(/\.cp-cancel-layer\s*\{[^}]*align-items:\s*flex-end/s)
+    expect(source).toMatch(/\.cp-cancel-dialog\s*\{[^}]*position:\s*relative;[^}]*max-height:\s*calc\(100dvh - 16px\);[^}]*overflow-y:\s*auto/s)
+    expect(source).toMatch(/\.cp-cancel-handle\s*\{[^}]*width:\s*32px;[^}]*height:\s*4px;[^}]*background:\s*var\(--line-2\)/s)
+    expect(source).toMatch(/\.cp-btn-danger\s*\{[^}]*border-color:\s*var\(--negative\);[^}]*color:\s*var\(--negative\)!important/s)
+    expect(source).toMatch(/@media \(min-width:1024px\)[\s\S]*\.cp-cancel-layer\s*\{[^}]*align-items:\s*center/s)
+    expect(source).toMatch(/@media \(min-width:1024px\)[\s\S]*\.cp-cancel-dialog\s*\{[^}]*max-width:\s*440px;[^}]*background:\s*var\(--surface-3\);[^}]*box-shadow:\s*var\(--shadow-dialog\)/s)
+    expect(source).toMatch(/@media \(prefers-reduced-motion:reduce\)[\s\S]*\.cp-cancel-dialog\s*\{[^}]*transform:\s*none/)
+  })
+
+  it('keeps the 320px and 768px states as full-width bottom sheets and switches at 1024px only', () => {
+    const source = css()
+    expect(source).toMatch(/\.cp-cancel-dialog\s*\{[^}]*width:\s*100%;[^}]*border-radius:\s*var\(--radius-dialog\) var\(--radius-dialog\) 0 0/s)
+    const tablet = source.match(/@media \(min-width:768px\)\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+    expect(tablet).not.toContain('.cp-cancel-dialog')
+    expect(source).toMatch(/@media \(min-width:1024px\)[\s\S]*\.cp-cancel-layer\s*\{[^}]*align-items:\s*center/s)
+    expect(source).toMatch(/@media \(min-width:1024px\)[\s\S]*\.cp-cancel-dialog\s*\{[^}]*max-width:\s*440px/s)
+  })
+
+  it('defines a 140ms exit and collapses it to 0ms for reduced motion', () => {
+    const source = css()
+    expect(source).toMatch(/\.cp-cancel-layer\[data-closing="true"\][^{]*\{[^}]*animation:[^;}]*140ms/s)
+    expect(source).toMatch(/\.cp-cancel-layer\[data-closing="true"\][\s\S]*\.cp-cancel-dialog\s*\{[^}]*animation:[^;}]*140ms/s)
+    expect(source).toMatch(/@media \(prefers-reduced-motion:reduce\)[\s\S]*\.cp-cancel-layer\[data-closing="true"\][^{]*\{[^}]*animation-duration:\s*0ms!important/s)
+  })
+
+  it('fully scopes body-portaled cancellation UI to the portal box, font, focus and motion contracts', () => {
+    const source = css()
+    expect(source).toMatch(/\.cp-cancel-layer,\.cp-cancel-layer \*,\.cp-cancel-toast\s*\{[^}]*box-sizing:\s*border-box/s)
+    expect(source).toMatch(/\.cp-cancel-layer,\.cp-cancel-toast\s*\{[^}]*font:\s*var\(--text-body-weight\) var\(--text-body-size\)\/var\(--text-body-line\) var\(--font-ui\)/s)
+    expect(source).toMatch(/\.cp-cancel-layer button\s*\{[^}]*font:\s*inherit/s)
+    expect(source).toMatch(/\.cp-cancel-layer :focus-visible,\.cp-cancel-toast:focus-visible\s*\{[^}]*outline:\s*var\(--focus-ring-width\) solid var\(--focus-ring\);[^}]*outline-offset:\s*var\(--focus-ring-offset\)/s)
+    expect(source).toMatch(/\.cp-cancel-dialog h2\s*\{[^}]*font-size:\s*var\(--text-h2-size\);[^}]*line-height:\s*var\(--text-h2-line\);[^}]*font-weight:\s*var\(--text-h2-weight\)/s)
+    expect(source).toMatch(/\.cp-cancel-toast\s*\{[^}]*margin:\s*0/s)
+    expect(source).toMatch(/@media \(prefers-reduced-motion:reduce\)[\s\S]*\.cp-cancel-layer,\.cp-cancel-layer \*,\.cp-cancel-toast\s*\{[^}]*transition-duration:\s*0ms!important;[^}]*animation-duration:\s*0ms!important/s)
+    expect(source).toMatch(/@media \(forced-colors:active\)[\s\S]*\.cp-cancel-layer :focus-visible,\.cp-cancel-toast:focus-visible\s*\{[^}]*outline:\s*var\(--focus-ring-width\) solid Highlight/s)
+  })
 })

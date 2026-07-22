@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { PortalNavigationClient, type ActivePortalNav } from './PortalNavigationClient'
 import { PortalRouteFocus } from './PortalRouteFocus'
+import { PortalCancellationFeedbackProvider } from './PortalCancellationFeedback'
 
 type PortalShellProps = {
   active?: ActivePortalNav
@@ -23,13 +24,15 @@ export function PortalShell({
   }
 
   return (
-    <PortalShellFrame
-      active={active ?? 'bookings'}
-      customerName={customerName}
-      detailBackTarget={detailBackTarget}
-    >
-      {children}
-    </PortalShellFrame>
+    <PortalCancellationFeedbackProvider>
+      <PortalShellFrame
+        active={active ?? 'bookings'}
+        customerName={customerName}
+        detailBackTarget={detailBackTarget}
+      >
+        {children}
+      </PortalShellFrame>
+    </PortalCancellationFeedbackProvider>
   )
 }
 

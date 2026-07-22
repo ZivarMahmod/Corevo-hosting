@@ -5,6 +5,7 @@ import {
   portalRebookAction,
   portalStatusPresentation,
 } from '@/lib/customer-portal/presentation'
+import { PortalBookingCancellation } from './CancelBookingDialog'
 
 function StatusIcon({ icon }: { icon: ReturnType<typeof portalStatusPresentation>['icon'] }) {
   return (
@@ -82,6 +83,47 @@ function BookingFacts({
   )
 }
 
+function isFutureActiveBooking(booking: PortalBookingProjection) {
+  return (booking.presentationStatus === 'pending' || booking.presentationStatus === 'confirmed') &&
+    Date.parse(booking.startTs) > Date.now()
+}
+
+function cancellationSummary(
+  booking: PortalBookingProjection,
+  snapshot: PortalSessionSnapshot,
+) {
+  const formatted = formatPortalBooking(booking, snapshot)
+  return `${formatted.homeDateTime} — ${booking.serviceName} hos ${snapshot.tenantName}`
+}
+
+function cancellationContact(booking: PortalBookingProjection, snapshot: PortalSessionSnapshot) {
+  return {
+    phone: booking.location?.phone || snapshot.phone,
+    website: snapshot.bookingOrigin,
+  }
+}
+
+function PolicyBlockedCancellation({
+  booking,
+  snapshot,
+}: {
+  booking: PortalBookingProjection
+  snapshot: PortalSessionSnapshot
+}) {
+  const contact = cancellationContact(booking, snapshot)
+  return (
+    <p className="cp-cancel-blocked" role="status">
+      {contact.phone ? (
+        <>Den här bokningen kan inte längre avbokas online. Ring {snapshot.tenantName} på{' '}
+          <a href={`tel:${contact.phone}`}>{contact.phone}</a>.</>
+      ) : (
+        <>Den här bokningen kan inte längre avbokas online. Kontakta {snapshot.tenantName} via{' '}
+          <a href={contact.website} rel="noopener">deras webbplats</a>.</>
+      )}
+    </p>
+  )
+}
+
 export function NextBookingCard({
   snapshot,
   items,
@@ -109,15 +151,28 @@ export function NextBookingCard({
 
   const formatted = formatPortalBooking(next, snapshot)
   const rebookAction = portalRebookAction(next)
+  const canCancel = next.canCancel && isFutureActiveBooking(next)
   return (
     <>
       <article className="cp-card cp-next-booking" aria-labelledby="nasta-bokning">
-        <h2 id="nasta-bokning" className="cp-eyebrow">NÄSTA BOKNING</h2>
+        <h2 id="nasta-bokning" className="cp-eyebrow" data-cancel-focus-target tabIndex={-1}>NÄSTA BOKNING</h2>
         <BookingStatusChip booking={next} />
         <h3 className="cp-mono">{formatted.homeDateTime}</h3>
         <BookingFacts booking={next} snapshot={snapshot} />
         <div className="cp-actions">
           <Link className="cp-btn cp-btn-primary" href={`/mina/bokningar/${next.id}`}>Visa bokningen</Link>
+          {canCancel && (
+            <PortalBookingCancellation
+              bookingPublicId={next.id}
+              expectedCutoffHours={snapshot.cancellationCutoffHours}
+              tenantName={snapshot.tenantName}
+              bookingSummary={cancellationSummary(next, snapshot)}
+              policyText={deadlineText(next, snapshot)}
+              triggerLabel="Avboka"
+              blockedContact={cancellationContact(next, snapshot)}
+              variant="home"
+            />
+          )}
         </div>
       </article>
       {items.length > 1 && (
@@ -178,6 +233,9 @@ export function BookingDetail({
   const formatted = formatPortalBooking(booking, snapshot)
   const deadline = deadlineText(booking, snapshot)
   const rebookAction = portalRebookAction(booking)
+  const futureActive = isFutureActiveBooking(booking)
+  const canCancel = booking.canCancel && futureActive
+  const policyBlocked = !booking.canCancel && futureActive
   return (
     <article className="cp-detail">
       <Link className="cp-btn cp-btn-ghost cp-back" href={backTarget}>
@@ -185,7 +243,7 @@ export function BookingDetail({
         Tillbaka
       </Link>
       <BookingStatusChip booking={booking} />
-      <h1 className="cp-mono">{formatted.detailDateTime}</h1>
+      <h1 className="cp-mono" data-cancel-focus-target tabIndex={-1}>{formatted.detailDateTime}</h1>
       <div className="cp-detail-grid">
         <section className="cp-card"><span className="cp-label">Tjänst</span><h2>{booking.serviceName} · {booking.durationMinutes} min</h2></section>
         {booking.staffTitle && <section className="cp-card"><span className="cp-label">Personal</span><p>{booking.staffTitle}</p></section>}
@@ -203,13 +261,28 @@ export function BookingDetail({
         {formatted.price && <section className="cp-card"><span className="cp-label">Pris</span><p className="cp-mono">{formatted.price}</p></section>}
         {deadline && <section className="cp-card"><span className="cp-label">Avbokningsvillkor</span><p>{deadline}</p></section>}
       </div>
-      {booking.publicRebookUrl && rebookAction && (
+      {(booking.publicRebookUrl && rebookAction || canCancel) && (
         <div className="cp-actions">
-          <a className="cp-btn" href={booking.publicRebookUrl} rel="noopener">
-            {rebookAction === 'active' ? 'Boka en tid till' : 'Boka igen'}
-          </a>
+          {booking.publicRebookUrl && rebookAction && (
+            <a className="cp-btn" href={booking.publicRebookUrl} rel="noopener">
+              {rebookAction === 'active' ? 'Boka en tid till' : 'Boka igen'}
+            </a>
+          )}
+          {canCancel && (
+            <PortalBookingCancellation
+              bookingPublicId={booking.id}
+              expectedCutoffHours={snapshot.cancellationCutoffHours}
+              tenantName={snapshot.tenantName}
+              bookingSummary={cancellationSummary(booking, snapshot)}
+              policyText={deadline}
+              triggerLabel="Avboka bokningen"
+              blockedContact={cancellationContact(booking, snapshot)}
+              variant="detail"
+            />
+          )}
         </div>
       )}
+      {policyBlocked && <PolicyBlockedCancellation booking={booking} snapshot={snapshot} />}
     </article>
   )
 }

@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { PortalBookingProjection, PortalSessionSnapshot } from '@/lib/customer-portal/types'
 import { PortalShell } from './PortalShell'
 import {
@@ -9,6 +9,11 @@ import {
   TenantIdentityCard,
 } from './PortalViews'
 import { BookingHistoryListClient } from './BookingHistoryListClient'
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/mina',
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
 
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'nordverk',
@@ -106,6 +111,7 @@ describe('customer portal views', () => {
       id: '423e4567-e89b-42d3-a456-426614174000',
       status: 'awaiting_internal_review',
       presentationStatus: 'unknown',
+      canCancel: false,
       publicRebookUrl: 'https://nordverk.corevo.se/boka',
       staffTitle: 'Tekniker Sam',
     })
@@ -121,13 +127,15 @@ describe('customer portal views', () => {
 
     expect(one).toContain('NÄSTA BOKNING')
     expect(one).toContain('Visa bokningen')
+    expect(one).toContain('>Avboka</button>')
     expect(one).not.toContain('Fler kommande')
     expect(two).toContain('Fler kommande')
     expect(two).toContain('Status uppdateras')
     expect(two).toContain('Tekniker Sam')
     expect(visibleText(two)).not.toContain('awaiting_internal_review')
     expect(unknownNext).not.toContain('Boka en tid till')
-    expect(two).not.toMatch(/Lägg i kalender|Avboka/)
+    expect(two).not.toContain('Lägg i kalender')
+    expect(unknownNext).not.toContain('>Avboka</button>')
   })
 
   it('hides rebook actions while a passed booking is waiting for an outcome', () => {
@@ -181,7 +189,7 @@ describe('customer portal views', () => {
   })
 
   it('renders an owned detail and hides missing staff, location, price and rebook action', () => {
-    const item = booking({ status: 'internal_only_value', presentationStatus: 'unknown' })
+    const item = booking({ status: 'internal_only_value', presentationStatus: 'unknown', canCancel: false })
     const html = renderToStaticMarkup(<BookingDetail snapshot={snapshot} booking={item} />)
     const text = visibleText(html)
 
@@ -191,6 +199,30 @@ describe('customer portal views', () => {
     expect(text).not.toContain(item.id)
     expect(text).not.toContain(item.status)
     expect(html).not.toMatch(/Lägg i kalender|Avboka bokningen/)
+  })
+
+  it('offers the same canonical cancellation flow on an active owned detail', () => {
+    const html = renderToStaticMarkup(<BookingDetail snapshot={snapshot} booking={booking()} />)
+
+    expect(html).toContain('>Avboka bokningen</button>')
+    expect(html).not.toContain('Lägg i kalender')
+  })
+
+  it('renders the exact policy-blocked detail fallback without an active cancel trigger', () => {
+    const blocked = booking({
+      canCancel: false,
+      startTs: '2099-08-23T12:30:00.000Z',
+      endTs: '2099-08-23T13:15:00.000Z',
+      cancelDeadline: '2099-08-22T12:30:00.000Z',
+    })
+    const html = renderToStaticMarkup(<BookingDetail snapshot={snapshot} booking={blocked} />)
+
+    expect(visibleText(html)).toContain(
+      'Den här bokningen kan inte längre avbokas online. Kontakta Nordverk Bilservice via deras webbplats',
+    )
+    expect(html).toContain('deras webbplats</a>.')
+    expect(html).toContain('href="https://nordverk.corevo.se"')
+    expect(html).not.toContain('>Avboka bokningen</button>')
   })
 
   it('uses the same neutral not-found surface without reflecting the route id', () => {

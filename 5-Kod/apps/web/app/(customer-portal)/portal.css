@@ -84,6 +84,10 @@
 }
 
 .customer-portal,.customer-portal *{box-sizing:border-box}
+.cp-cancel-layer,.cp-cancel-layer *,.cp-cancel-toast{box-sizing:border-box}
+.cp-cancel-layer,.cp-cancel-toast{color:var(--ink-1);font:var(--text-body-weight) var(--text-body-size)/var(--text-body-line) var(--font-ui)}
+.cp-cancel-layer button{font:inherit}
+.cp-cancel-layer :focus-visible,.cp-cancel-toast:focus-visible{outline:var(--focus-ring-width) solid var(--focus-ring);outline-offset:var(--focus-ring-offset)}
 .customer-portal{
   min-height:100dvh;
   overflow-x:hidden;
@@ -131,6 +135,7 @@
 .cp-btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-min);padding:var(--space-3) var(--space-4);border:var(--border-width) solid var(--line-2);border-radius:var(--radius-field);background:transparent;color:var(--ink-1)!important;text-align:center;text-decoration:none;transition:background-color var(--motion-duration) var(--motion-ease),border-color var(--motion-duration) var(--motion-ease),transform var(--motion-duration) var(--motion-ease)}
 .cp-btn-primary{min-height:var(--button-primary-h);background:var(--action);border-color:var(--action);color:var(--action-text)!important}
 .cp-btn-ghost{border-color:transparent;color:var(--ink-2)!important}
+.cp-btn-danger{border-color:var(--negative);color:var(--negative)!important}
 .cp-status{min-height:var(--space-6);display:inline-flex;align-items:center;gap:var(--space-1);padding:var(--space-1) var(--space-3);border:var(--border-width) solid currentColor;border-radius:var(--radius-pill);font:var(--text-meta-weight) var(--text-meta-size)/var(--text-meta-line) var(--font-mono);white-space:nowrap}
 .cp-status-icon{width:var(--icon-sm);height:var(--icon-sm)}
 .cp-status-positive{color:var(--positive);background:color-mix(in srgb,var(--positive) 14%,transparent)}
@@ -173,6 +178,29 @@
 .cp-form-meta{margin:0!important;font:var(--text-meta-weight) var(--text-meta-size)/var(--text-meta-line) var(--font-ui)!important;color:var(--ink-2)!important}
 .cp-toast{position:fixed;z-index:var(--z-toast);right:var(--space-4);bottom:calc(var(--bottomnav-h) + var(--space-4));max-width:var(--col-right);display:flex;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);background:var(--surface-3);border:var(--border-width) solid var(--line-2);border-radius:var(--radius-field);color:var(--ink-1)!important}
 .cp-toast .cp-icon{width:var(--icon-md);height:var(--icon-md)}
+.cp-cancel-toast{margin:0;border-color:var(--positive);color:var(--ink-1)!important;animation:cp-cancel-fade var(--motion-duration) var(--motion-ease)}
+.cp-cancel-toast .cp-icon{color:var(--positive)}
+.cp-cancel-layer{position:fixed;inset:0;z-index:var(--z-scrim);display:flex;align-items:flex-end;justify-content:center;animation:cp-cancel-fade var(--motion-duration) var(--motion-ease)}
+.cp-cancel-scrim{position:absolute;inset:0;background:rgba(0,0,0,.56)}
+.cp-cancel-dialog{position:relative;z-index:var(--z-sheet);width:100%;max-height:calc(100dvh - 16px);overflow-y:auto;padding:var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));background:var(--surface-2);border:var(--border-width) solid var(--line-2);border-radius:var(--radius-dialog) var(--radius-dialog) 0 0;box-shadow:var(--shadow-dialog);animation:cp-cancel-sheet-in 180ms var(--motion-ease)}
+.cp-cancel-handle{width:32px;height:4px;margin:0 auto var(--space-4);border-radius:var(--radius-pill);background:var(--line-2)}
+.cp-cancel-close{position:absolute;top:var(--space-4);right:var(--space-4);width:var(--tap-min);height:var(--tap-min);display:grid;place-items:center;padding:0;border:var(--border-width) solid var(--line-2);border-radius:var(--radius-pill);background:transparent;color:var(--ink-1)}
+.cp-cancel-dialog h2{margin:0;padding-right:calc(var(--tap-min) + var(--space-2));color:var(--ink-1);font-family:var(--font-ui);font-size:var(--text-h2-size);line-height:var(--text-h2-line);font-weight:var(--text-h2-weight);letter-spacing:normal;overflow-wrap:anywhere}
+.cp-cancel-summary{display:grid;gap:var(--space-2);margin:var(--space-4) 0!important;color:var(--ink-2)!important}
+.cp-cancel-policy{font-size:var(--text-compact-size);line-height:var(--text-compact-line)}
+.cp-cancel-error{display:flex;align-items:flex-start;gap:var(--space-2);margin:0 0 var(--space-4)!important;color:var(--negative)!important;font:var(--text-meta-weight) var(--text-meta-size)/var(--text-meta-line) var(--font-ui)!important}
+.cp-cancel-error .cp-icon{width:var(--icon-sm);height:var(--icon-sm);margin-top:var(--space-1)}
+.cp-cancel-actions{display:grid;gap:var(--space-2)}
+.cp-cancel-actions .cp-btn{width:100%}
+.cp-cancel-blocked{margin-top:var(--space-4)!important;padding:var(--space-3) var(--space-4);border:var(--border-width) solid var(--negative);border-radius:var(--radius-field);color:var(--ink-2)!important}
+.cp-cancel-layer[data-closing="true"]{animation:cp-cancel-fade-out 140ms var(--motion-ease) forwards}
+.cp-cancel-layer[data-closing="true"] .cp-cancel-dialog{animation:cp-cancel-sheet-out 140ms var(--motion-ease) forwards;pointer-events:none}
+@keyframes cp-cancel-fade{from{opacity:0}to{opacity:1}}
+@keyframes cp-cancel-fade-out{from{opacity:1}to{opacity:0}}
+@keyframes cp-cancel-sheet-in{from{transform:translateY(20px)}to{transform:translateY(0)}}
+@keyframes cp-cancel-sheet-out{from{transform:translateY(0)}to{transform:translateY(20px)}}
+@keyframes cp-cancel-dialog-in{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+@keyframes cp-cancel-dialog-out{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.98)}}
 .cp-channel-note{min-height:var(--space-6);color:var(--ink-2)}
 .cp-resend{min-height:var(--tap-min);display:flex;align-items:center;color:var(--ink-2);font:var(--text-meta-weight) var(--text-meta-size)/var(--text-meta-line) var(--font-ui)}
 .cp-verified{display:flex;align-items:center;justify-content:center;gap:var(--space-2);margin:0!important;color:var(--positive)!important;font-weight:var(--text-h3-weight)}
@@ -187,7 +215,9 @@
 @media (hover:hover){
   .cp-btn:hover,.cp-booking-link:hover,.cp-top-action:hover,.cp-nav-link:hover{background:var(--surface-2);color:var(--ink-1)!important}
   .cp-btn-primary:hover{background:var(--action-hover);border-color:var(--action-hover)}
+  .cp-btn-danger:hover{background:color-mix(in srgb,var(--negative) 12%,transparent);border-color:var(--negative);color:var(--negative)!important}
 }
+.cp-btn-danger:active{background:color-mix(in srgb,var(--negative) 16%,transparent)}
 @media (max-width:359px){
   .cp-identity{flex-direction:column}
 }
@@ -218,6 +248,10 @@
   .cp-layout-recovery main{max-width:440px;margin:0 auto;padding:0}
   .customer-portal h1{font-size:var(--text-h1-size-desktop);line-height:var(--text-h1-line-desktop)}
   .cp-toast{bottom:var(--space-4)}
+  .cp-cancel-layer{align-items:center;padding:var(--space-4)}
+  .cp-cancel-dialog{max-width:440px;padding:var(--space-6);background:var(--surface-3);border-radius:var(--radius-dialog);box-shadow:var(--shadow-dialog);animation-name:cp-cancel-dialog-in}
+  .cp-cancel-layer[data-closing="true"] .cp-cancel-dialog{animation:cp-cancel-dialog-out 140ms var(--motion-ease) forwards}
+  .cp-cancel-handle{display:none}
 }
 @media (min-width:1248px){
   .cp-layout{grid-template-columns:var(--col-left) minmax(0,var(--col-main)) var(--col-right)}
@@ -225,8 +259,11 @@
 }
 @media (prefers-reduced-motion:reduce){
   .customer-portal *{transition-duration:0ms!important;animation-duration:0ms!important}
+  .cp-cancel-layer,.cp-cancel-layer *,.cp-cancel-toast{transition-duration:0ms!important;animation-duration:0ms!important}
   .cp-skip{top:-100%;transform:none}
   .cp-skip:focus{top:var(--space-2)}
+  .cp-cancel-dialog{animation:none;transform:none}
+  .cp-cancel-layer[data-closing="true"],.cp-cancel-layer[data-closing="true"] .cp-cancel-dialog{animation-duration:0ms!important}
 }
 @media (prefers-contrast:more){
   .cp-card,.cp-btn,.cp-booking-link,.cp-top-action{border-color:var(--ink-2)}
@@ -234,5 +271,5 @@
 }
 @media (forced-colors:active){
   .cp-card,.cp-btn,.cp-booking-link,.cp-top-action,.cp-status{border:var(--border-width) solid ButtonText}
-  .customer-portal :focus-visible{outline:var(--focus-ring-width) solid Highlight}
+  .customer-portal :focus-visible,.cp-cancel-layer :focus-visible,.cp-cancel-toast:focus-visible{outline:var(--focus-ring-width) solid Highlight}
 }

@@ -88,6 +88,7 @@ describe('/mina', () => {
     expect(html.match(/<main id="huvudinnehall"/g)).toHaveLength(1)
     expect(html).toContain('FreshCut')
     expect(html).toContain('Service från RPC')
+    expect(html).toContain('>Avboka</button>')
     expect(visibleText(html)).not.toContain(bookingId)
     expect(html).not.toMatch(/Logga in|\/konto/)
   })
@@ -183,6 +184,7 @@ describe('/mina/bokningar/[id]', () => {
     expect(mocks.getPortalBooking).toHaveBeenCalledWith(bookingId)
     expect(mocks.getPortalBooking).toHaveBeenCalledTimes(1)
     expect(html).toContain('Service från RPC')
+    expect(html).toContain('>Avboka bokningen</button>')
     expect(visibleText(html)).not.toContain(bookingId)
   })
 
