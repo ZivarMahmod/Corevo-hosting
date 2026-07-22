@@ -90,4 +90,14 @@ describe('customer portal canonical CSS', () => {
     expect(source).toMatch(/@media \(prefers-reduced-motion:reduce\)[\s\S]*\.cp-cancel-layer,\.cp-cancel-layer \*,\.cp-cancel-toast\s*\{[^}]*transition-duration:\s*0ms!important;[^}]*animation-duration:\s*0ms!important/s)
     expect(source).toMatch(/@media \(forced-colors:active\)[\s\S]*\.cp-cancel-layer :focus-visible,\.cp-cancel-toast:focus-visible\s*\{[^}]*outline:\s*var\(--focus-ring-width\) solid Highlight/s)
   })
+
+  it('keeps the calendar download action full-width on mobile with exact status tokens', () => {
+    const source = css()
+    expect(source).toMatch(/\.cp-calendar-download\s*\{[^}]*width:\s*100%;[^}]*display:\s*grid;[^}]*gap:\s*var\(--space-2\)/s)
+    expect(source).toMatch(/\.cp-calendar-download \.cp-btn\s*\{[^}]*width:\s*100%/s)
+    expect(source).toMatch(/\.cp-calendar-status\s*\{[^}]*font:\s*var\(--text-meta-weight\) var\(--text-meta-size\)\/var\(--text-meta-line\) var\(--font-ui\)/s)
+    expect(source).toMatch(/\.cp-calendar-status-success\s*\{[^}]*color:\s*var\(--positive\)!important/s)
+    expect(source).toMatch(/\.cp-calendar-status-error\s*\{[^}]*color:\s*var\(--negative\)!important/s)
+    expect(source).toMatch(/@media \(min-width:768px\)[\s\S]*\.cp-calendar-download\s*\{[^}]*width:\s*auto/s)
+  })
 })

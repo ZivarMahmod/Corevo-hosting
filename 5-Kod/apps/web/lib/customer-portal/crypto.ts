@@ -39,6 +39,7 @@ function base64Url(bytes: Uint8Array): string {
 }
 
 type PortalDigestDomain =
+  | 'calendar-uid'
   | 'link'
   | 'session'
   | 'recovery-subject'
@@ -76,6 +77,10 @@ export function portalLinkDigest(secret: string): Promise<string> {
 
 export function portalSessionDigest(secret: string): Promise<string> {
   return digest('session', secret)
+}
+
+export async function portalCalendarUid(bookingPublicId: string): Promise<string> {
+  return `${await digest('calendar-uid', bookingPublicId.toLowerCase())}@calendar.corevo.se`
 }
 
 export function portalRecoverySubjectDigest(secret: string): Promise<string> {

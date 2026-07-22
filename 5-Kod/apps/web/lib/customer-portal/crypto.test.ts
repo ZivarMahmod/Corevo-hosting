@@ -3,6 +3,7 @@ import {
   CUSTOMER_PORTAL_KEY_VERSION,
   createPortalPublicId,
   createPortalSecret,
+  portalCalendarUid,
   portalLinkDigest,
   portalRecoveryCodeDigest,
   portalRecoveryContactDigest,
@@ -44,6 +45,18 @@ describe('customer portal crypto', () => {
     ])
     expect(new Set(digests)).toHaveLength(digests.length)
     expect(digests).toEqual(digests.map((digest) => expect.stringMatching(/^[a-f0-9]{64}$/)))
+  })
+
+  it('creates a stable opaque calendar UID in its own HMAC domain', async () => {
+    const bookingId = '123e4567-e89b-42d3-a456-426614174000'
+    const first = await portalCalendarUid(bookingId)
+    const second = await portalCalendarUid(bookingId)
+    const link = await portalLinkDigest(bookingId)
+
+    expect(first).toBe(second)
+    expect(first).toMatch(/^[a-f0-9]{64}@calendar\.corevo\.se$/)
+    expect(first).not.toContain(bookingId)
+    expect(first.split('@')[0]).not.toBe(link)
   })
 
   it('fails closed unless the dedicated key is at least 32 bytes', async () => {

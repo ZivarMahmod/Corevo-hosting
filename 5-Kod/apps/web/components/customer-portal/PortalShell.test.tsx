@@ -127,6 +127,7 @@ describe('customer portal views', () => {
 
     expect(one).toContain('NÄSTA BOKNING')
     expect(one).toContain('Visa bokningen')
+    expect(one).toContain('Lägg i kalender')
     expect(one).toContain('>Avboka</button>')
     expect(one).not.toContain('Fler kommande')
     expect(two).toContain('Fler kommande')
@@ -134,7 +135,8 @@ describe('customer portal views', () => {
     expect(two).toContain('Tekniker Sam')
     expect(visibleText(two)).not.toContain('awaiting_internal_review')
     expect(unknownNext).not.toContain('Boka en tid till')
-    expect(two).not.toContain('Lägg i kalender')
+    expect(two.match(/Lägg i kalender/g)).toHaveLength(1)
+    expect(unknownNext).not.toContain('Lägg i kalender')
     expect(unknownNext).not.toContain('>Avboka</button>')
   })
 
@@ -205,7 +207,7 @@ describe('customer portal views', () => {
     const html = renderToStaticMarkup(<BookingDetail snapshot={snapshot} booking={booking()} />)
 
     expect(html).toContain('>Avboka bokningen</button>')
-    expect(html).not.toContain('Lägg i kalender')
+    expect(html).toContain('Lägg i kalender')
   })
 
   it('renders the exact policy-blocked detail fallback without an active cancel trigger', () => {

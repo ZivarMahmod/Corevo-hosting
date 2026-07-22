@@ -6,6 +6,10 @@ import {
   portalStatusPresentation,
 } from '@/lib/customer-portal/presentation'
 import { PortalBookingCancellation } from './CancelBookingDialog'
+import {
+  CalendarBookingProvider,
+  CalendarDownloadButton,
+} from './CalendarDownloadButton'
 
 function StatusIcon({ icon }: { icon: ReturnType<typeof portalStatusPresentation>['icon'] }) {
   return (
@@ -161,6 +165,11 @@ export function NextBookingCard({
         <BookingFacts booking={next} snapshot={snapshot} />
         <div className="cp-actions">
           <Link className="cp-btn cp-btn-primary" href={`/mina/bokningar/${next.id}`}>Visa bokningen</Link>
+          {isFutureActiveBooking(next) && (
+            <CalendarBookingProvider bookingPublicId={next.id}>
+              <CalendarDownloadButton />
+            </CalendarBookingProvider>
+          )}
           {canCancel && (
             <PortalBookingCancellation
               bookingPublicId={next.id}
@@ -261,8 +270,13 @@ export function BookingDetail({
         {formatted.price && <section className="cp-card"><span className="cp-label">Pris</span><p className="cp-mono">{formatted.price}</p></section>}
         {deadline && <section className="cp-card"><span className="cp-label">Avbokningsvillkor</span><p>{deadline}</p></section>}
       </div>
-      {(booking.publicRebookUrl && rebookAction || canCancel) && (
+      {(futureActive || (booking.publicRebookUrl && rebookAction) || canCancel) && (
         <div className="cp-actions">
+          {futureActive && (
+            <CalendarBookingProvider bookingPublicId={booking.id}>
+              <CalendarDownloadButton />
+            </CalendarBookingProvider>
+          )}
           {booking.publicRebookUrl && rebookAction && (
             <a className="cp-btn" href={booking.publicRebookUrl} rel="noopener">
               {rebookAction === 'active' ? 'Boka en tid till' : 'Boka igen'}
