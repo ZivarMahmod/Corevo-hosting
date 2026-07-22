@@ -65,6 +65,12 @@ const TENANT_SCOPED_BACKOFFICE = ['/admin', '/personal']
 const isPrefix = (path: string, prefixes: readonly string[]): boolean =>
   prefixes.some((p) => path === p || path.startsWith(p + '/'))
 
+const hardenCustomerPortalResponse = (response: NextResponse): NextResponse => {
+  response.headers.set('cache-control', 'no-store')
+  response.headers.set('referrer-policy', 'no-referrer')
+  return response
+}
+
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl
   const path = url.pathname
@@ -102,10 +108,9 @@ export async function middleware(request: NextRequest) {
     preview: previewHost,
   })
   if (portalRouteDecision === 'deny') {
-    return new NextResponse(null, {
+    return hardenCustomerPortalResponse(new NextResponse(null, {
       status: 404,
-      headers: { 'cache-control': 'no-store' },
-    })
+    }))
   }
 
   if (tenant.kind === 'customer_portal' || (previewHost && isCustomerPortalRequestPath(path))) {
@@ -113,7 +118,9 @@ export async function middleware(request: NextRequest) {
     portalHeaders.set('x-corevo-tenant-kind', 'customer_portal')
     portalHeaders.delete('x-corevo-tenant-slug')
     portalHeaders.delete('x-corevo-reserved-subdomain')
-    return NextResponse.next({ request: { headers: portalHeaders } })
+    return hardenCustomerPortalResponse(
+      NextResponse.next({ request: { headers: portalHeaders } }),
+    )
   }
 
   // matcher runs for static files too so mina cannot bypass its asset allowlist.

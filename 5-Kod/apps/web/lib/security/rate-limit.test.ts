@@ -63,3 +63,11 @@ describe('booking PIN limits', () => {
     expect(LIMITS.bookingPinVerify).toEqual({ max: 10, windowSecs: 300 })
   })
 })
+
+describe('customer portal recovery limits', () => {
+  it('has separate fail-closed start, resend and verify buckets', () => {
+    expect(LIMITS.portalRecoveryStart).toEqual({ max: 5, windowSecs: 300 })
+    expect(LIMITS.portalRecoveryResend).toEqual({ max: 3, windowSecs: 300 })
+    expect(LIMITS.portalRecoveryVerify).toEqual({ max: 10, windowSecs: 300 })
+  })
+})

@@ -105,16 +105,30 @@ create table private.customer_portal_challenges (
   channel text not null check (channel in ('sms', 'email')),
   subject_digest text not null check (length(subject_digest) between 32 and 256),
   contact_digest text not null check (length(contact_digest) between 32 and 256),
+  booking_contact_digest text check (
+    booking_contact_digest is null or booking_contact_digest ~ '^[a-f0-9]{64}$'
+  ),
+  contact_masked text check (contact_masked is null or length(contact_masked) between 3 and 200),
   code_digest text not null check (length(code_digest) between 32 and 256),
   key_version integer not null check (key_version > 0),
   attempt_count integer not null default 0 check (attempt_count between 0 and 5),
   max_attempts integer not null default 5 check (max_attempts = 5),
-  sent_at timestamptz not null default statement_timestamp(),
+  delivery_state text not null default 'pending'
+    check (delivery_state in ('pending', 'delivered', 'failed')),
+  delivered_at timestamptz,
+  failed_at timestamptz,
+  recovery_outbox_id uuid references public.notifications_outbox(id) on delete set null,
+  resend_after timestamptz not null default (statement_timestamp() + interval '30 seconds'),
   expires_at timestamptz not null,
   consumed_at timestamptz,
   revoked_at timestamptz,
   created_at timestamptz not null default statement_timestamp(),
-  check (expires_at > created_at)
+  check (expires_at > created_at),
+  check (
+    (delivery_state = 'pending' and delivered_at is null and failed_at is null)
+    or (delivery_state = 'delivered' and delivered_at is not null and failed_at is null)
+    or (delivery_state = 'failed' and delivered_at is null and failed_at is not null)
+  )
 );
 
 create index customer_portal_challenges_subject_idx
@@ -360,7 +374,7 @@ create or replace function public.customer_portal_session_snapshot(
   p_secret_digest text,
   p_rotated_secret_digest text default null,
   p_rotated_key_version integer default null
-) returns table (outcome text, snapshot jsonb)
+) returns table (outcome text, snapshot jsonb, recovery_tenant_slug text)
 language plpgsql
 security definer
 set search_path = ''
@@ -369,34 +383,42 @@ declare
   v_session private.customer_portal_sessions%rowtype;
   v_now timestamptz := statement_timestamp();
   v_snapshot jsonb;
+  v_recovery_tenant_slug text;
 begin
-  if p_rotated_secret_digest is not null
-     and (
-       length(p_rotated_secret_digest) not between 32 and 256
-       or p_rotated_key_version is null
-       or p_rotated_key_version <= 0
-     ) then
-    return query select 'expired'::text, null::jsonb;
-    return;
-  end if;
-
   select s.* into v_session
   from private.customer_portal_sessions s
   join public.tenants t on t.id = s.tenant_id and t.status = 'active'
-  join public.customers c
-    on c.id = s.customer_id
-   and c.tenant_id = s.tenant_id
-   and c.status = 'active'
   where s.public_id = p_session_public_id
     and s.secret_digest = p_secret_digest
-    and s.revoked_at is null
-    and s.idle_expires_at > v_now
-    and s.absolute_expires_at > v_now
     and private.customer_portal_mode(s.tenant_id) = 'passwordless_tenant'
   for update of s;
 
   if not found then
-    return query select 'expired'::text, null::jsonb;
+    return query select 'expired'::text, null::jsonb, null::text;
+    return;
+  end if;
+
+  select t.slug into v_recovery_tenant_slug
+  from public.tenants t
+  where t.id = v_session.tenant_id and t.status = 'active';
+
+  if v_session.revoked_at is not null
+     or v_session.idle_expires_at <= v_now
+     or v_session.absolute_expires_at <= v_now
+     or not exists (
+       select 1 from public.customers c
+       where c.id = v_session.customer_id
+         and c.tenant_id = v_session.tenant_id
+         and c.status = 'active'
+     )
+     or (
+       p_rotated_secret_digest is not null and (
+         length(p_rotated_secret_digest) not between 32 and 256
+         or p_rotated_key_version is null
+         or p_rotated_key_version <= 0
+       )
+     ) then
+    return query select 'expired'::text, null::jsonb, v_recovery_tenant_slug;
     return;
   end if;
 
@@ -494,7 +516,7 @@ begin
   ) dom on true
   where t.id = v_session.tenant_id;
 
-  return query select 'ok'::text, v_snapshot;
+  return query select 'ok'::text, v_snapshot, null::text;
 end;
 $$;
 
@@ -932,6 +954,809 @@ begin
 end;
 $$;
 
+create or replace function private.customer_portal_normalize_recovery_lookup(p_lookup text)
+returns table (channel text, normalized text, masked text)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_value text := pg_catalog.btrim(p_lookup);
+  v_compact text;
+  v_local text;
+  v_domain text;
+begin
+  if v_value is null or pg_catalog.length(v_value) not between 3 and 200 then
+    return;
+  end if;
+  if pg_catalog.strpos(v_value, '@') > 0 then
+    v_value := pg_catalog.lower(v_value);
+    if v_value !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then return; end if;
+    v_local := pg_catalog.split_part(v_value, '@', 1);
+    v_domain := pg_catalog.split_part(v_value, '@', 2);
+    return query select 'email'::text, v_value,
+      pg_catalog.left(v_local, 1) || '•••@' || v_domain;
+    return;
+  end if;
+
+  v_compact := pg_catalog.regexp_replace(v_value, '[[:space:]()\-]', '', 'g');
+  if v_compact ~ '^00[0-9]{8,15}$' then
+    v_compact := '+' || pg_catalog.substr(v_compact, 3);
+  elsif v_compact ~ '^0[0-9]{8,9}$' then
+    v_compact := '+46' || pg_catalog.substr(v_compact, 2);
+  end if;
+  if v_compact !~ '^\+[0-9]{8,15}$' then return; end if;
+  return query select 'sms'::text, v_compact,
+    pg_catalog.left(v_compact, 3) || ' ••• •• ' || pg_catalog.right(v_compact, 2);
+end;
+$$;
+
+revoke all on function private.customer_portal_normalize_recovery_lookup(text)
+  from public, anon, authenticated, service_role;
+
+create or replace function public.customer_portal_start_recovery(
+  p_tenant_slug text,
+  p_lookup text,
+  p_booking_contact_digest text,
+  p_public_id uuid,
+  p_subject_digest text,
+  p_contact_digest text,
+  p_code_digest text,
+  p_key_version integer,
+  p_expires_at timestamptz
+) returns table (
+  outcome text,
+  challenge_public_id uuid,
+  created boolean,
+  outbox_id uuid
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_now timestamptz := statement_timestamp();
+  v_tenant_id uuid;
+  v_tenant_name text;
+  v_channel text;
+  v_normalized text;
+  v_masked text;
+  v_customer_id uuid;
+  v_candidate_count integer := 0;
+  v_outbox_id uuid;
+begin
+  select t.id, t.name into v_tenant_id, v_tenant_name
+  from public.tenants t
+  where t.slug = pg_catalog.lower(pg_catalog.btrim(p_tenant_slug))
+    and t.status = 'active'
+    and private.customer_portal_mode(t.id) = 'passwordless_tenant';
+
+  select n.channel, n.normalized, n.masked into v_channel, v_normalized, v_masked
+  from private.customer_portal_normalize_recovery_lookup(p_lookup) n;
+
+  if v_tenant_id is null or v_channel is null or p_public_id is null
+     or p_booking_contact_digest !~ '^[a-f0-9]{64}$'
+     or p_subject_digest !~ '^[a-f0-9]{64}$'
+     or p_contact_digest !~ '^[a-f0-9]{64}$'
+     or p_code_digest !~ '^[a-f0-9]{64}$'
+     or p_key_version <> 1
+     or p_expires_at <= v_now
+     or p_expires_at > v_now + interval '5 minutes' then
+    return query select 'accepted'::text, null::uuid, false, null::uuid;
+    return;
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(v_tenant_id::text || ':' || p_contact_digest, 0)
+  );
+  if exists (
+    select 1 from private.customer_portal_challenges pc
+    where pc.tenant_id = v_tenant_id
+      and pc.purpose = 'recovery'
+      and pc.contact_digest = p_contact_digest
+      and pc.created_at > v_now - interval '30 seconds'
+  ) then
+    return query select 'cooldown'::text, null::uuid, false, null::uuid;
+    return;
+  end if;
+
+  select candidate.customer_id, candidate.candidate_count
+    into v_customer_id, v_candidate_count
+  from (
+    select c.id as customer_id, count(*) over () as candidate_count
+    from public.customers c
+    cross join lateral private.customer_portal_normalize_recovery_lookup(
+      case when v_channel = 'sms' then c.phone else c.email end
+    ) verified
+    where c.tenant_id = v_tenant_id
+      and c.status = 'active'
+      and verified.channel = v_channel
+      and verified.normalized = v_normalized
+      and exists (
+        select 1
+        from private.booking_verification_challenges bv
+        join public.bookings b
+          on b.id = bv.booking_id
+         and b.tenant_id = v_tenant_id
+         and b.customer_id = c.id
+        where bv.tenant_id = v_tenant_id
+          and bv.channel = v_channel
+          and bv.contact_digest = p_booking_contact_digest
+          and bv.delivery_state = 'delivered'
+          and bv.consumed_at is not null
+      )
+  ) candidate
+  order by candidate.customer_id
+  limit 1;
+  if v_candidate_count <> 1 then
+    v_customer_id := null;
+  end if;
+
+  update private.customer_portal_challenges pc
+  set revoked_at = v_now
+  where pc.tenant_id = v_tenant_id
+    and pc.purpose = 'recovery'
+    and pc.contact_digest = p_contact_digest
+    and pc.consumed_at is null
+    and pc.revoked_at is null;
+
+  insert into private.customer_portal_challenges (
+    public_id, tenant_id, customer_id, purpose, channel,
+    subject_digest, contact_digest, booking_contact_digest, contact_masked,
+    code_digest, key_version, expires_at
+  ) values (
+    p_public_id, v_tenant_id, v_customer_id, 'recovery', v_channel,
+    p_subject_digest, p_contact_digest,
+    case when v_customer_id is null then null else p_booking_contact_digest end,
+    v_masked, p_code_digest, p_key_version, p_expires_at
+  );
+
+  select queued.id into v_outbox_id
+  from public.enqueue_notification(
+    v_tenant_id,
+    null,
+    null,
+    null,
+    'customer_portal_recovery_code',
+    'customer-portal-recovery:' || p_public_id::text,
+    'transactional',
+    v_channel,
+    null,
+    '{}'::jsonb,
+    pg_catalog.jsonb_build_object(
+      'template', 'customer_portal_recovery_code',
+      'challenge_id', p_public_id
+    ),
+    5
+  ) queued;
+  if v_outbox_id is null then
+    raise exception 'customer_portal_recovery_enqueue_failed' using errcode = '55000';
+  end if;
+  update private.customer_portal_challenges pc
+  set recovery_outbox_id = v_outbox_id
+  where pc.public_id = p_public_id;
+
+  return query select 'accepted'::text, p_public_id, true, v_outbox_id;
+end;
+$$;
+
+create or replace function public.customer_portal_record_recovery_delivery(
+  p_challenge_public_id uuid,
+  p_subject_digest text,
+  p_booking_contact_digest text,
+  p_delivered boolean
+) returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge private.customer_portal_challenges%rowtype;
+  v_now timestamptz := statement_timestamp();
+  v_delivered boolean;
+begin
+  select pc.* into v_challenge
+  from private.customer_portal_challenges pc
+  where pc.public_id = p_challenge_public_id
+    and pc.purpose = 'recovery'
+  for update;
+  if not found
+     or v_challenge.subject_digest is distinct from p_subject_digest
+     or v_challenge.delivery_state <> 'pending'
+     or v_challenge.consumed_at is not null
+     or v_challenge.revoked_at is not null
+     or v_challenge.expires_at <= v_now then
+    return 'invalid';
+  end if;
+  v_delivered := p_delivered is true
+    and v_challenge.customer_id is not null
+    and v_challenge.booking_contact_digest is not null
+    and v_challenge.booking_contact_digest = p_booking_contact_digest
+    and exists (
+      select 1
+      from private.booking_verification_challenges bv
+      join public.bookings b
+        on b.id = bv.booking_id
+       and b.tenant_id = v_challenge.tenant_id
+       and b.customer_id = v_challenge.customer_id
+      where bv.tenant_id = v_challenge.tenant_id
+        and bv.channel = v_challenge.channel
+        and bv.contact_digest = v_challenge.booking_contact_digest
+        and bv.delivery_state = 'delivered'
+        and bv.consumed_at is not null
+    );
+  update private.customer_portal_challenges pc
+  set delivery_state = case when v_delivered then 'delivered' else 'failed' end,
+      delivered_at = case when v_delivered then v_now else null end,
+      failed_at = case when v_delivered then null else v_now end
+  where pc.id = v_challenge.id and pc.delivery_state = 'pending';
+  return 'ok';
+end;
+$$;
+
+-- Dedicated worker lookup. A recipient can be resolved only after the durable
+-- outbox lease has crossed begin_notification_delivery; the browser never calls
+-- this RPC and the outbox payload remains free of contact data and PINs.
+create or replace function public.customer_portal_recovery_delivery_target(
+  p_outbox_id uuid,
+  p_lease_token uuid
+) returns table (
+  outcome text,
+  challenge_public_id uuid,
+  channel text,
+  delivery_destination text,
+  contact_digest text,
+  booking_contact_digest text,
+  tenant_name text,
+  expires_at timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  return query
+  select 'target'::text, pc.public_id, pc.channel,
+    case when pc.customer_id is null then null
+      when pc.channel = 'sms' then c.phone else c.email end,
+    pc.contact_digest, pc.booking_contact_digest, t.name, pc.expires_at
+  from public.notifications_outbox o
+  join private.customer_portal_challenges pc
+    on pc.recovery_outbox_id = o.id
+   and pc.purpose = 'recovery'
+  join public.tenants t
+    on t.id = pc.tenant_id
+   and t.status = 'active'
+  left join public.customers c
+    on c.id = pc.customer_id
+   and c.tenant_id = pc.tenant_id
+   and c.status = 'active'
+  where o.id = p_outbox_id
+    and o.event_type = 'customer_portal_recovery_code'
+    and o.status = 'delivery_started'
+    and o.lease_token = p_lease_token
+    and o.tenant_id = pc.tenant_id
+    and o.chosen_channel = pc.channel
+    and o.payload = pg_catalog.jsonb_build_object(
+      'template', 'customer_portal_recovery_code',
+      'challenge_id', pc.public_id
+    )
+    and pc.delivery_state = 'pending'
+    and pc.consumed_at is null
+    and pc.revoked_at is null
+    and pc.expires_at > statement_timestamp()
+    and private.customer_portal_mode(pc.tenant_id) = 'passwordless_tenant';
+end;
+$$;
+
+-- The worker generates the PIN only after claiming. Before transport, this CAS
+-- re-reads the customer's current destination and revalidates both the recovery
+-- HMAC and the consumed Goal-74 proof. A decoy traverses the same leased path.
+create or replace function public.customer_portal_prepare_recovery_delivery(
+  p_outbox_id uuid,
+  p_lease_token uuid,
+  p_current_destination text,
+  p_current_contact_digest text,
+  p_current_booking_contact_digest text,
+  p_code_digest text
+) returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge private.customer_portal_challenges%rowtype;
+  v_now timestamptz := statement_timestamp();
+  v_current_normalized text;
+  v_verified_normalized text;
+begin
+  select pc.* into v_challenge
+  from private.customer_portal_challenges pc
+  join public.notifications_outbox o
+    on o.id = pc.recovery_outbox_id
+   and o.tenant_id = pc.tenant_id
+  where o.id = p_outbox_id
+    and o.event_type = 'customer_portal_recovery_code'
+    and o.status = 'delivery_started'
+    and o.lease_token = p_lease_token
+    and pc.purpose = 'recovery'
+  for update of pc;
+
+  if not found
+     or v_challenge.delivery_state <> 'pending'
+     or v_challenge.consumed_at is not null
+     or v_challenge.revoked_at is not null
+     or v_challenge.expires_at <= v_now
+     or p_code_digest !~ '^[a-f0-9]{64}$' then
+    return 'invalid';
+  end if;
+
+  if v_challenge.customer_id is null then
+    update private.customer_portal_challenges pc
+    set code_digest = p_code_digest
+    where pc.id = v_challenge.id and pc.delivery_state = 'pending';
+    return 'decoy';
+  end if;
+
+  select current_contact.normalized, verified.normalized
+    into v_current_normalized, v_verified_normalized
+  from public.customers c
+  cross join lateral private.customer_portal_normalize_recovery_lookup(
+    p_current_destination
+  ) current_contact
+  cross join lateral private.customer_portal_normalize_recovery_lookup(
+    case when v_challenge.channel = 'sms' then c.phone else c.email end
+  ) verified
+  where c.id = v_challenge.customer_id
+    and c.tenant_id = v_challenge.tenant_id
+    and c.status = 'active'
+    and current_contact.channel = v_challenge.channel
+    and verified.channel = v_challenge.channel
+    and verified.normalized = current_contact.normalized;
+
+  if v_current_normalized is null
+     or v_verified_normalized is null
+     or v_challenge.contact_digest is distinct from p_current_contact_digest
+     or v_challenge.booking_contact_digest is distinct from p_current_booking_contact_digest
+     or not exists (
+       select 1
+       from private.booking_verification_challenges bv
+       join public.bookings b
+         on b.id = bv.booking_id
+        and b.tenant_id = v_challenge.tenant_id
+        and b.customer_id = v_challenge.customer_id
+       where bv.tenant_id = v_challenge.tenant_id
+         and bv.channel = v_challenge.channel
+         and bv.contact_digest = v_challenge.booking_contact_digest
+         and bv.delivery_state = 'delivered'
+         and bv.consumed_at is not null
+     ) then
+    return 'invalid';
+  end if;
+
+  update private.customer_portal_challenges pc
+  set code_digest = p_code_digest
+  where pc.id = v_challenge.id and pc.delivery_state = 'pending';
+  return 'ready';
+end;
+$$;
+
+create or replace function public.customer_portal_record_recovery_outbox_delivery(
+  p_outbox_id uuid,
+  p_lease_token uuid,
+  p_delivered boolean
+) returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge private.customer_portal_challenges%rowtype;
+  v_now timestamptz := statement_timestamp();
+  v_delivered boolean := false;
+begin
+  select pc.* into v_challenge
+  from private.customer_portal_challenges pc
+  join public.notifications_outbox o
+    on o.id = pc.recovery_outbox_id
+   and o.tenant_id = pc.tenant_id
+  where o.id = p_outbox_id
+    and o.event_type = 'customer_portal_recovery_code'
+    and o.status = 'delivery_started'
+    and o.lease_token = p_lease_token
+    and pc.purpose = 'recovery'
+  for update of pc;
+  if not found
+     or v_challenge.delivery_state <> 'pending'
+     or v_challenge.consumed_at is not null
+     or v_challenge.revoked_at is not null
+     or v_challenge.expires_at <= v_now then
+    return 'invalid';
+  end if;
+
+  v_delivered := p_delivered is true
+    and v_challenge.customer_id is not null
+    and v_challenge.booking_contact_digest is not null
+    and exists (
+      select 1
+      from private.booking_verification_challenges bv
+      join public.bookings b
+        on b.id = bv.booking_id
+       and b.tenant_id = v_challenge.tenant_id
+       and b.customer_id = v_challenge.customer_id
+      where bv.tenant_id = v_challenge.tenant_id
+        and bv.channel = v_challenge.channel
+        and bv.contact_digest = v_challenge.booking_contact_digest
+        and bv.delivery_state = 'delivered'
+        and bv.consumed_at is not null
+    );
+
+  update private.customer_portal_challenges pc
+  set delivery_state = case when v_delivered then 'delivered' else 'failed' end,
+      delivered_at = case when v_delivered then v_now else null end,
+      failed_at = case when v_delivered then null else v_now end
+  where pc.id = v_challenge.id and pc.delivery_state = 'pending';
+  return 'ok';
+end;
+$$;
+
+create or replace function public.customer_portal_prepare_recovery_resend(
+  p_challenge_public_id uuid,
+  p_subject_digest text
+) returns table (
+  outcome text,
+  channel text,
+  delivery_destination text,
+  contact_digest text,
+  booking_contact_digest text,
+  tenant_name text,
+  tenant_slug text
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge private.customer_portal_challenges%rowtype;
+begin
+  select pc.* into v_challenge
+  from private.customer_portal_challenges pc
+  where pc.public_id = p_challenge_public_id
+    and pc.purpose = 'recovery'
+    and pc.subject_digest = p_subject_digest;
+  if not found or v_challenge.consumed_at is not null or v_challenge.revoked_at is not null then
+    return query select 'invalid'::text, null::text, null::text, null::text,
+      null::text, null::text, null::text;
+    return;
+  end if;
+  return query
+  select 'ready'::text, v_challenge.channel,
+    case when v_challenge.customer_id is null then null
+      when v_challenge.channel = 'sms' then c.phone else c.email end,
+    v_challenge.contact_digest, v_challenge.booking_contact_digest,
+    t.name, t.slug
+  from public.tenants t
+  left join public.customers c
+    on c.id = v_challenge.customer_id
+   and c.tenant_id = t.id
+   and c.status = 'active'
+  where t.id = v_challenge.tenant_id
+    and t.status = 'active'
+    and private.customer_portal_mode(t.id) = 'passwordless_tenant';
+end;
+$$;
+
+create or replace function public.customer_portal_resend_recovery(
+  p_challenge_public_id uuid,
+  p_subject_digest text,
+  p_new_public_id uuid,
+  p_new_subject_digest text,
+  p_new_code_digest text,
+  p_key_version integer,
+  p_expires_at timestamptz
+) returns table (
+  outcome text,
+  challenge_public_id uuid,
+  created boolean,
+  outbox_id uuid
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_old private.customer_portal_challenges%rowtype;
+  v_lock_tenant_id uuid;
+  v_lock_contact_digest text;
+  v_now timestamptz := statement_timestamp();
+  v_tenant_name text;
+  v_actual boolean := false;
+  v_outbox_id uuid;
+begin
+  select pc.tenant_id, pc.contact_digest
+  into v_lock_tenant_id, v_lock_contact_digest
+  from private.customer_portal_challenges pc
+  where pc.public_id = p_challenge_public_id
+    and pc.purpose = 'recovery';
+  if not found then
+    return query select 'invalid'::text, null::uuid, false, null::uuid;
+    return;
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(v_lock_tenant_id::text || ':' || v_lock_contact_digest, 0)
+  );
+
+  select pc.* into v_old
+  from private.customer_portal_challenges pc
+  where pc.public_id = p_challenge_public_id
+    and pc.purpose = 'recovery'
+  for update;
+  if not found
+     or v_old.subject_digest is distinct from p_subject_digest
+     or v_old.tenant_id is distinct from v_lock_tenant_id
+     or v_old.contact_digest is distinct from v_lock_contact_digest
+     or v_old.consumed_at is not null
+     or v_old.revoked_at is not null
+     or v_old.expires_at <= v_now
+     or p_new_public_id is null
+     or p_new_subject_digest !~ '^[a-f0-9]{64}$'
+     or p_new_code_digest !~ '^[a-f0-9]{64}$'
+     or p_key_version <> 1
+     or p_expires_at <= v_now
+     or p_expires_at > v_now + interval '5 minutes'
+     or private.customer_portal_mode(v_old.tenant_id) is distinct from 'passwordless_tenant' then
+    return query select 'invalid'::text, null::uuid, false, null::uuid;
+    return;
+  end if;
+
+  select t.name into v_tenant_name from public.tenants t
+  where t.id = v_old.tenant_id and t.status = 'active';
+  if v_tenant_name is null then
+    return query select 'invalid'::text, null::uuid, false, null::uuid;
+    return;
+  end if;
+
+  if v_old.resend_after > v_now then
+    return query select 'cooldown'::text, null::uuid, false, null::uuid;
+    return;
+  end if;
+
+  if v_old.customer_id is not null
+     and v_old.booking_contact_digest is not null
+     and exists (
+    select 1
+    from private.booking_verification_challenges bv
+    join public.bookings b
+      on b.id = bv.booking_id
+     and b.tenant_id = v_old.tenant_id
+     and b.customer_id = v_old.customer_id
+    join public.customers c
+      on c.id = b.customer_id
+     and c.tenant_id = b.tenant_id
+     and c.status = 'active'
+    where bv.tenant_id = v_old.tenant_id
+      and bv.channel = v_old.channel
+      and bv.contact_digest = v_old.booking_contact_digest
+      and bv.delivery_state = 'delivered'
+      and bv.consumed_at is not null
+  ) then
+    v_actual := true;
+  end if;
+
+  update private.customer_portal_challenges pc
+  set revoked_at = v_now
+  where pc.tenant_id = v_old.tenant_id
+    and pc.purpose = 'recovery'
+    and pc.contact_digest = v_old.contact_digest
+    and pc.consumed_at is null
+    and pc.revoked_at is null;
+
+  insert into private.customer_portal_challenges (
+    public_id, tenant_id, customer_id, purpose, channel,
+    subject_digest, contact_digest, booking_contact_digest, contact_masked,
+    code_digest, key_version, expires_at
+  ) values (
+    p_new_public_id, v_old.tenant_id,
+    case when v_actual then v_old.customer_id else null end,
+    'recovery', v_old.channel, p_new_subject_digest, v_old.contact_digest,
+    case when v_actual then v_old.booking_contact_digest else null end,
+    v_old.contact_masked, p_new_code_digest, p_key_version, p_expires_at
+  );
+
+  select queued.id into v_outbox_id
+  from public.enqueue_notification(
+    v_old.tenant_id,
+    null,
+    null,
+    null,
+    'customer_portal_recovery_code',
+    'customer-portal-recovery:' || p_new_public_id::text,
+    'transactional',
+    v_old.channel,
+    null,
+    '{}'::jsonb,
+    pg_catalog.jsonb_build_object(
+      'template', 'customer_portal_recovery_code',
+      'challenge_id', p_new_public_id
+    ),
+    5
+  ) queued;
+  if v_outbox_id is null then
+    raise exception 'customer_portal_recovery_enqueue_failed' using errcode = '55000';
+  end if;
+  update private.customer_portal_challenges pc
+  set recovery_outbox_id = v_outbox_id
+  where pc.public_id = p_new_public_id;
+
+  return query select 'accepted'::text, p_new_public_id, true, v_outbox_id;
+end;
+$$;
+
+create or replace function public.customer_portal_recovery_state(
+  p_challenge_public_id uuid,
+  p_subject_digest text
+) returns table (
+  outcome text,
+  attempts_remaining integer,
+  tenant_slug text,
+  resend_after timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge private.customer_portal_challenges%rowtype;
+  v_tenant_slug text;
+  v_now timestamptz := statement_timestamp();
+begin
+  select pc.* into v_challenge
+  from private.customer_portal_challenges pc
+  where pc.public_id = p_challenge_public_id
+    and pc.purpose = 'recovery'
+    and pc.subject_digest = p_subject_digest;
+  if not found then
+    return query select 'expired'::text, 0, null::text, null::timestamptz;
+    return;
+  end if;
+  select t.slug into v_tenant_slug from public.tenants t
+  where t.id = v_challenge.tenant_id and t.status = 'active'
+    and private.customer_portal_mode(t.id) = 'passwordless_tenant';
+  if v_tenant_slug is null or v_challenge.expires_at <= v_now
+     or v_challenge.revoked_at is not null or v_challenge.consumed_at is not null then
+    return query select 'expired'::text, 0,
+      v_tenant_slug, v_challenge.resend_after;
+    return;
+  end if;
+  if v_challenge.attempt_count >= v_challenge.max_attempts then
+    return query select 'max_attempts'::text, 0,
+      v_tenant_slug, v_challenge.resend_after;
+    return;
+  end if;
+  -- CP-VER-02 is deliberately identical while active: no account existence,
+  -- channel, masked recipient or provider state is exposed to the browser.
+  return query select 'sent'::text,
+    v_challenge.max_attempts - v_challenge.attempt_count,
+    v_tenant_slug, v_challenge.resend_after;
+end;
+$$;
+
+create or replace function public.customer_portal_verify_recovery_and_mint_session(
+  p_challenge_public_id uuid,
+  p_subject_digest text,
+  p_code_digest text,
+  p_new_session_public_id uuid,
+  p_new_session_digest text,
+  p_key_version integer
+) returns table (outcome text, attempts_remaining integer, tenant_slug text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge private.customer_portal_challenges%rowtype;
+  v_now timestamptz := statement_timestamp();
+  v_session_id uuid;
+  v_tenant_slug text;
+  v_remaining integer;
+begin
+  select pc.* into v_challenge
+  from private.customer_portal_challenges pc
+  where pc.public_id = p_challenge_public_id and pc.purpose = 'recovery'
+  for update;
+  if not found or v_challenge.subject_digest is distinct from p_subject_digest then
+    return query select 'invalid'::text, 0, null::text;
+    return;
+  end if;
+  v_remaining := greatest(v_challenge.max_attempts - v_challenge.attempt_count, 0);
+  if v_challenge.consumed_at is not null or v_challenge.revoked_at is not null
+     or v_challenge.expires_at <= v_now then
+    return query select 'expired'::text, v_remaining, null::text;
+    return;
+  end if;
+  if v_challenge.attempt_count >= v_challenge.max_attempts then
+    return query select 'max_attempts'::text, 0, null::text;
+    return;
+  end if;
+  if v_challenge.customer_id is null
+     or v_challenge.booking_contact_digest is null
+     or v_challenge.delivery_state <> 'delivered'
+     or not exists (
+       select 1
+       from private.booking_verification_challenges bv
+       join public.bookings b
+         on b.id = bv.booking_id
+        and b.tenant_id = v_challenge.tenant_id
+        and b.customer_id = v_challenge.customer_id
+       where bv.tenant_id = v_challenge.tenant_id
+         and bv.channel = v_challenge.channel
+         and bv.contact_digest = v_challenge.booking_contact_digest
+         and bv.delivery_state = 'delivered'
+         and bv.consumed_at is not null
+     ) then
+    update private.customer_portal_challenges pc
+    set attempt_count = least(pc.attempt_count + 1, pc.max_attempts),
+        revoked_at = case when pc.attempt_count + 1 >= pc.max_attempts then v_now else pc.revoked_at end
+    where pc.id = v_challenge.id;
+    v_remaining := greatest(v_challenge.max_attempts - v_challenge.attempt_count - 1, 0);
+    return query select case when v_remaining = 0 then 'max_attempts' else 'invalid' end,
+      v_remaining, null::text;
+    return;
+  end if;
+  if v_challenge.code_digest is distinct from p_code_digest then
+    update private.customer_portal_challenges pc
+    set attempt_count = least(pc.attempt_count + 1, pc.max_attempts),
+        revoked_at = case when pc.attempt_count + 1 >= pc.max_attempts then v_now else pc.revoked_at end
+    where pc.id = v_challenge.id;
+    v_remaining := greatest(v_challenge.max_attempts - v_challenge.attempt_count - 1, 0);
+    return query select case when v_remaining = 0 then 'max_attempts' else 'invalid' end,
+      v_remaining, null::text;
+    return;
+  end if;
+  if p_new_session_public_id is null or p_new_session_digest !~ '^[a-f0-9]{64}$'
+     or p_key_version <> 1 then
+    return query select 'invalid'::text, v_remaining, null::text;
+    return;
+  end if;
+  select t.slug into v_tenant_slug
+  from public.tenants t
+  join public.customers c
+    on c.id = v_challenge.customer_id
+   and c.tenant_id = t.id
+   and c.status = 'active'
+  where t.id = v_challenge.tenant_id and t.status = 'active'
+    and private.customer_portal_mode(t.id) = 'passwordless_tenant';
+  if v_tenant_slug is null then
+    return query select 'invalid'::text, v_remaining, null::text;
+    return;
+  end if;
+
+  insert into private.customer_portal_sessions (
+    public_id, tenant_id, customer_id, secret_digest, key_version,
+    idle_expires_at, absolute_expires_at
+  ) values (
+    p_new_session_public_id, v_challenge.tenant_id, v_challenge.customer_id,
+    p_new_session_digest, p_key_version,
+    v_now + interval '180 days', v_now + interval '365 days'
+  ) returning id into v_session_id;
+  update private.customer_portal_challenges
+  set consumed_at = v_now
+  where id = v_challenge.id and consumed_at is null;
+  insert into private.customer_portal_audit (
+    tenant_id, customer_id, session_id, event_type, entity_public_id
+  ) values (
+    v_challenge.tenant_id, v_challenge.customer_id, v_session_id,
+    'recovery_verified', v_challenge.public_id
+  );
+  return query select 'verified'::text, v_remaining, v_tenant_slug;
+end;
+$$;
+
 create or replace function public.customer_portal_create_challenge(
   p_tenant uuid,
   p_customer uuid,
@@ -953,7 +1778,7 @@ declare
 begin
   if p_tenant is null
      or p_public_id is null
-     or p_purpose not in ('recovery', 'contact_change')
+     or p_purpose <> 'contact_change'
      or p_channel not in ('sms', 'email')
      or p_subject_digest is null
      or length(p_subject_digest) not between 32 and 256
@@ -1011,7 +1836,45 @@ begin
     p_subject_digest, p_contact_digest, p_code_digest, p_key_version, p_expires_at
   );
 
-  return query select 'accepted'::text, p_public_id, true;
+  return query select 'accepted'::text, p_public_id, p_customer is not null;
+end;
+$$;
+
+create or replace function public.customer_portal_record_challenge_delivery(
+  p_challenge_public_id uuid,
+  p_subject_digest text,
+  p_delivered boolean
+) returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge private.customer_portal_challenges%rowtype;
+  v_now timestamptz := statement_timestamp();
+begin
+  select c.* into v_challenge
+  from private.customer_portal_challenges c
+  where c.public_id = p_challenge_public_id
+  for update;
+
+  if not found
+     or v_challenge.subject_digest is distinct from p_subject_digest
+     or v_challenge.purpose <> 'contact_change'
+     or v_challenge.customer_id is null
+     or v_challenge.delivery_state <> 'pending'
+     or v_challenge.consumed_at is not null
+     or v_challenge.revoked_at is not null
+     or v_challenge.expires_at <= v_now then
+    return 'invalid';
+  end if;
+
+  update private.customer_portal_challenges c
+  set delivery_state = case when p_delivered is true then 'delivered' else 'failed' end,
+      delivered_at = case when p_delivered is true then v_now else null end,
+      failed_at = case when p_delivered is true then null else v_now end
+  where c.id = v_challenge.id and c.delivery_state = 'pending';
+  return 'ok';
 end;
 $$;
 
@@ -1035,9 +1898,11 @@ begin
 
   if not found
      or v_challenge.subject_digest is distinct from p_subject_digest
+     or v_challenge.purpose <> 'contact_change'
      or v_challenge.consumed_at is not null
      or v_challenge.revoked_at is not null
      or v_challenge.expires_at <= v_now
+     or v_challenge.delivery_state <> 'delivered'
      or v_challenge.attempt_count >= v_challenge.max_attempts
      or private.customer_portal_mode(v_challenge.tenant_id) is distinct from 'passwordless_tenant' then
     return query select 'invalid'::text, 0, null::uuid;
@@ -1197,6 +2062,8 @@ begin
   set revoked_at = coalesce(c.revoked_at, v_now),
       subject_digest = 'gdpr:' || gen_random_uuid()::text,
       contact_digest = 'gdpr:' || gen_random_uuid()::text,
+      booking_contact_digest = null,
+      contact_masked = null,
       code_digest = 'gdpr:' || gen_random_uuid()::text
   where c.tenant_id = p_tenant and c.customer_id = p_customer;
   get diagnostics v_rows = row_count;
@@ -1212,6 +2079,210 @@ begin
   return v_count;
 end;
 $$;
+
+-- Recovery is routed by its dedicated SMS/email worker. Generic claims must
+-- never race it, while the exact-id claim remains the single lease primitive.
+create or replace function public.claim_notification_outbox(
+  p_lease_token uuid,
+  p_now timestamptz,
+  p_lease_seconds integer,
+  p_limit integer
+) returns setof public.notifications_outbox
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.notifications_outbox o
+  set status = 'failed', last_error = 'lease_expired_after_max_attempts',
+      lease_token = null, lease_expires_at = null, updated_at = p_now
+  where o.event_type <> 'customer_portal_recovery_code'
+    and o.status = 'attempting'
+    and o.lease_expires_at <= p_now
+    and o.attempt_count >= o.max_attempts;
+
+  return query
+  with due as (
+    select o.id from public.notifications_outbox o
+    where o.event_type <> 'customer_portal_recovery_code'
+      and o.attempt_count < o.max_attempts
+      and o.chosen_channel is not null
+      and ((o.status = 'queued' and o.available_at <= p_now)
+        or (o.status = 'attempting' and o.lease_expires_at <= p_now))
+    order by o.available_at, o.created_at, o.id
+    for update skip locked
+    limit least(greatest(coalesce(p_limit, 50), 1), 200)
+  )
+  update public.notifications_outbox o
+  set status = 'attempting', attempt_count = o.attempt_count + 1,
+      lease_token = p_lease_token,
+      lease_expires_at = p_now + pg_catalog.make_interval(
+        secs => least(greatest(coalesce(p_lease_seconds, 120), 30), 900)
+      ),
+      updated_at = p_now
+  from due where o.id = due.id
+  returning o.*;
+end;
+$$;
+
+create or replace function public.claim_sms_notification_outbox(
+  p_lease_token uuid,
+  p_now timestamptz,
+  p_lease_seconds integer,
+  p_limit integer
+) returns setof public.notifications_outbox
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.notifications_outbox o
+  set status = 'failed', last_error = 'lease_expired_after_max_attempts',
+      lease_token = null, lease_expires_at = null, updated_at = p_now
+  where o.event_type <> 'customer_portal_recovery_code'
+    and o.chosen_channel = 'sms'
+    and o.status = 'attempting'
+    and o.lease_expires_at <= p_now
+    and o.attempt_count >= o.max_attempts;
+
+  return query
+  with due as (
+    select o.id from public.notifications_outbox o
+    where o.event_type <> 'customer_portal_recovery_code'
+      and o.chosen_channel = 'sms'
+      and o.attempt_count < o.max_attempts
+      and ((o.status = 'queued' and o.available_at <= p_now)
+        or (o.status = 'attempting' and o.lease_expires_at <= p_now))
+    order by o.available_at, o.created_at, o.id
+    for update skip locked
+    limit least(greatest(coalesce(p_limit, 50), 1), 200)
+  )
+  update public.notifications_outbox o
+  set status = 'attempting', attempt_count = o.attempt_count + 1,
+      lease_token = p_lease_token,
+      lease_expires_at = p_now + pg_catalog.make_interval(
+        secs => least(greatest(coalesce(p_lease_seconds, 120), 30), 900)
+      ),
+      updated_at = p_now
+  from due where o.id = due.id
+  returning o.*;
+end;
+$$;
+
+create or replace function public.claim_notification_outbox_by_id(
+  p_id uuid,
+  p_lease_token uuid,
+  p_now timestamptz,
+  p_lease_seconds integer
+) returns setof public.notifications_outbox
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_id is null or p_lease_token is null or p_now is null then
+    raise exception 'notification_claim_by_id_invalid' using errcode = '22023';
+  end if;
+
+  update public.notifications_outbox o
+  set status = 'failed', last_error = 'lease_expired_after_max_attempts',
+      lease_token = null, lease_expires_at = null, updated_at = p_now
+  where o.id = p_id and o.status = 'attempting'
+    and o.lease_expires_at <= p_now and o.attempt_count >= o.max_attempts;
+
+  return query
+  with due as (
+    select o.id from public.notifications_outbox o
+    where o.id = p_id
+      and o.category = 'transactional'
+      and o.event_type in (
+        'booking_verification_pin', 'booking_confirmation',
+        'booking_request_received', 'customer_portal_recovery_code'
+      )
+      and o.chosen_channel in ('sms', 'email')
+      and o.attempt_count < o.max_attempts
+      and ((o.status = 'queued' and (
+          o.event_type in ('booking_verification_pin', 'customer_portal_recovery_code')
+          or o.available_at <= p_now
+        )) or (o.status = 'attempting' and o.lease_expires_at <= p_now))
+    for update skip locked
+  )
+  update public.notifications_outbox o
+  set status = 'attempting', attempt_count = o.attempt_count + 1,
+      lease_token = p_lease_token,
+      lease_expires_at = p_now + pg_catalog.make_interval(
+        secs => least(greatest(coalesce(p_lease_seconds, 120), 30), 900)
+      ),
+      updated_at = p_now
+  from due where o.id = due.id
+  returning o.*;
+end;
+$$;
+
+create or replace function public.customer_portal_recovery_outbox_candidates(
+  p_now timestamptz,
+  p_limit integer
+) returns table (id uuid)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- A recovery delivery_started row cannot be retried automatically (at-most-once),
+  -- but once its five-minute challenge has expired it must not remain stuck forever.
+  update public.notifications_outbox o
+  set status = 'failed', last_error = 'delivery_uncertain',
+      lease_token = null, lease_expires_at = null, updated_at = p_now
+  where o.event_type = 'customer_portal_recovery_code'
+    and o.status = 'delivery_started'
+    and o.updated_at <= p_now - interval '5 minutes';
+
+  update public.notifications_outbox o
+  set status = 'failed', last_error = 'lease_expired_after_max_attempts',
+      lease_token = null, lease_expires_at = null, updated_at = p_now
+  where o.event_type = 'customer_portal_recovery_code'
+    and o.status = 'attempting'
+    and o.lease_expires_at <= p_now
+    and o.attempt_count >= o.max_attempts;
+
+  return query
+  select o.id from public.notifications_outbox o
+  where o.event_type = 'customer_portal_recovery_code'
+    and o.attempt_count < o.max_attempts
+    and ((o.status = 'queued' and o.available_at <= p_now)
+      or (o.status = 'attempting' and o.lease_expires_at <= p_now))
+  order by o.available_at, o.created_at, o.id
+  limit least(greatest(coalesce(p_limit, 50), 1), 50);
+end;
+$$;
+
+revoke all on function public.claim_notification_outbox(
+  uuid, timestamptz, integer, integer
+) from public, anon, authenticated, service_role;
+grant execute on function public.claim_notification_outbox(
+  uuid, timestamptz, integer, integer
+) to service_role;
+
+revoke all on function public.claim_sms_notification_outbox(
+  uuid, timestamptz, integer, integer
+) from public, anon, authenticated, service_role;
+grant execute on function public.claim_sms_notification_outbox(
+  uuid, timestamptz, integer, integer
+) to service_role;
+
+revoke all on function public.claim_notification_outbox_by_id(
+  uuid, uuid, timestamptz, integer
+) from public, anon, authenticated, service_role;
+grant execute on function public.claim_notification_outbox_by_id(
+  uuid, uuid, timestamptz, integer
+) to service_role;
+
+revoke all on function public.customer_portal_recovery_outbox_candidates(
+  timestamptz, integer
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_recovery_outbox_candidates(
+  timestamptz, integer
+) to service_role;
 
 revoke all on function public.customer_portal_mint_link(
   uuid, uuid, text, text, integer, timestamptz, uuid
@@ -1262,11 +2333,81 @@ grant execute on function public.customer_portal_update_name(
   uuid, text, text
 ) to service_role;
 
+revoke all on function public.customer_portal_start_recovery(
+  text, text, text, uuid, text, text, text, integer, timestamptz
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_start_recovery(
+  text, text, text, uuid, text, text, text, integer, timestamptz
+) to service_role;
+
+revoke all on function public.customer_portal_record_recovery_delivery(
+  uuid, text, text, boolean
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_record_recovery_delivery(
+  uuid, text, text, boolean
+) to service_role;
+
+revoke all on function public.customer_portal_recovery_delivery_target(
+  uuid, uuid
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_recovery_delivery_target(
+  uuid, uuid
+) to service_role;
+
+revoke all on function public.customer_portal_prepare_recovery_delivery(
+  uuid, uuid, text, text, text, text
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_prepare_recovery_delivery(
+  uuid, uuid, text, text, text, text
+) to service_role;
+
+revoke all on function public.customer_portal_record_recovery_outbox_delivery(
+  uuid, uuid, boolean
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_record_recovery_outbox_delivery(
+  uuid, uuid, boolean
+) to service_role;
+
+revoke all on function public.customer_portal_prepare_recovery_resend(
+  uuid, text
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_prepare_recovery_resend(
+  uuid, text
+) to service_role;
+
+revoke all on function public.customer_portal_resend_recovery(
+  uuid, text, uuid, text, text, integer, timestamptz
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_resend_recovery(
+  uuid, text, uuid, text, text, integer, timestamptz
+) to service_role;
+
+revoke all on function public.customer_portal_recovery_state(
+  uuid, text
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_recovery_state(
+  uuid, text
+) to service_role;
+
+revoke all on function public.customer_portal_verify_recovery_and_mint_session(
+  uuid, text, text, uuid, text, integer
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_verify_recovery_and_mint_session(
+  uuid, text, text, uuid, text, integer
+) to service_role;
+
 revoke all on function public.customer_portal_create_challenge(
   uuid, uuid, uuid, text, text, text, text, text, integer, timestamptz
 ) from public, anon, authenticated, service_role;
 grant execute on function public.customer_portal_create_challenge(
   uuid, uuid, uuid, text, text, text, text, text, integer, timestamptz
+) to service_role;
+
+revoke all on function public.customer_portal_record_challenge_delivery(
+  uuid, text, boolean
+) from public, anon, authenticated, service_role;
+grant execute on function public.customer_portal_record_challenge_delivery(
+  uuid, text, boolean
 ) to service_role;
 
 revoke all on function public.customer_portal_verify_challenge(

@@ -8,6 +8,12 @@ const migration = readFileSync(
   ),
   'utf8',
 ).toLowerCase()
+const runtimeSql = readFileSync(
+  fileURLToPath(
+    new URL('../../../../supabase/tests/customer_portal_security_0120_test.sql', import.meta.url),
+  ),
+  'utf8',
+).toLowerCase()
 
 const ci = readFileSync(
   fileURLToPath(new URL('../../../../../.github/workflows/ci.yml', import.meta.url)),
@@ -27,7 +33,18 @@ const criticalRpcs = [
   'customer_portal_cancel_booking',
   'customer_portal_update_name',
   'customer_portal_create_challenge',
+  'customer_portal_record_challenge_delivery',
   'customer_portal_verify_challenge',
+  'customer_portal_start_recovery',
+  'customer_portal_record_recovery_delivery',
+  'customer_portal_recovery_delivery_target',
+  'customer_portal_prepare_recovery_delivery',
+  'customer_portal_record_recovery_outbox_delivery',
+  'customer_portal_recovery_outbox_candidates',
+  'customer_portal_prepare_recovery_resend',
+  'customer_portal_resend_recovery',
+  'customer_portal_recovery_state',
+  'customer_portal_verify_recovery_and_mint_session',
   'customer_portal_revoke_session',
   'customer_portal_revoke_other_sessions',
   'customer_portal_revoke_booking_trusts',
@@ -127,6 +144,188 @@ describe('customer portal 0120 migration contract', () => {
     expect(migration).toContain("'nextcursor'")
     expect(migration).not.toMatch(/pg_catalog\.(?:coalesce|least|greatest)\s*\(/)
     expect(migration).toMatch(/customer_portal_gdpr_scrub[\s\S]*?update private\.customer_portal_links[\s\S]*?update private\.customer_portal_sessions/)
+  })
+
+  it('binds recovery to consumed Goal-74 proof and explicit delivery truth', () => {
+    const start = migration.match(
+      /create or replace function public\.customer_portal_start_recovery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const delivery = migration.match(
+      /create or replace function public\.customer_portal_record_recovery_delivery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const verify = migration.match(
+      /create or replace function public\.customer_portal_verify_recovery_and_mint_session[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(start).toContain('private.booking_verification_challenges')
+    expect(start).toContain("bv.delivery_state = 'delivered'")
+    expect(start).toContain('bv.consumed_at is not null')
+    expect(start).toContain('b.customer_id = c.id')
+    expect(start).toContain('b.tenant_id = v_tenant_id')
+    expect(start).toContain('bv.contact_digest = p_booking_contact_digest')
+    expect(start).toContain('pg_advisory_xact_lock')
+    expect(start).toContain('count(*) over () as candidate_count')
+    expect(start).toContain('v_candidate_count <> 1')
+    expect(start).toContain('customer_id, purpose, channel')
+    expect(migration).toContain("delivery_state text not null default 'pending'")
+    expect(delivery).toContain('for update')
+    expect(delivery).toContain("delivery_state = case when v_delivered then 'delivered' else 'failed' end")
+    expect(delivery).toMatch(/p_delivered is true\s+and v_challenge\.customer_id is not null/)
+    expect(verify).toContain("v_challenge.delivery_state <> 'delivered'")
+    expect(verify).toContain('for update')
+    expect(verify).toContain('insert into private.customer_portal_sessions')
+    expect(verify).toContain('set consumed_at = v_now')
+    expect(verify).toContain("'recovery_verified'")
+  })
+
+  it('persists an identical PII-free async outbox path for real and decoy recovery', () => {
+    const start = migration.match(
+      /create or replace function public\.customer_portal_start_recovery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const resend = migration.match(
+      /create or replace function public\.customer_portal_resend_recovery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const state = migration.match(
+      /create or replace function public\.customer_portal_recovery_state[\s\S]*?\n\$\$;/,
+    )?.[0]
+    for (const producer of [start, resend]) {
+      expect(producer).toContain("'customer_portal_recovery_code'")
+      expect(producer).toContain("'challenge_id'")
+      expect(producer).toContain('outbox_id uuid')
+      expect(producer).not.toContain('should_deliver')
+      expect(producer).not.toContain('delivery_destination')
+    }
+    expect(migration).toContain('recovery_outbox_id uuid')
+    expect(state).not.toContain('contact_masked')
+    expect(state).not.toContain("delivery_state = 'pending'")
+    expect(state).not.toContain("'delivery_failed'::text")
+    expect(migration).toMatch(
+      /claim_sms_notification_outbox[\s\S]*?event_type <> 'customer_portal_recovery_code'/,
+    )
+    expect(migration).toMatch(
+      /claim_notification_outbox[\s\S]*?event_type <> 'customer_portal_recovery_code'/,
+    )
+    expect(migration).toMatch(
+      /claim_notification_outbox_by_id[\s\S]*?'customer_portal_recovery_code'/,
+    )
+  })
+
+  it('prepares recovery delivery only after outbox lease and current-contact revalidation', () => {
+    const target = migration.match(
+      /create or replace function public\.customer_portal_recovery_delivery_target[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const prepare = migration.match(
+      /create or replace function public\.customer_portal_prepare_recovery_delivery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const record = migration.match(
+      /create or replace function public\.customer_portal_record_recovery_outbox_delivery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(target).toContain("o.status = 'delivery_started'")
+    expect(target).toContain('o.lease_token = p_lease_token')
+    expect(prepare).toContain('for update')
+    expect(prepare).toContain('verified.normalized = current_contact.normalized')
+    expect(prepare).toContain('v_challenge.contact_digest is distinct from p_current_contact_digest')
+    expect(prepare).toContain('v_challenge.booking_contact_digest is distinct from p_current_booking_contact_digest')
+    expect(prepare).toContain('set code_digest = p_code_digest')
+    expect(record).toContain("o.status = 'delivery_started'")
+    expect(record).toContain('o.lease_token = p_lease_token')
+  })
+
+  it('keeps resend credential-bound and exposes no public recipient or provider state', () => {
+    const resend = migration.match(
+      /create or replace function public\.customer_portal_resend_recovery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const prepare = migration.match(
+      /create or replace function public\.customer_portal_prepare_recovery_resend[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const state = migration.match(
+      /create or replace function public\.customer_portal_recovery_state[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(resend).toContain('p_challenge_public_id')
+    expect(resend).toContain('p_subject_digest')
+    expect(resend).not.toContain('p_lookup')
+    expect(resend).not.toContain('p_current_destination')
+    expect(resend).not.toContain('p_current_booking_contact_digest')
+    expect(resend).toContain("'customer_portal_recovery_code'")
+    expect(resend).toContain('outbox_id uuid')
+    expect(resend).toContain('for update')
+    expect(resend).toContain('pg_advisory_xact_lock')
+    expect(resend).toContain('set revoked_at = v_now')
+    expect(state).toContain('p_subject_digest')
+    expect(state).not.toContain('delivery_state')
+    expect(state).not.toContain('contact_masked')
+    expect(state).not.toContain('masked_contact')
+    expect(state).not.toContain('channel text')
+    expect(state).not.toContain('delivery_failed')
+    expect(state).not.toContain('delivery_destination')
+    expect(prepare).toContain('delivery_destination')
+    expect(prepare).toContain('p_subject_digest')
+  })
+
+  it('selects only bounded claimable recovery rows so terminal history cannot starve new work', () => {
+    const candidates = migration.match(
+      /create or replace function public\.customer_portal_recovery_outbox_candidates[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(candidates).toContain("event_type = 'customer_portal_recovery_code'")
+    expect(candidates).toContain("o.status = 'queued'")
+    expect(candidates).toContain("o.status = 'attempting'")
+    expect(candidates).toContain('o.available_at <= p_now')
+    expect(candidates).toContain('o.lease_expires_at <= p_now')
+    expect(candidates).toContain('order by o.available_at, o.created_at, o.id')
+    expect(candidates).toContain('limit least(greatest(coalesce(p_limit, 50), 1), 50)')
+    expect(candidates).not.toMatch(/where[\s\S]*?event_type[\s\S]*?limit 50\s*\)/)
+  })
+
+  it('keeps the generic challenge lifecycle coherent by allowing contact_change only', () => {
+    const genericCreate = migration.match(
+      /create or replace function public\.customer_portal_create_challenge[\s\S]*?\n\$\$;/,
+    )?.[0]
+    const genericVerify = migration.match(
+      /create or replace function public\.customer_portal_verify_challenge[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(genericCreate).toContain("p_purpose <> 'contact_change'")
+    expect(genericCreate).not.toContain("p_purpose not in ('recovery', 'contact_change')")
+    expect(genericCreate).toContain('p_customer is not null')
+    expect(genericCreate).not.toMatch(/select 'accepted'::text, p_public_id, true/)
+    expect(genericVerify).toContain("v_challenge.purpose <> 'contact_change'")
+    expect(runtimeSql).toContain('portal_generic_recovery_purpose_created')
+  })
+
+  it('requires a service-only generic delivery CAS before challenge verification', () => {
+    const record = migration.match(
+      /create or replace function public\.customer_portal_record_challenge_delivery[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(record).toContain('for update')
+    expect(record).toContain("v_challenge.purpose <> 'contact_change'")
+    expect(record).toContain("v_challenge.delivery_state <> 'pending'")
+    expect(record).toContain("case when p_delivered is true then 'delivered' else 'failed' end")
+    expect(record).toContain("return 'ok'")
+  })
+
+  it('takes every recovery advisory lock before any challenge row lock', () => {
+    const start = migration.match(
+      /create or replace function public\.customer_portal_start_recovery[\s\S]*?\n\$\$;/,
+    )?.[0] ?? ''
+    const resend = migration.match(
+      /create or replace function public\.customer_portal_resend_recovery[\s\S]*?\n\$\$;/,
+    )?.[0] ?? ''
+    expect(start.indexOf('pg_advisory_xact_lock')).toBeGreaterThan(-1)
+    expect(start.indexOf('pg_advisory_xact_lock')).toBeLessThan(
+      start.indexOf('update private.customer_portal_challenges'),
+    )
+    expect(resend.indexOf('pg_advisory_xact_lock')).toBeGreaterThan(-1)
+    expect(resend.indexOf('pg_advisory_xact_lock')).toBeLessThan(resend.indexOf('for update'))
+    expect(runtimeSql).toContain('portal_recovery_lock_order_invalid')
+  })
+
+  it('returns a recovery tenant slug only for a correctly digested expired session', () => {
+    const snapshot = migration.match(
+      /create or replace function public\.customer_portal_session_snapshot[\s\S]*?\n\$\$;/,
+    )?.[0]
+    expect(snapshot).toContain('recovery_tenant_slug text')
+    expect(snapshot).toContain('s.secret_digest = p_secret_digest')
+    expect(snapshot).toContain("select 'expired'::text, null::jsonb, v_recovery_tenant_slug")
+    expect(snapshot).toContain("select 'expired'::text, null::jsonb, null::text")
+    expect(snapshot).not.toMatch(/select 'expired'::text,\s*v_snapshot/)
   })
 
   it('projects canonical portal identity and bookings without request-host trust or payment joins', () => {

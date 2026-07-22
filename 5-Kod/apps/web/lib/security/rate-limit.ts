@@ -21,6 +21,9 @@ export const LIMITS = {
   bookingPinStart: { max: 5, windowSecs: 300 } as RateLimit,
   bookingPinResend: { max: 3, windowSecs: 300 } as RateLimit,
   bookingPinVerify: { max: 10, windowSecs: 300 } as RateLimit,
+  portalRecoveryStart: { max: 5, windowSecs: 300 } as RateLimit,
+  portalRecoveryResend: { max: 3, windowSecs: 300 } as RateLimit,
+  portalRecoveryVerify: { max: 10, windowSecs: 300 } as RateLimit,
   offert: { max: 12, windowSecs: 300 } as RateLimit, // 12 offert submissions / 5 min per IP+tenant
   event: { max: 12, windowSecs: 300 } as RateLimit, // 12 kurs-anmälningar / 5 min per IP+tenant
   // goal-64: "GÅ MED" i klubben. Snålare än de andra — en riktig människa går med EN

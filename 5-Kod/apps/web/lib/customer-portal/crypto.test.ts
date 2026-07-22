@@ -4,6 +4,9 @@ import {
   createPortalPublicId,
   createPortalSecret,
   portalLinkDigest,
+  portalRecoveryCodeDigest,
+  portalRecoveryContactDigest,
+  portalRecoverySubjectDigest,
   portalSessionDigest,
 } from './crypto'
 
@@ -28,6 +31,19 @@ describe('customer portal crypto', () => {
     expect(link).not.toBe(session)
     expect(link).not.toContain(secret)
     expect(CUSTOMER_PORTAL_KEY_VERSION).toBe(1)
+  })
+
+  it('uses three dedicated recovery domains that cannot collide with portal credentials', async () => {
+    const value = 'A'.repeat(43)
+    const digests = await Promise.all([
+      portalLinkDigest(value),
+      portalSessionDigest(value),
+      portalRecoverySubjectDigest(value),
+      portalRecoveryContactDigest('sms', value),
+      portalRecoveryCodeDigest('123e4567-e89b-42d3-a456-426614174000', '123456'),
+    ])
+    expect(new Set(digests)).toHaveLength(digests.length)
+    expect(digests).toEqual(digests.map((digest) => expect.stringMatching(/^[a-f0-9]{64}$/)))
   })
 
   it('fails closed unless the dedicated key is at least 32 bytes', async () => {

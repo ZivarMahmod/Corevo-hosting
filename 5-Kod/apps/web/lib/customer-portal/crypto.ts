@@ -38,7 +38,14 @@ function base64Url(bytes: Uint8Array): string {
   return output
 }
 
-async function digest(domain: 'link' | 'session', secret: string): Promise<string> {
+type PortalDigestDomain =
+  | 'link'
+  | 'session'
+  | 'recovery-subject'
+  | 'recovery-contact'
+  | 'recovery-code'
+
+async function digest(domain: PortalDigestDomain, secret: string): Promise<string> {
   const key = await globalThis.crypto.subtle.importKey(
     'raw',
     hmacKey(),
@@ -69,4 +76,19 @@ export function portalLinkDigest(secret: string): Promise<string> {
 
 export function portalSessionDigest(secret: string): Promise<string> {
   return digest('session', secret)
+}
+
+export function portalRecoverySubjectDigest(secret: string): Promise<string> {
+  return digest('recovery-subject', secret)
+}
+
+export function portalRecoveryContactDigest(
+  channel: 'sms' | 'email',
+  normalizedContact: string,
+): Promise<string> {
+  return digest('recovery-contact', `${channel}:${normalizedContact}`)
+}
+
+export function portalRecoveryCodeDigest(challengePublicId: string, code: string): Promise<string> {
+  return digest('recovery-code', `${challengePublicId}:${code}`)
 }

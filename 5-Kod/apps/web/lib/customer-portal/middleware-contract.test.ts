@@ -11,10 +11,12 @@ describe('middleware customer portal firewall integration', () => {
     expect(session).toBeGreaterThan(policy)
   })
 
-  it('returns an explicit no-store 404 when the policy denies', () => {
+  it('returns an explicitly private 404 when the policy denies', () => {
     expect(source).toContain("portalRouteDecision === 'deny'")
     expect(source).toMatch(/status:\s*404/)
-    expect(source).toContain("'cache-control': 'no-store'")
+    expect(source).toContain("response.headers.set('cache-control', 'no-store')")
+    expect(source).toContain("response.headers.set('referrer-policy', 'no-referrer')")
+    expect(source).toContain('hardenCustomerPortalResponse(new NextResponse')
   })
 
   it('matches static requests so mina cannot bypass the asset allowlist', () => {

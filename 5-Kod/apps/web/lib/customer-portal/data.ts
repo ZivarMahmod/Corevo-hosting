@@ -374,7 +374,8 @@ function validCursor(cursor: PortalBookingCursor | undefined): boolean {
 
 export async function getPortalSessionSnapshot(): Promise<PortalSessionSnapshotResult> {
   const access = await resolveSession()
-  if (typeof access === 'string') return unavailableOrExpired(access)
+  if (access === 'expired') return { outcome: 'expired', recoveryTenantSlug: null }
+  if (access === 'unavailable') return { outcome: 'unavailable' }
 
   try {
     const { data, error } = await access.client.rpc('customer_portal_session_snapshot', {
@@ -387,7 +388,13 @@ export async function getPortalSessionSnapshot(): Promise<PortalSessionSnapshotR
     }
 
     const row = data[0]
-    if (row.outcome === 'expired' && row.snapshot === null) return { outcome: 'expired' }
+    if (row.outcome === 'expired' && row.snapshot === null) {
+      const slug = row.recovery_tenant_slug
+      if (slug !== null && (typeof slug !== 'string' || !TENANT_SLUG_PATTERN.test(slug))) {
+        return { outcome: 'unavailable' }
+      }
+      return { outcome: 'expired', recoveryTenantSlug: slug }
+    }
     if (row.outcome === 'not_found') return { outcome: 'not_found' }
     if (row.outcome !== 'ok') return { outcome: 'unavailable' }
 

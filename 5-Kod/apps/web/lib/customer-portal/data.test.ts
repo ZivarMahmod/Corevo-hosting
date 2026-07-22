@@ -72,12 +72,16 @@ describe('customer portal server DAL', () => {
 
   it('fails closed as expired for a missing or malformed cookie without touching DB', async () => {
     mocks.cookies.mockResolvedValue({ get: vi.fn(() => undefined) })
-    await expect(getPortalSessionSnapshot()).resolves.toEqual({ outcome: 'expired' })
+    await expect(getPortalSessionSnapshot()).resolves.toEqual({
+      outcome: 'expired', recoveryTenantSlug: null,
+    })
     await expect(listPortalBookings({ scope: 'upcoming' })).resolves.toEqual({ outcome: 'expired' })
     await expect(getPortalBooking(bookingId)).resolves.toEqual({ outcome: 'expired' })
 
     setCookie(firstSession, 'short')
-    await expect(getPortalSessionSnapshot()).resolves.toEqual({ outcome: 'expired' })
+    await expect(getPortalSessionSnapshot()).resolves.toEqual({
+      outcome: 'expired', recoveryTenantSlug: null,
+    })
     expect(rpc).not.toHaveBeenCalled()
   })
 
@@ -188,8 +192,21 @@ describe('customer portal server DAL', () => {
   })
 
   it('maps expired, RPC errors and malformed snapshots to neutral outcomes', async () => {
-    rpc.mockResolvedValueOnce({ data: [{ outcome: 'expired', snapshot: null }], error: null })
-    await expect(getPortalSessionSnapshot()).resolves.toEqual({ outcome: 'expired' })
+    rpc.mockResolvedValueOnce({
+      data: [{ outcome: 'expired', snapshot: null, recovery_tenant_slug: 'freshcut' }],
+      error: null,
+    })
+    await expect(getPortalSessionSnapshot()).resolves.toEqual({
+      outcome: 'expired', recoveryTenantSlug: 'freshcut',
+    })
+
+    rpc.mockResolvedValueOnce({
+      data: [{ outcome: 'expired', snapshot: null, recovery_tenant_slug: null }],
+      error: null,
+    })
+    await expect(getPortalSessionSnapshot()).resolves.toEqual({
+      outcome: 'expired', recoveryTenantSlug: null,
+    })
 
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'db unavailable' } })
     await expect(getPortalSessionSnapshot()).resolves.toEqual({ outcome: 'unavailable' })

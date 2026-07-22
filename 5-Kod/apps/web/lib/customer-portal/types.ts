@@ -24,7 +24,9 @@ export type PortalSessionSnapshot = {
 
 export type PortalSessionSnapshotResult =
   | { outcome: 'ok'; snapshot: PortalSessionSnapshot }
-  | PortalDataFailure
+  | { outcome: 'expired'; recoveryTenantSlug: string | null }
+  | { outcome: 'not_found' }
+  | { outcome: 'unavailable' }
 
 export type PortalBookingScope = 'upcoming' | 'history'
 
