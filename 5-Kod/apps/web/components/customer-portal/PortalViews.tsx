@@ -1,0 +1,241 @@
+import Link from 'next/link'
+import type { PortalBookingProjection, PortalSessionSnapshot } from '@/lib/customer-portal/types'
+import {
+  formatPortalBooking,
+  portalStatusPresentation,
+} from '@/lib/customer-portal/presentation'
+
+function StatusIcon({ icon }: { icon: ReturnType<typeof portalStatusPresentation>['icon'] }) {
+  return (
+    <svg className="cp-icon cp-status-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      {icon === 'check' && <path d="m3 8 3 3 7-7" />}
+      {icon === 'clock' && <><circle cx="8" cy="8" r="6" /><path d="M8 4.5V8l2.5 1.5" /></>}
+      {icon === 'cross' && <path d="m4 4 8 8M12 4 4 12" />}
+      {icon === 'unknown' && <><circle cx="8" cy="8" r="6" /><path d="M6.5 6.5a1.5 1.5 0 1 1 2.5 1.1c-.7.6-1 1-1 1.8M8 11.8h.01" /></>}
+    </svg>
+  )
+}
+
+export function BookingStatusChip({ booking }: { booking: PortalBookingProjection }) {
+  const status = portalStatusPresentation(booking)
+  return (
+    <span className={`cp-status cp-status-${status.tone}`}>
+      <StatusIcon icon={status.icon} />
+      {status.label}
+    </span>
+  )
+}
+
+const locationText = (booking: PortalBookingProjection) =>
+  [booking.location?.name, booking.location?.address].filter(Boolean).join(', ') || null
+
+function Chevron() {
+  return <svg className="cp-icon cp-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
+}
+
+export function TenantIdentityCard({ snapshot }: { snapshot: PortalSessionSnapshot }) {
+  const origin = new URL(snapshot.bookingOrigin).host
+  return (
+    <section className="cp-card cp-identity" aria-labelledby="tenant-namn">
+      {snapshot.logoUrl ? (
+        // The tenant name immediately beside the decorative logo carries its accessible identity.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="cp-tenant-avatar" src={snapshot.logoUrl} alt="" />
+      ) : (
+        <span className="cp-tenant-avatar" aria-hidden="true">{snapshot.tenantName.trim().charAt(0)}</span>
+      )}
+      <div className="cp-identity-copy">
+        <h1 id="tenant-namn">{snapshot.tenantName}</h1>
+        {snapshot.verticalLabel && <p>{snapshot.verticalLabel}</p>}
+        {snapshot.address && <p>{snapshot.address}</p>}
+        <p className="cp-meta">Du bokade via {origin}</p>
+        {(snapshot.phone || (snapshot.address && snapshot.mapUrl)) && (
+          <div className="cp-actions">
+            {snapshot.phone && <a className="cp-btn" href={`tel:${snapshot.phone}`}>Ring</a>}
+            {snapshot.address && snapshot.mapUrl && (
+              <a className="cp-btn" href={snapshot.mapUrl} rel="noopener">Hitta hit</a>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function BookingFacts({
+  booking,
+  snapshot,
+}: {
+  booking: PortalBookingProjection
+  snapshot: PortalSessionSnapshot
+}) {
+  const formatted = formatPortalBooking(booking, snapshot)
+  const location = locationText(booking)
+  return (
+    <div className="cp-fact-list">
+      <span>{booking.serviceName} · {booking.durationMinutes} min</span>
+      <span>{booking.staffTitle || 'Valfri personal'}</span>
+      {location && <span>{location}</span>}
+      {formatted.price && <span>{formatted.price}</span>}
+    </div>
+  )
+}
+
+export function NextBookingCard({
+  snapshot,
+  items,
+  hasHistory,
+  emptyRebookUrl,
+}: {
+  snapshot: PortalSessionSnapshot
+  items: PortalBookingProjection[]
+  hasHistory: boolean
+  emptyRebookUrl?: string | null
+}) {
+  const next = items[0]
+  if (!next) {
+    return (
+      <section className="cp-card cp-empty" aria-labelledby="ingen-kommande">
+        <svg className="cp-icon cp-empty-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 2v4M16 2v4M8 10h8M8 14h5" /></svg>
+        <h2 id="ingen-kommande">Ingen kommande bokning</h2>
+        <p>{hasHistory
+          ? 'Du har ingen bokning på gång just nu.'
+          : `Du har inga bokningar hos ${snapshot.tenantName} ännu.`}</p>
+        {emptyRebookUrl && <a className="cp-btn cp-btn-primary" href={emptyRebookUrl} rel="noopener">Boka ny tid</a>}
+      </section>
+    )
+  }
+
+  const formatted = formatPortalBooking(next, snapshot)
+  return (
+    <>
+      <article className="cp-card cp-next-booking" aria-labelledby="nasta-bokning">
+        <h2 id="nasta-bokning" className="cp-eyebrow">NÄSTA BOKNING</h2>
+        <BookingStatusChip booking={next} />
+        <h3 className="cp-mono">{formatted.homeDateTime}</h3>
+        <BookingFacts booking={next} snapshot={snapshot} />
+        <div className="cp-actions">
+          <Link className="cp-btn cp-btn-primary" href={`/mina/bokningar/${next.id}`}>Visa bokningen</Link>
+        </div>
+      </article>
+      {items.length > 1 && (
+        <section className="cp-booking-list" aria-labelledby="fler-kommande">
+          <h2 id="fler-kommande">Fler kommande</h2>
+          <ul>
+            {items.slice(1).map((item) => {
+              const date = formatPortalBooking(item, snapshot)
+              return (
+                <li key={item.id}>
+                  <Link className="cp-booking-link" href={`/mina/bokningar/${item.id}`}>
+                    <span className="cp-booking-copy">
+                      <span className="cp-mono">{date.homeDateTime}</span>
+                      <span>{item.serviceName}</span>
+                    </span>
+                    <BookingStatusChip booking={item} />
+                    <Chevron />
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+      {next.publicRebookUrl && (
+        <div className="cp-actions">
+          <a className="cp-btn" href={next.publicRebookUrl} rel="noopener">Boka en tid till</a>
+        </div>
+      )}
+    </>
+  )
+}
+
+function deadlineText(booking: PortalBookingProjection, snapshot: PortalSessionSnapshot) {
+  if (!booking.cancelDeadline) return null
+  const value = new Intl.DateTimeFormat(snapshot.locale, {
+    timeZone: snapshot.timezone,
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(booking.cancelDeadline))
+  return `Kostnadsfri avbokning till ${value}.`
+}
+
+export function BookingDetail({
+  snapshot,
+  booking,
+  backTarget = '/mina',
+}: {
+  snapshot: PortalSessionSnapshot
+  booking: PortalBookingProjection
+  backTarget?: '/mina' | '/mina/historik'
+}) {
+  const formatted = formatPortalBooking(booking, snapshot)
+  const deadline = deadlineText(booking, snapshot)
+  const active = booking.presentationStatus === 'pending' || booking.presentationStatus === 'confirmed'
+  const historic = booking.presentationStatus === 'completed' || booking.presentationStatus === 'cancelled'
+  return (
+    <article className="cp-detail">
+      <Link className="cp-btn cp-btn-ghost cp-back" href={backTarget}>
+        <svg className="cp-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="m12 4-6 6 6 6" /></svg>
+        Tillbaka
+      </Link>
+      <BookingStatusChip booking={booking} />
+      <h1 className="cp-mono">{formatted.detailDateTime}</h1>
+      <div className="cp-detail-grid">
+        <section className="cp-card"><span className="cp-label">Tjänst</span><h2>{booking.serviceName} · {booking.durationMinutes} min</h2></section>
+        {booking.staffTitle && <section className="cp-card"><span className="cp-label">Personal</span><p>{booking.staffTitle}</p></section>}
+        {booking.location && (booking.location.name || booking.location.address || booking.location.phone || booking.location.mapUrl) && (
+          <section className="cp-card">
+            <span className="cp-label">Plats</span>
+            {booking.location.name && <h2>{booking.location.name}</h2>}
+            {booking.location.address && <p>{booking.location.address}</p>}
+            {(booking.location.phone || booking.location.mapUrl) && <div className="cp-actions">
+              {booking.location.phone && <a className="cp-btn" href={`tel:${booking.location.phone}`}>Ring</a>}
+              {booking.location.mapUrl && <a className="cp-btn" href={booking.location.mapUrl} rel="noopener">Öppna i karta</a>}
+            </div>}
+          </section>
+        )}
+        {formatted.price && <section className="cp-card"><span className="cp-label">Pris</span><p className="cp-mono">{formatted.price}</p></section>}
+        {deadline && <section className="cp-card"><span className="cp-label">Avbokningsvillkor</span><p>{deadline}</p></section>}
+      </div>
+      {booking.publicRebookUrl && (active || historic) && (
+        <div className="cp-actions">
+          <a className="cp-btn" href={booking.publicRebookUrl} rel="noopener">
+            {active ? 'Boka en tid till' : 'Boka igen'}
+          </a>
+        </div>
+      )}
+    </article>
+  )
+}
+
+export function PortalErrorState({
+  variant,
+  headingLevel = 'h1',
+}: {
+  variant: 'server' | 'fetch-bookings' | 'fetch-history' | 'fetch-detail' | 'not-found'
+  headingLevel?: 'h1' | 'h3'
+}) {
+  const Heading = headingLevel
+  if (variant === 'not-found') {
+    return <section className="cp-card cp-error"><Heading>Bokningen kunde inte visas</Heading><Link className="cp-btn cp-btn-ghost" href="/mina">Tillbaka</Link></section>
+  }
+  const text = variant === 'fetch-bookings'
+    ? 'Bokningarna kunde inte hämtas. Din bokning är oförändrad.'
+    : variant === 'fetch-history'
+      ? 'Historiken kunde inte hämtas.'
+      : variant === 'fetch-detail'
+        ? 'Bokningen kunde inte hämtas. Din bokning är oförändrad.'
+        : null
+  return (
+    <section className="cp-card cp-error">
+      <svg className="cp-icon cp-error-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
+      <Heading>{text || 'Något gick fel hos oss.'}</Heading>
+      {!text && <p>Försök igen om en stund.</p>}
+      <a className="cp-btn" href="">Försök igen</a>
+    </section>
+  )
+}
