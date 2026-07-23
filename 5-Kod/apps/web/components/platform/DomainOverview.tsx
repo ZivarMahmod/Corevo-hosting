@@ -2,7 +2,7 @@ import styles from './platform.module.css'
 import type { DomainOverview as Overview, DomainRow } from '@/lib/platform/domain-overview'
 
 // goal-32 F3 — super-admin "Domäner" overview. Lists the 3 fixed infra hosts + every
-// active salon's <slug>.corevo.se with an honest status pill. Presentational only;
+// tenantens <slug>.boka.corevo.se with an honest status pill. Presentational only;
 // reuses the platform.module.css domain primitives (.domainList/.domainRow/.pillOk/
 // .pillPending) that the per-tenant DomänPanel already uses.
 
@@ -15,17 +15,16 @@ function StatusPill({ status }: { status: DomainRow['status'] }) {
 }
 
 export function DomainOverview({ overview }: { overview: Overview }) {
-  const { rows, fixedHosts, cfConfigured, cfError } = overview
+  const { rows, fixedHosts } = overview
 
   return (
     <div>
       <div className={styles.section}>
         <p className={styles.muted} style={{ marginTop: 0 }}>
-          {cfConfigured && !cfError
-            ? 'Status läst live från Cloudflare (Worker Domains).'
-            : 'Cloudflare-läsning ej aktiverad — status visar DB/deploy-läget. Varje domän re-asserteras vid varje deploy (kan aldrig detachas); live-HTTP verifieras av check_domains.'}
+          Standardadresserna går genom den committade, POS-isolerade wildcard-routen
+          <code className={styles.code}> *.boka.corevo.se</code>. Live-HTTP verifieras av
+          check_domains efter deploy.
         </p>
-        {cfError && <p className={styles.feedback}>Cloudflare-fel: {cfError}</p>}
       </div>
 
       <div className={styles.section}>

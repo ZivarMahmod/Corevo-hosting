@@ -18,8 +18,7 @@ import { PageHead, Card, Button, Badge, Icon } from '@/components/portal/ui'
 import { Callout } from '@/components/portal/ui'
 import { FLORIST_THEMES } from '@/components/storefront/layouts/florist/registry'
 import mobileStyles from './CreateTenantForm.module.css'
-
-const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
+import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
 
 // ── Module-state UI metadata (the "Moduler" step / multi-bransch spår 5) ─────────
 // state-toggle per module: a tenant_modules.state. booking is floored to 'live' in
@@ -446,7 +445,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                     style={{ flex: 1, minWidth: 0, padding: '11px 13px', border: 'none', outline: 'none', fontFamily: 'var(--font-ui)', fontSize: 14, background: 'transparent', color: 'var(--c-ink)' }}
                   />
                   <span style={{ padding: '0 14px', color: 'var(--c-ink-3)', fontSize: 14, fontFamily: 'var(--font-ui)', borderLeft: '1px solid var(--c-line)', alignSelf: 'stretch', display: 'grid', placeItems: 'center' }}>
-                    .{ROOT}
+                    .{TENANT_HOST_SUFFIX}
                   </span>
                 </div>
                 <div style={{ marginTop: 8 }}><TableChip>tenants · tenant_settings</TableChip></div>
@@ -705,7 +704,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
               </div>
               <Callout tone="success">
                 <b>{name || `${kundLabel[0]?.toUpperCase()}${kundLabel.slice(1)}`}</b> skapas på{' '}
-                <b>{(slug || 'subdomän')}.{ROOT}</b>
+                <b>{tenantStorefrontHost(slug || 'subdomän')}</b>
                 {vertical ? <> i branschen <b>{vertical.name}</b></> : null} med tema <b>{t.name}</b>.
                 Moduler: <b>{liveModuleSummary(moduleOptions, stateFor) || 'Bokning (Live)'}</b>.
                 Ägaren bjuds in som administratör.
@@ -834,7 +833,7 @@ function ThemePreview({
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', background: '#EDEAE3', borderBottom: '1px solid var(--c-line)' }}>
         {dot('#E0726A')}{dot('#E6B34D')}{dot('#7FB47F')}
         <div className={mobileStyles.previewAddress} style={{ marginLeft: 8, fontSize: 11.5, color: 'var(--c-ink-3)', fontFamily: 'var(--font-ui)', background: '#fff', padding: '3px 11px', borderRadius: 999 }}>
-          {slug}.{ROOT}
+          {tenantStorefrontHost(slug)}
         </div>
       </div>
       {/* two-column hero */}

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState, type CSSProperties } from 'react'
 import type { TenantBranding } from '@corevo/ui'
 import { saveBranding, type ActionState } from '@/lib/admin/actions'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 import styles from './admin.module.css'
 
 const FALLBACK = {
@@ -412,7 +413,7 @@ function BrandingPreview({
           <span className={styles.dot} style={{ background: '#E0726A' }} />
           <span className={styles.dot} style={{ background: '#E6B34D' }} />
           <span className={styles.dot} style={{ background: '#7FB47F' }} />
-          <span className={styles.urlPill}>{slug}.corevo.se</span>
+          <span className={styles.urlPill}>{tenantStorefrontHost(slug) ?? slug}</span>
         </div>
         <div className={styles.screen} style={screenStyle}>
           <div className={styles.screenNav}>

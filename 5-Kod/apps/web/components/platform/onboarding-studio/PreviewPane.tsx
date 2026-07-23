@@ -14,6 +14,7 @@ import { Icon, type IconName } from '@/components/portal/ui/Icon'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { StorefrontPreview } from './StorefrontPreview'
 import { studioPlaceholderSlug } from './studio-placeholder'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 
 export type PreviewDevice = 'desktop' | 'mobile'
 
@@ -34,7 +35,7 @@ const DEVICES: { id: PreviewDevice; icon: IconName }[] = [
 ]
 
 export function PreviewPane({ cfg, device = 'desktop', onDevice, branchName }: PreviewPaneProps) {
-  const url = `${cfg.slug || studioPlaceholderSlug(branchName)}.corevo.se`
+  const url = tenantStorefrontHost(cfg.slug || studioPlaceholderSlug(branchName))
   // W1: pre-launch — the tenant does not exist yet, so the preview is never live.
   // Kept as a typed flag so the conditional chrome stays faithful + W2-ready.
   const live: boolean = false

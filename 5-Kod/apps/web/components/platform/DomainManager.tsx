@@ -7,6 +7,7 @@ import type { TenantDomainRow } from '@/lib/platform/domains'
 import type { DcvRecord } from '@/lib/cloudflare/custom-hostnames'
 import { useToast } from '@/components/portal/ui'
 import styles from './platform.module.css'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 
 const ARM_TIMEOUT_MS = 10_000
 
@@ -164,7 +165,7 @@ export function DomainManager({
       }}
     >
       <p className={styles.muted} style={{ marginTop: 0 }}>
-        Sidan körs på <code className={styles.code}>{slug}.corevo.se</code>. Lägg till kundens egna
+        Standardadressen är <code className={styles.code}>{tenantStorefrontHost(slug)}</code>. Lägg till kundens egna
         domän — den provisioneras som custom hostname och blir live när DNS-posterna är på plats.
       </p>
 

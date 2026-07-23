@@ -12,8 +12,8 @@
 -- ============================================================================
 
 -- ── tenant ──
-insert into public.tenants (id, slug, name)
-values ('11111111-1111-1111-1111-111111111111', 'demo', 'Frisör Demo')
+insert into public.tenants (id, slug, name, status)
+values ('11111111-1111-1111-1111-111111111111', 'demo', 'Frisör Demo', 'provisioning')
 on conflict (slug) do nothing;
 
 insert into public.tenant_domains (tenant_id, domain, is_primary, verified)
@@ -134,8 +134,8 @@ values ('22222222-9999-9999-9999-000000000008', null, 'super_admin', 8)
 on conflict (id) do nothing;
 
 -- platform_admin baked into raw_app_meta_data so the JWT carries it even before
--- the Custom Access Token Hook is enabled in the Dashboard. tenant_id = demo is
--- just the home tenant; is_platform_admin() unlocks cross-tenant via RLS.
+-- the Custom Access Token Hook is enabled in the Dashboard. Goal 76 / 0114:
+-- a super_admin identity is global and therefore has tenant_id NULL.
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
@@ -143,12 +143,12 @@ insert into auth.users (
   ('33333333-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'platform@corevo.se',
    crypt('Demo!1234', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"],"tenant_id":"11111111-1111-1111-1111-111111111111","platform_admin":true}'::jsonb,
+   '{"provider":"email","providers":["email"],"tenant_id":null,"platform_admin":true}'::jsonb,
    '{}'::jsonb, now(), now())
 on conflict (id) do nothing;
 
 insert into public.users (id, tenant_id, email, role_id, status) values
-  ('33333333-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111',
+  ('33333333-0000-0000-0000-000000000003', null,
    'platform@corevo.se', '22222222-9999-9999-9999-000000000008', 'active')
 on conflict (id) do nothing;
 
@@ -169,3 +169,9 @@ where id in (
   '33333333-0000-0000-0000-000000000002',
   '33333333-0000-0000-0000-000000000003'
 );
+
+-- Publish only after settings, primary location and active owner exist. This
+-- exercises the same DB-owned Goal 76 gate as the application.
+update public.tenants
+   set status = 'active'
+ where id = '11111111-1111-1111-1111-111111111111';

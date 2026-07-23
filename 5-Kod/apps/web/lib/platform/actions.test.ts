@@ -94,6 +94,7 @@ import {
   addCustomDomain,
   verifyCustomDomain,
   removeCustomDomain,
+  setTenantStatus,
 } from './actions'
 import { resolveOwnerRole } from './owner-role'
 
@@ -188,7 +189,7 @@ describe('createTenant writes the goal-20 columns', () => {
     expect(captured.tenants?.[0]).toMatchObject({ slug: 'klippoteket', name: 'Klippoteket', city: 'Göteborg' })
   })
 
-  it('binds a partner-created tenant to that partner and activates only after provisioning', async () => {
+  it('binds a partner-created tenant and leaves it under configuration', async () => {
     const captured = seedCtx({ kind: 'partner', partnerId: 'partner-a' })
     createServiceClientMock.mockReturnValue(null)
 
@@ -199,7 +200,8 @@ describe('createTenant writes the goal-20 columns', () => {
       partner_id: 'partner-a',
       status: 'provisioning',
     })
-    expect(captured['tenants.update']?.at(-1)).toMatchObject({ status: 'active' })
+    expect(captured['tenants.update']).toBeUndefined()
+    expect(res.success).toContain('under konfiguration')
   })
 
   it('writes null city (never empty string) when no city is given (#14)', async () => {
@@ -613,5 +615,51 @@ describe('sendPasswordReset partner scope', () => {
 
     expect(res.error).toBeTruthy()
     expect(generateLink).not.toHaveBeenCalled()
+  })
+})
+
+describe('setTenantStatus readiness publication', () => {
+  it('uses publish_tenant instead of a direct active update', async () => {
+    const { client, captured } = makeSupabase({
+      tenants: { data: { slug: 'freshcut' }, error: null },
+      'rpc.publish_tenant': {
+        data: {
+          ready: true,
+          tenant_status: 'active',
+          transitioned: true,
+          canonical_host: 'freshcut.boka.corevo.se',
+          missing: [],
+        },
+        error: null,
+      },
+    })
+    platformCtxMock.mockResolvedValue({ user: { id: 'admin-1' }, supabase: client })
+
+    const res = await setTenantStatus(
+      {},
+      fd({ tenantId: 'tenant-1', status: 'active' }),
+    )
+
+    expect(res.success).toContain('aktiv')
+    expect(captured['rpc.publish_tenant']).toEqual([{ p_tenant: 'tenant-1' }])
+    expect(captured['tenants.update']).toBeUndefined()
+  })
+
+  it('keeps provisioning unchanged when the DB readiness gate rejects', async () => {
+    const { client, captured } = makeSupabase({
+      'rpc.publish_tenant': {
+        data: null,
+        error: { code: '55000', message: 'tenant_not_ready' },
+      },
+    })
+    platformCtxMock.mockResolvedValue({ user: { id: 'admin-1' }, supabase: client })
+
+    const res = await setTenantStatus(
+      {},
+      fd({ tenantId: 'tenant-1', status: 'active' }),
+    )
+
+    expect(res.error).toContain('inte redo')
+    expect(captured['tenants.update']).toBeUndefined()
   })
 })

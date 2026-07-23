@@ -60,7 +60,7 @@ export const PHASES: StudioPhase[] = [
     sub: 'Bransch, namn, mall — resten förfylls',
     steps: [
       { id: 'branch', label: 'Bransch', icon: 'building', req: true, hint: 'Förfyller mall, moduler & ord' },
-      { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.corevo.se' },
+      { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.boka.corevo.se' },
       { id: 'tema', label: 'Temamall', icon: 'palette', req: true, hint: 'Förvald av branschen — byt fritt' },
     ],
   },
@@ -78,7 +78,7 @@ export const PHASES: StudioPhase[] = [
     sub: 'Ägare, sista koll, live',
     steps: [
       { id: 'agare', label: 'Ägare & inbjudan', icon: 'user', req: false, hint: 'Magic-link → eget lösen' },
-      { id: 'live', label: 'Granska & lansera', icon: 'rocket', req: true, hint: 'Checklista + publicera' },
+      { id: 'live', label: 'Granska & skapa', icon: 'rocket', req: true, hint: 'Skapa under konfiguration' },
     ],
   },
 ]

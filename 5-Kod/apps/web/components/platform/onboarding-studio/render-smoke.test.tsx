@@ -166,7 +166,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(preview).toContain('Klippning')
   })
 
-  it('the live panel renders the real Lansera button', () => {
+  it('the final panel creates the customer without publishing it', () => {
     const html = mounts(
       <PanelHost
         cfg={branched}
@@ -178,7 +178,8 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
         onLaunch={noop}
       />,
     )
-    expect(html).toContain('Lansera')
+    expect(html).toContain('Skapa kunden')
+    expect(html).toContain('Under konfiguration')
   })
 
   it('the result-vy (W6) links the real /kunder/[id], shows the reserved address, no theater', () => {
@@ -192,7 +193,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       />,
     )
     expect(html).toContain('href="/kunder/t9"') // real, working platform link
-    expect(html).toContain('klippoteket.corevo.se') // reserved address shown
+    expect(html).toContain('klippoteket.boka.corevo.se') // canonical reserved address shown
     expect(html).toContain('Onboarda nästa kund')
     expect(html).toContain('är skapad') // honest header, NOT "är live" (host doesn't resolve yet)
     expect(html).not.toContain('byggs i senare vågor') // old placeholder copy is gone

@@ -4,6 +4,11 @@ import type { TenantBranding } from '@corevo/ui'
 import { platformCtx } from './guard'
 import type { AuditRow } from './audit'
 import { readBookingVariant, BOOKING_VARIANT_LABELS, type BookingVariant } from './booking-variant'
+import {
+  readTenantLaunchReadiness,
+  type TenantLaunchReadiness,
+} from './tenant-readiness'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 
 // Cross-tenant reads for the platform control center. All reads go through the
 // authed platform_admin cookie client (platformCtx), whose JWT carries the
@@ -193,11 +198,9 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   // ALL tenants, bucketed in JS by tenant_id. Booking totals come from the existing
   // security-invoker aggregate (migration 0054), so the persistent master layout has
   // a fixed query count instead of issuing three booking requests per tenant.
-  const [staffRes, ownersRes, servicesRes, hoursRes, bookingsRes] = await Promise.all([
+  const [staffRes, ownersRes, bookingsRes] = await Promise.all([
     supabase.from('staff').select('tenant_id').eq('active', true),
     supabase.from('users').select('email, full_name, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin').order('created_at'),
-    supabase.from('services').select('tenant_id').eq('active', true),
-    supabase.from('working_hours').select('tenant_id'),
     supabase.rpc('platform_booking_stats'),
   ])
 
@@ -215,13 +218,6 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
     if (r.email && !owner.has(r.tenant_id)) owner.set(r.tenant_id, r.email)
     if (r.full_name && !ownerFullName.has(r.tenant_id)) ownerFullName.set(r.tenant_id, r.full_name)
   }
-  const hasServices = new Set<string>(
-    ((servicesRes.data ?? []) as { tenant_id: string }[]).map((r) => r.tenant_id),
-  )
-  const hasHours = new Set<string>(
-    ((hoursRes.data ?? []) as { tenant_id: string }[]).map((r) => r.tenant_id),
-  )
-
   return rows.map((t) => {
     const ts = Array.isArray(t.tenant_settings) ? t.tenant_settings[0] : t.tenant_settings
     const rawSettings = (ts?.settings ?? {}) as Record<string, unknown>
@@ -233,13 +229,11 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
     const themeRaw = typeof rawSettings.theme === 'string' && rawSettings.theme.trim() ? rawSettings.theme : null
     const primary = typeof branding.color_primary === 'string' ? branding.color_primary : null
     const stats = bk.get(t.id) ?? { total: 0, completed: 0, last: null }
-    // "Onboarding" is derived from REAL setup-completeness (not booking count): a
-    // launch-ready salon has staff + active services + working hours. A fully set-up
-    // salon with zero traffic still reads "Aktiv" — matching the mock's onboardStep
-    // semantics, not "no bookings yet = onboarding".
-    const launchReady = (staffCount.get(t.id) ?? 0) > 0 && hasServices.has(t.id) && hasHours.has(t.id)
+    // Goal 76: the stored lifecycle is the list truth. New customers remain
+    // provisioning until the DB readiness RPC publishes them; no weaker JS count
+    // approximation may label them active.
     const displayStatus: TenantDisplayStatus =
-      t.status === 'suspended' ? 'suspended' : launchReady ? 'active' : 'onboarding'
+      t.status === 'suspended' ? 'suspended' : t.status === 'active' ? 'active' : 'onboarding'
     return {
       id: t.id,
       slug: t.slug,
@@ -300,8 +294,8 @@ export function deriveOnboarding(f: OnboardingFacts): OnboardingStep[] {
       label: 'Skapa kund',
       status: done(f.hasSettings),
       detail: f.salonAdminInvited
-        ? `${f.slug}.corevo.se · administratör inbjuden`
-        : `${f.slug}.corevo.se · ingen administratör ännu`,
+        ? `${tenantStorefrontHost(f.slug)} · administratör inbjuden`
+        : `${tenantStorefrontHost(f.slug)} · ingen administratör ännu`,
     },
     {
       key: 'branding',
@@ -329,14 +323,19 @@ export function deriveOnboarding(f: OnboardingFacts): OnboardingStep[] {
       step: 5,
       label: 'Egen domän',
       status: 'locked',
-      detail: 'SPÄRRAD — kör på *.corevo.se. Custom domän kräver manuell drift.',
+      detail: 'Standardadressen kör på *.boka.corevo.se. Egen domän hanteras separat.',
     },
     {
       key: 'launch',
       step: 6,
-      label: 'Lansera',
+      label: 'Publicera',
       status: done(f.tenantStatus === 'active'),
-      detail: f.tenantStatus === 'active' ? 'Aktiv & publik' : `Status: ${f.tenantStatus}`,
+      detail:
+        f.tenantStatus === 'active'
+          ? 'Aktiv & publik'
+          : f.tenantStatus === 'provisioning'
+            ? 'Under konfiguration'
+            : `Status: ${f.tenantStatus}`,
     },
   ]
 }
@@ -390,6 +389,7 @@ export type TenantDetail = {
   }[]
   salonAdmin: { email: string | null; fullName: string | null; status: string } | null
   onboarding: OnboardingStep[]
+  launchReadiness: TenantLaunchReadiness
   /** Operativ data-kontroll (§2.1B): current values for the edit surface. */
   operative: { googleReviewUrl: string | null; bookingVariant: BookingVariant }
   /** Super-admin storefront-innehåll: the tenant's STORED copy override
@@ -465,7 +465,7 @@ export async function getTenantDetail(
   if (tenantErr) throw new Error(`getTenantDetail: ${tenantErr.message}`)
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, locationRes, domainRes] = await Promise.all([
+  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, locationRes, domainRes, launchReadiness] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     // Editable service rows for the super-admin services surface. All services (active
@@ -529,6 +529,7 @@ export async function getTenantDetail(
       .order('is_primary', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    readTenantLaunchReadiness(supabase, tenantId),
   ])
   // Count-fel får aldrig degraderas till falska nollor i Översikt/onboarding.
   // Normalisera alla fem count-svar på ett ställe och kasta innan något `?? 0`.
@@ -697,6 +698,7 @@ export async function getTenantDetail(
       ? { email: adminRow.email, fullName: adminRow.full_name, status: adminRow.status }
       : null,
     onboarding,
+    launchReadiness,
     operative: { googleReviewUrl, bookingVariant },
     copy,
     social,

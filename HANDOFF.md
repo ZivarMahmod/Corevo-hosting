@@ -123,15 +123,28 @@ tenant och ett testfall, aldrig produktdefinitionen.
   Goal-75-proben 5/5, typecheck, lint utan fel och produktionsbuild är gröna.
   Ingen produktionsdeploy är gjord; Goal-75 ligger kvar i `goals/` tills den
   gemensamma migrations-/host-/HTTPS-releasen är genomförd.
+- Goal-76 är lokalt låst på samma branch. Nya kunder skapas nu alltid **Under
+  konfiguration**; en DB-ägd, modulstyrd readinessgrind är ensam väg till
+  `active`. Kundkortet visar exakta blockerare och standardadressen är
+  `<slug>.boka.corevo.se` via wildcard, utan ny Cloudflare-domän per kund.
+  Migration `20260723111315_tenant_launch_readiness.sql` är applicerad och
+  runtimeverifierad på `localhost-acceptance`: publicering, idempotens, nekad
+  för tidig publicering och nekad direkt statusbypass är gröna med rollback.
+  Seedad superadmin är rättad till global identitet. Full websvit 344
+  testfiler/2 716 tester, typecheck, lint och produktionsbuild är gröna;
+  seedregressionen är 6/6 grön. Gemensam skrivande localhostbrowseracceptans är
+  parkerad eftersom den redan körande port 3000 pekar på produktionens
+  `.env.production`; den ska startas mot preview ihop med Goal-74/75.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
 ## Nästa del
 
-Goal-75 är lokalt låst. Nästa byggdel väljs tillsammans med Zivar; Goal-74:s
-nya migration/releaseprov och Goal-75:s produktionsmigration/host/HTTPS-prov är
-parkerade till den gemensamma releasefasen. Ingen ny deldeploy ska göras innan
-de lokala byggdelarna är klara.
+Goal-75 och Goal-76 är lokalt låsta. Nästa byggdel väljs tillsammans med Zivar;
+den rekommenderade nästa delen är Goal-77: bokningsmotorns fyra lägen genom den
+verkliga plats-/djuplänksmatrisen. Goal-74:s nya driftprov samt Goal-75/76:s
+produktionsmigration/host/HTTPS-prov är parkerade till den gemensamma
+releasefasen. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
 innehåller inga kopierade produktionsdata, har repots migrationer genom `0124`,

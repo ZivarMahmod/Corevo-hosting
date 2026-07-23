@@ -1,44 +1,40 @@
 # ROADMAP — Corevo
 
-Detta är projektets enda aktuella byggordning. Git-historiken bär äldre planer och
-avslutade goals; skapa inte nya parallella roadmap-filer.
+Detta är projektets enda aktuella byggordning. Produktion lämnas orörd tills de
+lokala byggdelarna har accepterats tillsammans.
 
-## Stabil grund
+## Låst lokalt
 
-- Multi-tenant och multi-bransch med modulstyrning per tenant.
-- Publik storefront, bokning, kundadmin, personalyta och plattformsadmin.
-- Boknings-/schemagrund live genom migration 0079.
-- Redigera sidan v2 med revisioner/utkast genom migration 0080.
-- Ägaradmin mobil-PWA samt kalender Mobil v2.
+1. **Goal-74 — PIN och kanalval**
+   Fyra siffror, tre försök samt SMS/mejl-policy är byggt. Driftcanary och
+   produktionsmigration är parkerade.
+2. **Goal-75 — kundportal, säkerhet och PWA**
+   Portalflödena är lokalt låsta mot `localhost-acceptance`. Host/HTTPS/deploy är
+   parkerat.
+3. **Goal-76 — provisionering och publicering**
+   Nya kunder stannar under konfiguration. Databasen äger readiness och atomisk
+   publicering; kanonisk host är `<slug>.boka.corevo.se`. Previewruntime är grön.
+   Den gemensamma skrivande localhostbrowserkedjan återstår.
 
-## Byggordning
+## Nästa byggordning
 
-1. **Goal-71 acceptansstängning** — 04 Inställningar v2 och 06 Personaladmin
-   mobil-PWA är driftsatta. Ingen ny koddel återstår, men Zivars autentiserade
-   manuella acceptans krävs före flytt till `klart/`. `minbooking.corevo.se`
-   behålls tills Zivar uttryckligen stänger dörren.
-2. **Goal-72 Superadmin v2** — S1–S7 är live från `main`-SHA `88d59b5`.
-   Automatisk release proof och oautentiserad prod-rök är gröna; Zivars
-   autentiserade superadmin-/partneracceptans återstår före arkivering.
-3. **Senaste admin-chrome-paketet** — `Dagens genomgångar/Mobil pwa/` är inkommet
-   underlag men saknar goal-73. Det blir en egen byggdel efter goal-72, inte ett
-   parallellt svep.
-4. **05 Kundportal** — överhoppad i denna byggomgång; paketet ligger kvar orört.
-5. **Lanseringsgrindar** — betalning, juridik, secrets, domänsmoke och driftbevis.
+4. **Goal-77 — bokningsmotorns fyra lägen**
+   Lås verkligt beteende för de fyra lägena genom platsval, djuplänkar och
+   publicerad/pausad modul. Testa minsta representativa matris, inte varje
+   kosmetisk kombination.
+5. **Personaladminacceptans**
+   Lås roller, platsbehörighet och de viktigaste liveflödena utan ny redesign.
+6. **Gemensam localhostacceptans**
+   Starta samma kodmapp uttryckligen mot Supabase-previewbranchen och kör
+   Goal-74–77:s korta användarkedjor.
+7. **Samlad release**
+   Produktionsmigrationer, host/HTTPS, deploy, domänsmoke och riktiga canaries
+   görs först efter Zivars localhostgodkännande.
 
-Designpaketen ligger i `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/`.
-Numrerade paket byggs i ordning; verifierat och deployat paket flyttas till `klar/`.
+## Regler
 
-## Regler för varje del
-
-- Läs hela designpaketet och relevanta kodmönster först.
-- Skapa högst ett aktivt goal i `2-Byggplan/goals/`.
-- Skriv regression/acceptans före beteendeändring när en testbar seam finns.
-- Verifiera fokuserade tester, full testsvit, typecheck, lint och build.
-- Behåll Corevo generellt: modul- och branschord ska komma från tenantens konfiguration.
-- Flytta goal till `2-Byggplan/klart/` först efter verkligt livebevis.
-
-## Nästa startpunkt
-
-`2-Byggplan/goals/goal-72-superadmin-v2.md` — kör autentiserad slutacceptans;
-därefter skapa goal-73 från det orörda admin-chrome-paketet.
+- En goal i taget: beslut → test → kod → verifiering → lokal låsning.
+- Goals flyttas till `klart/` först efter det livebevis som deras acceptans kräver.
+- `corevo.se`-roten är POS-/plattformsyta; tenantstorefront använder
+  `*.boka.corevo.se`.
+- Ingen ny parallell motor, kö eller statusmodell när en befintlig ägare finns.

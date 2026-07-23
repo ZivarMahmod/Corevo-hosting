@@ -14,10 +14,9 @@
 //     Cloudflare not the DB) MUST be in committed wrangler.jsonc. This single guard
 //     neutralizes the old RLS trap: a paused salon that anon-RLS hid from the DB read
 //     is still LIVE in Cloudflare, so it is caught here regardless of DB visibility.
-//  2. ACTIVE ⊆ FILE (best-effort): every active tenant's <slug>.corevo.se (anon read)
-//     should also be in the file — catches a salon that should be protected even
-//     before it is attached. (Anon RLS shows only status='active'; paused coverage
-//     rides guard #1. A service-role read could widen this — see runbook.)
+// Active tenants do NOT need one route each. They are all covered by the committed
+// `*.boka.corevo.se/*` wildcard. Existing legacy custom domains still ride guard #1
+// so a deployment cannot silently detach them.
 //
 // The pure helpers (buildRoutes/fetchActiveSlugs/REQUIRED_FIXED_HOSTS) are RETAINED
 // (build-once-never-delete) — they encode the route contract + the fail-closed DB
@@ -30,7 +29,6 @@ import { dirname, resolve } from 'node:path'
 import { readCustomDomainPatterns, readAllRoutePatterns, REQUIRED_FIXED_ROUTES, RESERVED } from './domain-routes.mjs'
 import { cfApi, resolveAccountId, listWorkerDomains } from './cf-domains.mjs'
 
-const ROOT_DOMAIN = 'corevo.se'
 const WORKER = process.env.CF_WORKER_NAME || 'bokningsplatformen'
 
 /** Infra hosts that MUST be present in every deploy config (hardcoded, never DB-derived). */
@@ -45,24 +43,15 @@ export const REQUIRED_FIXED_HOSTS = [
 // contract keeps that set aligned with lib/tenant.ts and tracked environments.
 
 /**
- * Merge the fixed infra routes with one custom_domain route per active slug.
- * Dedupes by pattern; skips reserved/POS labels. THROWS if any required fixed host
- * is missing from the result (the deploy-safety invariant). RETAINED for the route
- * contract + any future CI-sync that writes the file (build-once-never-delete).
+ * Preserve the fixed infra routes. Tenant slugs deliberately do not alter the route
+ * list because the canonical `*.boka.corevo.se/*` route covers them all. THROWS if
+ * any required fixed host is missing (the deploy-safety invariant). RETAINED for
+ * backwards-compatible callers under build-once-never-delete.
  * @param {Array<{pattern:string,custom_domain?:boolean,zone_name?:string}>} baseRoutes
  * @param {string[]} slugs
  */
-export function buildRoutes(baseRoutes, slugs) {
+export function buildRoutes(baseRoutes, _slugs) {
   const routes = [...baseRoutes]
-  const seen = new Set(routes.map((r) => r.pattern))
-  for (const raw of slugs) {
-    const s = String(raw || '').trim().toLowerCase()
-    if (!s || RESERVED.has(s)) continue
-    const pattern = `${s}.${ROOT_DOMAIN}`
-    if (seen.has(pattern)) continue
-    routes.push({ pattern, custom_domain: true })
-    seen.add(pattern)
-  }
   const present = new Set(routes.map((r) => r.pattern))
   const missing = REQUIRED_FIXED_HOSTS.filter((h) => !present.has(h))
   if (missing.length) {
@@ -97,7 +86,9 @@ export async function fetchActiveSlugs(supaUrl, anonKey, fetchImpl = fetch) {
 
 /**
  * Pure drift detector. Given the committed custom_domain patterns, the live worker
- * domains, and the active tenant slugs, return what is MISSING from the committed file.
+ * domains, and the active tenant slugs, return what is MISSING from the committed
+ * file. `missingActive` remains for API compatibility but is always empty: the
+ * required wildcard route covers every canonical active-tenant host.
  * @returns {{ missingLive: string[], missingActive: string[] }}
  */
 export function validateDomains({ committedPatterns, liveDomains, activeSlugs }) {
@@ -108,11 +99,7 @@ export function validateDomains({ committedPatterns, liveDomains, activeSlugs })
   const missingLive = (liveDomains || [])
     .map((h) => String(h).toLowerCase())
     .filter((h) => !fixed.has(h) && !committed.has(h))
-  const missingActive = (activeSlugs || [])
-    .map((s) => String(s).trim().toLowerCase())
-    .filter((s) => s && !RESERVED.has(s))
-    .map((s) => `${s}.${ROOT_DOMAIN}`)
-    .filter((p) => !committed.has(p))
+  const missingActive = []
   return { missingLive, missingActive }
 }
 
@@ -145,17 +132,11 @@ async function main() {
     console.warn('⚠ CLOUDFLARE_API_TOKEN not set — SKIPPING live⊆file guard (set it to enable).')
   }
 
-  // Guard #2 — ACTIVE ⊆ FILE (best-effort; anon read sees only active salons).
-  let activeSlugs = []
-  const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PROD_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.PROD_SUPABASE_ANON_KEY
-  if (supaUrl && anonKey) {
-    activeSlugs = await fetchActiveSlugs(supaUrl, anonKey)
-  } else {
-    console.warn('⚠ Supabase URL/anon key not set — SKIPPING active⊆file guard.')
-  }
-
-  const { missingLive, missingActive } = validateDomains({ committedPatterns, liveDomains, activeSlugs })
+  const { missingLive, missingActive } = validateDomains({
+    committedPatterns,
+    liveDomains,
+    activeSlugs: [],
+  })
   if (missingLive.length || missingActive.length) {
     if (missingLive.length) {
       console.error(
@@ -169,7 +150,7 @@ async function main() {
     process.exit(1)
   }
 
-  console.log('✓ Domain validator OK — committed wrangler.jsonc is a superset of live + active.')
+  console.log('✓ Domain validator OK — wildcard is present and committed routes cover every live legacy domain.')
   console.log(`  fixed hosts: ${REQUIRED_FIXED_HOSTS.join(', ')}`)
   console.log(`  live custom domains: ${liveDomains.filter((h) => !REQUIRED_FIXED_HOSTS.includes(h)).join(', ') || '(none)'}`)
 }

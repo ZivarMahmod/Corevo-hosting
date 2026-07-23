@@ -12,7 +12,7 @@ import { parseServiceInputs } from '../onboarding-studio/services'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 import { isSelectableTheme } from '@/lib/platform/theme-palettes'
 import { uploadImage } from '@/lib/r2/upload'
-import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
 import { reportActionError } from './observe'
@@ -145,7 +145,9 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     .select('id, slug')
     .single()
   if (tErr || !tenant) {
-    if (tErr?.code === '23505') return { error: `Subdomänen "${slug}.corevo.se" är upptagen.` }
+    if (tErr?.code === '23505') {
+      return { error: `Subdomänen "${tenantStorefrontHost(slug)}" är upptagen.` }
+    }
     await reportActionError('createTenant.tenant_insert', tErr, { slug })
     return { error: GENERIC }
   }
@@ -363,34 +365,6 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     }
   }
 
-  // Activation is the final transactional boundary. For partner customers this
-  // trigger qualifies the current license month only after the whole tenant and
-  // optional owner account exist. Failed onboarding remains safely deletable.
-  const { error: activateError } = await supabase
-    .from('tenants')
-    .update({ status: 'active' })
-    .eq('id', tenantId)
-    .eq('status', 'provisioning')
-  const serviceReader = createServiceClient()
-  const activationReader = serviceReader && typeof serviceReader.from === 'function'
-    ? serviceReader
-    : supabase
-  const { data: activated, error: activationReadError } = await activationReader
-    .from('tenants')
-    .select('id')
-    .eq('id', tenantId)
-    .eq('status', 'active')
-    .maybeSingle()
-  if (!activated && activationReadError) {
-    await reportActionError('createTenant.activation_reconcile', activationReadError, { tenantId })
-    return { error: 'Kundens aktivering fick ett oklart svar. Kontot lämnades orört för säker avstämning.' }
-  }
-  if (!activated) {
-    await rollback()
-    await reportActionError('createTenant.activate', activateError ?? new Error('activation_not_committed'), { tenantId })
-    return { error: GENERIC }
-  }
-
   await logPlatformAction(supabase, {
     action: 'tenant.create',
     tenantId,
@@ -398,31 +372,16 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     meta: { slug, name, theme, booking_variant: bookingVariant, vertical_id: verticalKey },
   })
 
-  // goal-32 F2 — couple <slug>.corevo.se to the worker. The DURABLE coupling is
-  // mechanism (A): this tenant row is now in the DB, so scripts/gen-deploy-config.mjs
-  // includes <slug>.corevo.se in the NEXT deploy and every deploy after re-asserts it
-  // (it can never be detached). This call ALSO tries to attach it IMMEDIATELY (no
-  // deploy wait) via the Workers Domains API — but it is best-effort and DORMANT in
-  // prod (fail-closed without a scoped CF token + DOMAIN_AUTOATTACH_ENABLED). It must
-  // NEVER block or fail onboarding: a miss just means the domain goes live at the next
-  // deploy instead of instantly. Idempotent + add-only — never removes anything.
-  try {
-    await attachWorkerSubdomain(slug)
-  } catch {
-    // swallow — domain still rides the next deploy via the generator.
-  }
-
   revalidatePath('/platform')
   // The customer list now lives in the shared /kunder layout. Invalidate that
   // boundary explicitly so a create performed on /kunder/ny cannot leave the
   // persistent master pane stale during the next client navigation.
   revalidatePath('/kunder', 'layout')
-  // HONEST status (W6): the tenant is created + the booking engine + owner admin work
-  // immediately, but the PUBLIC host <slug>.corevo.se is NOT auto-attached (runtime
-  // auto-attach is dormant + the next-deploy path was retired in fix-35 → connecting the
-  // domain is a separate add-domain.mjs step). So don't claim it's "live på <slug>" here.
+  // Provisioning and publishing are deliberately separate. The canonical storefront
+  // already rides the isolated *.boka.corevo.se wildcard, but public RLS keeps this
+  // tenant hidden until the DB-owned readiness gate transitions it to active.
   return {
-    success: `Kund "${name}" skapad (${slug}.corevo.se).${inviteNote}`,
+    success: `Kund "${name}" skapad under konfiguration (${tenantStorefrontHost(slug)}).${inviteNote}`,
     tenant: { id: tenantId, slug },
   }
 }

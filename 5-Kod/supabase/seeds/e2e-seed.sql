@@ -16,8 +16,8 @@
 -- Idempotent (on conflict do nothing) — kör om den fritt.
 
 -- ── tenant ──
-insert into public.tenants (id, slug, name)
-values ('e2e00000-0000-0000-0000-000000000001', 'frisor1', 'Frisör Ett (E2E)')
+insert into public.tenants (id, slug, name, status)
+values ('e2e00000-0000-0000-0000-000000000001', 'frisor1', 'Frisör Ett (E2E)', 'provisioning')
 on conflict (slug) do nothing;
 
 insert into public.tenant_settings
@@ -66,7 +66,7 @@ insert into auth.users (
   ('e2e00000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'e2e-platform@corevo.se',
    crypt('__E2E_PASSWORD__', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"],"tenant_id":"e2e00000-0000-0000-0000-000000000001","platform_admin":true}'::jsonb,
+   '{"provider":"email","providers":["email"],"tenant_id":null,"platform_admin":true}'::jsonb,
    '{}'::jsonb, now(), now())
 on conflict (id) do nothing;
 
@@ -89,7 +89,7 @@ insert into public.users (id, tenant_id, email, role_id, status) values
    'admin@frisor1.se', 'e2e00000-0000-0000-0000-000000000061', 'active'),
   ('e2e00000-0000-0000-0000-0000000000a2', 'e2e00000-0000-0000-0000-000000000001',
    'klippare@frisor1.se', 'e2e00000-0000-0000-0000-000000000031', 'active'),
-  ('e2e00000-0000-0000-0000-0000000000a3', 'e2e00000-0000-0000-0000-000000000001',
+  ('e2e00000-0000-0000-0000-0000000000a3', null,
    'e2e-platform@corevo.se', 'e2e00000-0000-0000-0000-000000000088', 'active')
 on conflict (id) do nothing;
 
@@ -156,3 +156,8 @@ where not exists (
     and weekday = d
     and start_time = (time '09:00' + (n || ' minutes')::interval)::time
 );
+
+-- Publish only after the common Goal 76 readiness dependencies exist.
+update public.tenants
+   set status = 'active'
+ where id = 'e2e00000-0000-0000-0000-000000000001';

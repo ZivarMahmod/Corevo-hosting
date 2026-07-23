@@ -27,7 +27,7 @@ export function TenantHeaderActions({
 }: {
   tenantId: string
   tenantName: string
-  storefrontUrl: string
+  storefrontUrl: string | null
   salonAdminEmail: string | null
   serviceRoleAvailable: boolean
 }) {
@@ -55,9 +55,11 @@ export function TenantHeaderActions({
 
   return (
     <div className={styles.actions}>
-      <Button href={storefrontUrl} variant="ghost" icon="external">
-        Öppna storefront
-      </Button>
+      {storefrontUrl ? (
+        <Button href={storefrontUrl} variant="ghost" icon="external">
+          Öppna storefront
+        </Button>
+      ) : null}
       <Button
         variant="ghost"
         icon="mail"

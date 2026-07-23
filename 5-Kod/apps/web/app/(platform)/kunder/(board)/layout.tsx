@@ -1,15 +1,12 @@
 import { listTenantsWithStats } from '@/lib/platform/tenants'
 import type { KundCardVM } from '@/components/platform/KunderBoard'
 import { KunderBoardLazy } from '@/components/platform/KunderBoardLazy'
+import {
+  tenantStorefrontAppUrl,
+  tenantStorefrontHost,
+} from '@/lib/storefront-url'
 
 export const dynamic = 'force-dynamic'
-
-const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
-
-function tenantPublicUrl(slug: string): string {
-  const local = ROOT.includes('localhost') || ROOT.includes('127.0.0.1')
-  return `${local ? 'http' : 'https'}://${slug}.${ROOT}`
-}
 
 /** Formateras en gång på servern så masterraden inte får hydrationsdrift. */
 function relativeTenantActivity(iso: string | null): string {
@@ -42,7 +39,9 @@ export default async function KunderLayout({ children }: { children: React.React
     staff: tenant.staff,
     displayStatus: tenant.displayStatus,
     lastLabel: relativeTenantActivity(tenant.lastActivityAt),
-    storefrontUrl: tenantPublicUrl(tenant.slug),
+    storefrontUrl: tenantStorefrontAppUrl(tenant.slug) ?? '#',
+    storefrontHost: tenantStorefrontHost(tenant.slug) ?? tenant.slug,
+    storefrontPublished: tenant.status === 'active',
   }))
 
   return <KunderBoardLazy tenants={rows}>{children}</KunderBoardLazy>

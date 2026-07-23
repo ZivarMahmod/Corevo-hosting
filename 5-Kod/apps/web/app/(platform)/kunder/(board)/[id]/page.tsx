@@ -45,7 +45,11 @@ import { SidaStudioLazy } from '@/components/platform/SidaStudioLazy'
 import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { createClient } from '@/lib/supabase/server'
-import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
+import {
+  tenantStorefrontAppUrl,
+  tenantStorefrontHost,
+} from '@/lib/storefront-url'
+import { READINESS_LABELS } from '@/lib/platform/tenant-readiness'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
 import {
   TenantDetailTabs,
@@ -73,12 +77,6 @@ import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Kund' }
-
-const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
-function publicUrl(slug: string): string {
-  const isLocal = ROOT.includes('localhost') || ROOT.includes('127.0.0.1')
-  return `${isLocal ? 'http' : 'https'}://${slug}.${ROOT}`
-}
 
 /**
  * Kund-detalj (KUNDKORTET) — full operativ kontroll för EN vald kund, oavsett
@@ -111,7 +109,19 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   const detail = await getTenantDetail(id)
   if (!detail) notFound()
-  const { tenant, settings, branding, counts, services, staffList, salonAdmin, onboarding, operative, copy } = detail
+  const {
+    tenant,
+    settings,
+    branding,
+    counts,
+    services,
+    staffList,
+    salonAdmin,
+    onboarding,
+    launchReadiness,
+    operative,
+    copy,
+  } = detail
   const customizationLevel = deriveCustomizationLevel(
     (settings?.settings ?? null) as Record<string, unknown> | null,
     branding as unknown as Record<string, unknown>,
@@ -229,14 +239,31 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       .maybeSingle(),
   ])
 
-  const url = publicUrl(tenant.slug)
+  const url = tenantStorefrontAppUrl(tenant.slug, detail.primaryDomain) ?? '#'
+  const storefrontHost =
+    tenantStorefrontHost(tenant.slug, detail.primaryDomain) ?? tenant.slug
   const serviceRoleAvailable = hasServiceRole()
   const b = branding as TenantBranding
   const markColor = b.color_primary || 'var(--c-forest)'
   const isActive = tenant.status === 'active'
+  const isProvisioning = tenant.status === 'provisioning'
   const isDeleted = tenant.status === 'deleted'
-  const statusLabel = isActive ? 'Aktiv' : isDeleted ? 'Borttagen' : tenant.status === 'suspended' ? 'Pausad' : tenant.status
-  const statusTone: BadgeTone = isActive ? 'success' : isDeleted ? 'danger' : 'warning'
+  const statusLabel = isActive
+    ? 'Aktiv'
+    : isProvisioning
+      ? 'Under konfiguration'
+      : isDeleted
+        ? 'Borttagen'
+        : tenant.status === 'suspended'
+          ? 'Pausad'
+          : tenant.status
+  const statusTone: BadgeTone = isActive
+    ? 'success'
+    : isProvisioning
+      ? 'info'
+      : isDeleted
+        ? 'danger'
+        : 'warning'
 
   // Visual hub (spår 4): the tenant's active template = settings.theme (the five named
   // layouts), fenced to the catalog keys that 1:1 match the `templates` table. The
@@ -246,14 +273,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
       ? rawTheme
       : DEFAULT_STOREFRONT_THEME
-  const storefrontUrl = tenantStorefrontUrl(tenant.slug, detail.primaryDomain) ?? url
-  const storefrontHost = tenantStorefrontHost(tenant.slug, detail.primaryDomain) ?? `${tenant.slug}.${ROOT}`
+  const storefrontUrl = url
 
-  // Kund-överblick (Översikt): everything the operator needs to know at a glance,
-  // derived from already-loaded data (no extra query). Launch-readiness mirrors the
-  // list-view launchReady (staff + services + hours) so the badge here agrees with
-  // the Aktiv/Onboarding pill on the card grid. Bransch/kontakt read the raw settings
-  // jsonb (same seam as theme/booking above).
+  // Kund-överblick (Översikt): presentation data comes from the existing reads;
+  // launch readiness comes only from the DB RPC used by the activation trigger.
   const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
   // goal-72 1c: juridikfälten (settings.legal) — samma parse-regler som lib/tenant-data.
   const rawLegal = (rawSettings.legal ?? {}) as Record<string, unknown>
@@ -279,13 +302,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const contactPhone =
     typeof contactObj.phone === 'string' && contactObj.phone.trim() ? contactObj.phone.trim() : null
   const modulesLive = modules.filter((m) => m.state === 'live').length
-  const launchBlockers = [
-    counts.activeServices > 0 ? null : 'Tjänster',
-    counts.activeStaff > 0 ? null : 'Personal',
-    counts.workingHours > 0 ? null : 'Öppettider',
-  ].filter(Boolean) as string[]
-  const launchReady = launchBlockers.length === 0
-  const ownerInvited = !!salonAdmin?.email
+  const launchBlockers = launchReadiness.missing.map((key) => READINESS_LABELS[key])
+  const launchReady = launchReadiness.ready
   const hasOverviewData = counts.bookings > 0 || noShows > 0 || counts.activeStaff > 0
 
   const tabs: Partial<Record<TenantTabKey, React.ReactNode>> = {
@@ -302,26 +320,28 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               {launchReady && isActive
                 ? 'Redo att ta emot bokningar'
                 : launchReady
-                  ? 'Allt ifyllt — ej lanserad'
-                  : `Saknas för att gå live: ${launchBlockers.join(', ')}`}
+                  ? 'Redo att publiceras'
+                  : `Saknas för publicering: ${launchBlockers.join(', ')}`}
             </div>
             <p className={styles.launchSub}>
               {launchReady && isActive
-                ? `Tjänster, personal och öppettider på plats. Storefronten är live på ${tenant.slug}.${ROOT}.`
+                ? `Databasens publiceringskontroll är grön. Storefronten är live på ${storefrontHost}.`
                 : launchReady
-                  ? 'Aktivera kunden i Drift för att gå publik.'
-                  : 'Fyll i det som saknas i respektive flik, aktivera sedan i Drift.'}
+                  ? 'Publicera kunden i Drift för att öppna den publika sidan.'
+                  : 'Fyll i punkterna i respektive flik. Databasen släpper inte igenom publicering innan allt är klart.'}
             </p>
           </div>
-          <a
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className={styles.launchAction}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 13px', borderRadius: 6, border: '1px solid var(--c-line-strong)', background: 'var(--c-paper)', color: 'var(--c-ink)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
-          >
-            Visa live ↗
-          </a>
+          {isActive ? (
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.launchAction}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 13px', borderRadius: 6, border: '1px solid var(--c-line-strong)', background: 'var(--c-paper)', color: 'var(--c-ink)', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
+            >
+              Visa live ↗
+            </a>
+          ) : null}
         </div>
 
         {/* Samma Stat-kontrakt som kund-adminens statistik. Varje tal kommer från
@@ -365,9 +385,13 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               <KV
                 label="Live-URL"
                 value={
-                  <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--c-forest)' }}>
-                    {tenant.slug}.{ROOT}
-                  </a>
+                  isActive ? (
+                    <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--c-forest)' }}>
+                      {storefrontHost}
+                    </a>
+                  ) : (
+                    `${storefrontHost} · öppnas vid publicering`
+                  )
                 }
               />
             </div>
@@ -771,24 +795,45 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
         {/* Status + riskzon i ETT kort — båda skriver tenants.status, två kort
             var ren duplicering. */}
-        <Card className={isActive ? undefined : styles.danger}>
+        <Card className={isActive || isProvisioning ? undefined : styles.danger}>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Status &amp; riskzon</h2>
             <span className={styles.chip}>tenants.status</span>
           </div>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>
-              {isActive ? 'Kunden är aktiv' : isDeleted ? 'Kunden är borttagen' : 'Kunden är pausad'}
+              {isActive
+                ? 'Kunden är aktiv'
+                : isProvisioning
+                  ? 'Kunden är under konfiguration'
+                  : isDeleted
+                    ? 'Kunden är borttagen'
+                    : 'Kunden är pausad'}
             </div>
             <div style={{ fontSize: 13, color: 'var(--c-ink-3)', marginTop: 3 }}>
               {isActive
                 ? 'Pausa → publik storefront blockeras direkt (RLS + cache-bust). Data rörs aldrig.'
-                : isDeleted
-                  ? 'Mjukt borttagen (status=deleted). Data är orörd; går att återaktivera vid behov.'
-                  : 'Publik storefront är blockerad. Data är orörd och går att återaktivera.'}
+                : isProvisioning
+                  ? launchReady
+                    ? 'Publiceringskontrollen är grön. Kunden kan nu göras publik.'
+                    : 'Publik storefront är blockerad tills punkterna nedan är klara.'
+                  : isDeleted
+                    ? 'Mjukt borttagen (status=deleted). Data är orörd; går att återaktivera vid behov.'
+                    : 'Publik storefront är blockerad. Readiness kontrolleras igen före återaktivering.'}
             </div>
           </div>
-          <StatusControl tenantId={tenant.id} status={tenant.status} />
+          {!isActive && launchBlockers.length > 0 ? (
+            <ul style={{ margin: '0 0 14px', paddingLeft: 20, color: 'var(--c-ink-2)', fontSize: 13 }}>
+              {launchBlockers.map((label) => (
+                <li key={label}>{label}</li>
+              ))}
+            </ul>
+          ) : null}
+          <StatusControl
+            tenantId={tenant.id}
+            status={tenant.status}
+            canActivate={launchReady}
+          />
           <p className={styles.dangerText} style={{ marginTop: 16 }}>
             Ta bort = mjuk borttagning: publik sajt + admin blockeras, men alla rader &amp; historik
             sparas (build-once-never-delete — hård radering är permanent spärrad). Vill du bara dölja
@@ -823,7 +868,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Button href="/kunder" variant="ghost" icon="arrowLeft" size="sm" className={boardStyles.back}>
           Kunder
         </Button>
-        <span>/ {tenant.slug}.{ROOT}</span>
+        <span>/ {storefrontHost}</span>
       </div>
 
       <div className={styles.head}>
@@ -841,9 +886,13 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             <div className={styles.meta}>
               <span>
                 <Icon name="link" size={13} />
-                <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--c-forest)' }}>
-                  {tenant.slug}.{ROOT}
-                </a>
+                {isActive ? (
+                  <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--c-forest)' }}>
+                    {storefrontHost}
+                  </a>
+                ) : (
+                  storefrontHost
+                )}
               </span>
               <span>
                 <Icon name="clock" size={13} />
@@ -861,7 +910,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <TenantHeaderActions
           tenantId={tenant.id}
           tenantName={tenant.name}
-          storefrontUrl={url}
+          storefrontUrl={isActive ? url : null}
           salonAdminEmail={salonAdmin?.email ?? null}
           serviceRoleAvailable={serviceRoleAvailable}
         />

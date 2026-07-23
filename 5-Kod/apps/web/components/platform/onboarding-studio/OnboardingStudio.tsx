@@ -37,6 +37,7 @@ import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
 import { PreviewPane, type PreviewDevice } from './PreviewPane'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -158,7 +159,7 @@ function StudioMachine({
 
           {/* honest error strip (§9.2) — the REAL createTenant error, no fake success */}
           {result.error && !isPending ? <ErrorStrip message={result.error} /> : null}
-          {/* honest pending overlay (§9.2) — a plain "Lanserar…", NOT the 6-task theatre */}
+          {/* honest pending overlay (§9.2) — a plain "Skapar…", NOT the 6-task theatre */}
           {isPending ? <LaunchingOverlay name={cfg.name} /> : null}
         </div>
       )}
@@ -180,13 +181,9 @@ function StudioMachine({
 /* ──────────────────────────────────────────────────────────────────────────── */
 
 /**
- * Honest result-vy (W6). The tenant is created and the booking engine + owner admin
- * work immediately — but the PUBLIC host <slug>.corevo.se is NOT auto-attached (runtime
- * auto-attach is dormant; the next-deploy path was retired in fix-35 → it's a separate
- * add-domain.mjs step). VERIFIED by curl: a freshly-onboarded slug does not resolve. So
- * this view links only surfaces that genuinely work (the platform tenant-detail + the
- * real action message) and presents <slug>.corevo.se as a RESERVED address, never a live
- * link. NO fake CustomerAdmin / storefront mock (the design's result mock is a prototype).
+ * Honest result-vy (Goal 76). The isolated wildcard owns the canonical address,
+ * while public RLS keeps status=provisioning closed. The result links to the real
+ * customer card where readiness is completed and published; it never claims live.
  */
 export function ResultView({
   name,
@@ -204,10 +201,7 @@ export function ResultView({
   /** Vald bransch (visningsnamn) → placeholder-slugen följer branschen, aldrig "salong". */
   branchName?: string | null
 }) {
-  const address = `${slug || studioPlaceholderSlug(branchName)}.${ROOT}`
-  // The platform tenant-detail always works (platform route). Its embedded storefront
-  // preview iframe points at the same unresolvable host, so we label this "öppna &
-  // hantera" — NOT "se den publika sidan".
+  const address = tenantStorefrontHost(slug || studioPlaceholderSlug(branchName))
   const manageHref = tenant?.id ? `/kunder/${tenant.id}` : '/kunder'
 
   const cardStyle: CSSProperties = {
@@ -258,7 +252,7 @@ export function ResultView({
               {name || 'Kunden'} är skapad
             </div>
             <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)', marginTop: 2 }}>
-              Kund, moduler, tjänster och ägar-konto är på plats.
+              Kunden är provisionerad och väntar på publiceringskontrollen.
             </div>
           </div>
         </div>
@@ -302,8 +296,7 @@ export function ResultView({
           <Icon name="arrowRight" size={16} />
         </a>
 
-        {/* Public address — HONEST: reserved, NOT yet reachable. No live link (curl: the
-            host does not resolve until add-domain.mjs connects it). */}
+        {/* Wildcard-adressen är reserverad, men public RLS är fortsatt stängd. */}
         <div style={{ ...cardStyle, cursor: 'default', alignItems: 'flex-start' }}>
           <span style={iconWrap}>
             <Icon name="globe" size={18} />
@@ -311,8 +304,8 @@ export function ResultView({
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ ...cardTitle, display: 'block' }}>Kundens publika adress</span>
             <span style={{ ...cardSub, display: 'block' }}>
-              <b style={{ color: 'var(--c-ink-2)' }}>{address}</b> — reserverad. Adressen kopplas in som ett separat steg
-              innan sidan syns publikt. Du har redan sett sidan i förhandsvisningen.
+               <b style={{ color: 'var(--c-ink-2)' }}>{address}</b> — reserverad och stängd tills
+               kundkortets publiceringskontroll är grön.
             </span>
           </span>
         </div>
@@ -338,7 +331,7 @@ export function ResultView({
             <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>Nästa steg</span>
           </div>
           <div style={{ display: 'grid', gap: 7 }}>
-            {['Koppla in den publika adressen när du vill ta sidan live', 'Bjud in personal och finjustera tjänsterna i adminen', 'Koppla Stripe när betalningar släpps på'].map((s) => (
+            {['Slutför punkterna i kundkortets publiceringskontroll', 'Publicera kunden när kontrollen är grön', 'Koppla Stripe när betalningar släpps på'].map((s) => (
               <div key={s} style={{ display: 'flex', gap: 9, alignItems: 'center', fontSize: 13, color: 'var(--c-ink-2)' }}>
                 <Icon name="arrowRight" size={14} style={{ color: 'var(--c-gold-600)' }} />
                 {s}
@@ -351,7 +344,7 @@ export function ResultView({
   )
 }
 
-/** Honest in-flight overlay (§9.2). A plain "Lanserar…" with a self-contained SVG
+/** Honest in-flight overlay (§9.2). A plain "Skapar…" with a self-contained SVG
  *  spinner — NO fake task list, NO simulated DB-steps. The real write is running. */
 function LaunchingOverlay({ name }: { name: string }) {
   return (
@@ -381,7 +374,7 @@ function LaunchingOverlay({ name }: { name: string }) {
       >
         <Spinner />
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, color: 'var(--c-forest)' }}>
-          Lanserar {name || 'kunden'}…
+          Skapar {name || 'kunden'}…
         </div>
         <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12.5, color: 'var(--c-ink-3)', maxWidth: 240, lineHeight: 1.5 }}>
           Skapar tenant, moduler, ägar-konto och subdomän. Det tar ett ögonblick.

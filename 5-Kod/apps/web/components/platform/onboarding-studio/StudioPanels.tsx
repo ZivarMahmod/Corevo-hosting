@@ -36,8 +36,7 @@ import {
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { ThemeGallery } from '@/components/platform/ThemeGallery'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
-
-const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
+import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
 
 /**
  * The prop bag every panel in the registry receives. Extends the frozen PanelProps
@@ -279,7 +278,7 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
                 placeItems: 'center',
               }}
             >
-              .{ROOT}
+              .{TENANT_HOST_SUFFIX}
             </span>
           </div>
           {reserved ? (
@@ -490,7 +489,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
     { label: 'Namn & subdomän', done: !!cfg.name.trim() && !!cfg.slug },
     { label: 'Temamall', done: !!cfg.theme },
     { label: `Tjänster (${namedServices.length} tillagda — läggs i adminen)`, done: namedServices.length > 0, optional: true },
-    { label: 'Ägare inbjuds via mail', done: !!cfg.ownerEmail.trim(), optional: true },
+    { label: 'Ägare inbjuds via mail', done: !!cfg.ownerEmail.trim() },
   ]
   // createTenant's only HARD blockers are name + a valid slug (actions.ts). Gate on those
   // + a theme so the gold button never fires a guaranteed-fail submit. booking is force-
@@ -502,9 +501,13 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
   // permanent disabled. Kravet är nu rådgivande (checklistan visar antalet), och
   // createTenants riktiga hard-blockers (namn + giltig slug + tema) gatar knappen.
   const ready =
-    !!cfg.name.trim() && !!cfg.slug && !isReservedSlug(cfg.slug) && !!cfg.theme
+    !!cfg.name.trim()
+    && !!cfg.slug
+    && !isReservedSlug(cfg.slug)
+    && !!cfg.theme
+    && !!cfg.ownerEmail.trim()
   return (
-    <Panel title="Granska & lansera" sub="Sista koll — exakt det här får kunden. Sen live på subdomänen.">
+    <Panel title="Granska & skapa" sub="Sista koll — kunden skapas under konfiguration och publiceras från kundkortet.">
       <div style={{ display: 'grid', gap: 16 }}>
         {/* Kompakt checklista (ersätter det egna granska-steget) */}
         <div style={{ display: 'grid', gap: 6 }}>
@@ -538,7 +541,9 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             Kunden får
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, margin: '8px 0 4px' }}>
-            {cfg.slug || studioPlaceholderSlug(studioBranchName(presets.verticals, cfg.branch))}.{ROOT}
+            {tenantStorefrontHost(
+              cfg.slug || studioPlaceholderSlug(studioBranchName(presets.verticals, cfg.branch)),
+            )}
           </div>
           <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)', lineHeight: 1.6 }}>
             Tema <b style={{ color: 'var(--c-on-forest, #fff)' }}>{cfg.theme}</b> · {activeCount}{' '}
@@ -566,18 +571,19 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             <span style={{ flex: 'none', marginTop: 1 }}>
               <Icon name="alert" size={14} />
             </span>
-            Kräver: företagsnamn, en giltig subdomän, ett tema och minst en tjänst. Komplettera i
-            stegen ovan.
+            Kräver: företagsnamn, en giltig subdomän, ett tema och ägarens e-post.
+            Komplettera i stegen ovan.
           </div>
         ) : null}
 
         <div style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.6 }}>
-          Vid lansering skapas allt i ett svep: tenant-rad (status active), inställningar, moduler, ägar-konto + magic-link
-          och subdomän-route. Egen domän är parkerat (spärrat tills KÖR).
+          Nu skapas tenant, inställningar, moduler och ägarkonto i status
+          <b> Under konfiguration</b>. Den isolerade standardadressen är reserverad,
+          men öppnas först när kundkortets DB-kontroll är grön och du publicerar.
         </div>
 
         <Button variant="gold" size="lg" icon="rocket" disabled={!ready} onClick={onLaunch} style={{ justifyContent: 'center', width: '100%' }}>
-          Lansera {cfg.name || 'kunden'}
+          Skapa {cfg.name || 'kunden'}
         </Button>
       </div>
     </Panel>

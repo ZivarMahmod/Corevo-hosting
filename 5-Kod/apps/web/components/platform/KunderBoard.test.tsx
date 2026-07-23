@@ -46,7 +46,9 @@ const TENANTS: KundCardVM[] = [
     staff: 3,
     displayStatus: 'active',
     lastLabel: 'för 1 dag',
-    storefrontUrl: 'https://alpha.corevo.se',
+    storefrontUrl: 'https://alpha.boka.corevo.se',
+    storefrontHost: 'alpha.boka.corevo.se',
+    storefrontPublished: true,
   },
   {
     id: 'tenant-b',
@@ -62,7 +64,9 @@ const TENANTS: KundCardVM[] = [
     staff: 1,
     displayStatus: 'suspended',
     lastLabel: '—',
-    storefrontUrl: 'https://beta.corevo.se',
+    storefrontUrl: 'https://beta.boka.corevo.se',
+    storefrontHost: 'beta.boka.corevo.se',
+    storefrontPublished: false,
   },
 ]
 
@@ -172,13 +176,14 @@ describe('goal-72 customer board behavior', () => {
     const csv = buildKunderCsv([TENANTS[1]!])
     expect(csv).toBe(
       'Namn,Subdomän,Ägare,Status,Bokningar,Genomförda,Personal,Senast,Tema,Variant,Nivå\r\n' +
-        'Beta AB,beta.corevo.se,Bea Boss,Pausad,0,0,1,—,Edit,Lugn,Nivå 2',
+        'Beta AB,beta.boka.corevo.se,Bea Boss,Pausad,0,0,1,—,Edit,Lugn,Nivå 2',
     )
   })
 
   it('preserves storefront access and submits soft-delete only after explicit confirmation', async () => {
     await render()
-    expect(container.querySelector('a[href="https://alpha.corevo.se"]')).not.toBeNull()
+    expect(container.querySelector('a[href="https://alpha.boka.corevo.se"]')).not.toBeNull()
+    expect(container.querySelector('a[href="https://beta.boka.corevo.se"]')).toBeNull()
 
     await act(async () => button('Fler åtgärder för Alpha AB').click())
     const removeItem = button('Ta bort kund')

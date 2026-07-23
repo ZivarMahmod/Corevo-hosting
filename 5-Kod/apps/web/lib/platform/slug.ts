@@ -1,7 +1,7 @@
 // Subdomain-slug validation for platform tenant creation (G08 / M7).
 // Pure + dependency-light so it can be unit-tested and reused server-side.
 //
-// A valid tenant slug becomes <slug>.corevo.se, so it must be a DNS label AND
+// A valid tenant slug becomes <slug>.boka.corevo.se, so it must be a DNS label AND
 // must NOT collide with a reserved subdomain (booking/admin/app/www/api/…) that
 // getTenantFromHost would never resolve to a tenant. Reserved list is imported
 // from lib/tenant (single source) so the two can never drift apart.

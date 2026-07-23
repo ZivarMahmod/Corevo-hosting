@@ -457,9 +457,9 @@ export default async function AdminSidaPage({ searchParams }: AdminSidaPageProps
     : 'generic'
   const defaults = resolveThemeContent(storefrontTheme, null, verticalCopy)
   const storefrontUrl = tenantStorefrontUrl(detail.tenant.slug, detail.primaryDomain)
-    ?? `https://${detail.tenant.slug}.corevo.se`
+    ?? '#'
   const storefrontHost = tenantStorefrontHost(detail.tenant.slug, detail.primaryDomain)
-    ?? `${detail.tenant.slug}.corevo.se`
+    ?? detail.tenant.slug
   const liveModules = [
     'shop', 'kurser', 'blogg', 'offert', 'presentkort', 'lojalitet', 'galleri',
   ].filter((key) => isModuleActivated(moduleStates, key))

@@ -1,9 +1,8 @@
 // goal-32 F4 — domain health guard (offline; NEVER runs in the Worker).
 //
 // Lists every active tenant (the SAME source the deploy generator uses) and asserts:
-//   1. each <slug>.corevo.se responds (HTTP < 500, i.e. the worker is routing it —
-//      not a Cloudflare 1016/522/DNS error),
-//   2. the 3 fixed back-office hosts (booking/superbooking/minbooking) are alive.
+//   1. each <slug>.boka.corevo.se/boka responds with 2xx/3xx,
+//   2. the fixed application hosts are alive.
 // Exit 0 = all up, 1 = something drifted. Run after every prod deploy:
 //   node scripts/check_domains.mjs
 //
@@ -15,20 +14,34 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { fetchActiveSlugs, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
 
-const ROOT_DOMAIN = 'corevo.se'
+const TENANT_SUFFIX = 'boka.corevo.se'
 const TIMEOUT_MS = 12000
 
-async function probe(host) {
-  const url = `https://${host}/`
+export function buildProbeTargets(slugs) {
+  return slugs
+    .map((slug) => String(slug || '').trim().toLowerCase())
+    .filter(Boolean)
+    .map((slug) => ({ host: `${slug}.${TENANT_SUFFIX}`, path: '/boka' }))
+}
+
+export function isHealthyStatus(status) {
+  return status >= 200 && status < 400
+}
+
+async function probe({ host, path = '/' }) {
+  const url = `https://${host}${path}`
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
   try {
     const res = await fetch(url, { method: 'GET', redirect: 'manual', signal: ctrl.signal })
-    // < 500 = the worker is routing this host (200 storefront/login, 3xx redirect,
-    // even 401/404 mean "alive + served"). 5xx / network error = down.
-    return { host, ok: res.status < 500, status: res.status }
+    return { host, path, ok: isHealthyStatus(res.status), status: res.status }
   } catch (e) {
-    return { host, ok: false, status: String(e && e.name === 'AbortError' ? 'timeout' : e.message || e) }
+    return {
+      host,
+      path,
+      ok: false,
+      status: String(e && e.name === 'AbortError' ? 'timeout' : e.message || e),
+    }
   } finally {
     clearTimeout(t)
   }
@@ -44,19 +57,26 @@ async function main() {
   if (!supaUrl || !anonKey) throw new Error('check_domains: missing Supabase URL / anon key')
 
   const slugs = await fetchActiveSlugs(supaUrl, anonKey)
-  const tenantHosts = slugs.map((s) => `${s}.${ROOT_DOMAIN}`)
-  const hosts = [...REQUIRED_FIXED_HOSTS, ...tenantHosts]
+  const tenantTargets = buildProbeTargets(slugs)
+  const targets = [
+    ...REQUIRED_FIXED_HOSTS.map((host) => ({ host, path: '/' })),
+    ...tenantTargets,
+  ]
 
-  const results = await Promise.all(hosts.map(probe))
+  const results = await Promise.all(targets.map(probe))
   const down = results.filter((r) => !r.ok)
 
-  console.log(`\ncheck_domains → ${hosts.length} hosts (${REQUIRED_FIXED_HOSTS.length} fixed + ${tenantHosts.length} salonger)\n`)
-  for (const r of results) console.log(`  ${r.ok ? 'UP  ' : 'DOWN'}  ${r.host}  (${r.status})`)
+  console.log(`\ncheck_domains → ${targets.length} hosts (${REQUIRED_FIXED_HOSTS.length} fixed + ${tenantTargets.length} kunder)\n`)
+  for (const r of results) console.log(`  ${r.ok ? 'UP  ' : 'DOWN'}  ${r.host}${r.path}  (${r.status})`)
   console.log(`\n${down.length === 0 ? 'ALL UP' : `${down.length} DOWN`}\n`)
   process.exit(down.length === 0 ? 0 : 1)
 }
 
-main().catch((err) => {
-  console.error(String(err && err.message ? err.message : err))
-  process.exit(1)
-})
+const invokedDirectly =
+  process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+if (invokedDirectly) {
+  main().catch((err) => {
+    console.error(String(err && err.message ? err.message : err))
+    process.exit(1)
+  })
+}
