@@ -17,6 +17,15 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
+- Goal 80 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Superadminens valda kundkort är nu
+  en egen fullbreddsyta enligt 1320px-kanon i stället för att pressas bredvid
+  masterlistan. Kundflikarna radbryts och Sida-studion följer exakt 400/480-
+  delningen, sticky 78px och 420px-minimihöjden. Previewn växlar mellan en
+  verklig skalad 1360px-desktop och en centrerad 390px-mobil. Browseracceptans
+  vid 1280px, 111 plattformstester, typkontroll, lint utan fel, preview-build
+  och Fable 5-review (`NO P0/P1`) är gröna. Den tillfälliga previewoperatören
+  är borttagen; produktion är orörd.
 - Goal 79 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`: FreshCuts kundlåsta webb använder
   den godkända 2026-designen, lokala originalbilder, verklig tenant-/servicedata
@@ -166,11 +175,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-75, Goal-76, Goal-77 och Goal-78 är lokalt låsta. Nästa byggdel är
-FreshCuts fasta kundmall och därefter reparationen av
-superadmins Kund/Sida-workspace. Bokningsmotorns fyra lägen genom den verkliga
-plats-/djuplänksmatrisen ligger kvar senare i roadmapen. Goal-74:s nya driftprov
-samt Goal-75/76:s
+Goal-75–80 är lokalt låsta. Nästa steg är en enda samlad localhostacceptans av
+de lokala byggdelarna innan releasegränsen. Bokningsmotorns fyra lägen genom den
+verkliga plats-/djuplänksmatrisen ligger kvar senare i roadmapen. Goal-74:s nya
+driftprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är parkerade till den gemensamma
 releasefasen. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`

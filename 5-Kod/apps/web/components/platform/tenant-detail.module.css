@@ -69,11 +69,11 @@
 /* ── SubTabs — underline rail (reskin: gold-underline active, ej pill) ── */
 .subtabs {
   display: flex;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
   border-bottom: 1px solid var(--c-line);
   max-width: 100%;
   margin-bottom: 24px;
-  overflow-x: auto;
 }
 .subtab {
   display: inline-flex;
@@ -115,13 +115,14 @@
 /* ── two-column översikt + section grids ── */
 .twoCol {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 .col {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 /* Full-width single column (tables/large forms use the whole screen — no 760px
    pinned-left "blog" column, no dead right half). */

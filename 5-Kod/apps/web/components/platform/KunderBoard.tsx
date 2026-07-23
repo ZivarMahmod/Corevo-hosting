@@ -229,7 +229,7 @@ export function KunderBoard({
 
   return (
     <div
-      className={`workbench ${styles.board}`}
+      className={`workbench ${styles.board}${hasSelection ? ` ${styles.boardState}` : ''}`}
       data-mobile-view={hasSelection ? 'card' : 'list'}
       data-create={isCreating || undefined}
       onClickCapture={invalidateDeleteForNavigation}
@@ -243,7 +243,7 @@ export function KunderBoard({
         }
       }}
     >
-      <aside className={styles.list} aria-label="Kunder">
+      {!hasSelection ? <aside className={styles.list} aria-label="Kunder">
         <div className={styles.listHead}>
           <div className={styles.listTitleRow}>
             <div>
@@ -413,7 +413,7 @@ export function KunderBoard({
             })
           )}
         </div>
-      </aside>
+      </aside> : null}
       {children}
     </div>
   )

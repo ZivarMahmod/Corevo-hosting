@@ -175,8 +175,11 @@ export function SidaStudio({
   liveModules = [],
 }: SidaStudioProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const [page, setPage] = useState<PageKey>('allmant')
   const [reloadToken, setReloadToken] = useState(0)
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop')
+  const [previewStageWidth, setPreviewStageWidth] = useState(0)
   // Draft-mall: previewen kan visa en ANNAN mall (via ?theme=) utan att den skarpa
   // sidan ändras — publiceras separat. null = tenantens sparade mall.
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
@@ -421,6 +424,20 @@ export function SidaStudio({
     const timer = window.setTimeout(scanPreview, 0)
     return () => window.clearTimeout(timer)
   }, [isActive, scanPreview, src])
+
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const measure = () => setPreviewStageWidth(stage.clientWidth)
+    measure()
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure)
+      return () => window.removeEventListener('resize', measure)
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }, [])
   // "Visa var" för en CSS-var-yta (t.ex. FreshCuts mörka "Varför oss"-bakgrund =
   // Primärfärgen): pulsa markörfärgen ~1 s och återställ till sparade tokens.
   const flashVar = useCallback(
@@ -519,6 +536,16 @@ export function SidaStudio({
     visibleFields: isActive ? visibleCopyFields : undefined,
     onDraftChange: isActive ? pushCopyDraft : undefined,
     onFlashField: isActive ? pushFieldFlash : undefined,
+  }
+  const previewWidth = previewDevice === 'desktop' ? 1360 : 390
+  const previewScale =
+    previewStageWidth > 0 ? Math.min(1, Math.max(0.1, (previewStageWidth - 2) / previewWidth)) : 1
+  const previewViewportStyle: CSSProperties = {
+    width: previewWidth,
+    height: `${100 / previewScale}%`,
+    left: '50%',
+    marginLeft: -(previewWidth * previewScale) / 2,
+    transform: `scale(${previewScale})`,
   }
 
   return (
@@ -973,6 +1000,22 @@ export function SidaStudio({
             {canChangeTemplate ? <Badge tone="neutral">mall: {previewTheme ?? templateKey}</Badge> : null}
           </div>
           <div className={styles.barSide}>
+            <div className={styles.deviceSwitch} role="group" aria-label="Preview-enhet">
+              <button
+                type="button"
+                aria-pressed={previewDevice === 'desktop'}
+                onClick={() => setPreviewDevice('desktop')}
+              >
+                Desktop
+              </button>
+              <button
+                type="button"
+                aria-pressed={previewDevice === 'mobile'}
+                onClick={() => setPreviewDevice('mobile')}
+              >
+                Mobil
+              </button>
+            </div>
             <button type="button" className={styles.btn} onClick={reload} title="Ladda om previewen">
               Ladda om
             </button>
@@ -988,17 +1031,23 @@ export function SidaStudio({
           </div>
         </div>
 
-        <div className={styles.stage}>
+        <div ref={stageRef} className={styles.stage}>
           {isActive ? (
-            <iframe
-              ref={iframeRef}
-              src={src}
-              className={styles.frame}
-              title={`Förhandsvisning av ${storefrontHost}${activePage.path}`}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              loading="lazy"
-              onLoad={scanPreview}
-            />
+            <div
+              className={styles.previewViewport}
+              data-preview-device={previewDevice}
+              style={previewViewportStyle}
+            >
+              <iframe
+                ref={iframeRef}
+                src={src}
+                className={styles.frame}
+                title={`Förhandsvisning av ${storefrontHost}${activePage.path}`}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                loading="lazy"
+                onLoad={scanPreview}
+              />
+            </div>
           ) : (
             <div className={styles.blocked}>
               <strong>Storefronten är pausad</strong>
