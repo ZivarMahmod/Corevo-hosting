@@ -698,3 +698,25 @@ export function resolveThemeContent(
     stats,
   }
 }
+
+/** Freeze the copy a tenant sees now so a new layout cannot replace it with its defaults. */
+export function materializeThemeCopy(
+  theme: StorefrontTheme,
+  effectiveCopy: CopyOverride | null | undefined,
+): CopyOverride {
+  const explicit = cleanCopyOverride(effectiveCopy)
+  const materialized = cleanCopyOverride(resolveThemeContent(theme, null, effectiveCopy))
+
+  // Dessa två är härledda fallbacks. Frys dem bara när kunden uttryckligen har
+  // gjort dem fristående; annars ska framtida ändringar fortsätta följa källfältet.
+  if (explicit.aboutCopyHome === undefined && materialized.aboutCopyHome === materialized.aboutCopy) {
+    delete materialized.aboutCopyHome
+  }
+  if (
+    explicit.homeGalleryEyebrow === undefined
+    && materialized.homeGalleryEyebrow === materialized.galleryEyebrow
+  ) {
+    delete materialized.homeGalleryEyebrow
+  }
+  return materialized
+}

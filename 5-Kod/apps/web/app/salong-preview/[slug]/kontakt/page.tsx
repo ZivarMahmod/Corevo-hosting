@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { LocationHours, ClosingCta } from '@/components/storefront/sections'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { loadPreviewBundle, resolvePreviewTheme, PreviewShell } from '../preview-shell'
+import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell } from '../preview-shell'
 
 // Preview av /kontakt — samma innehåll som app/(public)/kontakt/page.tsx, i preview-
 // chromen. LocationHours själv-hämtar via currentTenant() — funkar i previewen tack
@@ -15,19 +15,20 @@ export default async function PreviewContactPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string }>
+  searchParams: Promise<{ theme?: string; copy?: string }>
 }) {
   const { slug } = await params
-  const { theme: themeParam } = await searchParams
+  const { theme: themeParam, copy: copyParam } = await searchParams
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
+  const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant, settings } = bundle
 
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
   const content = resolveThemeContent(theme, settings.branding, copy)
 
   return (
-    <PreviewShell bundle={bundle} theme={theme}>
+    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
       <LocationHours salonName={tenant.name} content={content} />
       <ClosingCta content={content} />
     </PreviewShell>

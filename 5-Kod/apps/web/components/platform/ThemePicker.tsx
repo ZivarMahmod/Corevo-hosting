@@ -6,6 +6,8 @@ import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
 import { ThemeGallery } from './ThemeGallery'
 import styles from './platform.module.css'
 
+export type ThemeCopyMode = 'keep' | 'template'
+
 /**
  * Kundkortets mallväljare (Sida-fliken). Själva galleriet — kategori-flikar, taggar,
  * sök, kort med mallens hero-bild — bor i ThemeGallery och delas med onboarding-studions
@@ -23,13 +25,17 @@ export function ThemePicker({
   tenantId: string
   current: string
   /** Förhandsvisa en mall i previewen (ingen spar). */
-  onPreview?: (theme: string) => void
+  onPreview?: (theme: string, copyMode: ThemeCopyMode) => void
   /** Efter lyckad publicering (mallen ligger nu live). */
   onPublished?: () => void
 }) {
   const [selected, setSelected] = useState(current)
+  const [copyMode, setCopyMode] = useState<ThemeCopyMode | null>(null)
   // När den SPARADE mallen ändras (efter publicering + revalidate) → synka valet.
-  useEffect(() => setSelected(current), [current])
+  useEffect(() => {
+    setSelected(current)
+    setCopyMode(null)
+  }, [current])
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(async (prev, fd) => {
     const res = await setTenantTheme(prev, fd)
@@ -42,7 +48,16 @@ export function ThemePicker({
 
   function pick(key: string) {
     setSelected(key)
-    onPreview?.(key)
+    setCopyMode(null)
+    // Previewen behöver ett tillfälligt läge innan operatören väljer. Behåll är
+    // den säkra förhandsvisningen, men inget skickas vid publicering förrän ett
+    // av radiovalet faktiskt har gjorts.
+    onPreview?.(key, 'keep')
+  }
+
+  function chooseCopyMode(next: ThemeCopyMode) {
+    setCopyMode(next)
+    onPreview?.(selected, next)
   }
 
   return (
@@ -56,8 +71,35 @@ export function ThemePicker({
         <div className={styles.dirtyRow} style={{ marginTop: 14, flexWrap: 'wrap' }} role="status">
           <span className={styles.dirtyDot} aria-hidden="true" />
           Förhandsvisar <strong>{selName}</strong> — ännu ej live.
+          <fieldset style={{ display: 'flex', gap: 12, margin: 0, padding: 0, border: 0 }}>
+            <legend className="sr-only">Innehåll vid mallbyte</legend>
+            <label>
+              <input
+                type="radio"
+                name="copyMode"
+                value="keep"
+                checked={copyMode === 'keep'}
+                onChange={() => chooseCopyMode('keep')}
+              />{' '}
+              Behåll nuvarande innehåll
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="copyMode"
+                value="template"
+                checked={copyMode === 'template'}
+                onChange={() => chooseCopyMode('template')}
+              />{' '}
+              Använd mallens innehåll
+            </label>
+          </fieldset>
           <span style={{ display: 'inline-flex', gap: 8, marginLeft: 'auto' }}>
-            <button type="submit" className="btn-primary" disabled={pending}>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={pending || copyMode === null}
+            >
               {pending ? 'Publicerar…' : `Publicera ${selName}`}
             </button>
             <button type="button" className={styles.btn} disabled={pending} onClick={() => pick(current)}>

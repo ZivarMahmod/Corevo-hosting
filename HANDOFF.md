@@ -113,8 +113,9 @@ tenant och ett testfall, aldrig produktdefinitionen.
   Magic-länk och portalsession, bokningsöversikt/historik/detalj, säker
   avbokning, kalender, Boka igen, profil/kontaktbyte, recovery,
   säkerhet/enheter och neutral PWA är byggda i premiumskalet. En enkel Corevo
-  C-ikon används tillfälligt tills Zivar lämnar riktig logga. Kundsynlig copy
-  beskriver inte den interna inloggningsmetoden.
+  C-ikon har ersatts av den fastställda Kopparfolie-ikonen; manifest, Apple-
+  touch-ikon, portalhostens firewall och redirect-säkert PWA-scope är verifierade.
+  Kundsynlig copy beskriver inte den interna inloggningsmetoden.
   Localhostacceptans mot den isolerade Supabase-previewbranchen
   `localhost-acceptance` gick igenom på desktop och mobil. Den fångade en
   PostgreSQL-regexgräns i portalsnapshoten; `0120` är rättad och
@@ -135,14 +136,24 @@ tenant och ett testfall, aldrig produktdefinitionen.
   seedregressionen är 6/6 grön. Gemensam skrivande localhostbrowseracceptans är
   parkerad eftersom den redan körande port 3000 pekar på produktionens
   `.env.production`; den ska startas mot preview ihop med Goal-74/75.
+- Goal-77 är lokalt verifierad på samma branch. Mallbyte kräver nu ett explicit
+  val mellan **Behåll nuvarande innehåll** och **Använd mallens innehåll**;
+  preview och publicerat resultat delar samma copy-kontrakt. Ett opublicerat
+  utkast blockerar mallbyte och en återställd revision från en annan mall kan
+  inte publiceras över den nya mallen. `83/83` angränsande tester, typecheck,
+  riktad lint och lokal browseracceptans med två verkliga mallbyten är gröna mot
+  `localhost-acceptance`. Produktion är orörd.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
 ## Nästa del
 
-Goal-75 och Goal-76 är lokalt låsta. Nästa byggdel väljs tillsammans med Zivar;
-den rekommenderade nästa delen är Goal-77: bokningsmotorns fyra lägen genom den
-verkliga plats-/djuplänksmatrisen. Goal-74:s nya driftprov samt Goal-75/76:s
+Goal-75, Goal-76 och Goal-77 är lokalt låsta. Nästa byggdel är Goal-78:
+generiskt webbplatsläge med Corevo-bokning av och en valfri extern HTTPS-
+bokningslänk. Därefter följer FreshCuts fasta kundmall och reparationen av
+superadmins Kund/Sida-workspace. Bokningsmotorns fyra lägen genom den verkliga
+plats-/djuplänksmatrisen ligger kvar senare i roadmapen. Goal-74:s nya driftprov
+samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är parkerade till den gemensamma
 releasefasen. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`

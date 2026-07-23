@@ -195,6 +195,37 @@ describe('site revision server actions', () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith('/admin/sida')
   })
 
+  it('refuses to publish a restored draft from another storefront theme', async () => {
+    mocks.from.mockImplementation((table: string) => {
+      const result = table === 'site_revisions'
+        ? {
+            data: {
+              snapshot: {
+                ...snapshot,
+                settings: { ...snapshot.settings, theme: 'leander' },
+              },
+            },
+            error: null,
+          }
+        : table === 'tenant_settings'
+          ? { data: { settings: { theme: 'snitt' } }, error: null }
+          : { data: null, error: null }
+      const builder = {
+        select: vi.fn(), eq: vi.fn(), limit: vi.fn(), maybeSingle: vi.fn(async () => result),
+      }
+      builder.select.mockReturnValue(builder)
+      builder.eq.mockReturnValue(builder)
+      builder.limit.mockReturnValue(builder)
+      return builder
+    })
+
+    const result = await publishSiteDraft({ tenantId: 'tenant-1', expectedLockVersion: 1 })
+
+    expect(result.error).toMatch(/annan mall/i)
+    expect(mocks.rpc).not.toHaveBeenCalled()
+    expect(mocks.revalidateTenantById).not.toHaveBeenCalled()
+  })
+
   it('uploads a cropped draft image to R2 without changing the live storefront', async () => {
     const image = new File(['cropped'], 'crop.webp', { type: 'image/webp' })
     const form = new FormData()

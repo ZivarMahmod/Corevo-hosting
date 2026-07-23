@@ -4,7 +4,12 @@ import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
-import { loadPreviewBundle, resolvePreviewTheme, PreviewShell } from './preview-shell'
+import {
+  loadPreviewBundle,
+  resolvePreviewCopyMode,
+  resolvePreviewTheme,
+  PreviewShell,
+} from './preview-shell'
 
 // Super-admin LIVE STOREFRONT PREVIEW, startsidan — iframe-målet för Sida-fliken på
 // /kunder/[id]. Renderar tenantens RIKTIGA storefront med FULL chrome (Nav +
@@ -20,21 +25,22 @@ export default async function SalongPreviewPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string }>
+  searchParams: Promise<{ theme?: string; copy?: string }>
 }) {
   const { slug } = await params
-  const { theme: themeParam } = await searchParams
+  const { theme: themeParam, copy: copyParam } = await searchParams
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
+  const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant, settings, location } = bundle
 
   const Layout = STOREFRONT_LAYOUTS[theme]
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
   const content = resolveThemeContent(theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
   return (
-    <PreviewShell bundle={bundle} theme={theme}>
+    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
       <Layout
         tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
         theme={theme}

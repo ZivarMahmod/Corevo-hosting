@@ -12,7 +12,7 @@ import {
   type PreviewFieldRegistration,
 } from './CopyFieldsCard'
 import { TenantNameCard } from './TenantNameCard'
-import { ThemePicker } from './ThemePicker'
+import { ThemePicker, type ThemeCopyMode } from './ThemePicker'
 import { BookingPanel } from './BookingSettings'
 import { TenantContactForm } from './TenantContactForm'
 import { OpeningHoursCard } from './OpeningHoursCard'
@@ -178,6 +178,7 @@ export function SidaStudio({
   // Draft-mall: previewen kan visa en ANNAN mall (via ?theme=) utan att den skarpa
   // sidan ändras — publiceras separat. null = tenantens sparade mall.
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
+  const [previewCopyMode, setPreviewCopyMode] = useState<ThemeCopyMode>('keep')
   const [registeredCards, setRegisteredCards] = useState<Record<string, PreviewFieldRegistration[]>>({})
   const [visibleCopyFields, setVisibleCopyFields] = useState<ReadonlySet<string> | null>(null)
   const draftCopyRef = useRef<Record<string, string>>({})
@@ -301,10 +302,11 @@ export function SidaStudio({
   const src = useMemo(() => {
     const q = new URLSearchParams()
     if (previewTheme) q.set('theme', previewTheme)
+    if (previewTheme) q.set('copy', previewCopyMode)
     if (reloadToken > 0) q.set('_p', String(reloadToken))
     const qs = q.toString()
     return `${previewPath}${activePage.path}${qs ? `?${qs}` : ''}`
-  }, [previewPath, activePage.path, previewTheme, reloadToken])
+  }, [previewPath, activePage.path, previewTheme, previewCopyMode, reloadToken])
 
   const reload = useCallback(() => setReloadToken((t) => t + 1), [])
 
@@ -547,12 +549,14 @@ export function SidaStudio({
                 <ThemePicker
                   tenantId={tenantId}
                   current={templateKey}
-                  onPreview={(theme) => {
+                  onPreview={(theme, copyMode) => {
                     setPreviewTheme(theme === templateKey ? null : theme)
+                    setPreviewCopyMode(copyMode)
                     reload()
                   }}
                   onPublished={() => {
                     setPreviewTheme(null)
+                    setPreviewCopyMode('keep')
                     reload()
                   }}
                 />

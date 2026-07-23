@@ -5,7 +5,7 @@ import { BloggSection } from '@/components/storefront/BloggSection'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
-import { loadPreviewBundle, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
+import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
 
 // goal-61 preview-parity: bloggens preview-tvilling — samma dispatch som
 // app/(public)/blogg/page.tsx men mot PREVIEW-temat. Modul AV → ärligt besked.
@@ -17,12 +17,13 @@ export default async function PreviewBloggPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string }>
+  searchParams: Promise<{ theme?: string; copy?: string }>
 }) {
   const { slug } = await params
-  const { theme: themeParam } = await searchParams
+  const { theme: themeParam, copy: copyParam } = await searchParams
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
+  const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant, settings } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
@@ -36,7 +37,7 @@ export default async function PreviewBloggPage({
     const View = themeModuleViews(theme).blogg
     if (View) {
       const data = await loadBloggData(tenant.id, tenant.slug)
-      const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
+      const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
       const content = resolveThemeContent(theme, settings.branding, copy)
       body = <View posts={data?.posts ?? []} content={content} tenantName={tenant.name} />
     } else {
@@ -45,7 +46,7 @@ export default async function PreviewBloggPage({
   }
 
   return (
-    <PreviewShell bundle={bundle} theme={theme}>
+    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
       {body}
     </PreviewShell>
   )

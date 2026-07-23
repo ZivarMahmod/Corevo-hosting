@@ -3,7 +3,7 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import KurserPage from '@/app/(public)/kurser/page'
 import { loadUpcomingEvents, loadKurserConfig } from '@/lib/storefront/kurser/load-kurser'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
-import { loadPreviewBundle, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
+import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
 
 // goal-61 preview-parity, uppdaterad goal-64 (regression): kurssidan HAR numera
 // tema-dispatch (themeModuleViews(...).kurser) — men denna tvilling återanvände
@@ -21,12 +21,13 @@ export default async function PreviewKurserPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string }>
+  searchParams: Promise<{ theme?: string; copy?: string }>
 }) {
   const { slug } = await params
-  const { theme: themeParam } = await searchParams
+  const { theme: themeParam, copy: copyParam } = await searchParams
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
+  const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
@@ -40,7 +41,7 @@ export default async function PreviewKurserPage({
       : null
 
   return (
-    <PreviewShell bundle={bundle} theme={theme}>
+    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
       {off ? (
         <PreviewModuleOff moduleLabel="Kurser & event" />
       ) : View && data ? (

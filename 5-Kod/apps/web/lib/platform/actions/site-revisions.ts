@@ -193,6 +193,40 @@ export async function publishSiteDraft(input: {
 }): Promise<SiteRevisionActionState> {
   const { user, supabase, tenantId } = await siteRevisionCtx(input)
   if (!tenantId || !Number.isSafeInteger(input.expectedLockVersion)) return { error: GENERIC }
+
+  const draftResult = await supabase
+    .from('site_revisions')
+    .select('snapshot')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'draft')
+    .maybeSingle()
+  if (draftResult.error) {
+    await reportActionError('publishSiteDraft.draft', draftResult.error, { tenantId })
+    return { error: GENERIC }
+  }
+  if (draftResult.data) {
+    const draftSnapshot = sanitizeSiteSnapshot(draftResult.data.snapshot)
+    const settingsResult = await supabase
+      .from('tenant_settings')
+      .select('settings')
+      .eq('tenant_id', tenantId)
+      .maybeSingle()
+    if (settingsResult.error) {
+      await reportActionError('publishSiteDraft.settings', settingsResult.error, { tenantId })
+      return { error: GENERIC }
+    }
+    const rawSettings = settingsResult.data?.settings
+    const liveTheme = rawSettings && typeof rawSettings === 'object' && !Array.isArray(rawSettings)
+      ? (rawSettings as Record<string, unknown>).theme
+      : null
+    if (!draftSnapshot || typeof liveTheme !== 'string') return { error: GENERIC }
+    if (draftSnapshot.settings.theme !== liveTheme) {
+      return {
+        error: 'Utkastet kommer från en annan mall. Kasta utkastet eller återställ en version från den nuvarande mallen.',
+      }
+    }
+  }
+
   const { data, error } = await supabase.rpc('publish_site_draft', {
     p_tenant: tenantId,
     p_expected_lock_version: input.expectedLockVersion,

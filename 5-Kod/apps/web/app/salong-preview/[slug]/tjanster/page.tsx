@@ -6,7 +6,7 @@ import { BookCta } from '@/components/brand/BookCta'
 import { Reveal } from '@/components/storefront/Reveal'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { loadPreviewBundle, resolvePreviewTheme, PreviewShell } from '../preview-shell'
+import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell } from '../preview-shell'
 
 // Preview av /tjanster — samma innehåll som app/(public)/tjanster/page.tsx (utan
 // SEO-metadata), i preview-chromen. Nås via nav-klick i preview-iframen.
@@ -18,20 +18,21 @@ export default async function PreviewServicesPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string }>
+  searchParams: Promise<{ theme?: string; copy?: string }>
 }) {
   const { slug } = await params
-  const { theme: themeParam } = await searchParams
+  const { theme: themeParam, copy: copyParam } = await searchParams
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
+  const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant, settings } = bundle
 
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
   const content = resolveThemeContent(theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
   return (
-    <PreviewShell bundle={bundle} theme={theme}>
+    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
       <section className="section">
         <div className="section-inner">
           <SectionHeader

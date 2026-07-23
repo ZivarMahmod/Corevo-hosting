@@ -46,6 +46,12 @@ export function resolvePreviewTheme(bundle: TenantBundle, themeParam: string | u
     : bundle.settings.theme
 }
 
+export type PreviewCopyMode = 'keep' | 'template' | null
+
+export function resolvePreviewCopyMode(copyParam: string | undefined): PreviewCopyMode {
+  return copyParam === 'keep' || copyParam === 'template' ? copyParam : null
+}
+
 /** goal-61 preview-parity: ärligt besked när en modulsida previewas men modulen är AV —
  *  den skarpa sidan hade gett 404, men i editorn är "varför ser jag inget?" en fråga
  *  som förtjänar ett svar, inte en krasch-sida. */
@@ -94,10 +100,12 @@ export async function loadPreviewBundle(slug: string): Promise<TenantBundle> {
 export async function PreviewShell({
   bundle,
   theme,
+  copyMode,
   children,
 }: {
   bundle: TenantBundle
   theme: StorefrontTheme
+  copyMode: PreviewCopyMode
   children: ReactNode
 }) {
   const { tenant, settings, location } = bundle
@@ -121,7 +129,13 @@ export async function PreviewShell({
   // kontrakt som (public)/layout.
   // BRANSCH-REGELN: bokningens verb ur bransch-lagret (se (public)/layout.tsx).
   const bokning = branschBokning(tenant.vertical_id)
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
+  const copy = await getTenantCopy(
+    tenant.id,
+    tenant.slug,
+    tenant.vertical_id ?? null,
+    theme,
+    copyMode,
+  )
   const tagline = resolveTenantCopy(theme, copy).tagline
 
   // goal-61 preview-parity: previewn bar tidigare ALLTID den delade Nav/Footer —
