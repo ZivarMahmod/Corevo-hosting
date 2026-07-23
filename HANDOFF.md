@@ -17,6 +17,12 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
+- Den samlade localhostacceptansen för de aktuella Goal 74–80-delarna är körd:
+  `350` testfiler och `2736` tester passerar tillsammans. Goal 75–80 är lokalt
+  låsta i samma arbetsyta. Goal 74:s riktiga operatörs-/SMS-prov samt
+  produktionsmigration, domän/HTTPS, externa leveranser och deploy är fortsatt
+  releasegrindar och ska göras tillsammans med Zivar. Protokoll:
+  `6-Testing/samlad-localhostacceptans-goal-74-80.md`. Produktion är orörd.
 - Goal 80 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. Superadminens valda kundkort är nu
   en egen fullbreddsyta enligt 1320px-kanon i stället för att pressas bredvid
@@ -175,10 +181,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-75–80 är lokalt låsta. Nästa steg är en enda samlad localhostacceptans av
-de lokala byggdelarna innan releasegränsen. Bokningsmotorns fyra lägen genom den
-verkliga plats-/djuplänksmatrisen ligger kvar senare i roadmapen. Goal-74:s nya
-driftprov samt Goal-75/76:s
+Goal-75–80 är lokalt låsta och den samlade localhostacceptansen är grön. Nästa
+steg är Zivars gemensamma lokala genomgång; därefter tas ett separat beslut om
+release. Bokningsmotorns fyra lägen genom den verkliga plats-/djuplänksmatrisen
+ligger kvar senare i roadmapen. Goal-74:s nya driftprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är parkerade till den gemensamma
 releasefasen. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`

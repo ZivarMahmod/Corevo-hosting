@@ -8,7 +8,7 @@ const readWeb = (relative: string) => {
   return existsSync(file) ? readFileSync(file, 'utf8') : ''
 }
 
-describe('goal-72 customer master–detail route contract', () => {
+describe('goal-72/80 customer master–detail and full-width workspace contract', () => {
   it('owns the tenant fetch and honest card mapping in a persistent layout', () => {
     const layout = readWeb('app/(platform)/kunder/(board)/layout.tsx')
 
@@ -32,17 +32,23 @@ describe('goal-72 customer master–detail route contract', () => {
     expect(page).not.toContain('LegacyCustomersClient')
   })
 
-  it('keeps the workbench as the direct platform-main child with the canonical skeleton', () => {
+  it('keeps the list skeleton and gives a selected customer the canonical full-width workspace', () => {
     const board = readWeb('components/platform/KunderBoard.tsx')
     const css = readWeb('components/platform/kunder-v2.module.css')
 
-    expect(board).toContain('className={`workbench ${styles.board}`}')
+    expect(board).toContain(
+      'className={`workbench ${styles.board}${hasSelection ? ` ${styles.boardState}` : \'\'}`}',
+    )
+    expect(board).toContain('{!hasSelection ? <aside className={styles.list}')
     expect(board).toContain("data-mobile-view={hasSelection ? 'card' : 'list'}")
     expect(css).toMatch(/\.board\s*\{[\s\S]*?grid-template-columns:\s*400px 1fr;/)
+    expect(css).toMatch(/\.boardState\s*\{[\s\S]*?grid-template-columns:\s*1fr;/)
     expect(css).toMatch(/\.list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?border-right:/)
     expect(css).toMatch(/\.rows\s*\{[\s\S]*?overflow-y:\s*auto;/)
-    expect(css).toMatch(/\.pane\s*\{[\s\S]*?overflow-y:\s*auto;[\s\S]*?min-height:\s*0;/)
-    expect(css).toMatch(/\.paneInner\s*\{[\s\S]*?max-width:\s*880px;[\s\S]*?margin:\s*0 auto;/)
+    expect(css).toMatch(
+      /\.pane\s*\{[\s\S]*?overflow-y:\s*auto;[\s\S]*?min-height:\s*0;[\s\S]*?min-width:\s*0;/,
+    )
+    expect(css).toMatch(/\.paneInner\s*\{[\s\S]*?max-width:\s*1320px;[\s\S]*?margin:\s*0 auto;/)
     expect(css).toContain('.rowOn')
     expect(css).toContain('.search')
     expect(css).toContain('.chipOn')

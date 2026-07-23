@@ -1,4 +1,4 @@
-/* Exakt bärande Kunder v2-skelett: två permanenta paneler med egen scroll. */
+/* Kunder v2: listläge med två paneler, vald kund som fullbreddsarbetsyta. */
 .board {
   display: grid;
   grid-template-columns: 400px 1fr;
