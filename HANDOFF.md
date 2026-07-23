@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-21.
+Senast uppdaterad: 2026-07-23.
 
 ## Läsordning
 
@@ -88,30 +88,56 @@ tenant och ett testfall, aldrig produktdefinitionen.
   eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
   innehåller även keyboard-safe kalenderträffar och explicit Ja/Nej till
   kundmeddelande vid flytt. Goal-73 arkiveras inte förrän Zivar godkänt den live.
-- Goal-74 är den aktiva byggdelen och är driftsatt från `main`-SHA `645ae7b`
-  (deploy-run `29840569825`, Worker `0d440c6f-fbfa-433a-b8f5-c5f39f72d3da`):
-  publik bokning kräver PIN via direkt SMS när
-  Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
-  Challenge + hold + anonym PIN-outbox samt PIN-verifierad bokning +
-  bekräftelse-outbox är atomiska; de exakta raderna CAS-claimas och dispatchas
-  direkt, överlappande holds serialiseras per tenant/personal och den gamla
-  overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
-  fel, produktionsbuild, SQL-parser och gateway 77 tester är gröna. Migrationerna
-  `0118–0119` och Worker är produktionsverifierade. `0119` rättar den omedelbara
-  PIN-outbox-claimen som tidigare stannade före Giada. Efter fysisk RM550V-kallstart nådde ett
-  liveprov FreshCuts verkliga lediga tider den 22 juli. Före aktivering visades
-  Namn + E-post. Efter mottagen SIM-canary och aktiverad sändgrind visar en ny
-  bokningssession Namn + Telefon. Ett Demo-prov skickade därefter PIN genom DB,
-  outbox och Giada, visade PIN-fältet och avslutades utan bokning; gatewayen
-  bekräftade `sent`. En riktig e-postleverans och en fullständig PIN-finalisering
-  till skapad bokning återstår.
+- Goal-74:s grundleverans är driftsatt från `main`-SHA
+  `645ae7b` (deploy-run `29840569825`, Worker
+  `0d440c6f-fbfa-433a-b8f5-c5f39f72d3da`): challenge + hold + anonym
+  PIN-outbox samt PIN-verifierad bokning + bekräftelse-outbox är atomiska och
+  migrationerna `0118–0119` är produktionsverifierade. Fysisk SIM-canary,
+  själv-SIM-loopback och en full Demo-kedja till skapad bokning godkändes
+  2026-07-22; testbokningen avbokades direkt efter beviset.
+  Den godkända tilläggsrevisionen 2026-07-23 är lokalt implementerad på
+  `codex/launch-inventory-customer-design`: publik boknings-PIN är fyra siffror
+  med tre försök och tenantens kundadmin/superadminkort väljer endast SMS, SMS
+  med mejlreserv eller endast mejl. Full web 334 testfiler/2 688 tester,
+  typecheck, lint utan fel och produktionsbuild är gröna. Den nya migrationen
+  `20260723072758_booking_pin_three_attempts.sql` är ännu inte runtimekörd eller
+  driftsatt; kanalvalen är inte browserverifierade och en riktig
+  e-postfallback-canary återstår. Zivar har 2026-07-23 parkerat dessa driftsteg:
+  alla återstående delar ska först byggas klart och testas tillsammans på
+  localhost. Först därefter görs en samlad migration/deploy/canary. Goal-74
+  ligger därför kvar i `goals/`.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
   `6-Testing/goal-74-pin-bokning-testlista.md`.
+- Goal-75 är lokalt låst på `codex/launch-inventory-customer-design`.
+  Magic-länk och portalsession, bokningsöversikt/historik/detalj, säker
+  avbokning, kalender, Boka igen, profil/kontaktbyte, recovery,
+  säkerhet/enheter och neutral PWA är byggda i premiumskalet. En enkel Corevo
+  C-ikon används tillfälligt tills Zivar lämnar riktig logga. Kundsynlig copy
+  beskriver inte den interna inloggningsmetoden.
+  Localhostacceptans mot den isolerade Supabase-previewbranchen
+  `localhost-acceptance` gick igenom på desktop och mobil. Den fångade en
+  PostgreSQL-regexgräns i portalsnapshoten; `0120` är rättad och
+  `20260723124530_customer_portal_postgres_regex_fix.sql` reparerar redan
+  migrerade preview-/stagingdatabaser. Portalens 56 testfiler/413 tester,
+  Goal-75-proben 5/5, typecheck, lint utan fel och produktionsbuild är gröna.
+  Ingen produktionsdeploy är gjord; Goal-75 ligger kvar i `goals/` tills den
+  gemensamma migrations-/host-/HTTPS-releasen är genomförd.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
 ## Nästa del
+
+Goal-75 är lokalt låst. Nästa byggdel väljs tillsammans med Zivar; Goal-74:s
+nya migration/releaseprov och Goal-75:s produktionsmigration/host/HTTPS-prov är
+parkerade till den gemensamma releasefasen. Ingen ny deldeploy ska göras innan
+de lokala byggdelarna är klara.
+Den persistenta Supabase-previewbranchen `localhost-acceptance`
+(`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
+innehåller inga kopierade produktionsdata, har repots migrationer genom `0124`,
+Goal-74:s tre-försöksmigration, Goal-75:s säkerhets-/regexmigrationer och
+syntetisk portaldata.
+Produktion `clylvowtowbtotrahuad` är orörd.
 
 Relationspaketet är publicerat från den verifierade leveransen och produktionen
 svarar på boknings- och tenantdörrarna. Zivars autentiserade manuella acceptans av
