@@ -38,12 +38,15 @@ export type PortalSecondaryContact = {
   verified: boolean
 }
 
+export type PortalContactChangeAction = 'change_phone' | 'add_phone' | 'change_email'
+
 export type PortalProfileSnapshot = {
   tenantSlug: string
   tenantName: string
   customerName: string
   verifiedContact: PortalVerifiedContact
   secondaryContact: PortalSecondaryContact | null
+  contactChangeActions: PortalContactChangeAction[]
 }
 
 export type PortalProfileSnapshotResult =

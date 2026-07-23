@@ -11,9 +11,14 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { updatePortalNameAction } from '@/app/(customer-portal)/mina/actions'
-import type { PortalSecondaryContact, PortalVerifiedContact } from '@/lib/customer-portal/types'
+import type {
+  PortalContactChangeAction,
+  PortalSecondaryContact,
+  PortalVerifiedContact,
+} from '@/lib/customer-portal/types'
 import { containsUnicode17Forbidden } from '@/lib/customer-portal/unicode17-policy'
 import { PortalLogoutTrigger, usePortalSessionExpiry } from './PortalSessionBoundary'
+import { ContactChangeFlow } from './ContactChangeFlow'
 
 const NAME_ERROR = 'Namnet måste vara 2–120 tecken.'
 const SAVE_ERROR = 'Namnet kunde inte sparas. Försök igen.'
@@ -48,10 +53,20 @@ function ContactIcon({ channel }: { channel: 'sms' | 'email' }) {
   )
 }
 
-function MenuIcon({ kind }: { kind: 'profile' | 'logout' }) {
+function MenuIcon({ kind }: { kind: 'profile' | 'security' | 'install' | 'logout' }) {
   return kind === 'profile' ? (
     <svg className="cp-icon cp-menu-leading-icon" viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="12" cy="8" r="3" /><path d="M5 20c1-4 3-6 7-6s6 2 7 6" />
+    </svg>
+  ) : kind === 'security' ? (
+    <svg className="cp-icon cp-menu-leading-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z" />
+      <path d="m9 12 2 2 4-5" />
+    </svg>
+  ) : kind === 'install' ? (
+    <svg className="cp-icon cp-menu-leading-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5" y="3" width="14" height="18" rx="3" />
+      <path d="M12 7v7m-3-3 3 3 3-3M10 18h4" />
     </svg>
   ) : (
     <svg className="cp-icon cp-menu-leading-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -65,11 +80,13 @@ export function CustomerProfileCard({
   customerName,
   verifiedContact,
   secondaryContact,
+  contactChangeActions,
 }: {
   tenantName: string
   customerName: string
   verifiedContact: PortalVerifiedContact
   secondaryContact: PortalSecondaryContact | null
+  contactChangeActions: PortalContactChangeAction[]
 }) {
   const expireSession = usePortalSessionExpiry()
   const [name, setName] = useState(customerName)
@@ -86,6 +103,16 @@ export function CustomerProfileCard({
   const toastTimerRef = useRef<number | null>(null)
   const toastStartedAtRef = useRef(0)
   const toastRemainingRef = useRef(5_000)
+  const [contactAction, setContactAction] = useState<PortalContactChangeAction | null>(null)
+  const changePhoneRef = useRef<HTMLButtonElement>(null)
+  const addPhoneRef = useRef<HTMLButtonElement>(null)
+  const changeEmailRef = useRef<HTMLButtonElement>(null)
+
+  const contactActionRef = contactAction === 'change_phone'
+    ? changePhoneRef
+    : contactAction === 'add_phone'
+      ? addPhoneRef
+      : changeEmailRef
 
   useEffect(() => {
     if (!editing) return
@@ -265,6 +292,23 @@ export function CustomerProfileCard({
           <div className="cp-label">Verifierad kontakt</div>
           <ContactRow contact={{ ...verifiedContact, verified: true }} />
           {secondaryContact && <ContactRow contact={secondaryContact} />}
+          <div className="cp-contact-actions">
+            {contactChangeActions.includes('change_phone') && (
+              <button className="cp-btn" type="button" ref={changePhoneRef} onClick={() => setContactAction('change_phone')}>
+                Byt telefonnummer
+              </button>
+            )}
+            {contactChangeActions.includes('add_phone') && (
+              <button className="cp-btn" type="button" ref={addPhoneRef} onClick={() => setContactAction('add_phone')}>
+                Lägg till mobilnummer
+              </button>
+            )}
+            {contactChangeActions.includes('change_email') && (
+              <button className="cp-btn" type="button" ref={changeEmailRef} onClick={() => setContactAction('change_email')}>
+                Byt e-post
+              </button>
+            )}
+          </div>
         </section>
       </section>
       <nav className="cp-profile-menu" aria-label="Profilmeny">
@@ -272,6 +316,16 @@ export function CustomerProfileCard({
           <li>
             <a className="cp-menu-link" href="#uppgiftskort" onClick={focusCard}>
               <span className="cp-menu-copy"><MenuIcon kind="profile" />Mina uppgifter</span><Chevron />
+            </a>
+          </li>
+          <li>
+            <a className="cp-menu-link" href="/mina/sakerhet">
+              <span className="cp-menu-copy"><MenuIcon kind="security" />Säkerhet och enheter</span><Chevron />
+            </a>
+          </li>
+          <li>
+            <a className="cp-menu-link" href="/mina/installera">
+              <span className="cp-menu-copy"><MenuIcon kind="install" />Installera på hemskärmen</span><Chevron />
             </a>
           </li>
           <li>
@@ -294,6 +348,16 @@ export function CustomerProfileCard({
         >
           Namnet är sparat.
         </p>
+      )}
+      {contactAction && (
+        <ContactChangeFlow
+          action={contactAction}
+          tenantName={tenantName}
+          currentContact={verifiedContact}
+          support={{ href: '/hjalp', label: 'Hjälp' }}
+          triggerRef={contactActionRef}
+          onClose={() => setContactAction(null)}
+        />
       )}
     </section>
   )
@@ -349,6 +413,16 @@ export function CustomerProfileUnavailable({ logoutAvailable }: { logoutAvailabl
           <li>
             <a className="cp-menu-link" href="/mina/profil">
               <span className="cp-menu-copy"><MenuIcon kind="profile" />Mina uppgifter</span><Chevron />
+            </a>
+          </li>
+          <li>
+            <a className="cp-menu-link" href="/mina/sakerhet">
+              <span className="cp-menu-copy"><MenuIcon kind="security" />Säkerhet och enheter</span><Chevron />
+            </a>
+          </li>
+          <li>
+            <a className="cp-menu-link" href="/mina/installera">
+              <span className="cp-menu-copy"><MenuIcon kind="install" />Installera på hemskärmen</span><Chevron />
             </a>
           </li>
           {logoutAvailable && (

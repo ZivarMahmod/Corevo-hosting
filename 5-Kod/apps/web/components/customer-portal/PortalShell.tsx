@@ -8,6 +8,7 @@ import { PortalLogoutTrigger, PortalSessionBoundary } from './PortalSessionBound
 type PortalShellProps = {
   active?: ActivePortalNav
   customerName?: string
+  tenantName?: string
   tenantSlug?: string
   detailBackTarget?: '/mina' | '/mina/historik'
   variant?: 'standard' | 'recovery'
@@ -17,6 +18,7 @@ type PortalShellProps = {
 export function PortalShell({
   active,
   customerName,
+  tenantName,
   tenantSlug,
   detailBackTarget,
   variant = 'standard',
@@ -31,6 +33,7 @@ export function PortalShell({
       <PortalShellFrame
         active={active ?? 'bookings'}
         customerName={customerName}
+        tenantName={tenantName}
         tenantSlug={tenantSlug}
         detailBackTarget={detailBackTarget}
       >
@@ -46,20 +49,30 @@ export function PortalShell({
 function PortalShellFrame({
   active,
   customerName,
+  tenantName,
   tenantSlug,
   detailBackTarget,
   recovery = false,
   children,
 }: Omit<PortalShellProps, 'variant'> & { recovery?: boolean }) {
   return (
-    <div className="customer-portal">
+    <div className={`customer-portal${recovery ? ' cp-recovery-portal' : ''}`}>
       <a className="cp-skip" href="#huvudinnehall">Hoppa till innehåll</a>
       <header className="cp-topbar">
         <div className="cp-topbar-inner">
           {recovery ? (
-            <div className="cp-brand"><span>COREVO</span><small>MINA BOKNINGAR</small></div>
+            <div className="cp-brand">
+              <span className="cp-brand-mark">C</span>
+              <span className="cp-brand-copy"><strong>Corevo</strong><small>MINA BOKNINGAR</small></span>
+            </div>
           ) : (
-            <Link className="cp-brand" href="/mina"><span>COREVO</span><small>MINA BOKNINGAR</small></Link>
+            <Link className="cp-brand" href="/mina">
+              <span className="cp-brand-mark">C</span>
+              <span className="cp-brand-copy">
+                <strong>{tenantName || 'Corevo'}</strong>
+                <small>DIN KUNDPORTAL</small>
+              </span>
+            </Link>
           )}
           {!recovery && (detailBackTarget ? (
             <Link className="cp-top-action cp-mobile-user" href={detailBackTarget}>Tillbaka</Link>
@@ -79,7 +92,13 @@ function PortalShellFrame({
         </div>
       </header>
       <div className={`cp-layout${recovery ? ' cp-layout-recovery' : ''}`}>
-        {!recovery && <PortalNavigationClient active={active ?? 'bookings'} mode="desktop" />}
+        {!recovery && (
+          <PortalNavigationClient
+            active={active ?? 'bookings'}
+            mode="desktop"
+            tenantName={tenantName}
+          />
+        )}
         <main id="huvudinnehall" tabIndex={-1}>
           {!recovery && <PortalRouteFocus />}
           {children}

@@ -156,6 +156,7 @@ describe('portal profile name', () => {
         tenantSlug: 'freshcut', tenantName: 'FreshCut', customerName: 'Zivar',
         verifiedContact: { channel: 'email', maskedDestination: 'z•••@example.se' },
         secondaryContact: null,
+        contactChangeActions: ['add_phone', 'change_email'],
       },
     })
     expect(JSON.stringify(result)).not.toContain(email)

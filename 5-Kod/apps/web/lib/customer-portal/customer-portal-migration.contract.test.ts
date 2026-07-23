@@ -82,6 +82,12 @@ describe('customer portal 0120 migration contract', () => {
     expect(migration).not.toMatch(/add column[^;]*customer_portal_mode/)
   })
 
+  it('uses PostgreSQL-safe bounds when validating optional portal URLs', () => {
+    expect(migration).not.toContain('{1,2000}')
+    expect(migration).toContain("pg_catalog.length(ts.branding ->> 'logo_url') between 9 and 2008")
+    expect(migration).toContain("~* '^https://[^[:space:]]+$'")
+  })
+
   it('exposes only narrow service-role RPCs with pinned search paths', () => {
     for (const rpc of criticalRpcs) {
       expect(migration).toContain(`create or replace function public.${rpc}`)
@@ -362,10 +368,10 @@ describe('customer portal 0120 migration contract', () => {
     expect(list).toContain("b.start_ts < v_now or b.status not in ('pending', 'confirmed')")
   })
 
-  it('moves the database release inventory to 0123 without pretending production is applied', () => {
+  it('moves the database release inventory to 0124 without pretending production is applied', () => {
     for (const workflow of [ci, deploy]) {
-      expect(workflow).toContain('--expected-latest 0123')
-      expect(workflow).toMatch(/--required-test-versions[^\n]*0120,0121,0122,0123/)
+      expect(workflow).toContain('--expected-latest 0124')
+      expect(workflow).toMatch(/--required-test-versions[^\n]*0120,0121,0122,0123,0124/)
     }
     expect(deploy).toContain('PROD_DB_MIGRATION')
   })

@@ -4,9 +4,18 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ updateName: vi.fn(), refresh: vi.fn(), replace: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  updateName: vi.fn(), start: vi.fn(), verifyCurrent: vi.fn(),
+  submitDestination: vi.fn(), resend: vi.fn(), finalize: vi.fn(),
+  refresh: vi.fn(), replace: vi.fn(),
+}))
 vi.mock('@/app/(customer-portal)/mina/actions', () => ({
   updatePortalNameAction: mocks.updateName,
+  startPortalContactChangeAction: mocks.start,
+  verifyPortalContactChangeCurrentAction: mocks.verifyCurrent,
+  submitPortalContactChangeDestinationAction: mocks.submitDestination,
+  resendPortalContactChangeAction: mocks.resend,
+  finalizePortalContactChangeAction: mocks.finalize,
 }))
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: mocks.refresh, replace: mocks.replace }),
@@ -44,6 +53,7 @@ describe('canonical customer profile card', () => {
           customerName="Alex Testperson"
           verifiedContact={{ channel: 'sms', maskedDestination: '•••• •• 00 00' }}
           secondaryContact={null}
+          contactChangeActions={['change_phone']}
         />
       </PortalSessionBoundary>,
     ))
@@ -64,10 +74,25 @@ describe('canonical customer profile card', () => {
     expect(host.textContent).toContain('•••• •• 00 00')
     expect(host.textContent).not.toContain('+46729408522')
     expect(host.querySelector('nav[aria-label="Profilmeny"]')?.textContent).toContain('Mina uppgifter')
+    expect(host.querySelector('nav[aria-label="Profilmeny"]')?.textContent).toContain('Säkerhet och enheter')
     expect(host.querySelector('nav[aria-label="Profilmeny"]')?.textContent).toContain('Logga ut')
-    expect(host.textContent).not.toMatch(/Säkerhet och enheter|Installera på hemskärmen|Byt telefonnummer|Lägg till mobilnummer|Byt e-post/)
+    expect(host.textContent).toContain('Installera på hemskärmen')
+    expect(host.textContent).not.toMatch(/Lägg till mobilnummer|Byt e-post/)
+    expect(host.textContent).toContain('Byt telefonnummer')
     expect(host.querySelectorAll('.cp-contact-icon')).toHaveLength(1)
-    expect(host.querySelectorAll('.cp-menu-leading-icon')).toHaveLength(2)
+    expect(host.querySelectorAll('.cp-menu-leading-icon')).toHaveLength(4)
+  })
+
+  it('opens the server-selected contact flow over the unchanged profile and returns focus on cancel', async () => {
+    const trigger = button('Byt telefonnummer')
+    click(trigger)
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(host.textContent).toContain('Bekräfta att det är du')
+    expect(host.textContent).toContain('•••• •• 00 00')
+    click(button('Avbryt'))
+    await act(async () => Promise.resolve())
+    expect(host.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
   })
 
   it.each([
@@ -83,6 +108,7 @@ describe('canonical customer profile card', () => {
           secondaryContact={{
             channel: 'email', maskedDestination: 'a•••@example.se', verified,
           }}
+          contactChangeActions={['change_phone', 'change_email']}
         />
       </PortalSessionBoundary>,
     ))
@@ -100,6 +126,7 @@ describe('canonical customer profile card', () => {
           customerName="Alex Testperson"
           verifiedContact={{ channel: 'email', maskedDestination: 'a•••@example.se' }}
           secondaryContact={null}
+          contactChangeActions={['add_phone', 'change_email']}
         />
       </PortalSessionBoundary>,
     ))
@@ -107,6 +134,8 @@ describe('canonical customer profile card', () => {
     expect(host.textContent).toContain('E-post')
     expect(host.textContent).toContain('a•••@example.se')
     expect(host.textContent).not.toContain('SMS')
+    expect(host.textContent).toContain('Lägg till mobilnummer')
+    expect(host.textContent).toContain('Byt e-post')
   })
 
   it('validates before the server, cancels with Escape and returns focus to Ändra', async () => {

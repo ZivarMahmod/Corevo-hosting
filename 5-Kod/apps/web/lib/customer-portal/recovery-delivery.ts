@@ -121,7 +121,7 @@ export async function deliverPortalRecoveryOutbox(
     return { status: 'failed', reason: 'payload_invalid' }
   }
 
-  const code = generateBookingPin()
+  const code = generateBookingPin(6)
   const normalized = target.destination === null
     ? null
     : normalizeBookingContact(target.channel, target.destination)

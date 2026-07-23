@@ -4,18 +4,20 @@ import { describe, expect, it } from 'vitest'
 const css = () => readFileSync(new URL('./portal.css', import.meta.url), 'utf8')
 
 describe('customer portal canonical CSS', () => {
-  it('carries the exact design tokens instead of re-derived values', () => {
+  it('carries the approved premium design tokens instead of the retired dark theme', () => {
     const source = css()
     for (const token of [
-      '--bg:#121210', '--surface-1:#1C1C18', '--surface-2:#25251F', '--surface-3:#2E2E28',
-      '--ink-1:#F0F0EA', '--ink-2:#C8C8BD', '--ink-3:#96968C', '--line-1:#33332C',
-      '--line-2:#4A4A41', '--action:#2F5F47', '--action-hover:#3A7357',
-      '--action-text:#E9F2EC', '--positive:#9AC4A5', '--warning:#D6AC6A',
-      '--negative:#D68F85', '--tap-min:44px', '--button-primary-h:48px',
-      '--topbar-h-mobile:60px', '--topbar-h-desktop:56px', '--container-tablet:760px',
-      '--container-desktop:1248px', '--col-left:232px', '--col-main:680px',
-      '--col-right:288px', '--layout-gap:24px',
+      '--bg:#f3efe6', '--surface-1:#fffdf8', '--surface-2:#faf7f0', '--surface-dark:#191a17',
+      '--ink-1:#20211d', '--ink-2:#74736b', '--ink-3:#99968d', '--line-1:#ddd7ca',
+      '--line-2:#cbbca9', '--action:#191a17', '--action-hover:#25261f',
+      '--action-text:#fffdf8', '--copper:#a97141', '--copper-light:#deb68d',
+      '--positive:#466a57', '--negative:#9d4a42', '--tap-min:44px',
+      '--button-primary-h:48px', '--container-tablet:760px',
+      '--container-desktop:1160px', '--col-left:250px', '--col-main:760px',
+      '--layout-gap:40px',
     ]) expect(source.replace(/\s/g, '')).toContain(token)
+    expect(source).toContain('--font-display:var(--font-spectral),"Spectral",Georgia')
+    expect(source).not.toContain('--bg:#121210')
   })
 
   it('implements the canonical responsive navigation and all acceptance breakpoints', () => {
@@ -24,11 +26,10 @@ describe('customer portal canonical CSS', () => {
     expect(source).toMatch(/\.cp-sidenav\s*\{[^}]*display:\s*none/s)
     expect(source).toContain('@media (min-width:390px)')
     expect(source).toMatch(/@media \(max-width:359px\)[\s\S]*\.cp-identity\s*\{[^}]*flex-direction:\s*column/)
-    expect(source).toContain('@media (min-width:768px)')
-    expect(source).toContain('@media (min-width:1024px)')
-    expect(source).toContain('@media (min-width:1248px)')
-    expect(source).toMatch(/@media \(min-width:1024px\)[\s\S]*\.cp-bottomnav\s*\{[^}]*display:\s*none/)
-    expect(source).toMatch(/@media \(min-width:1024px\)[\s\S]*\.cp-sidenav\s*\{[^}]*display:\s*block/)
+    expect(source).toContain('@media (min-width:780px)')
+    expect(source).toMatch(/@media \(min-width:780px\)[\s\S]*\.cp-bottomnav\s*\{[^}]*display:\s*none/)
+    expect(source).toMatch(/@media \(min-width:780px\)[\s\S]*\.cp-sidenav\s*\{[^}]*display:\s*flex/)
+    expect(source).toMatch(/\.cp-bottomnav\s*\{[^}]*background:\s*var\(--surface-dark\)/s)
   })
 
   it('keeps the exact avatar, card-gap and centered desktop topbar contracts', () => {
@@ -77,6 +78,17 @@ describe('customer portal canonical CSS', () => {
     expect(source).toMatch(/\.cp-cancel-layer\[data-closing="true"\][^{]*\{[^}]*animation:[^;}]*140ms/s)
     expect(source).toMatch(/\.cp-cancel-layer\[data-closing="true"\][\s\S]*\.cp-cancel-dialog\s*\{[^}]*animation:[^;}]*140ms/s)
     expect(source).toMatch(/@media \(prefers-reduced-motion:reduce\)[\s\S]*\.cp-cancel-layer\[data-closing="true"\][^{]*\{[^}]*animation-duration:\s*0ms!important/s)
+  })
+
+  it('implements the canonical contact-change sheet and its independent 768px dialog breakpoint', () => {
+    const source = css()
+    expect(source).toMatch(/\.cp-contact-change-layer\s*\{[^}]*position:\s*fixed;[^}]*align-items:\s*flex-end/s)
+    expect(source).toMatch(/\.cp-contact-change-scrim\s*\{[^}]*background:\s*rgba\(0,0,0,\.56\)/s)
+    expect(source).toMatch(/\.cp-contact-change-dialog\s*\{[^}]*width:\s*100%;[^}]*max-height:\s*calc\(100dvh - 16px\);[^}]*background:\s*var\(--surface-2\)/s)
+    expect(source).toMatch(/\.cp-contact-change-handle\s*\{[^}]*width:\s*32px;[^}]*height:\s*4px/s)
+    expect(source).toMatch(/@media \(min-width:768px\)[\s\S]*\.cp-contact-change-layer\s*\{[^}]*align-items:\s*center/s)
+    expect(source).toMatch(/@media \(min-width:768px\)[\s\S]*\.cp-contact-change-dialog\s*\{[^}]*max-width:\s*440px;[^}]*background:\s*var\(--surface-3\)/s)
+    expect(source).toMatch(/@media \(prefers-reduced-motion:reduce\)[\s\S]*\.cp-contact-change-dialog\s*\{[^}]*transform:\s*none/s)
   })
 
   it('fully scopes body-portaled cancellation UI to the portal box, font, focus and motion contracts', () => {

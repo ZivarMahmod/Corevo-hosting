@@ -11,7 +11,7 @@ const NAV = [
   { key: 'profile', href: '/mina/profil', label: 'Profil', icon: 'profile' },
 ] as const
 
-const DESKTOP_QUERY = '(min-width: 1024px)'
+const DESKTOP_QUERY = '(min-width: 780px)'
 
 function subscribeToDesktopQuery(onChange: () => void) {
   const query = window.matchMedia(DESKTOP_QUERY)
@@ -36,15 +36,26 @@ function NavIcon({ icon }: { icon: (typeof NAV)[number]['icon'] }) {
 export function PortalNavigationClient({
   active,
   mode,
+  tenantName,
 }: {
   active: ActivePortalNav
   mode: 'desktop' | 'mobile'
+  tenantName?: string
 }) {
   const isDesktop = useSyncExternalStore(subscribeToDesktopQuery, getDesktopSnapshot, () => false)
   if ((mode === 'desktop') !== isDesktop) return null
 
   return (
     <nav className={mode === 'desktop' ? 'cp-sidenav' : 'cp-bottomnav'} aria-label="Huvudmeny">
+      {mode === 'desktop' && (
+        <div className="cp-side-brand" aria-hidden="true">
+          <span className="cp-brand-mark">C</span>
+          <span className="cp-side-brand-copy">
+            <strong>Corevo</strong>
+            {tenantName && <small>{tenantName}</small>}
+          </span>
+        </div>
+      )}
       <ul>
         {NAV.map((item) => (
           <li key={item.key}>

@@ -37,14 +37,14 @@ export default async function CustomerPortalBookingPage({
   const detail = await getPortalBooking(id)
   if (detail.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
   if (detail.outcome === 'not_found') {
-    return <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug} detailBackTarget="/mina"><PortalErrorState variant="not-found" /></PortalShell>
+    return <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantName={session.snapshot.tenantName} tenantSlug={session.snapshot.tenantSlug} detailBackTarget="/mina"><PortalErrorState variant="not-found" /></PortalShell>
   }
   if (detail.outcome !== 'ok') {
-    return <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug} detailBackTarget="/mina"><PortalErrorState variant="fetch-detail" /></PortalShell>
+    return <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantName={session.snapshot.tenantName} tenantSlug={session.snapshot.tenantSlug} detailBackTarget="/mina"><PortalErrorState variant="fetch-detail" /></PortalShell>
   }
 
   return (
-    <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug} detailBackTarget={backTarget}>
+    <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantName={session.snapshot.tenantName} tenantSlug={session.snapshot.tenantSlug} detailBackTarget={backTarget}>
       <BookingDetail snapshot={session.snapshot} booking={detail.booking} backTarget={backTarget} />
     </PortalShell>
   )

@@ -176,9 +176,20 @@ export function NextBookingCard({
   return (
     <>
       <article className="cp-card cp-next-booking" aria-labelledby="nasta-bokning">
-        <h2 id="nasta-bokning" className="cp-eyebrow" data-cancel-focus-target tabIndex={-1}>NÄSTA BOKNING</h2>
-        <BookingStatusChip booking={next} />
-        <h3 className="cp-mono">{formatted.homeDateTime}</h3>
+        <div className="cp-ticket-head">
+          <h2 id="nasta-bokning" className="cp-eyebrow" data-cancel-focus-target tabIndex={-1}>
+            NÄSTA BOKNING
+          </h2>
+          <BookingStatusChip booking={next} />
+        </div>
+        <div className="cp-date-lockup" aria-label={formatted.homeDateTime}>
+          <span className="cp-date-day">{formatted.homeDay}</span>
+          <span className="cp-date-divider" aria-hidden="true" />
+          <span className="cp-date-copy">
+            <strong>{formatted.homeWeekday}</strong>
+            <span>{formatted.homeMonth} · {formatted.homeTime}</span>
+          </span>
+        </div>
         <BookingFacts booking={next} snapshot={snapshot} />
         <div className="cp-actions">
           <Link className="cp-btn cp-btn-primary" href={`/mina/bokningar/${next.id}`}>Visa bokningen</Link>

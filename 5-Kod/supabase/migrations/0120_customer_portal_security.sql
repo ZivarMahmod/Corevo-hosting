@@ -443,7 +443,8 @@ begin
     'tenantSlug', t.slug,
     'tenantName', t.name,
     'logoUrl', case
-      when ts.branding ->> 'logo_url' ~* '^https://[^[:space:]]{1,2000}$'
+      when pg_catalog.length(ts.branding ->> 'logo_url') between 9 and 2008
+       and ts.branding ->> 'logo_url' ~* '^https://[^[:space:]]+$'
         then ts.branding ->> 'logo_url'
       else null
     end,

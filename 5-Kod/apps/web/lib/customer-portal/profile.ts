@@ -14,6 +14,7 @@ import { containsUnicode17Forbidden } from './unicode17-policy'
 import type {
   PortalProfileSnapshot,
   PortalProfileSnapshotResult,
+  PortalContactChangeAction,
   PortalSecondaryContact,
 } from './types'
 
@@ -180,6 +181,10 @@ async function projectEvidence(evidence: ProfileEvidence): Promise<PortalProfile
       customerName: evidence.customerName,
       verifiedContact: { channel: 'sms', maskedDestination: primary.maskedDestination },
       secondaryContact,
+      contactChangeActions: [
+        'change_phone',
+        ...(secondaryContact ? ['change_email' as const] : []),
+      ],
     }
   }
   if (evidence.email === null || evidence.email.trim() === '') return null
@@ -193,6 +198,66 @@ async function projectEvidence(evidence: ProfileEvidence): Promise<PortalProfile
     customerName: evidence.customerName,
     verifiedContact: { channel: 'email', maskedDestination: primary.maskedDestination },
     secondaryContact: null,
+    contactChangeActions: ['add_phone', 'change_email'],
+  }
+}
+
+export type PortalContactChangeEvidenceResult =
+  | {
+      outcome: 'ok'
+      sessionPublicId: string
+      secretDigest: string
+      tenantName: string
+      channel: BookingVerificationChannel
+      destination: string
+      contactDigest: string
+      maskedDestination: string
+      actions: PortalContactChangeAction[]
+    }
+  | { outcome: 'expired' }
+  | { outcome: 'unavailable' }
+
+export async function getPortalContactChangeEvidence(): Promise<PortalContactChangeEvidenceResult> {
+  const session = await access()
+  if (session === 'expired') return { outcome: 'expired' }
+  if (session === 'unavailable') return { outcome: 'unavailable' }
+  try {
+    const { data, error } = await session.client.rpc('customer_portal_profile_snapshot', {
+      p_session_public_id: session.sessionPublicId,
+      p_secret_digest: session.secretDigest,
+    })
+    if (error || !Array.isArray(data) || data.length !== 1 || !isRecord(data[0])) {
+      return { outcome: 'unavailable' }
+    }
+    const row = data[0]
+    if (row.outcome === 'expired') return { outcome: 'expired' }
+    if (row.outcome !== 'ok') return { outcome: 'unavailable' }
+    const evidence = parseProfileEvidence(row.profile)
+    if (!evidence) return { outcome: 'unavailable' }
+    const phonePresent = evidence.phone !== null && evidence.phone.trim() !== ''
+    const channel: BookingVerificationChannel = phonePresent ? 'sms' : 'email'
+    const raw = channel === 'sms' ? evidence.phone : evidence.email
+    if (!raw) return { outcome: 'unavailable' }
+    const normalized = normalizeBookingContact(channel, raw)
+    if (!normalized) return { outcome: 'unavailable' }
+    const exact = await exactContact({ channel, raw, proofs: evidence.proofs, required: true })
+    if (!exact?.verified) return { outcome: 'unavailable' }
+    const secondaryEmail = channel === 'sms' && evidence.email !== null && evidence.email.trim() !== ''
+    return {
+      outcome: 'ok',
+      sessionPublicId: session.sessionPublicId,
+      secretDigest: session.secretDigest,
+      tenantName: evidence.tenantName,
+      channel,
+      destination: normalized,
+      contactDigest: await bookingContactDigest(channel, normalized),
+      maskedDestination: exact.maskedDestination,
+      actions: channel === 'sms'
+        ? ['change_phone', ...(secondaryEmail ? ['change_email' as const] : [])]
+        : ['add_phone', 'change_email'],
+    }
+  } catch {
+    return { outcome: 'unavailable' }
   }
 }
 

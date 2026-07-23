@@ -45,6 +45,9 @@ type PortalDigestDomain =
   | 'recovery-subject'
   | 'recovery-contact'
   | 'recovery-code'
+  | 'contact-change-subject'
+  | 'contact-change-code'
+  | 'contact-change-session'
 
 async function digest(domain: PortalDigestDomain, secret: string): Promise<string> {
   const key = await globalThis.crypto.subtle.importKey(
@@ -96,4 +99,25 @@ export function portalRecoveryContactDigest(
 
 export function portalRecoveryCodeDigest(challengePublicId: string, code: string): Promise<string> {
   return digest('recovery-code', `${challengePublicId}:${code}`)
+}
+
+export function portalContactChangeSubjectDigest(secret: string): Promise<string> {
+  return digest('contact-change-subject', secret)
+}
+
+export function portalContactChangeCodeDigest(
+  flowPublicId: string,
+  stage: 'current' | 'new',
+  code: string,
+): Promise<string> {
+  return digest('contact-change-code', `${flowPublicId}:${stage}:${code}`)
+}
+
+export async function portalContactChangeSessionSecret(
+  flowPublicId: string,
+  flowSecret: string,
+): Promise<string> {
+  const signature = await digest('contact-change-session', `${flowPublicId}:${flowSecret}`)
+  const bytes = new Uint8Array(signature.match(/.{2}/g)!.map((part) => Number.parseInt(part, 16)))
+  return base64Url(bytes)
 }

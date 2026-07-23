@@ -26,7 +26,7 @@ describe('customer portal client shell behavior', () => {
       configurable: true,
       value: () => ({
         get matches() { return desktop },
-        media: '(min-width: 1024px)',
+        media: '(min-width: 780px)',
         onchange: null,
         addEventListener: (_type: string, listener: () => void) => mediaListeners.add(listener),
         removeEventListener: (_type: string, listener: () => void) => mediaListeners.delete(listener),

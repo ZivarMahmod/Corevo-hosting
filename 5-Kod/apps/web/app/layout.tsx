@@ -23,6 +23,7 @@ import {
   Newsreader,
   Instrument_Serif,
   Instrument_Sans,
+  Spectral,
   Mulish,
   Karla,
   Poiret_One,
@@ -190,6 +191,7 @@ const archivo = Archivo({ subsets: ['latin'], variable: '--font-archivo', displa
 const newsreader = Newsreader({ subsets: ['latin'], variable: '--font-newsreader', display: 'swap', preload: false }) // blomstertorget brödtext
 const instrumentSerif = Instrument_Serif({ subsets: ['latin'], weight: '400', variable: '--font-instrumentserif', display: 'swap', preload: false }) // calytrix display
 const instrumentSans = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrumentsans', display: 'swap', preload: false }) // calytrix brödtext
+const spectral = Spectral({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-spectral', display: 'swap', preload: false }) // kundportal premium display
 const mulish = Mulish({ subsets: ['latin'], variable: '--font-mulish', display: 'swap', preload: false }) // eloria brödtext
 const karla = Karla({ subsets: ['latin'], variable: '--font-karla', display: 'swap', preload: false }) // kalla brödtext
 const poiret = Poiret_One({ subsets: ['latin'], weight: '400', variable: '--font-poiret', display: 'swap', preload: false }) // lunaria display
@@ -202,7 +204,7 @@ const workSans = Work_Sans({ subsets: ['latin'], variable: '--font-worksans', di
 const figtree = Figtree({ subsets: ['latin'], variable: '--font-figtree', display: 'swap', preload: false }) // solsalt brödtext
 
 const DC_FONT_VARS = [
-  manrope, lora, nunitoSans, archivo, newsreader, instrumentSerif, instrumentSans,
+  manrope, lora, nunitoSans, archivo, newsreader, instrumentSerif, instrumentSans, spectral,
   mulish, karla, poiret, spaceGrotesk, bodoni, schibsted, hanken, anton, workSans, figtree,
 ]
   .map((f) => f.variable)

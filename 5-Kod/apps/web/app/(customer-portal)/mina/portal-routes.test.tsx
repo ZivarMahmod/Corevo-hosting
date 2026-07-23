@@ -71,6 +71,7 @@ beforeEach(() => {
     tenantSlug: 'freshcut', tenantName: 'FreshCut', customerName: 'Alex',
     verifiedContact: { channel: 'sms', maskedDestination: '•••• •• 00 00' },
     secondaryContact: null,
+    contactChangeActions: ['change_phone'],
   } })
 })
 

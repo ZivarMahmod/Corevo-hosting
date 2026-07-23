@@ -88,7 +88,7 @@ describe('CustomerPortalShell', () => {
     )
 
     expect(html.match(/<main id="huvudinnehall"/g)).toHaveLength(1)
-    expect(html).toContain('COREVO')
+    expect(html).toContain('Corevo')
     expect(html).toContain('MINA BOKNINGAR')
     expect(html).not.toMatch(/aria-label="Huvudmeny"|Öppna profil|Logga ut|cp-support/)
     expect(html.match(/<a\b/g)).toHaveLength(1)
@@ -143,6 +143,8 @@ describe('customer portal views', () => {
     )
 
     expect(one).toContain('NÄSTA BOKNING')
+    expect(one).toMatch(/class="cp-date-day"[^>]*>23<\/span>/)
+    expect(one).toContain('class="cp-date-copy"')
     expect(one).toContain('Visa bokningen')
     expect(one).toContain('Lägg i kalender')
     expect(one).toContain('>Avboka</button>')
@@ -155,6 +157,18 @@ describe('customer portal views', () => {
     expect(two.match(/Lägg i kalender/g)).toHaveLength(1)
     expect(unknownNext).not.toContain('Lägg i kalender')
     expect(unknownNext).not.toContain('>Avboka</button>')
+  })
+
+  it('never renders the removed passwordless marketing copy in the real portal UI', () => {
+    const html = renderToStaticMarkup(
+      <PortalShell active="bookings" customerName="Alex" tenantSlug="nordverk">
+        <NextBookingCard snapshot={snapshot} items={[booking()]} hasHistory />
+      </PortalShell>,
+    )
+
+    expect(visibleText(html)).not.toMatch(
+      /Lösenordsfri inloggning|Lösenordsfri och säker|lösenordsfria kundportal|PIN-koden lämnar aldrig|Corevo Portal · v1/i,
+    )
   })
 
   it('hides rebook actions while a passed booking is waiting for an outcome', () => {

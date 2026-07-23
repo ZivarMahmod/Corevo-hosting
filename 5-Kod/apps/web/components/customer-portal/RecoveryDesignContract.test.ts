@@ -14,13 +14,11 @@ describe('recovery canonical CSS contract', () => {
     expect(tabletRules).toContain('.cp-layout-recoverymain{max-width:440px;margin:0auto;padding:0}')
   })
 
-  it('uses the fixed icon toast with exact surface, placement and canonical stacking', () => {
+  it('uses the premium graphite toast with exact placement and canonical stacking', () => {
     expect(css).toContain('.cp-toast{position:fixed;z-index:var(--z-toast);right:var(--space-4);bottom:calc(var(--bottomnav-h)+var(--space-4));')
-    expect(css).toContain('padding:var(--space-3)var(--space-4);background:var(--surface-3);border:var(--border-width)solidvar(--line-2);border-radius:var(--radius-field)')
+    expect(css).toContain('padding:var(--space-3)var(--space-4);background:var(--surface-dark);border:var(--border-width)solidrgba(255,255,255,.1);border-radius:14px;color:#fff!important;box-shadow:var(--shadow-card)')
     expect(css).toContain('.cp-toast.cp-icon{width:var(--icon-md);height:var(--icon-md)}')
     expect(css).toMatch(/@media\(min-width:1024px\)[\s\S]*?\.cp-toast\{bottom:var\(--space-4\)\}/)
-    const toastRule = css.match(/\.cp-toast\{([^}]*)\}/)?.[1]
-    expect(toastRule).not.toContain('box-shadow')
   })
 
   it('uses exact disabled surfaces, opacity and 16px error icons', () => {

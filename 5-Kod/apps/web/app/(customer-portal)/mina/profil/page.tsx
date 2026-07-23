@@ -35,6 +35,7 @@ export default async function CustomerPortalProfilePage() {
         <PortalShell
           active="profile"
           customerName={session.snapshot.customerName}
+          tenantName={session.snapshot.tenantName}
           tenantSlug={session.snapshot.tenantSlug}
         >
           <CustomerProfileUnavailable logoutAvailable />
@@ -52,6 +53,7 @@ export default async function CustomerPortalProfilePage() {
     <PortalShell
       active="profile"
       customerName={result.profile.customerName}
+      tenantName={result.profile.tenantName}
       tenantSlug={result.profile.tenantSlug}
     >
       <CustomerProfileCard
@@ -59,6 +61,7 @@ export default async function CustomerPortalProfilePage() {
         customerName={result.profile.customerName}
         verifiedContact={result.profile.verifiedContact}
         secondaryContact={result.profile.secondaryContact}
+        contactChangeActions={result.profile.contactChangeActions}
       />
     </PortalShell>
   )

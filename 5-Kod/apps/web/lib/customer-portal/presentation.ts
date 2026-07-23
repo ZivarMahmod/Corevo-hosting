@@ -63,6 +63,14 @@ export function formatPortalBooking(
     day: 'numeric',
     month: 'long',
   }).format(date)
+  const day = new Intl.DateTimeFormat(common.locale, {
+    timeZone: common.timeZone,
+    day: 'numeric',
+  }).format(date)
+  const month = new Intl.DateTimeFormat(common.locale, {
+    timeZone: common.timeZone,
+    month: 'long',
+  }).format(date)
   const fullDate = new Intl.DateTimeFormat(common.locale, {
     timeZone: common.timeZone,
     day: 'numeric',
@@ -92,6 +100,10 @@ export function formatPortalBooking(
 
   return {
     homeDateTime: `${weekday} ${dayMonth} · ${time}`,
+    homeDay: day,
+    homeWeekday: weekday,
+    homeMonth: month,
+    homeTime: time,
     detailDateTime: `${weekday} ${fullDate} · ${time}–${endTime}`,
     historyDate: fullDate,
     price,

@@ -2,7 +2,14 @@
 
 > Startad 2026-07-22 på Zivars uttryckliga prioritering. Goal-74 är driftsatt
 > och full SMS-PIN-finalisering är verifierad men ligger kvar i väntan på den
-> separata e-postfallback-canaryn.
+> separata e-postfallback-canaryn. Goal-74:s lokala tilläggsrevision är parkerad
+> till den gemensamma localhostacceptansen; ingen ny deploy görs innan alla
+> lokala byggdelar är klara.
+>
+> **Lokalt låst 2026-07-23.** Funktion, premiumdesign, PWA och
+> säkerhets-/enhetsytan är verifierade mot den isolerade Supabase-previewbranchen.
+> Produktionsmigration, riktig host/HTTPS-installation och deploy är medvetet
+> parkerade till den gemensamma releasefasen.
 
 ## Mål
 
@@ -38,10 +45,35 @@ läcka mellan sessioner.
 
 ## Status
 
+- [x] Persistent Supabase-preview `localhost-acceptance`
+      (`cwnhpesrgolflkmyjbrm`) skapad utan produktionsdata, migrerad genom 0124
+      samt säkerhets-/regexmigrationerna och seedad med syntetisk portaldata
 - [x] D0 designgrind oberoende verifierad
 - [x] T1 portalhost och route-brandvägg implementerad och oberoende granskad
 - [x] T2 privata tabeller och service-role-RPC:er
 - [x] T3 magic-link exchange och portalsession
-- [ ] T4–T8 bokningsdata, detalj, avbokning, kalender och boka igen
-- [ ] T9–T11 profil, recovery, säkerhet och PWA
-- [ ] T12 full regression, oberoende verifiering och kontrollerad release
+- [x] T4–T8 bokningsdata, detalj, avbokning, kalender och boka igen
+- [x] T9–T11 profil, recovery, kontaktbyte, säkerhet, enheter och PWA
+- [x] T12 lokal regression och localhostacceptans
+- [ ] T12 kontrollerad produktionsrelease — parkerad enligt Zivars beslut
+
+## Låsningsbevis 2026-07-23
+
+- Magic-länk → ny portalsession → `/mina` körd i riktig localhost-webbläsare
+  mot previewbranchen; URL-fragmentet förbrukades och rensades.
+- Bokningsöversikt, tom historik, profil med maskerad verifierad kontakt,
+  säkerhet/enheter, installationssida och bokningsdetalj verifierades i DOM.
+- Premiumskalet verifierades visuellt i 1280×720 och 390×844; ingen kundsynlig
+  text om intern inloggningsmetod förekommer.
+- `56` portaltestfiler / `413` tester passerar.
+- Goal-75:s mekaniska acceptansprobe: `5/5`, `PASS`.
+- Typecheck passerar, lint har `0` fel och produktionsbuild passerar.
+- Previewdatabasen är migrerad och visar `Remote database is up to date`.
+  Snapshot-RPC, service-role-åtkomst och nekad anon-åtkomst är runtimeverifierade.
+
+## Medvetet kvar till gemensam release
+
+- Kör de nya migrationerna i produktion först i den samlade releasefasen.
+- Verifiera riktig `mina.corevo.se`-host, Secure-cookie och PWA-installation över
+  HTTPS efter deploy.
+- Byt den enkla tillfälliga Corevo-ikonen när Zivar lämnar den riktiga loggan.
