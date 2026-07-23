@@ -115,7 +115,9 @@ export async function PreviewShell({
   // Riktig bokning i previewen — samma gating som (public)/layout: bara en LIVE
   // bokningsmodul får riktiga tjänster; annars renderar CTA:erna inert.
   const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
-  const bookingLive = moduleState(moduleStates, 'booking') === 'live'
+  const bookingState = moduleState(moduleStates, 'booking')
+  const bookingLive = bookingState === 'live'
+  const bookingReachable = bookingLive || bookingState === 'paused'
   const [allWizardServices, wizardLocations, staffNoun, bookingPrefs, teamMembers] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
@@ -211,6 +213,9 @@ export async function PreviewShell({
     >
       <SidaPreviewBridge />
       <BookingProvider
+        reachable={bookingReachable}
+        websiteOnly={bookingState === 'off'}
+        externalUrl={settings.bookingExternalUrl}
         services={wizardServices}
         locations={wizardLocations}
         tenantName={tenant.name}

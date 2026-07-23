@@ -65,8 +65,10 @@ export function isModulePaused(states: TenantModuleStates, key: ModuleKey): bool
  * busts that tag refreshes the storefront's module gating too. Read via the anon
  * public client; scoped by tenant_id app-side (RLS does NOT isolate anon).
  *
- * Returns an empty map on any error — callers then fall back to the per-module
- * default (booking:live), preserving the FreshCut-unchanged guarantee.
+ * The narrow RPC is required because the table's anon policy intentionally hides
+ * off/draft rows. Direct table reads would therefore mistake an explicit
+ * website-only booking=off for a missing legacy row and incorrectly enable booking.
+ * Returns an empty map on any error — callers then keep the legacy booking default.
  */
 export async function getTenantModuleStates(
   tenantId: string,
@@ -75,11 +77,18 @@ export async function getTenantModuleStates(
   const norm = slug.trim().toLowerCase()
   const load = unstable_cache(
     async (): Promise<TenantModuleStates> => {
-      const supabase = createPublicClient()
+      type PublicModuleStateRpc = {
+        rpc: (
+          name: 'get_public_tenant_module_states',
+          args: { p_tenant: string },
+        ) => PromiseLike<{
+          data: { module_key: string; state: string }[] | null
+          error: { message: string } | null
+        }>
+      }
+      const supabase = createPublicClient() as unknown as PublicModuleStateRpc
       const { data, error } = await supabase
-        .from('tenant_modules')
-        .select('module_key, state')
-        .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+        .rpc('get_public_tenant_module_states', { p_tenant: tenantId })
       if (error || !data) return {}
       const out: TenantModuleStates = {}
       for (const row of data) {

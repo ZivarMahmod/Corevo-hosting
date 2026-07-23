@@ -23,11 +23,15 @@ describe('mergeScopedSettings', () => {
       mergeScopedSettings(existing, 'booking', {
         cancellationHours: 12,
         customerAccountsEnabled: false,
+        bookingExternalUrl: 'https://www.bokadirekt.se/places/test-123',
       }),
     ).toEqual({
       ...existing,
       cancellation_cutoff_hours: 12,
       customer_accounts_enabled: false,
+      booking: {
+        external_url: 'https://www.bokadirekt.se/places/test-123',
+      },
     })
   })
 

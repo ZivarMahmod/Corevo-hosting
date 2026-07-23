@@ -23,6 +23,7 @@ type NotificationSettings = {
 
 export type ScopedSettingsInput = {
   cancellationHours?: number
+  bookingExternalUrl?: string | null
   contact?: { email: string | null; phone: string | null }
   customerAccountsEnabled?: boolean
   notifications?: NotificationSettings
@@ -43,6 +44,15 @@ export function mergeScopedSettings(
     }
     if (input.customerAccountsEnabled !== undefined) {
       next.customer_accounts_enabled = input.customerAccountsEnabled
+    }
+    if (input.bookingExternalUrl !== undefined) {
+      const savedBooking =
+        typeof existing.booking === 'object'
+        && existing.booking !== null
+        && !Array.isArray(existing.booking)
+          ? (existing.booking as Record<string, unknown>)
+          : {}
+      next.booking = { ...savedBooking, external_url: input.bookingExternalUrl }
     }
   }
 

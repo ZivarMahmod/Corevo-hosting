@@ -182,6 +182,8 @@ export default async function PublicLayout({ children }: { children: React.React
           slide-over drawer without ever leaving the salon's page. */}
       <BookingProvider
         reachable={layoutModules.bookingReachable}
+        websiteOnly={bookingState === 'off'}
+        externalUrl={settings.bookingExternalUrl}
         services={wizardServices}
         locations={wizardLocations}
         tenantName={tenant.name}

@@ -143,14 +143,24 @@ tenant och ett testfall, aldrig produktdefinitionen.
   inte publiceras över den nya mallen. `83/83` angränsande tester, typecheck,
   riktad lint och lokal browseracceptans med två verkliga mallbyten är gröna mot
   `localhost-acceptance`. Produktion är orörd.
+- Goal-78 är lokalt låst på samma branch. En explicit `booking=off`-rad betyder
+  nu webbplatsläge och en valfri extern HTTPS-länk ersätter alla delade
+  boknings-CTA:er; saknad rad behåller den äldre säkra Corevo-standarden och
+  `booking=live` vinner alltid. Kundadmin och superadmin kan spara länken och
+  onboarding erbjuder Live/Pausad/Av. Den smala publika modulstatusfunktionen i
+  `20260723160000_public_module_state_read.sql` är applicerad enbart på
+  `localhost-acceptance`. Browseracceptansen verifierade åtta externa CTA:er,
+  säker ny flik, nekad HTTP-länk, stängd `/boka`, inert `draft`, intern
+  Corevo-hantering för `paused` samt återgång till Corevos femstegsdialog.
+  Extern länk används endast vid explicit `off`, aldrig vid okänt tillstånd
+  eller läsfel. 24/24 riktade tester, typecheck och lint är gröna.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
 ## Nästa del
 
-Goal-75, Goal-76 och Goal-77 är lokalt låsta. Nästa byggdel är Goal-78:
-generiskt webbplatsläge med Corevo-bokning av och en valfri extern HTTPS-
-bokningslänk. Därefter följer FreshCuts fasta kundmall och reparationen av
+Goal-75, Goal-76, Goal-77 och Goal-78 är lokalt låsta. Nästa byggdel är
+FreshCuts fasta kundmall och därefter reparationen av
 superadmins Kund/Sida-workspace. Bokningsmotorns fyra lägen genom den verkliga
 plats-/djuplänksmatrisen ligger kvar senare i roadmapen. Goal-74:s nya driftprov
 samt Goal-75/76:s

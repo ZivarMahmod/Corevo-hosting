@@ -7,8 +7,8 @@ import {
 
 // Multi-bransch spår 5 — the create-path module write. These pin the two pure
 // transforms: parsing the wizard's JSON `modules` field, and normalizing it so
-// booking is always provisioned at least 'live' (FreshCut-parity) and 'off' rows
-// are dropped (absence == off on the read side).
+// missing/draft booking keeps the safe live default while an explicit booking=off
+// survives as the website-only contract. Other off rows are dropped.
 
 describe('parseModuleSelections — wizard `modules` field → clean list', () => {
   it('parses a valid { module_key: state } map', () => {
@@ -38,19 +38,22 @@ describe('parseModuleSelections — wizard `modules` field → clean list', () =
   })
 })
 
-describe('normalizeSelections — booking floor + drop off-rows', () => {
+describe('normalizeSelections — safe booking default + explicit website-only', () => {
   it('floors a missing booking to live', () => {
     const out = normalizeSelections([{ moduleKey: 'media_library', state: 'live' }])
     expect(out).toContainEqual({ moduleKey: 'booking', state: 'live' })
     expect(out).toContainEqual({ moduleKey: 'media_library', state: 'live' })
   })
 
-  it('raises a below-live booking up to live', () => {
+  it('raises a draft booking up to live', () => {
     expect(normalizeSelections([{ moduleKey: 'booking', state: 'draft' }])).toEqual([
       { moduleKey: 'booking', state: 'live' },
     ])
+  })
+
+  it('preserves an explicitly off booking as the website-only state', () => {
     expect(normalizeSelections([{ moduleKey: 'booking', state: 'off' }])).toEqual([
-      { moduleKey: 'booking', state: 'live' },
+      { moduleKey: 'booking', state: 'off' },
     ])
   })
 

@@ -103,6 +103,7 @@ export function BookingPanel({
   variant,
   pickerMode,
   staffAvatars,
+  externalUrl,
   hasStaffPhoto,
   onSaved,
 }: {
@@ -113,6 +114,7 @@ export function BookingPanel({
   variant: BookingVariant
   pickerMode: PickerMode
   staffAvatars: StaffAvatarMode
+  externalUrl: string | null
   /** true när minst en AKTIV medarbetare har avatar_url — annars är Foto-läget
    *  avstängt med hint (design-kanon: "disable Foto with a hint"). */
   hasStaffPhoto: boolean
@@ -241,6 +243,24 @@ export function BookingPanel({
             bild visas alltid som initialer.
           </p>
         ) : null}
+      </section>
+
+      <section className={studio.card}>
+        <h3 className={studio.cardHead}>Extern bokning</h3>
+        <p className={studio.note}>
+          Används när bokningsmodulen står på Av. Då går alla Boka-knappar till den
+          externa tjänsten i en ny flik. Corevo-bokningen vinner alltid när den är live.
+        </p>
+        <label className={pform.field}>
+          <span>Extern https-länk</span>
+          <input
+            name="booking_external_url"
+            type="url"
+            inputMode="url"
+            placeholder="https://www.bokadirekt.se/..."
+            defaultValue={externalUrl ?? ''}
+          />
+        </label>
       </section>
 
       <section className={studio.card}>

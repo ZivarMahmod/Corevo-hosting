@@ -39,8 +39,27 @@ export function BookCta({
   // Embedded: open the in-page drawer. Only when the salon actually has services
   // to book; otherwise fall through to the /boka route which renders its own
   // friendly empty state.
-  if (!enabled || (booking && !booking.reachable)) {
+  const canUseExternal = Boolean(booking?.websiteOnly && booking.externalUrl)
+
+  if (!enabled && !canUseExternal) {
     return (
+      <span className={cls} aria-disabled="true">
+        {label}
+      </span>
+    )
+  }
+
+  if (booking && !booking.reachable) {
+    return booking.websiteOnly && booking.externalUrl ? (
+      <a
+        href={booking.externalUrl}
+        className={cls}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {label}
+      </a>
+    ) : (
       <span className={cls} aria-disabled="true">
         {label}
       </span>

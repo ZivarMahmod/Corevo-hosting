@@ -21,9 +21,9 @@ import mobileStyles from './CreateTenantForm.module.css'
 import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
 
 // ── Module-state UI metadata (the "Moduler" step / multi-bransch spår 5) ─────────
-// state-toggle per module: a tenant_modules.state. booking is floored to 'live' in
-// the UI (the platform baseline + FreshCut-parity), so its only choices are live/
-// paused; every other module can also sit at draft/off. The publishable states the
+// state-toggle per module: a tenant_modules.state. Booking defaults safely to live,
+// but may explicitly be off for a website-only tenant; every other module can also
+// sit at draft/off. The publishable states the
 // operator can pick in the wizard (the DB also knows 'off' = simply not selected).
 const MODULE_STATE_LABELS: Record<ModuleState, string> = {
   off: 'Av',
@@ -210,7 +210,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const [theme, setTheme] = useState<string>('salvia')
   const [variant, setVariant] = useState<BookingVariant>(DEFAULT_BOOKING_VARIANT)
   // Per-module states (the "Moduler" step) → tenant_modules rows. Keyed by module_key.
-  // Seeded from the bransch preset; booking is always floored to 'live' before submit.
+  // Seeded from the bransch preset; booking defaults to live until explicitly changed.
   const [moduleStates, setModuleStates] = useState<Record<string, ModuleState>>({})
   const [accent, setAccent] = useState('') // '' = none picked yet
   const [tagline, setTagline] = useState('')
@@ -257,20 +257,22 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const themeName = templateOptions.find((o) => o.key === theme)?.name
   const t = wizardTheme(theme, themeName)
   // Resolve a module's CURRENT chosen state: explicit pick → preset default → 'off'.
-  // booking can never read below 'live' (the floor) regardless of stored value.
+  // Booking ignores preset-off and defaults live, but an operator pick may be off.
   const stateFor = (key: string): ModuleState => {
     const picked = moduleStates[key]
+    if (key === 'booking') {
+      return picked === 'off' || picked === 'paused' || picked === 'live' ? picked : 'live'
+    }
     const preset = moduleOptions.find((m) => m.key === key)?.defaultState ?? 'off'
-    const resolved = picked ?? preset
-    return key === 'booking' && resolved !== 'live' && resolved !== 'paused' ? 'live' : resolved
+    return picked ?? preset
   }
   // The exact { module_key: state } map submitted to the server (hidden `modules`
-  // field). booking floored to live; off-state modules included as 'off' (the write
-  // helper drops them) so the operator's explicit "off" is unambiguous.
+  // field). Booking preserves explicit off as website-only; other off-state modules
+  // are included and dropped by the write helper.
   const moduleSubmitMap = useMemo(() => {
     const out: Record<string, ModuleState> = {}
     for (const m of moduleOptions) out[m.key] = stateFor(m.key)
-    out.booking = stateFor('booking') === 'paused' ? 'paused' : 'live'
+    out.booking = stateFor('booking')
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleOptions, moduleStates])
@@ -291,14 +293,17 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
       branschTemplates[0]?.key ??
       null
     if (next) setTheme(next)
-    // Seed module states from the preset (booking floored to live on read via stateFor).
+    // Seed preset states except booking: booking must default live unless the
+    // operator explicitly chooses website-only.
     const seeded: Record<string, ModuleState> = {}
-    for (const m of modulesForVertical(presets, key)) seeded[m.key] = m.defaultState
+    for (const m of modulesForVertical(presets, key)) {
+      if (m.key !== 'booking') seeded[m.key] = m.defaultState
+    }
     setModuleStates(seeded)
   }
 
-  /** Toggle/cycle a module's state. booking is restricted to live↔paused (floor);
-   *  other modules cycle off→draft→live→paused→off. */
+  /** Set one module state. Booking offers live/paused/off; draft is never valid
+   *  at create-time. Other modules offer the full state set. */
   const setModule = (key: string, next: ModuleState) =>
     setModuleStates((prev) => ({ ...prev, [key]: next }))
 
@@ -520,15 +525,16 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             <div>
               <p className="body" style={{ marginTop: 0, marginBottom: 16 }}>
                 Slå på modulerna kunden ska ha. Varje modul har ett <b>läge</b>: utkast (dold publikt),
-                live (publik) eller pausad. Bokning är alltid minst live.
+                live (publik) eller pausad. Bokning kan också vara av för en kund som
+                bara ska ha webbplats och länka till ett externt bokningssystem.
               </p>
               <div style={{ display: 'grid', gap: 12 }}>
                 {moduleOptions.map((m) => {
                   const isBooking = m.key === 'booking'
                   const cur = stateFor(m.key)
-                  // booking → live/paused only; others → off/draft/live/paused.
+                  // booking → live/paused/off; others → off/draft/live/paused.
                   const choices: ModuleState[] = isBooking
-                    ? (['live', 'paused'] as ModuleState[])
+                    ? (['live', 'paused', 'off'] as ModuleState[])
                     : ([...MODULE_STATES] as ModuleState[])
                   return (
                     <div
@@ -569,9 +575,12 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                       </div>
                       <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '4px 0 0' }}>
                         {MODULE_STATE_HINTS[cur]}
+                        {isBooking && cur === 'off'
+                          ? ' Kundens Boka-knappar använder den externa länken som sparas i admin.'
+                          : ''}
                       </p>
                       {/* booking.variant survives here as a sub-choice of the booking module. */}
-                      {isBooking ? (
+                      {isBooking && cur !== 'off' ? (
                         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--c-line)' }}>
                           <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--c-ink)', marginBottom: 8 }}>
                             Bokningsvariant — hur bokningen presenteras (99 % sker på mobil)

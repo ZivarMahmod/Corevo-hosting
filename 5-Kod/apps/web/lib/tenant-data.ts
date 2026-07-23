@@ -16,6 +16,7 @@ import { getTenantFromHost } from '@/lib/tenant'
 import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-variant'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { withBranschMedia } from '@/components/storefront/images'
+import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 
 export type Tenant = Pick<
   Tables<'tenants'>,
@@ -87,6 +88,8 @@ export type TenantSettings = {
    *  (centrerad modal), drawer (slide-over, steg), compact (slide-over, snabbboka),
    *  inline (inbyggd sektion på sidan). Resolvas här så layout/preview slipper rå-läsa. */
   bookingVariant: BookingVariant
+  /** Validated external booking destination for website-only tenants. */
+  bookingExternalUrl: string | null
   /** Manuella öppettider (settings.opening_hours, Sida-fliken) — vinner över de
    *  scheman-härledda. null = härled ur personalens veckoscheman som förut. */
   openingHours: OpeningHour[] | null
@@ -163,6 +166,9 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     cookieBannerEnabled: raw.cookie_banner_enabled !== false,
     // Boknings-vy-valet (Sida-fliken) — resolvas här så layout/preview slipper rå-läsa.
     bookingVariant: readBookingVariant(raw),
+    bookingExternalUrl: normalizeBookingExternalUrl(
+      (raw.booking as Record<string, unknown> | undefined)?.external_url,
+    ),
     openingHours: parseOpeningHours(raw.opening_hours),
     social: {
       instagram: cleanStr((raw.social as Record<string, unknown> | undefined)?.instagram),

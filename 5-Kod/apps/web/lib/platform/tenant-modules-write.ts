@@ -29,8 +29,8 @@ function isState(v: unknown): v is ModuleState {
 /**
  * Parse the wizard's `modules` form field — a JSON object { module_key: state } — into
  * a clean, deduped selection list. Tolerates a missing/garbage field (→ []), drops
- * unknown states, and trims keys. The caller floors `booking` to at least 'live'
- * separately (the "booking minst live" product rule) so this stays a pure parser.
+ * unknown states, and trims keys. Normalisation applies the safe booking default
+ * separately, so this stays a pure parser.
  */
 export function parseModuleSelections(raw: FormDataEntryValue | null): ModuleSelection[] {
   const text = String(raw ?? '').trim()
@@ -54,22 +54,21 @@ export function parseModuleSelections(raw: FormDataEntryValue | null): ModuleSel
 }
 
 /**
- * Guarantee booking is provisioned at least 'live' (the platform baseline + the
- * FreshCut-parity contract). If the selection omits booking or sets it below live,
- * we add/raise it to 'live'. Other modules pass through as chosen. Off-state modules
- * are dropped (no row written = module simply absent = treated as 'off' on read).
+ * Missing booking keeps the platform's safe live default. Draft is not a valid
+ * public booking state at create-time and is raised to live. An EXPLICIT off row
+ * survives because it is the website-only contract; other off rows are still
+ * dropped (absence == off on read).
  */
 export function normalizeSelections(selections: ModuleSelection[]): ModuleSelection[] {
   const byKey = new Map<string, ModuleState>()
   for (const s of selections) byKey.set(s.moduleKey, s.state)
-  // booking floor: must be at least live. Raise a missing/off/draft booking to 'live',
-  // but PRESERVE 'paused' (a legitimate publish state ABOVE the floor — the storefront
-  // renders it as a "stängt"-banner, which is a valid live-but-closed booking).
+  const hasExplicitBooking = byKey.has('booking')
   const booking = byKey.get('booking')
-  if (booking !== 'live' && booking !== 'paused') byKey.set('booking', 'live')
-  // Drop 'off' rows — absence == off on the read side (tenant-modules.ts default).
+  if (!hasExplicitBooking || booking === 'draft') byKey.set('booking', 'live')
+  // Preserve booking=off; it distinguishes an intentional website-only tenant
+  // from a missing row, which retains the historic Corevo-booking default.
   return [...byKey.entries()]
-    .filter(([, state]) => state !== 'off')
+    .filter(([key, state]) => state !== 'off' || key === 'booking')
     .map(([moduleKey, state]) => ({ moduleKey, state }))
 }
 
@@ -117,7 +116,7 @@ export async function writeTenantVerticalAndModules(
     if (vErr) return { ok: false }
   }
 
-  // 2) tenant_modules rows — normalize (booking floored to live, off dropped) then
+  // 2) tenant_modules rows — normalize (safe booking default; explicit off kept) then
   //    fence to the catalog so no unknown key 23503s the insert.
   const normalized = normalizeSelections(selections)
   const valid = await filterToCatalog(supabase, normalized)

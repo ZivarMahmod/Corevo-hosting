@@ -44,6 +44,7 @@ import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
 import { SidaStudioLazy } from '@/components/platform/SidaStudioLazy'
 import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
+import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 import { createClient } from '@/lib/supabase/server'
 import {
   tenantStorefrontAppUrl,
@@ -318,7 +319,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <div style={{ minWidth: 0 }}>
             <div className={styles.launchTitle}>
               {launchReady && isActive
-                ? 'Redo att ta emot bokningar'
+                ? launchReadiness.bookingRequired
+                  ? 'Redo att ta emot bokningar'
+                  : 'Webbplatsen är publicerad'
                 : launchReady
                   ? 'Redo att publiceras'
                   : `Saknas för publicering: ${launchBlockers.join(', ')}`}
@@ -671,6 +674,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           bookingVariant={operative.bookingVariant}
           pickerMode={readPickerMode(rawSettings)}
           staffAvatars={readStaffAvatarMode(rawSettings)}
+          bookingExternalUrl={normalizeBookingExternalUrl(
+            (rawSettings.booking as Record<string, unknown> | undefined)?.external_url,
+          )}
           hasStaffPhoto={hasStaffPhoto}
           staffTeam={staffList.map((s) => ({
             id: s.id,

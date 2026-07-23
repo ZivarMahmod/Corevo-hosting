@@ -128,6 +128,7 @@ export type SidaStudioProps = {
    *  mounts kompilerar; panelen sparar via updateBookingSettings (sidaCtx-guard). */
   pickerMode?: PickerMode
   staffAvatars?: StaffAvatarMode
+  bookingExternalUrl?: string | null
   /** true när minst en AKTIV medarbetare har profilbild — låser upp Foto-läget. */
   hasStaffPhoto?: boolean
   /** RIKTIGA medarbetare (staff-tabellen) — publika team-sektionens datakälla när
@@ -166,6 +167,7 @@ export function SidaStudio({
   bookingVariant,
   pickerMode = 'calendar',
   staffAvatars = 'initialer',
+  bookingExternalUrl = null,
   hasStaffPhoto = false,
   staffTeam = [],
   canChangeTemplate = true,
@@ -605,6 +607,7 @@ export function SidaStudio({
             variant={bookingVariant}
             pickerMode={pickerMode}
             staffAvatars={staffAvatars}
+            externalUrl={bookingExternalUrl}
             hasStaffPhoto={hasStaffPhoto}
             onSaved={reload}
           />

@@ -32,6 +32,7 @@ export type SettingsFormProps = {
   contactEmail: string
   contactPhone: string
   customerAccountsEnabled: boolean
+  bookingExternalUrl?: string
   /** Notiser & integritet — defaults match the "absent => on" reader semantics. */
   notifications?: NotificationToggles
   googleReviewUrl?: string
@@ -114,6 +115,7 @@ export function SettingsForm({
   notifications = { confirmation: true, reminder: true, review: true },
   googleReviewUrl = '',
   cookieBannerEnabled = true,
+  bookingExternalUrl = '',
   ...props
 }: SettingsFormProps) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(saveSettings, {})
@@ -199,6 +201,20 @@ export function SettingsForm({
           title="Kund-konton"
           desc="Visar inloggning + ”Mitt konto” på din publika sajt (annars endast gästbokning)."
         />
+
+        <label className={styles.field}>
+          <span>Extern bokningslänk</span>
+          <input
+            name="booking_external_url"
+            type="url"
+            inputMode="url"
+            placeholder="https://www.bokadirekt.se/..."
+            defaultValue={bookingExternalUrl}
+          />
+          <span className={styles.muted}>
+            Används bara när Corevo-bokningen är Av. Lämna tomt om Boka-knapparna ska vara avstängda.
+          </span>
+        </label>
 
         <label className={styles.field}>
           <span>Avbokning senast (timmar före)</span>

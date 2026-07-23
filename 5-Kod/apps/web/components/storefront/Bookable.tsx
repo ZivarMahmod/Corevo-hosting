@@ -47,8 +47,28 @@ export function Bookable({
     }
   }
 
-  if (!enabled || (booking && !booking.reachable)) {
+  const canUseExternal = Boolean(booking?.websiteOnly && booking.externalUrl)
+
+  if (!enabled && !canUseExternal) {
     return (
+      <Tag className={className} aria-disabled="true">
+        {children}
+      </Tag>
+    )
+  }
+
+  if (booking && !booking.reachable) {
+    return booking.websiteOnly && booking.externalUrl ? (
+      <a
+        href={booking.externalUrl}
+        className={className}
+        aria-label={label}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {children}
+      </a>
+    ) : (
       <Tag className={className} aria-disabled="true">
         {children}
       </Tag>

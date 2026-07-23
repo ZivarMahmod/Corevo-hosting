@@ -34,6 +34,7 @@ export default async function BokningsreglerPage() {
   const values = (settings?.settings ?? {}) as {
     cancellation_cutoff_hours?: number
     customer_accounts_enabled?: boolean
+    booking?: { external_url?: string }
   }
 
   return (
@@ -60,6 +61,9 @@ export default async function BokningsreglerPage() {
         contactEmail=""
         contactPhone=""
         customerAccountsEnabled={values.customer_accounts_enabled === true}
+        bookingExternalUrl={
+          typeof values.booking?.external_url === 'string' ? values.booking.external_url : ''
+        }
       />
     </section>
     </SettingsWorkspace>

@@ -33,6 +33,7 @@ import { captureException } from '@/lib/observability'
 import { getAdminLocationPreferences } from './location-context'
 import { notificationQueueMessage, queueBookingEvent } from '@/lib/notifications/booking-events'
 import { mergeScopedSettings, parseSettingsScope, type SettingsScope } from './scoped-settings'
+import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -1677,6 +1678,8 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const contactEmail = String(fd.get('contact_email') ?? '').trim()
   const contactPhone = String(fd.get('contact_phone') ?? '').trim()
   const customerAccounts = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
+  const bookingExternalUrlRaw = String(fd.get('booking_external_url') ?? '').trim()
+  const bookingExternalUrl = normalizeBookingExternalUrl(bookingExternalUrlRaw)
 
   // Checkboxes only appear in FormData when checked. Scope makes absence mean
   // "off" only for the visible card, never for unrelated settings.
@@ -1703,6 +1706,8 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
   )
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
+  if (includesScope('booking') && bookingExternalUrlRaw && !bookingExternalUrl)
+    return { error: 'Extern bokningslänk måste vara en fullständig https-länk.' }
   if (scope === 'all' && timezone && !isValidTz(timezone))
     return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
   if (includesScope('integrations') && googleReviewUrl === undefined)
@@ -1727,6 +1732,7 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     .maybeSingle()
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
   const settings = mergeScopedSettings(prev, scope, {
+    bookingExternalUrl: includesScope('booking') ? bookingExternalUrl : undefined,
     cancellationHours: includesScope('booking') ? cancelHours : undefined,
     contact:
       scope === 'all' ? { email: contactEmail || null, phone: contactPhone || null } : undefined,
