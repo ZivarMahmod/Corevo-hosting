@@ -6,6 +6,7 @@ import {
   type PortalCancellationInput,
 } from '@/lib/customer-portal/actions'
 import { logoutCurrentPortalSession } from '@/lib/customer-portal/logout'
+import { updatePortalCustomerName } from '@/lib/customer-portal/profile'
 
 export async function cancelPortalBookingAction(input: PortalCancellationInput) {
   noStore()
@@ -15,4 +16,9 @@ export async function cancelPortalBookingAction(input: PortalCancellationInput) 
 export async function logoutPortalAction() {
   noStore()
   return logoutCurrentPortalSession()
+}
+
+export async function updatePortalNameAction(name: string) {
+  noStore()
+  return updatePortalCustomerName(name)
 }

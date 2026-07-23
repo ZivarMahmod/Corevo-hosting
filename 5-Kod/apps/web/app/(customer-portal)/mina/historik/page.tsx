@@ -30,11 +30,11 @@ export default async function CustomerPortalHistoryPage() {
   const history = await listPortalBookings({ scope: 'history', pageSize: 20 })
   if (history.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
   if (history.outcome !== 'ok') {
-    return <PortalShell active="history" customerName={session.snapshot.customerName}><h1>Historik</h1><PortalErrorState variant="fetch-history" headingLevel="h3" /></PortalShell>
+    return <PortalShell active="history" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug}><h1>Historik</h1><PortalErrorState variant="fetch-history" headingLevel="h3" /></PortalShell>
   }
 
   return (
-    <PortalShell active="history" customerName={session.snapshot.customerName}>
+    <PortalShell active="history" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug}>
       <BookingHistoryListClient
         snapshot={session.snapshot}
         initialItems={history.items}

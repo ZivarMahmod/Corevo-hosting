@@ -33,7 +33,7 @@ export default async function CustomerPortalHomePage() {
   if (upcoming.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
   if (upcoming.outcome !== 'ok') {
     return (
-      <PortalShell active="bookings" customerName={session.snapshot.customerName}>
+      <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug}>
         <TenantIdentityCard snapshot={session.snapshot} />
         <PortalErrorState variant="fetch-bookings" headingLevel="h3" />
       </PortalShell>
@@ -46,7 +46,7 @@ export default async function CustomerPortalHomePage() {
     if (history.outcome === 'expired') redirect(`/aterhamta/${session.snapshot.tenantSlug}?session=expired`)
     if (history.outcome !== 'ok') {
       return (
-        <PortalShell active="bookings" customerName={session.snapshot.customerName}>
+        <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug}>
           <TenantIdentityCard snapshot={session.snapshot} />
           <PortalErrorState variant="fetch-bookings" headingLevel="h3" />
         </PortalShell>
@@ -56,7 +56,7 @@ export default async function CustomerPortalHomePage() {
   }
 
   return (
-    <PortalShell active="bookings" customerName={session.snapshot.customerName}>
+    <PortalShell active="bookings" customerName={session.snapshot.customerName} tenantSlug={session.snapshot.tenantSlug}>
       <TenantIdentityCard snapshot={session.snapshot} />
       <NextBookingCard
         snapshot={session.snapshot}

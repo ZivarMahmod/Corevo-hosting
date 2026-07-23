@@ -94,6 +94,23 @@ describe('CustomerPortalShell', () => {
     expect(html.match(/<a\b/g)).toHaveLength(1)
     expect(html).toContain('href="#huvudinnehall"')
   })
+
+  it('uses real two-part initials, a neutral empty-name icon and the live desktop logout action', () => {
+    const named = renderToStaticMarkup(
+      <PortalShell active="bookings" customerName="Alex Testperson" tenantSlug="nordverk">
+        <h1>Bokningar</h1>
+      </PortalShell>,
+    )
+    const unnamed = renderToStaticMarkup(
+      <PortalShell active="bookings" customerName="" tenantSlug="nordverk">
+        <h1>Bokningar</h1>
+      </PortalShell>,
+    )
+    expect(named).toMatch(/aria-label="Öppna profil"[^>]*>AT<\/a>/)
+    expect(named).toMatch(/class="cp-desktop-user"[\s\S]*?Alex[\s\S]*?>Logga ut<\/button>/)
+    expect(unnamed).toMatch(/aria-label="Öppna profil"[\s\S]*?<svg/)
+    expect(unnamed).not.toMatch(/aria-label="Öppna profil"[^>]*>[A-ZÅÄÖ]{1,2}<\/a>/)
+  })
 })
 
 describe('customer portal views', () => {

@@ -28,6 +28,29 @@ export type PortalSessionSnapshotResult =
   | { outcome: 'not_found' }
   | { outcome: 'unavailable' }
 
+export type PortalVerifiedContact =
+  | { channel: 'sms'; maskedDestination: string }
+  | { channel: 'email'; maskedDestination: string }
+
+export type PortalSecondaryContact = {
+  channel: 'email'
+  maskedDestination: string
+  verified: boolean
+}
+
+export type PortalProfileSnapshot = {
+  tenantSlug: string
+  tenantName: string
+  customerName: string
+  verifiedContact: PortalVerifiedContact
+  secondaryContact: PortalSecondaryContact | null
+}
+
+export type PortalProfileSnapshotResult =
+  | { outcome: 'ok'; profile: PortalProfileSnapshot }
+  | { outcome: 'expired'; recoveryTenantSlug: string | null }
+  | { outcome: 'unavailable' }
+
 export type PortalBookingScope = 'upcoming' | 'history'
 
 export type PortalBookingCursor = {

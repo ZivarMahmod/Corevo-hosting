@@ -100,4 +100,15 @@ describe('customer portal canonical CSS', () => {
     expect(source).toMatch(/\.cp-calendar-status-error\s*\{[^}]*color:\s*var\(--negative\)!important/s)
     expect(source).toMatch(/@media \(min-width:768px\)[\s\S]*\.cp-calendar-download\s*\{[^}]*width:\s*auto/s)
   })
+
+  it('keeps long profile content inside the viewport and preserves DOM button order at desktop', () => {
+    const source = css()
+    expect(source).toMatch(/\.customer-portal\s*\{[^}]*overflow-x:\s*hidden/s)
+    expect(source).toMatch(/\.cp-profile-name>div\s*\{[^}]*min-width:\s*0;[^}]*overflow-wrap:\s*anywhere/s)
+    expect(source).toMatch(/\.cp-contact-copy\s*\{[^}]*min-width:\s*0;[^}]*overflow-wrap:\s*anywhere/s)
+    expect(source).toMatch(/\.cp-menu-copy\s*\{[^}]*min-width:\s*0/s)
+    expect(source).toMatch(/\.cp-name-actions\s*\{[^}]*flex-direction:\s*column(?:;|\})/s)
+    expect(source).not.toMatch(/\.cp-name-actions\s*\{[^}]*flex-direction:\s*column-reverse/s)
+    expect(source).toMatch(/@media \(min-width:768px\)[\s\S]*\.cp-name-actions\s*\{[^}]*flex-direction:\s*row/s)
+  })
 })

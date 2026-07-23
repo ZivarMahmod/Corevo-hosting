@@ -6,10 +6,14 @@ const mocks = vi.hoisted(() => ({
   getPortalSessionSnapshot: vi.fn(),
   listPortalBookings: vi.fn(),
   getPortalBooking: vi.fn(),
+  getPortalProfileSnapshot: vi.fn(),
   redirect: vi.fn((target: string) => { throw new Error(`NEXT_REDIRECT:${target}`) }),
 }))
 
 vi.mock('@/lib/customer-portal/data', () => mocks)
+vi.mock('@/lib/customer-portal/profile', () => ({
+  getPortalProfileSnapshot: mocks.getPortalProfileSnapshot,
+}))
 vi.mock('next/navigation', () => ({
   redirect: mocks.redirect,
   usePathname: () => '/mina',
@@ -34,6 +38,12 @@ import DetailPage, {
   generateMetadata as generateDetailMetadata,
   revalidate as detailRevalidate,
 } from './bokningar/[id]/page'
+import ProfilePage, {
+  dynamic as profileDynamic,
+  fetchCache as profileFetchCache,
+  generateMetadata as generateProfileMetadata,
+  revalidate as profileRevalidate,
+} from './profil/page'
 
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null,
@@ -57,16 +67,21 @@ const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'ok', snapshot })
+  mocks.getPortalProfileSnapshot.mockResolvedValue({ outcome: 'ok', profile: {
+    tenantSlug: 'freshcut', tenantName: 'FreshCut', customerName: 'Alex',
+    verifiedContact: { channel: 'sms', maskedDestination: '•••• •• 00 00' },
+    secondaryContact: null,
+  } })
 })
 
 describe('personal portal route cache contract', () => {
   it('forces every personal route to render dynamically without fetch caching', () => {
-    expect([homeDynamic, historyDynamic, detailDynamic]).toEqual([
-      'force-dynamic', 'force-dynamic', 'force-dynamic',
+    expect([homeDynamic, historyDynamic, detailDynamic, profileDynamic]).toEqual([
+      'force-dynamic', 'force-dynamic', 'force-dynamic', 'force-dynamic',
     ])
-    expect([homeRevalidate, historyRevalidate, detailRevalidate]).toEqual([0, 0, 0])
-    expect([homeFetchCache, historyFetchCache, detailFetchCache]).toEqual([
-      'force-no-store', 'force-no-store', 'force-no-store',
+    expect([homeRevalidate, historyRevalidate, detailRevalidate, profileRevalidate]).toEqual([0, 0, 0, 0])
+    expect([homeFetchCache, historyFetchCache, detailFetchCache, profileFetchCache]).toEqual([
+      'force-no-store', 'force-no-store', 'force-no-store', 'force-no-store',
     ])
   })
 
@@ -74,6 +89,58 @@ describe('personal portal route cache contract', () => {
     await expect(generateHomeMetadata()).resolves.toMatchObject({ title: 'Bokningar – FreshCut' })
     await expect(generateHistoryMetadata()).resolves.toMatchObject({ title: 'Historik – FreshCut' })
     await expect(generateDetailMetadata()).resolves.toMatchObject({ title: 'Bokning – FreshCut' })
+    await expect(generateProfileMetadata()).resolves.toMatchObject({
+      title: 'Profil – FreshCut', robots: { index: false, follow: false },
+    })
+  })
+})
+
+describe('/mina/profil', () => {
+  it('renders the profile projection through the real profile nav route without raw identity data', async () => {
+    const html = renderToStaticMarkup(await ProfilePage())
+    expect(html).toContain('<h1>Profil</h1>')
+    expect(html).toContain('Mina uppgifter')
+    expect(html).toContain('•••• •• 00 00')
+    expect(html).not.toMatch(/customerId|sessionPublicId|secretDigest|\+46729408522/)
+    expect(html).toContain('aria-current="page"')
+  })
+
+  it('redirects expired bound sessions and keeps a snapshot-backed profile failure functional', async () => {
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({
+      outcome: 'expired', recoveryTenantSlug: 'freshcut',
+    })
+    await expect(ProfilePage()).rejects.toThrow(
+      'NEXT_REDIRECT:/aterhamta/freshcut?session=expired',
+    )
+
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    const html = renderToStaticMarkup(await ProfilePage())
+    expect(html).toContain('Uppgifterna kunde inte hämtas')
+    expect(html).toContain('href="/mina/profil"')
+    expect(html).toContain('Mina uppgifter')
+    expect(html).toContain('Logga ut')
+    expect(html).toContain('Försök igen')
+    expect(html).not.toMatch(/Logga in|\/konto|tenantId|customerId/)
+  })
+
+  it('hides logout when both profile and session snapshots are unavailable', async () => {
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    mocks.getPortalSessionSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    const html = renderToStaticMarkup(await ProfilePage())
+    expect(html).toContain('Uppgifterna kunde inte hämtas')
+    expect(html).toContain('Mina uppgifter')
+    expect(html).toContain('Försök igen')
+    expect(html).not.toContain('Logga ut')
+  })
+
+  it('redirects to recovery when the profile fails and the session snapshot has expired', async () => {
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    mocks.getPortalSessionSnapshot.mockResolvedValueOnce({
+      outcome: 'expired', recoveryTenantSlug: 'freshcut',
+    })
+    await expect(ProfilePage()).rejects.toThrow(
+      'NEXT_REDIRECT:/aterhamta/freshcut?session=expired',
+    )
   })
 })
 

@@ -362,10 +362,10 @@ describe('customer portal 0120 migration contract', () => {
     expect(list).toContain("b.start_ts < v_now or b.status not in ('pending', 'confirmed')")
   })
 
-  it('moves the database release inventory to 0122 without pretending production is applied', () => {
+  it('moves the database release inventory to 0123 without pretending production is applied', () => {
     for (const workflow of [ci, deploy]) {
-      expect(workflow).toContain('--expected-latest 0122')
-      expect(workflow).toMatch(/--required-test-versions[^\n]*0120,0121,0122/)
+      expect(workflow).toContain('--expected-latest 0123')
+      expect(workflow).toMatch(/--required-test-versions[^\n]*0120,0121,0122,0123/)
     }
     expect(deploy).toContain('PROD_DB_MIGRATION')
   })

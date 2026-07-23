@@ -53,6 +53,20 @@ describe('current portal session logout', () => {
     expect(store.set).not.toHaveBeenCalled()
   })
 
+  it('retains a present malformed local credential and view without touching the backend', async () => {
+    store.get.mockReturnValue({ value: 'malformed-local-cookie' })
+    await expect(logoutCurrentPortalSession()).resolves.toEqual({ ok: false })
+    expect(rpc).not.toHaveBeenCalled()
+    expect(store.set).not.toHaveBeenCalled()
+  })
+
+  it('treats an already missing cookie as idempotent success without database access', async () => {
+    store.get.mockReturnValue(undefined)
+    await expect(logoutCurrentPortalSession()).resolves.toEqual({ ok: true, tenantSlug: null })
+    expect(rpc).not.toHaveBeenCalled()
+    expect(store.set).not.toHaveBeenCalled()
+  })
+
   it('treats an already revoked session as idempotent success when its digest still proves tenant', async () => {
     rpc.mockResolvedValueOnce({
       data: [{ outcome: 'expired', snapshot: null, recovery_tenant_slug: 'freshcut' }],
