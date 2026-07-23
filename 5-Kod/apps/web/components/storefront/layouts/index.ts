@@ -49,3 +49,11 @@ export const THEME_OWNS_MODULES: ReadonlySet<StorefrontTheme> = new Set<Storefro
   // Salong-sviten (goal-64) väver in butik/blogg i sitt eget formspråk.
   ...(SALONG_KEYS as StorefrontTheme[]),
 ])
+
+/**
+ * Layouts that need the resolved module state in their own CTA surfaces.
+ * FreshCut keeps the generic module sections for future blogg/shop additions,
+ * but its booking buttons still need to know whether Corevo booking is reachable.
+ */
+export const THEME_LOADS_LAYOUT_MODULES: ReadonlySet<StorefrontTheme> =
+  new Set<StorefrontTheme>([...THEME_OWNS_MODULES, 'freshcut'])

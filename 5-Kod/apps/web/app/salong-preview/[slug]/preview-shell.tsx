@@ -21,6 +21,7 @@ import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
 import { loadTeamMembers } from '@/lib/storefront/team/load-team'
 import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
+import { freshCutNavigationLinks } from '@/components/storefront/layouts/FreshCutChrome'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
 import storefront from '@/components/storefront/storefront.module.css'
@@ -182,6 +183,7 @@ export async function PreviewShell({
     { href: '/om', label: 'Om oss' },
     { href: '/kontakt', label: 'Kontakt' },
   ]
+  const shellNavLinks = theme === 'freshcut' ? freshCutNavigationLinks(navLinks) : navLinks
   // Bransch-CTA med samma modul-gate som layouten (peka aldrig på en död modulsida).
   const rawPrimaryCta = await resolvePrimaryCta(tenant.vertical_id)
   const CTA_HREF_MODULE: Record<string, string> = {
@@ -234,17 +236,19 @@ export async function PreviewShell({
             cartEnabled={cartEnabled}
             utilityText={themeBase.utility}
             hideUtility={chrome.ownsUtility}
-            links={navLinks}
+            links={shellNavLinks}
             primaryCta={primaryCta}
           >
             <chrome.Nav
               tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
               branding={settings.branding}
-              links={navLinks}
+              links={shellNavLinks}
               primaryCta={primaryCta}
               cartEnabled={cartEnabled}
               customerAccountsEnabled={settings.customerAccountsEnabled}
               utilityText={themeBase.utility}
+              location={location}
+              contact={settings.contact}
             />
           </NavShell>
         ) : (
@@ -255,7 +259,7 @@ export async function PreviewShell({
             cartEnabled={cartEnabled}
             utilityText={themeBase.utility}
             primaryCta={primaryCta}
-            links={navLinks}
+            links={shellNavLinks}
           />
         )}
         <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
@@ -279,7 +283,7 @@ export async function PreviewShell({
             location={location}
             contact={settings.contact}
             social={settings.social}
-            links={navLinks}
+            links={shellNavLinks}
           />
         ) : isFullFooter ? (
           <FooterFull

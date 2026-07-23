@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { getServices } from '@/lib/tenant-data'
-import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
+import {
+  STOREFRONT_LAYOUTS,
+  THEME_LOADS_LAYOUT_MODULES,
+} from '@/components/storefront/layouts'
+import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
@@ -38,6 +42,9 @@ export default async function SalongPreviewPage({
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
   const content = resolveThemeContent(theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
+  const modules = THEME_LOADS_LAYOUT_MODULES.has(theme)
+    ? await loadLayoutModuleTeasers(tenant.id, tenant.slug)
+    : undefined
 
   return (
     <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
@@ -47,6 +54,9 @@ export default async function SalongPreviewPage({
         content={content}
         services={services}
         location={location}
+        contact={settings.contact}
+        social={settings.social}
+        modules={modules}
       />
       <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} />
     </PreviewShell>

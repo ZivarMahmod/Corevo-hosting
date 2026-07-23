@@ -330,31 +330,32 @@ const STATIC_THEME_CONTENT = {
       ['Närodlat', 'när det går'],
     ],
   },
-  // FreshCut — exakt kopia av freshcut.se (barbershop, Linköping). Copy defaults are
-  // this salon's own strings (its own named theme; the platform is going on ice with
-  // FreshCut as the one live tenant). SWAPPABLE things — hero/gallery photos, logo,
-  // colours, phone/address — stay in tenant_settings (seeded at provisioning, edited in
-  // /admin/varumarke); the image defaults below are generic barber stock for the un-
-  // seeded state. Section titles that don't fit the 6-field copy contract live as
-  // constants in FreshCutLayout.
+  // FreshCut — kundlåst kopia av den godkända 2026-sidan. Den finns kvar under sin
+  // gamla nyckel men erbjuds aldrig andra tenants. Ägarens copy/media vinner fortfarande
+  // fält för fält; dessa är bara FreshCuts lokala, återgivningsstabila defaults.
   freshcut: {
-    heroEyebrow: '— Barbershop',
-    heroTitle: 'FreshCut',
-    heroLede: 'Barbershop i centrala Linköping',
-    tagline: 'Barbershop i centrala Linköping',
-    utility: 'Boka tid online · Välkommen in',
-    italic: 'Mer än bara en frisörsalong.',
+    heroEyebrow: 'Hår / Skägg / Finish',
+    heroTitle: 'Klippt. Format. Klart.',
+    heroLede:
+      'En modern barbershop med respekt för hantverket. Vi gör jobbet ordentligt — du går härifrån skarpare.',
+    tagline: 'Barbershop · Linköping City',
+    utility: 'Barbershop · Linköping City',
+    italic: 'Nästa lediga tid är bara några klick bort.',
     aboutCopy:
-      'I våra fräscha lokaler mitt i Linköping City känner du dig väl omhändertagen av våra barberare, som har mångårig erfarenhet inom herrklippningar. Oavsett om du vill snygga till ditt skägg, ögonbryn eller håret hjälper vi alltid till att göra dig helt nöjd med din klippning.',
-    servicesEyebrow: '— Prislista',
-    servicesTitle: 'Priser. Som tål att jämföras.',
-    aboutTitle: 'FreshCut gör dig nöjd.',
+      'FreshCut är en etablerad barbershop mitt i Linköping. Här får du erfarenhet, ett lugnt bemötande och fullt fokus på att resultatet ska kännas rätt för dig.',
+    servicesEyebrow: '— Behandlingar & priser',
+    servicesTitle: 'Välj ditt upplägg.',
+    aboutTitle: 'Din lokala barberare. Utan onödigt snack.',
     teamEyebrow: '— Våra barberare',
-    teamTitle: 'Våra barberare.',
-    heroImages: [IMG.barberCut, IMG.barberShop, IMG.barberTools],
-    galleryImages: [IMG.barberCut, IMG.beard, IMG.barberShop, IMG.barberTools],
-    aboutImage: IMG.barberTools,
-    closingImage: IMG.barberShop,
+    teamTitle: 'Vi ses i stolen.',
+    heroImages: ['/images/freshcut/freshcut-hero.webp'],
+    galleryImages: [
+      '/images/freshcut/freshcut-2.webp',
+      '/images/freshcut/freshcut-3.webp',
+      '/images/freshcut/freshcut-4.webp',
+    ],
+    aboutImage: '/images/freshcut/freshcut-barber.webp',
+    closingImage: '/images/freshcut/freshcut-hero.webp',
     team: [],
     stats: [],
   },

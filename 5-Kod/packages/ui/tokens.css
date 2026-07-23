@@ -547,45 +547,26 @@
   --sf-danger: #8F3A3A;                   /* torkad ros — 6.69:1 mot linnebakgrunden */
 }
 
-/* ---- TEMPLATE F — "FreshCut" : barbershop, exakt kopia av freshcut.se
-   (white + gold, Playfair headings, Source Sans body, sharp corners). */
+/* ---- CUSTOMER SITE — "FreshCut" : locked to the approved 2026 source
+   (warm concrete + near-black + muted brass, Source Sans, sharp corners). */
 [data-world="storefront"][data-theme="freshcut"] {
-  --color-primary:   #B59775;  /* gold / tan — the "BOKA TID" accent */
-  --color-primary-d: #9A7E5E;  /* darker gold for hovers */
-  --color-bg:        #FFFFFF;  /* white */
-  --color-surface:   #FFFFFF;
-  --color-fg:        #252525;  /* heading ink */
-  --color-fg-2:      #555555;  /* body grey */
-  --color-line:      #E7E2DA;
-  --color-accent-soft:#F3EEE7;
-  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — guldet mätte 2.38:1 som TEXT → 4.67:1. Ytan behåller sitt guld. */
-  --color-primary-ink: #7B6750;
-  /* goal-62 B2a: accenten ÄR guldet (#B59775). Global accent-fg var vit → 2.75:1 på
-     guld (mätt) — det brott Zivar såg på nav-CTA:n och closing-bandet. Mörk ink ger
-     5.64:1 på samma guld. Räknat, inte tyckt. */
-  --color-accent-fg: #15281f;
-  --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
+  --color-primary:   #A78F6D;
+  --color-primary-d: #8F7755;
+  --color-bg:        #D8D6CF;
+  --color-surface:   #C5C2BA;
+  --color-fg:        #171918;
+  --color-fg-2:      #575A57;
+  --color-line:      #AAA79F;
+  --color-accent-soft:#C5C2BA;
+  --color-primary-ink: #171918;
+  --color-accent-fg: #171918;
+  --font-display: var(--font-source-sans), 'Source Sans 3', var(--font-inter), 'Inter', sans-serif;
   --font-body:    var(--font-source-sans), 'Source Sans 3', var(--font-inter), 'Inter', sans-serif;
   --sf-radius: 0px;  /* freshcut.se buttons are square */
 
-  /* ══ FRESHCUTS RÖST (goal-60) — RIKTIG KUND, LIVE ════════════════════════
-     Se Leander-blocket ovan för VARFÖR knapp-varsen och fält-varsen bor här: FreshCut
-     äger varken nav, sidfot eller undersidor (den kör plattformens Nav + FooterFull),
-     så en modul som bara FreshCutLayout importerar laddas bara på "/".
-
-     Blocket nedan rör INGEN befintlig yta. Det ger form åt de ytor som HITTILLS INTE
-     HADE NÅGON: köpknappen, formulärfälten, valchipsen, fokusringen. De föll på
-     plattformens neutrala default (grå kant, 4px radie) mitt i en mall vars hela
-     identitet är RAKA hörn — därför 0px rakt igenom, precis som --sf-radius säger.
-
-     ⚠️ INK-VALET, mätt: FreshCuts guld (#B59775) är ljust. Vit text på det mäter
-     2.73:1 — långt under golvet 4.5:1. Kundens egen ink (#252525) på samma guld ger
-     5.61:1. Köpknappen och formulärens submit får därför MÖRK ink.
-     Det gör dem NÄSTAN — men inte helt — lika den befintliga "Boka tid"-CTA:n, som
-     via --color-accent-fg fortfarande är VIT på guld (2.73:1). Den är en LEVANDE
-     kunds knapp, ordagrant kopierad från freshcut.se, och den lämnas ORÖRD: en
-     kontrasträttning där ändrar synligt utseende på en sida i drift, och det är
-     Zivars beslut, inte mitt. Rapporterat — se rapporten. */
+  /* The customer site and its future Corevo modules share the same square,
+     high-contrast controls. FreshCut keeps generic module rendering so later
+     blogg/shop additions remain available without changing this customer theme. */
   --sf-btn-h: 48px;
   --sf-btn-pad: 14px 28px;
   --sf-btn-radius: 0px;  /* "freshcut.se buttons are square" — mallens egna ord */
@@ -594,8 +575,8 @@
   --sf-btn-ls: 0.1em;
   --sf-btn-dur: 160ms;
   --sf-btn-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --sf-btn-ink: var(--color-fg);        /* #252525 på #B59775 = 5.61:1 */
-  --color-primary-fg: var(--color-fg);  /* valt chip: samma mörka ink på guld */
+  --sf-btn-ink: var(--color-fg);
+  --color-primary-fg: var(--color-fg);
 
   --sf-field-h: 48px;
   --sf-field-pad: 13px 15px;
@@ -607,10 +588,10 @@
   --sf-label-transform: uppercase;
   --sf-label-ls: 0.12em;
   --sf-label-fs: 12px;
-  --sf-label-ink: var(--color-fg); /* #252525 på vitt = 15.60:1 */
+  --sf-label-ink: var(--color-fg);
 
-  --sf-focus: var(--color-fg);     /* guld som fokusring hade mätt 2.73:1 — inken tar den */
-  --sf-danger: #B3261E;            /* 6.53:1 mot vitt */
+  --sf-focus: var(--color-fg);
+  --sf-danger: #8F2D27;
 }
 
 /* storefront type roles (theme-agnostic — pull from the theme's families) */

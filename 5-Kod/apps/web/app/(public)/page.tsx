@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
-import { STOREFRONT_LAYOUTS, THEME_OWNS_MODULES } from '@/components/storefront/layouts'
+import {
+  STOREFRONT_LAYOUTS,
+  THEME_LOADS_LAYOUT_MODULES,
+  THEME_OWNS_MODULES,
+} from '@/components/storefront/layouts'
 import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
@@ -68,7 +72,7 @@ export default async function HomePage() {
   // THEME_OWNS_MODULES (layouts/index.ts), inte i en OR-kedja här: en glömd nyckel
   // gav förr BÅDE modul-lösa hem OCH dubbelrenderade sektioner, helt tyst.
   const ownsModules = THEME_OWNS_MODULES.has(settings.theme)
-  const modules = ownsModules
+  const modules = THEME_LOADS_LAYOUT_MODULES.has(settings.theme)
     ? await loadLayoutModuleTeasers(tenant.id, tenant.slug)
     : undefined
 
@@ -84,6 +88,8 @@ export default async function HomePage() {
         content={content}
         services={services}
         location={location}
+        contact={settings.contact}
+        social={settings.social}
         modules={modules}
       />
       {/* Teman som ÄGER sina moduler väver in butik/blogg/presentkort i sitt eget

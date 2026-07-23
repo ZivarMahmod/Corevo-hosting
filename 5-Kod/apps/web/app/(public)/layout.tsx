@@ -9,6 +9,7 @@ import { NavShell } from '@/components/brand/NavShell'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
+import { freshCutNavigationLinks } from '@/components/storefront/layouts/FreshCutChrome'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
@@ -159,6 +160,8 @@ export default async function PublicLayout({ children }: { children: React.React
     { href: '/om', label: 'Om oss' },
     { href: '/kontakt', label: 'Kontakt' },
   ]
+  const shellNavLinks =
+    settings.theme === 'freshcut' ? freshCutNavigationLinks(navLinks) : navLinks
 
   return (
     <div
@@ -212,17 +215,19 @@ export default async function PublicLayout({ children }: { children: React.React
             cartEnabled={cartEnabled}
             utilityText={content.utility}
             hideUtility={chrome.ownsUtility}
-            links={navLinks}
+            links={shellNavLinks}
             primaryCta={primaryCta}
           >
             <chrome.Nav
               tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
               branding={settings.branding}
-              links={navLinks}
+              links={shellNavLinks}
               primaryCta={primaryCta}
               cartEnabled={cartEnabled}
               customerAccountsEnabled={settings.customerAccountsEnabled}
               utilityText={content.utility}
+              location={location}
+              contact={settings.contact}
             />
           </NavShell>
         ) : (
@@ -232,7 +237,7 @@ export default async function PublicLayout({ children }: { children: React.React
             cartEnabled={cartEnabled}
             utilityText={content.utility}
             primaryCta={primaryCta}
-            links={navLinks}
+            links={shellNavLinks}
           />
         )}
         {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). The
@@ -259,7 +264,7 @@ export default async function PublicLayout({ children }: { children: React.React
             location={location}
             contact={settings.contact}
             social={settings.social}
-            links={navLinks}
+            links={shellNavLinks}
           />
         ) : isFullFooter ? (
           <FooterFull

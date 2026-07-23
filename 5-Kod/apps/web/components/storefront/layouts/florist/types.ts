@@ -94,6 +94,9 @@ export type ThemeNavProps = {
   customerAccountsEnabled: boolean
   /** Mallens tunna toppremsa (content.utility). */
   utilityText: string
+  /** Tenantfakta för mallar vars utility/header visar adress eller telefon. */
+  location?: TenantLocation | null
+  contact?: TenantContact
 }
 
 export type ThemeFooterProps = {

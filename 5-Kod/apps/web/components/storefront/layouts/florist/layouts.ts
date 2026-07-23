@@ -13,6 +13,7 @@ import { AteljeVinterLayout } from './AteljeVinterLayout'
 import { BlomstertorgetLayout } from './BlomstertorgetLayout'
 import { SivSavLayout } from './SivSavLayout'
 import { SolSaltLayout } from './SolSaltLayout'
+import { FreshCutFooter, FreshCutNav } from '../FreshCutChrome'
 
 /** Florist-svitens 13 HEM-layouter. Splittad från registry.ts så klient-ytor som
  *  bara behöver paletter/nycklar slipper dra in 13 React-komponenter. */
@@ -35,6 +36,9 @@ export const FLORIST_LAYOUTS: Record<string, ComponentType<StorefrontLayoutProps
  * `undefined` och renderar exakt som förr.
  */
 export function themeChrome(key: string): ThemeChrome {
+  if (key === 'freshcut') {
+    return { Nav: FreshCutNav, Footer: FreshCutFooter, ownsUtility: true }
+  }
   return findTheme(key)?.chrome ?? {}
 }
 

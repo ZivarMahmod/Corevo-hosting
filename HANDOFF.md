@@ -17,6 +17,13 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
+- Goal 79 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`: FreshCuts kundlåsta webb använder
+  den godkända 2026-designen, lokala originalbilder, verklig tenant-/servicedata
+  och säkert externt Bokadirekt-flöde när Corevo-bokning är avstängd. Desktop,
+  mobil, 211 riktade tester, typkontroll, lint, preview-build och oberoende
+  Fable-granskning är gröna. Förhandsdata finns endast på Supabase-branchen
+  `localhost-acceptance`; inget är deployat till produktion.
 - Produktionens boknings-, schema- och personalgrund är live. Inställningar v2 och
   Frisöradmin PWA driftsattes 2026-07-17. Produktionsdatabasen är numeriskt
   avstämd och runtime-verifierad genom migration `0119`; checkpoint och bevis
