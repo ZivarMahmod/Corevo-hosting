@@ -1,5 +1,11 @@
 # Handoff: Corevo Kundportal — lösenordsfri PWA (designriktning v1)
 
+> **Integrationsregel:** Detta paket styr den nya visuella premiumlooken.
+> Funktioner, routes, säkerhet och kundsynlig copy styrs av
+> `../00-VISUELL-KANON-PREMIUM.md`. Prototypens notifieringar, interna
+> ombokning och lokala PIN-knappsats är demonstrationsinnehåll och ska inte
+> implementeras.
+
 ## Overview
 Slutkundens portal ("Mina sidor" / `mina.corevo.se`) i Corevo Booking — den white-label,
 multi-tenant boknings-SaaS:en. Portalen är ett **vardagsverktyg** för salongskunder, inte en
