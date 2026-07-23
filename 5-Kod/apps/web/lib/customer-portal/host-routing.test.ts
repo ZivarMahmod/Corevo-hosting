@@ -35,8 +35,11 @@ describe('customer portal host route firewall', () => {
       '/api/customer-portal/bookings/b1/calendar',
       '/_next/static/chunks/app.js',
       '/_next/static/css/app.css',
-      '/pwa/customer-portal-icon-192.png',
-      '/pwa/customer-portal-icon-512.png',
+      '/pwa/corevo-icon-192.png',
+      '/pwa/corevo-icon-512.png',
+      '/pwa/corevo-icon-512-maskable.png',
+      '/pwa/corevo-icon-monochrome.png',
+      '/pwa/corevo-apple-touch-icon-180.png',
       '/favicon.ico',
       '/icon.svg',
     ]) {

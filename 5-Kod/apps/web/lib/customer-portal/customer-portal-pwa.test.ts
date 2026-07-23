@@ -35,24 +35,56 @@ describe('customer portal PWA', () => {
       scope: '/mina/',
       display: 'standalone',
       theme_color: '#191a17',
-      background_color: '#f3efe6',
+      background_color: '#191a17',
     })
     expect(JSON.stringify(manifest))
       .not.toMatch(/freshcut|tenantName|customerName|token|bookingId|\?/)
 
-    for (const size of [192, 512]) {
-      const icon = manifest.icons.find((candidate) => candidate.sizes === `${size}x${size}`)
-      expect(icon?.type).toBe('image/png')
-      expect(icon && pngSize(icon.src)).toEqual({ width: size, height: size })
+    expect(manifest.icons).toEqual([
+      {
+        src: '/pwa/corevo-icon-192.png',
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/pwa/corevo-icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/pwa/corevo-icon-512-maskable.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+      {
+        src: '/pwa/corevo-icon-monochrome.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'monochrome',
+      },
+    ])
+    for (const icon of manifest.icons) {
+      const size = Number.parseInt(icon.sizes, 10)
+      expect(pngSize(icon.src)).toEqual({ width: size, height: size })
     }
-    expect(manifest.icons.some((icon) => icon.purpose === 'maskable')).toBe(true)
 
     const layout = fs.readFileSync(
       path.join(WEB_ROOT, 'app', '(customer-portal)', 'layout.tsx'),
       'utf8',
     )
     expect(layout).toContain("manifest: '/api/customer-portal/manifest'")
-    expect(layout).toContain("apple: '/pwa/customer-portal-icon-180.png'")
+    expect(layout).toContain("apple: '/pwa/corevo-apple-touch-icon-180.png'")
+    expect(pngSize('/pwa/corevo-apple-touch-icon-180.png')).toEqual({ width: 180, height: 180 })
     expect(layout).not.toMatch(/kund-sw|serviceWorker|navigator\.serviceWorker/)
+
+    const installPrompt = fs.readFileSync(
+      path.join(WEB_ROOT, 'components', 'customer-portal', 'InstallPromptCard.tsx'),
+      'utf8',
+    )
+    expect(installPrompt).toContain('src="/pwa/corevo-icon-192.png"')
+    expect(installPrompt).not.toContain('customer-portal-icon')
   })
 })

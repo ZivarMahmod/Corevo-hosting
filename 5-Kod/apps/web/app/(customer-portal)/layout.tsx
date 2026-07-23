@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: 'Mina bokningar · Corevo',
     statusBarStyle: 'black-translucent',
   },
-  icons: { apple: '/pwa/customer-portal-icon-180.png' },
+  icons: { apple: '/pwa/corevo-apple-touch-icon-180.png' },
 }
 
 export const viewport: Viewport = {

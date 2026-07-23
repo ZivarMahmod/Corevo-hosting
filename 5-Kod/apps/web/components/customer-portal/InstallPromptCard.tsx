@@ -206,7 +206,7 @@ export function InstallPromptCard({ placement }: { placement: 'auto' | 'page' })
         <div className="cp-install-heading">
           <Image
             className="cp-install-icon"
-            src="/pwa/customer-portal-icon-192.png"
+            src="/pwa/corevo-icon-192.png"
             width={192}
             height={192}
             alt=""

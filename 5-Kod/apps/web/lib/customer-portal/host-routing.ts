@@ -17,8 +17,11 @@ export const CUSTOMER_PORTAL_ROUTE_PATTERNS = [
 const STATIC_PATHS = new Set([
   '/favicon.ico',
   '/icon.svg',
-  '/pwa/customer-portal-icon-192.png',
-  '/pwa/customer-portal-icon-512.png',
+  '/pwa/corevo-icon-192.png',
+  '/pwa/corevo-icon-512.png',
+  '/pwa/corevo-icon-512-maskable.png',
+  '/pwa/corevo-icon-monochrome.png',
+  '/pwa/corevo-apple-touch-icon-180.png',
 ])
 
 const normalize = (pathname: string): string =>
