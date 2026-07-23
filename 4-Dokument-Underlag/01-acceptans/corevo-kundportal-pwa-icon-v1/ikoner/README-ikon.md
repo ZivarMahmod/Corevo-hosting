@@ -2,6 +2,10 @@
 
 Den fastställda hemskärms-/PWA-ikonen för Corevo Kundportal.
 
+> Implementationsnot 2026-07-23: GitHub-uppladdningen innehöll PNG-filerna men
+> inte de två `.dc.html`-källor som nämns längst ned. De levererade PNG-filerna
+> är därför operativ källa tills originalfilerna eventuellt läggs till.
+
 ## Konceptet
 Serif-**C** i kopparfolie-gradient på en varm grafitmörk squircle med en diskret ljus-glow
 uppe till höger. Läsbar från 40 px till 1024 px, premiumkänsla, men mysig — inte skrikig.
@@ -38,8 +42,8 @@ och exportera som optimerad PNG. C:et ligger i safe-zone så maskning till cirke
 {
   "name": "Corevo — Mina sidor",
   "short_name": "Corevo",
-  "start_url": "/?source=pwa",
-  "scope": "/",
+  "start_url": "/mina",
+  "scope": "/mina",
   "display": "standalone",
   "theme_color": "#191a17",
   "background_color": "#191a17",
@@ -57,9 +61,11 @@ iOS (i `<head>`, då iOS ignorerar manifest-ikoner):
 <meta name="theme-color" content="#191a17">
 ```
 
-> Corevo:s manifest genereras redan per yta (`5-Kod/apps/web/app/api/pwa/kund-manifest/route.ts`).
+> Corevo:s kundportalmanifest genereras i
+> `5-Kod/apps/web/app/api/customer-portal/manifest/route.ts`.
 > Byt ut kundportalens ikoner mot dessa och behåll befintlig manifest-logik.
 
 ## Källa
-- `Corevo Ikon Kopparfolie.dc.html` — den fastställda ikonen + kontext (hemskärm, installationsdialog, notis) + exportstorlekar.
-- `Corevo App-ikon.dc.html` — de fyra ursprungliga riktningarna (1a–1d); Kopparfolie = 1d.
+- De fem levererade PNG-filerna ovan är nuvarande källa i repot.
+- `Corevo Ikon Kopparfolie.dc.html` och `Corevo App-ikon.dc.html` anges i
+  ursprungshandoffens källförteckning men följde inte med GitHub-uppladdningen.

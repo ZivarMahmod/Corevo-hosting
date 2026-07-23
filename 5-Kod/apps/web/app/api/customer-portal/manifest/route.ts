@@ -7,9 +7,9 @@ export function GET(): Response {
     {
       name: 'Mina bokningar · Corevo',
       short_name: 'Mina bokningar',
-      id: '/mina/',
-      start_url: '/mina/',
-      scope: '/mina/',
+      id: '/mina',
+      start_url: '/mina',
+      scope: '/mina',
       display: 'standalone',
       background_color: '#191a17',
       theme_color: '#191a17',

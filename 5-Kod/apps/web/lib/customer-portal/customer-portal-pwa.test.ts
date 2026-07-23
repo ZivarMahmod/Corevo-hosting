@@ -30,9 +30,9 @@ describe('customer portal PWA', () => {
     expect(manifest).toMatchObject({
       name: 'Mina bokningar · Corevo',
       short_name: 'Mina bokningar',
-      id: '/mina/',
-      start_url: '/mina/',
-      scope: '/mina/',
+      id: '/mina',
+      start_url: '/mina',
+      scope: '/mina',
       display: 'standalone',
       theme_color: '#191a17',
       background_color: '#191a17',
@@ -85,6 +85,7 @@ describe('customer portal PWA', () => {
       'utf8',
     )
     expect(installPrompt).toContain('src="/pwa/corevo-icon-192.png"')
+    expect(installPrompt).toContain('unoptimized')
     expect(installPrompt).not.toContain('customer-portal-icon')
   })
 })

@@ -211,6 +211,7 @@ export function InstallPromptCard({ placement }: { placement: 'auto' | 'page' })
             height={192}
             alt=""
             aria-hidden="true"
+            unoptimized
           />
           <div>
             <p className="cp-eyebrow">COREVO</p>
