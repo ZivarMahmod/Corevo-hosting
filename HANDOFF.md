@@ -187,6 +187,8 @@ byggdel är Goal-81: bokningsmotorns fyra lägen genom den verkliga
 plats-/djuplänksmatrisen. Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
+Den godkända ordningen och lokala låsgränsen för Goal 81–86 finns i
+`1-Planering/19-lanseringsprogram/08-goal81-86-exekveringsplan.md`.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
 innehåller inga kopierade produktionsdata och har exakt `128` kanoniskt
