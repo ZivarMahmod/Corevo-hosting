@@ -23,6 +23,7 @@ describe('mergeScopedSettings', () => {
       mergeScopedSettings(existing, 'booking', {
         cancellationHours: 12,
         customerAccountsEnabled: false,
+        bookingVerificationMode: 'email_only',
         bookingExternalUrl: 'https://www.bokadirekt.se/places/test-123',
       }),
     ).toEqual({
@@ -30,6 +31,7 @@ describe('mergeScopedSettings', () => {
       cancellation_cutoff_hours: 12,
       customer_accounts_enabled: false,
       booking: {
+        verificationMode: 'email_only',
         external_url: 'https://www.bokadirekt.se/places/test-123',
       },
     })

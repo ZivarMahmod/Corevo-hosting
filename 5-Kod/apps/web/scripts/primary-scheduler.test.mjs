@@ -10,7 +10,7 @@ const env = {
 }
 
 describe('primary booking scheduler', () => {
-  it('records start/success after reminders and refunds both succeed internally', async () => {
+  it('records start/success after retention, reminders and refunds succeed internally', async () => {
     const heartbeat = []
     const appRequests = []
     const fetchImpl = async (request) => {
@@ -30,9 +30,10 @@ describe('primary booking scheduler', () => {
       now: () => new Date('2026-07-18T10:00:00Z'),
     })
 
-    assert.equal(appRequests.length, 2)
-    assert.equal(new URL(appRequests[0].url).pathname, '/api/cron/reminders')
-    assert.equal(new URL(appRequests[1].url).pathname, '/api/cron/payment-refunds')
+    assert.equal(appRequests.length, 3)
+    assert.equal(new URL(appRequests[0].url).pathname, '/api/cron/pending-expiry')
+    assert.equal(new URL(appRequests[1].url).pathname, '/api/cron/reminders')
+    assert.equal(new URL(appRequests[2].url).pathname, '/api/cron/payment-refunds')
     for (const request of appRequests) {
       assert.equal(request.method, 'POST')
       assert.equal(request.headers.get('authorization'), 'Bearer cron-secret')
@@ -61,7 +62,7 @@ describe('primary booking scheduler', () => {
 
     assert.deepEqual(heartbeat.map((entry) => entry.p_phase), ['started', 'failed'])
     assert.equal(heartbeat[1].p_error_code, 'route_failed')
-    assert.deepEqual(paths, ['/api/cron/reminders', '/api/cron/payment-refunds'])
+    assert.deepEqual(paths, ['/api/cron/pending-expiry', '/api/cron/reminders', '/api/cron/payment-refunds'])
   })
 
   it('attempts refunds even when reminders fail, then fails the composite heartbeat closed', async () => {
@@ -75,7 +76,7 @@ describe('primary booking scheduler', () => {
       },
       fetchImpl: async () => new Response(JSON.stringify(true), { status: 200 }),
     }), /primary_scheduler_route_failed/)
-    assert.deepEqual(paths, ['/api/cron/reminders', '/api/cron/payment-refunds'])
+    assert.deepEqual(paths, ['/api/cron/pending-expiry', '/api/cron/reminders', '/api/cron/payment-refunds'])
   })
 
   it('fails before any app call when a required secret is missing', async () => {

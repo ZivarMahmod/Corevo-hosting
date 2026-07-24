@@ -560,10 +560,10 @@ idempotency keys eller statusuppslag ska verifieras i test, inte antas.
 2. Servern validerar hela valet och skapar ett kort `slot_hold`, exempelvis fem
    minuter, med befintlig `place_slot_hold`-väg.
 3. Servern normaliserar mobilnumret till E.164.
-4. En kryptografiskt säker sexsiffrig PIN skapas.
+4. En kryptografiskt säker fyrsiffrig PIN skapas.
 5. Endast HMAC-SHA-256 med versionsmärkt server-pepper, challenge-ID, tenant,
    telefonfingeravtryck, TTL, attempt count och rate-limitdata lagras. En vanlig
-   snabb hash räcker inte för ett sexsiffrigt sökutrymme. Klar PIN lagras inte.
+   snabb hash räcker inte för ett fyrsiffrigt sökutrymme. Klar PIN lagras inte.
 6. Challenge, hold och OTP-rad i `notifications_outbox` skapas atomiskt. OTP-raden
    har `expires_at`; dispatchern hoppar över utgångna koder och har en direkt
    wake-väg plus subminut-recovery, inte bara en lång cronintervall.
@@ -576,12 +576,12 @@ idempotency keys eller statusuppslag ska verifieras i test, inte antas.
    i nuläget; det ska bevisas med race-tester innan flödet används.
 10. Fel, utgången kod eller uttömda försök skapar ingen bokning. Hold släpps
     eller får löpa ut och kan prunas.
-11. Första flödet är telefonbaserat. `guest_email` måste göras valfritt i UI,
-    servervalidering, RPC och databasconstraint innan PIN-only marknadsförs.
+11. Tenantens bokningsinställning väljer endast SMS, SMS med e-postreserv eller
+    endast e-post. Kontaktfält, servervalidering och leverans följer samma val.
 
 ### Säkerhetsgränser
 
-- TTL cirka fem minuter, högst fem verifieringsförsök per challenge.
+- TTL cirka fem minuter, högst tre verifieringsförsök per challenge.
 - Cooldown innan ny kod och rate limit globalt samt per tenant, telefon,
   IP/device-signal och aktivt antal holds. Ny kod ogiltigförklarar alltid den
   tidigare challenge-koden.

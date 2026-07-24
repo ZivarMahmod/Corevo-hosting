@@ -1,13 +1,17 @@
 # Implementationsplan: PIN-bokning med Giada och e-postfallback
 
-> **Status:** Godkänd design, redo för exekvering 2026-07-21  
+> **Status:** Tilläggsrevision lokalt genomförd 2026-07-23; migration, deploy och e-postcanary återstår
 > **Kanon:** `02-PIN-BOKNING-SIM-FALLBACK-DESIGN.md`  
 > **Kodbaser:** Corevo-plattformen + `corevo-sms`  
 > **Driftsregel:** Inget riktigt SMS skickas innan fysisk SIM-canary uttryckligen körs.
 
 ## Mål
 
-En publik bokning får inte skapas innan kontaktvägen har verifierats med en sexsiffrig PIN. När Giada och modemet är friska används telefon/SMS. När de inte är friska visas e-post i stället och samma verifieringsflöde körs via e-post. PIN och bokningsbekräftelse skickas direkt; Cloudflares 15-minuterscron ligger inte i den normala vägen.
+En publik bokning får inte skapas innan kontaktvägen har verifierats med en
+fyrsiffrig PIN. Tenantens bokningsinställning väljer endast SMS, SMS med
+e-postreserv eller endast e-post. Efter tre fel spärras koden och kunden begär
+en ny. PIN och bokningsbekräftelse skickas direkt; Cloudflares 15-minuterscron
+ligger inte i den normala vägen.
 
 ## Hårda gränser
 
@@ -97,7 +101,7 @@ En publik bokning får inte skapas innan kontaktvägen har verifierats med en se
 **Rött test först:**
 
 1. Kontraktstest kräver privat tabell, RLS/Data API-revokes och ingen klartextkolumn.
-2. Kontraktstest kräver fem minuters TTL, max fem försök, 30 sekunders resend-gate och engångskonsumtion.
+2. Kontraktstest kräver fem minuters TTL, max tre försök, 30 sekunders resend-gate och engångskonsumtion.
 3. Kontraktstest kräver atomisk RPC som låser challenge + hold, skapar bokning, konsumerar challenge och skriver bekräftelseevent till `notifications_outbox` i samma transaktion.
 4. Kontraktstest kräver att fel PIN, utgången PIN, fel kontakt, fel session, upptagen tid eller återanvänd challenge inte kan skapa bokning.
 
@@ -124,7 +128,7 @@ En publik bokning får inte skapas innan kontaktvägen har verifierats med en se
 
 **Rött test först:**
 
-1. Testa kryptografiskt säker sexsiffrig PIN och HMAC-SHA-256 med `BOOKING_PIN_PEPPER`.
+1. Testa kryptografiskt säker fyrsiffrig PIN och HMAC-SHA-256 med `BOOKING_PIN_PEPPER`.
 2. Testa att PIN aldrig returneras eller loggas efter transportanropet.
 3. Testa SMS- och e-postmall på svenska med exakt fem minuters giltighet.
 4. Testa fail-closed rate limits per IP+tenant+kontakt för start, resend och verify.
@@ -184,7 +188,7 @@ En publik bokning får inte skapas innan kontaktvägen har verifierats med en se
 
 7. Hämta contact mode server-side när kontaktsteget öppnas och visa en liten laddstatus tills läget är känt.
 8. Lägg PIN som ett kort mellan kontaktuppgifter och bekräftelse; håll befintlig visuella designkanon.
-9. Lås CTA under request, stöd sex siffror, paste och resend efter 30 sekunder.
+9. Lås CTA under request, stöd fyra siffror, paste och resend efter 30 sekunder.
 10. Uppdatera compact och wizard utan branschhårdkodning.
 11. Kör komponenttest, lint och typecheck; commit: `feat: add booking pin user flow`.
 
@@ -268,3 +272,45 @@ Dessutom:
 - inga PIN-koder, telefonnummer, e-postadresser eller API-nycklar finns i loggutskrifter,
 - `wrangler.jsonc` har ingen ny trigger och 15-minuterscron ligger utanför direktflödet,
 - fysisk live-SMS-canary kvarstår som manuell spärr tills SIM är inkopplat.
+
+## Task 10: Fyrsiffrig boknings-PIN och tenantstyrt kanalval
+
+**Filer:**
+
+- Modify: `5-Kod/apps/web/lib/platform/booking-variant.ts`
+- Test: `5-Kod/apps/web/lib/platform/booking-variant.test.ts`
+- Modify: `5-Kod/apps/web/lib/notifications/giada.ts`
+- Test: `5-Kod/apps/web/lib/notifications/giada.test.ts`
+- Modify: `5-Kod/apps/web/lib/admin/scoped-settings.ts`
+- Test: `5-Kod/apps/web/lib/admin/scoped-settings.test.ts`
+- Modify: `5-Kod/apps/web/lib/admin/actions.ts`
+- Modify: `5-Kod/apps/web/components/admin/SettingsForm.tsx`
+- Modify: `5-Kod/apps/web/app/(admin)/admin/installningar/bokning/page.tsx`
+- Modify: `5-Kod/apps/web/lib/platform/actions/data.ts`
+- Modify: `5-Kod/apps/web/components/platform/BookingSettings.tsx`
+- Modify: `5-Kod/apps/web/components/platform/SidaStudio.tsx`
+- Modify: `5-Kod/apps/web/app/(platform)/kunder/(board)/[id]/page.tsx`
+- Modify: `5-Kod/apps/web/app/boka/actions.ts`
+- Modify: `5-Kod/apps/web/components/booking/BookingWizard.tsx`
+- Modify: `5-Kod/apps/web/lib/booking/verification.ts`
+- Test: `5-Kod/apps/web/lib/booking/verification.test.ts`
+- Create via Supabase CLI: nästa migration med namnet
+  `booking_pin_three_attempts`
+- Test: `5-Kod/apps/web/lib/booking/booking-pin-attempt-limit.contract.test.ts`
+
+**TDD-steg:**
+
+1. Lägg röda testfall för tre kanalpolicys, bakåtkompatibel standard,
+   fyrsiffrig PIN, tre DB-försök och bevarad settings-merge.
+2. Kör de fem riktade testfilerna och bekräfta att de faller på de nya kraven.
+3. Lägg enum/läsare i den befintliga booking-settings-seamen och spara samma
+   `settings.booking.verificationMode` från båda adminytorna.
+4. Låt servern kombinera tenantvalet med Giada-health. `sms_only` får aldrig
+   falla över till e-post; `email_only` gör inget health-anrop.
+5. Ändra endast Goal-74:s publika boknings-PIN till fyra siffror. Kundportalens
+   separata recovery-/kontaktbyteskoder behåller sitt befintliga kontrakt.
+6. Ersätt DB-funktionens femförsöksgräns med tre i en framåtriktad migration;
+   klar PIN lagras fortfarande aldrig.
+7. Kör riktade tester, typecheck, lint, build och `git diff --check`.
+8. Uppdatera Goal-74 och den manuella testlistan. Flytta inte goal till `klart/`
+   före driftsatt migration, deploy och verklig e-postfallback-canary.

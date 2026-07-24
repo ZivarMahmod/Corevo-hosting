@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-23.
+Senast uppdaterad: 2026-07-24.
 
 ## Läsordning
 
@@ -18,10 +18,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 ## Nuläge
 
 - Den samlade localhostacceptansen för de aktuella Goal 74–80-delarna är körd:
-  `350` testfiler och `2736` tester passerar tillsammans. Goal 75–80 är lokalt
-  låsta i samma arbetsyta. Goal 74:s riktiga operatörs-/SMS-prov samt
-  produktionsmigration, domän/HTTPS, externa leveranser och deploy är fortsatt
-  releasegrindar och ska göras tillsammans med Zivar. Protokoll:
+  `350` testfiler och `2737` tester passerar tillsammans. Goal 74–80 är lokalt
+  låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
+  extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
+  tillsammans med Zivar. Protokoll:
   `6-Testing/samlad-localhostacceptans-goal-74-80.md`. Produktion är orörd.
 - Goal 80 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. Superadminens valda kundkort är nu
@@ -117,17 +117,18 @@ tenant och ett testfall, aldrig produktdefinitionen.
   migrationerna `0118–0119` är produktionsverifierade. Fysisk SIM-canary,
   själv-SIM-loopback och en full Demo-kedja till skapad bokning godkändes
   2026-07-22; testbokningen avbokades direkt efter beviset.
-  Den godkända tilläggsrevisionen 2026-07-23 är lokalt implementerad på
+  Tilläggsrevisionen är lokalt låst på
   `codex/launch-inventory-customer-design`: publik boknings-PIN är fyra siffror
   med tre försök och tenantens kundadmin/superadminkort väljer endast SMS, SMS
-  med mejlreserv eller endast mejl. Full web 334 testfiler/2 688 tester,
-  typecheck, lint utan fel och produktionsbuild är gröna. Den nya migrationen
-  `20260723072758_booking_pin_three_attempts.sql` är ännu inte runtimekörd eller
-  driftsatt; kanalvalen är inte browserverifierade och en riktig
-  e-postfallback-canary återstår. Zivar har 2026-07-23 parkerat dessa driftsteg:
-  alla återstående delar ska först byggas klart och testas tillsammans på
-  localhost. Först därefter görs en samlad migration/deploy/canary. Goal-74
-  ligger därför kvar i `goals/`.
+  med mejlreserv eller endast mejl. SMS skapar inte längre en oanvänd
+  konto-claim och alla durabla bokningslänkar använder den kanoniska
+  `<slug>.boka.corevo.se`-hosten. Full web 350 testfiler/2 737 tester,
+  typecheck, lint utan fel och produktionsbuild är gröna. Migration
+  `0125_booking_pin_three_attempts.sql` och dess grants/hostkontrakt är
+  runtimeverifierade på `localhost-acceptance`. En riktig e-postfallback-canary,
+  produktionsmigration och browserkontroll av kanalvalen återstår i den samlade
+  releasefasen; de blockerar inte nästa lokala goal. Goal-74 är därför arkiverad
+  som lokalt verifierad under `2-Byggplan/klart/02-ytor/bokningsmotor/`.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
   `6-Testing/goal-74-pin-bokning-testlista.md`.
@@ -141,7 +142,7 @@ tenant och ett testfall, aldrig produktdefinitionen.
   Localhostacceptans mot den isolerade Supabase-previewbranchen
   `localhost-acceptance` gick igenom på desktop och mobil. Den fångade en
   PostgreSQL-regexgräns i portalsnapshoten; `0120` är rättad och
-  `20260723124530_customer_portal_postgres_regex_fix.sql` reparerar redan
+  `0128_customer_portal_postgres_regex_fix.sql` reparerar redan
   migrerade preview-/stagingdatabaser. Portalens 56 testfiler/413 tester,
   Goal-75-proben 5/5, typecheck, lint utan fel och produktionsbuild är gröna.
   Ingen produktionsdeploy är gjord; Goal-75 ligger kvar i `goals/` tills den
@@ -150,7 +151,7 @@ tenant och ett testfall, aldrig produktdefinitionen.
   konfiguration**; en DB-ägd, modulstyrd readinessgrind är ensam väg till
   `active`. Kundkortet visar exakta blockerare och standardadressen är
   `<slug>.boka.corevo.se` via wildcard, utan ny Cloudflare-domän per kund.
-  Migration `20260723111315_tenant_launch_readiness.sql` är applicerad och
+  Migration `0127_tenant_launch_readiness.sql` är applicerad och
   runtimeverifierad på `localhost-acceptance`: publicering, idempotens, nekad
   för tidig publicering och nekad direkt statusbypass är gröna med rollback.
   Seedad superadmin är rättad till global identitet. Full websvit 344
@@ -170,7 +171,7 @@ tenant och ett testfall, aldrig produktdefinitionen.
   boknings-CTA:er; saknad rad behåller den äldre säkra Corevo-standarden och
   `booking=live` vinner alltid. Kundadmin och superadmin kan spara länken och
   onboarding erbjuder Live/Pausad/Av. Den smala publika modulstatusfunktionen i
-  `20260723160000_public_module_state_read.sql` är applicerad enbart på
+  `0129_public_module_state_read.sql` är applicerad enbart på
   `localhost-acceptance`. Browseracceptansen verifierade åtta externa CTA:er,
   säker ny flik, nekad HTTP-länk, stängd `/boka`, inert `draft`, intern
   Corevo-hantering för `paused` samt återgång till Corevos femstegsdialog.
@@ -181,17 +182,16 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-75–80 är lokalt låsta och den samlade localhostacceptansen är grön. Nästa
-steg är Zivars gemensamma lokala genomgång; därefter tas ett separat beslut om
-release. Bokningsmotorns fyra lägen genom den verkliga plats-/djuplänksmatrisen
-ligger kvar senare i roadmapen. Goal-74:s nya driftprov samt Goal-75/76:s
-produktionsmigration/host/HTTPS-prov är parkerade till den gemensamma
-releasefasen. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
+Goal-74–80 är lokalt låsta och den samlade kodacceptansen är grön. Nästa
+byggdel är Goal-81: bokningsmotorns fyra lägen genom den verkliga
+plats-/djuplänksmatrisen. Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
+produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
+lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
-innehåller inga kopierade produktionsdata, har repots migrationer genom `0124`,
-Goal-74:s tre-försöksmigration, Goal-75:s säkerhets-/regexmigrationer och
-syntetisk portaldata.
+innehåller inga kopierade produktionsdata och har exakt `128` kanoniskt
+numrerade migrationer genom `0129`, inklusive Goal-74:s tre-försöksmigration,
+Goal-75:s säkerhets-/regexmigrationer och syntetisk portaldata.
 Produktion `clylvowtowbtotrahuad` är orörd.
 
 Relationspaketet är publicerat från den verifierade leveransen och produktionen

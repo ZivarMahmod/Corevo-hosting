@@ -19,7 +19,13 @@ import { OpeningHoursCard } from './OpeningHoursCard'
 import { TeamCard } from './TeamCard'
 import { StaffTeamCard, type StaffTeamMember } from './StaffTeamCard'
 import { SingleImageSlot, StatsCard } from './StorefrontExtrasCard'
-import type { BookingVariant, PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
+import {
+  DEFAULT_BOOKING_VERIFICATION_MODE,
+  type BookingVariant,
+  type BookingVerificationMode,
+  type PickerMode,
+  type StaffAvatarMode,
+} from '@/lib/platform/booking-variant'
 import { themeCaps, THEME_EXTRA_HOME } from '@/lib/platform/theme-capabilities'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import styles from './SidaStudio.module.css'
@@ -128,6 +134,7 @@ export type SidaStudioProps = {
    *  mounts kompilerar; panelen sparar via updateBookingSettings (sidaCtx-guard). */
   pickerMode?: PickerMode
   staffAvatars?: StaffAvatarMode
+  bookingVerificationMode?: BookingVerificationMode
   bookingExternalUrl?: string | null
   /** true när minst en AKTIV medarbetare har profilbild — låser upp Foto-läget. */
   hasStaffPhoto?: boolean
@@ -167,6 +174,7 @@ export function SidaStudio({
   bookingVariant,
   pickerMode = 'calendar',
   staffAvatars = 'initialer',
+  bookingVerificationMode = DEFAULT_BOOKING_VERIFICATION_MODE,
   bookingExternalUrl = null,
   hasStaffPhoto = false,
   staffTeam = [],
@@ -634,6 +642,7 @@ export function SidaStudio({
             variant={bookingVariant}
             pickerMode={pickerMode}
             staffAvatars={staffAvatars}
+            verificationMode={bookingVerificationMode}
             externalUrl={bookingExternalUrl}
             hasStaffPhoto={hasStaffPhoto}
             onSaved={reload}

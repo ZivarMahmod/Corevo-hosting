@@ -157,6 +157,21 @@ describe('prepareBookingDelivery', () => {
     expect(JSON.stringify(row.payload)).not.toContain('cancel-secret')
   })
 
+  it('sends SMS guests to passwordless booking management, not the login claim flow', async () => {
+    const prepared = await prepareBookingDelivery({
+      ...row,
+      chosen_channel: 'sms',
+    })
+
+    expect(prepared).toMatchObject({ ok: true, channel: 'sms' })
+    if (!prepared.ok || prepared.channel !== 'sms') throw new Error('expected sms')
+    expect(prepared.body).toContain(
+      '/avboka/20000000-0000-4000-8000-000000000001?t=cancel-secret',
+    )
+    expect(prepared.body).not.toContain('/konto/koppla/')
+    expect(mocks.createCustomerClaimLink).not.toHaveBeenCalled()
+  })
+
   it('fails closed before minting a link when completion changed to no-show', async () => {
     mocks.createServiceClient.mockReturnValue(service('no_show'))
     await expect(prepareBookingDelivery({

@@ -70,6 +70,7 @@ node_modules/
 
 # Claude Cowork session-artefakter
 .claude/
+.superpowers/
 mappar i katalog-roten (numrerade 01–100
 # + namngivna) — licens-/storleksskäl. Ignorera bara KATALOGER; rot-filer (KATALOG.md,
 # KATALOG-RAPPORT.md, templates-staging.json, templates-import.sql, _*-script) versioneras.

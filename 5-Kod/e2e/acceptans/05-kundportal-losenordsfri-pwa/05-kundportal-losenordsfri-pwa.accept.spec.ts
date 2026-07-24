@@ -56,7 +56,7 @@ test.describe('05 Kundportal och PWA — source contract @readonly @contract', (
 
   test('05-C04 säkerhets- och enhetsdata passerar endast smal service-role-RPC', () => {
     const migration = read(
-      'supabase/migrations/20260723100549_customer_portal_security_devices.sql',
+      'supabase/migrations/0126_customer_portal_security_devices.sql',
     ).toLowerCase()
     const data = read('apps/web/lib/customer-portal/security-devices.ts')
 
@@ -73,7 +73,7 @@ test.describe('05 Kundportal och PWA — source contract @readonly @contract', (
   test('05-C05 portalsnapshoten använder PostgreSQL-säkra regexgränser', () => {
     const base = read('supabase/migrations/0120_customer_portal_security.sql')
     const repair = read(
-      'supabase/migrations/20260723124530_customer_portal_postgres_regex_fix.sql',
+      'supabase/migrations/0128_customer_portal_postgres_regex_fix.sql',
     )
 
     expect(base).not.toContain('{1,2000}')

@@ -89,7 +89,7 @@ När bokningsmodulen är live behövs dessutom:
 ## Lokal låsning 2026-07-23
 
 Goal-76:s kod och databasgrind är lokalt låsta. Previewbranchen
-`localhost-acceptance` har migration `20260723111315`; runtimeprovet verifierar
+`localhost-acceptance` har migration `0127_tenant_launch_readiness.sql`; runtimeprovet verifierar
 lyckad publicering, idempotens, nekad för tidig publicering och nekad direkt
 statusbypass utan bestående teständringar. Standard- och E2E-seeden är rättade
 så superadmin är en global identitet och tenant skapas i `provisioning` innan

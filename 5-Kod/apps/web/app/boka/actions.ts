@@ -24,8 +24,13 @@ import { bookingModuleAccess } from '@/components/storefront/layouts/booking-acc
 import { commerceReleaseGate } from '@/lib/release/commerce'
 import {
   getBookingContactMode,
+  type BookingContactAvailability,
   type BookingContactMode,
 } from '@/lib/notifications/giada'
+import {
+  readBookingVerificationMode,
+  type BookingVerificationMode,
+} from '@/lib/platform/booking-variant'
 import {
   bookingContactDigest,
   bookingPinDigest,
@@ -523,9 +528,25 @@ async function safeReleaseSlotHold(
   }
 }
 
+async function getTenantBookingVerificationMode(
+  tenantId: string,
+): Promise<BookingVerificationMode | null> {
+  const reader = createServiceClient()
+  if (!reader) return null
+  const { data, error } = await reader
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  return error ? null : readBookingVerificationMode(data?.settings)
+}
+
 /** The UI asks this before rendering its one allowed contact field. */
-export async function getBookingContactModeAction(): Promise<{ mode: BookingContactMode }> {
-  return { mode: await getBookingContactMode() }
+export async function getBookingContactModeAction(): Promise<{ mode: BookingContactAvailability }> {
+  const ctx = await getTenantContext()
+  if (!ctx) return { mode: 'unavailable' }
+  const policy = await getTenantBookingVerificationMode(ctx.tenantId)
+  return { mode: policy ? await getBookingContactMode(policy) : 'unavailable' }
 }
 
 async function startBookingVerificationInternal(
@@ -541,15 +562,37 @@ async function startBookingVerificationInternal(
     return { ok: false, reason: 'invalid', message: 'Ofullständig bokning. Börja om.' }
   }
 
-  const channel = previous?.channel ?? await getBookingContactMode()
-  // A challenge is locked to one contact channel. If SMS died after the first
-  // send, the customer starts a fresh email challenge instead of silently
-  // changing identity under an existing challenge.
-  if (previous?.channel === 'sms' && await getBookingContactMode() !== 'sms') {
+  const policy = await getTenantBookingVerificationMode(ctx.tenantId)
+  if (!policy) {
+    return { ok: false, reason: 'error', message: 'Verifieringen är inte tillgänglig just nu.' }
+  }
+  const liveMode = await getBookingContactMode(policy)
+  if (!previous && liveMode === 'unavailable') {
     return {
       ok: false,
       reason: 'delivery_unavailable',
-      message: 'SMS är tillfälligt nere. Gå tillbaka och fortsätt med e-post i stället.',
+      message: 'SMS är tillfälligt nere. Försök igen om en stund.',
+    }
+  }
+  const channel = previous?.channel ?? liveMode
+  if (channel === 'unavailable') {
+    return {
+      ok: false,
+      reason: 'delivery_unavailable',
+      message: 'SMS är tillfälligt nere. Försök igen om en stund.',
+    }
+  }
+  // A challenge is locked to one contact channel. If SMS died after the first
+  // send, the customer starts a fresh email challenge instead of silently
+  // changing identity under an existing challenge.
+  if (previous?.channel === 'sms' && liveMode !== 'sms') {
+    return {
+      ok: false,
+      reason: 'delivery_unavailable',
+      ...(liveMode === 'email' ? { channel: 'email' as const } : {}),
+      message: liveMode === 'email'
+        ? 'SMS är tillfälligt nere. Gå tillbaka och fortsätt med e-post i stället.'
+        : 'SMS är tillfälligt nere. Försök igen om en stund.',
     }
   }
 
@@ -683,8 +726,13 @@ async function startBookingVerificationInternal(
     return {
       ok: false,
       reason: 'delivery_unavailable',
+      ...(channel === 'sms' && policy === 'sms_with_email_fallback'
+        ? { channel: 'email' as const }
+        : {}),
       message: channel === 'sms'
-        ? 'SMS kunde inte skickas. Försök igen eller fortsätt med e-post.'
+        ? policy === 'sms_with_email_fallback'
+          ? 'SMS kunde inte skickas. Fortsätt med e-post i stället.'
+          : 'SMS kunde inte skickas. Försök igen om en stund.'
         : 'Mejlet kunde inte skickas. Kontrollera adressen och försök igen.',
     }
   }
@@ -766,8 +814,8 @@ export async function verifyAndCreateBooking(
   }
   const name = input.name.trim()
   const contact = normalizeBookingContact(input.channel, input.contact)
-  if (!validSelection(input) || !name || name.length > 200 || !contact || !/^\d{6}$/.test(input.pin)) {
-    return { ok: false, reason: 'invalid', message: 'Kontrollera uppgifterna och den sexsiffriga koden.' }
+  if (!validSelection(input) || !name || name.length > 200 || !contact || !/^\d{4}$/.test(input.pin)) {
+    return { ok: false, reason: 'invalid', message: 'Kontrollera uppgifterna och den fyrsiffriga koden.' }
   }
 
   const ip = await getClientIp()
@@ -837,7 +885,12 @@ export async function verifyAndCreateBooking(
     }
   }
   if (row.outcome === 'attempts_exhausted') {
-    return { ok: false, reason: 'expired', message: 'För många felaktiga försök. Skicka en ny kod.' }
+    return {
+      ok: false,
+      reason: 'invalid_pin',
+      message: 'För många felaktiga försök. Skicka en ny kod.',
+      attemptsRemaining: 0,
+    }
   }
   if (row.outcome === 'expired' || row.outcome === 'hold_expired') {
     return { ok: false, reason: 'expired', message: 'Koden eller reservationen har gått ut. Börja om.' }

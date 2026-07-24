@@ -11,6 +11,8 @@ import {
   type BookingVariant,
   type PickerMode,
   type StaffAvatarMode,
+  isBookingVerificationMode,
+  type BookingVerificationMode,
 } from '../booking-variant'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
@@ -217,6 +219,7 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
   const variantRaw = String(fd.get('booking_variant') ?? '')
   const pickerRaw = String(fd.get('picker_mode') ?? '')
   const avatarsRaw = String(fd.get('staff_avatars') ?? '')
+  const verificationModeRaw = String(fd.get('booking_verification_mode') ?? '')
   const externalUrlRaw = String(fd.get('booking_external_url') ?? '').trim()
   const externalUrl = normalizeBookingExternalUrl(externalUrlRaw)
   // Okänt/saknat värde → samma defaults som läs-seamen (readPickerMode/
@@ -228,10 +231,14 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
   const staffAvatars: StaffAvatarMode = (STAFF_AVATAR_MODES as readonly string[]).includes(avatarsRaw)
     ? (avatarsRaw as StaffAvatarMode)
     : 'initialer'
-
+  if (!isBookingVerificationMode(verificationModeRaw)) {
+    return { error: 'Ogiltigt kanalval för bokningskoder.' }
+  }
   if (externalUrlRaw && !externalUrl) {
     return { error: 'Extern bokningslänk måste vara en fullständig https-länk.' }
   }
+  const verificationMode = verificationModeRaw as BookingVerificationMode
+
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd kund.' }
 
@@ -249,6 +256,7 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
       variant,
       pickerMode,
       staffAvatars,
+      verificationMode,
       external_url: externalUrl,
     },
   }
@@ -273,6 +281,7 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
       booking_variant: variant,
       picker_mode: pickerMode,
       staff_avatars: staffAvatars,
+      booking_verification_mode: verificationMode,
       booking_external_url: externalUrl,
     },
   })

@@ -12,7 +12,7 @@ const PRESENTATIONS: Record<string, BookingStatusPresentation> = {
     eyebrow: 'FÖRFRÅGAN MOTTAGEN',
     heading: 'Din bokningsförfrågan är mottagen',
     message:
-      'Tiden är inte bekräftad ännu. Du får ett besked via e-post när verksamheten har godkänt den.',
+      'Tiden är inte bekräftad ännu. Du får ett besked när verksamheten har godkänt den.',
     stamp: 'VÄNTAR PÅ SVAR',
     canAddToCalendar: false,
     canManage: true,
@@ -20,7 +20,7 @@ const PRESENTATIONS: Record<string, BookingStatusPresentation> = {
   confirmed: {
     eyebrow: 'BOKAT',
     heading: 'Tack, din tid är bokad!',
-    message: 'En bekräftelse är på väg till din e-post.',
+    message: 'En bekräftelse är på väg till dina kontaktuppgifter.',
     stamp: 'BEKRÄFTAD',
     canAddToCalendar: true,
     canManage: true,

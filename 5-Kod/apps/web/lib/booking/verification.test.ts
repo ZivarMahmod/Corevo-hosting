@@ -33,8 +33,9 @@ afterEach(() => {
 })
 
 describe('booking PIN crypto', () => {
-  it('genererar alltid exakt sex siffror', () => {
-    for (let i = 0; i < 100; i += 1) expect(generateBookingPin()).toMatch(/^\d{6}$/)
+  it('genererar alltid exakt fyra siffror för publik bokning', () => {
+    for (let i = 0; i < 100; i += 1) expect(generateBookingPin()).toMatch(/^\d{4}$/)
+    expect(generateBookingPin(6)).toMatch(/^\d{6}$/)
   })
 
   it('HMAC-binder PIN till session och kontakt till kanal', async () => {

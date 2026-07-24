@@ -3812,6 +3812,10 @@ export type Database = {
       prune_expired_shop_reserves: { Args: never; Returns: number }
       prune_contact_messages: { Args: { p_months?: number }; Returns: number }
       prune_expired_slot_holds: { Args: never; Returns: number }
+      sweep_customer_portal_contact_changes: {
+        Args: { p_now?: string }
+        Returns: number
+      }
       platform_booking_stats: {
         Args: never
         Returns: {

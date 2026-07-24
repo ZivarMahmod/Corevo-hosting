@@ -15,6 +15,7 @@ import {
   type BookingVerificationStarted,
   type SlotOption,
 } from '@/app/boka/actions'
+import type { BookingContactAvailability } from '@/lib/notifications/giada'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import {
   buildTenantBookingPath,
@@ -241,7 +242,7 @@ export function BookingWizard({
   const [slot, setSlot] = useState<SlotOption | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
   const [error, setError] = useState<string | null>(null)
-  const [contactMode, setContactMode] = useState<'sms' | 'email' | null>(null)
+  const [contactMode, setContactMode] = useState<BookingContactAvailability | null>(null)
   const [verification, setVerification] = useState<BookingVerificationStarted | null>(null)
   const [pin, setPin] = useState('')
   const [clock, setClock] = useState(() => Date.now())
@@ -267,7 +268,7 @@ export function BookingWizard({
         if (active) setContactMode(liveMode)
       })
       .catch(() => {
-        if (active) setContactMode('email')
+        if (active) setContactMode('unavailable')
       })
     return () => { active = false }
   }, [])
@@ -449,7 +450,9 @@ export function BookingWizard({
   }, [slot])
 
   function selectedContact(): string {
-    return contactMode === 'sms' ? form.phone : form.email
+    if (contactMode === 'sms') return form.phone
+    if (contactMode === 'email') return form.email
+    return ''
   }
 
   async function finishCreatedBooking(res: Extract<Awaited<ReturnType<typeof verifyAndCreateBooking>>, { ok: true }>) {
@@ -481,6 +484,10 @@ export function BookingWizard({
       setError('Vänta ett ögonblick medan vi kontrollerar hur koden ska skickas.')
       return
     }
+    if (contactMode === 'unavailable') {
+      setError('SMS är tillfälligt nere. Försök igen om en stund.')
+      return
+    }
     setError(null)
     if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID()
     startTransition(async () => {
@@ -503,11 +510,13 @@ export function BookingWizard({
         setPin('')
       } else {
         if (res.channel) setContactMode(res.channel)
-        if (res.reason === 'delivery_unavailable' && contactMode === 'sms') {
+        if (res.reason === 'delivery_unavailable' && res.channel === 'email') {
           // The hold has already been released server-side. Switch the single
           // visible contact field immediately so the customer can continue via
           // e-mail without reloading after a modem/send failure.
           setContactMode('email')
+        } else if (res.reason === 'delivery_unavailable') {
+          setContactMode('unavailable')
         }
         if (res.reason === 'slot_taken' && date) {
           setStep(3)
@@ -521,7 +530,7 @@ export function BookingWizard({
   }
 
   function verifyPin() {
-    if (!service || !slot || !verification || pin.length !== 6) return
+    if (!service || !slot || !verification || pin.length !== 4) return
     setError(null)
     startTransition(async () => {
       let res: Awaited<ReturnType<typeof verifyAndCreateBooking>>
@@ -589,10 +598,10 @@ export function BookingWizard({
         setPin('')
         return
       }
-      if (res.reason === 'delivery_unavailable' && verification.channel === 'sms') {
+      if (res.reason === 'delivery_unavailable') {
         setVerification(null)
         setPin('')
-        setContactMode('email')
+        setContactMode(res.channel === 'email' ? 'email' : 'unavailable')
       }
       setError(res.message)
     })
@@ -653,7 +662,7 @@ export function BookingWizard({
           ? !!slot
           : step === 4
             ? verification
-              ? pin.length === 6
+              ? pin.length === 4
               : !!(form.name && contactMode && selectedContact())
             : true
 
@@ -666,12 +675,14 @@ export function BookingWizard({
         ? 'Välj en tid'
         : step === 4
           ? verification
-            ? 'Fyll i den sexsiffriga koden'
+            ? 'Fyll i den fyrsiffriga koden'
             : contactMode === 'sms'
               ? 'Fyll i namn och telefon'
               : contactMode === 'email'
                 ? 'Fyll i namn och e-post'
-                : 'Kontrollerar kontaktväg…'
+                : contactMode === 'unavailable'
+                  ? 'SMS är tillfälligt nere'
+                  : 'Kontrollerar kontaktväg…'
           : ''
 
   function goNext() {
@@ -727,7 +738,9 @@ export function BookingWizard({
     if (!compactReady) {
       setError(contactMode === 'email'
         ? 'Fyll i tjänst, tid, namn och e-post.'
-        : 'Fyll i tjänst, tid, namn och telefon.')
+        : contactMode === 'unavailable'
+          ? 'SMS är tillfälligt nere. Försök igen om en stund.'
+          : 'Fyll i tjänst, tid, namn och telefon.')
       return
     }
     beginVerification()
@@ -838,7 +851,7 @@ export function BookingWizard({
         <span className="fc-summary-price" aria-hidden>✓</span>
       </div>
       <p className="wizard-muted" style={{ marginTop: 0 }}>
-        Skriv in den sexsiffriga koden. Tiden bokas först när koden är godkänd.
+        Skriv in den fyrsiffriga koden. Tiden bokas först när koden är godkänd.
       </p>
       <label className="fc-field">
         <span>Verifieringskod</span>
@@ -848,11 +861,11 @@ export function BookingWizard({
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          placeholder="000000"
+          pattern="[0-9]{4}"
+          maxLength={4}
+          placeholder="0000"
           value={pin}
-          onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))}
+          onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
         />
       </label>
       <button
@@ -1081,7 +1094,11 @@ export function BookingWizard({
                     />
                   </label>
                 ) : (
-                  <p className="wizard-muted">Kontrollerar kontaktväg…</p>
+                  <p className={contactMode === 'unavailable' ? 'fc-alert' : 'wizard-muted'}>
+                    {contactMode === 'unavailable'
+                      ? 'SMS är tillfälligt nere. Försök igen om en stund.'
+                      : 'Kontrollerar kontaktväg…'}
+                  </p>
                 )}
               </div>
 
@@ -1115,7 +1132,9 @@ export function BookingWizard({
                 </span>
               ) : (
                 <span className="wizard-cta-sub">
-                  Välj tjänst, tid &amp; fyll i namn + {contactMode === 'email' ? 'e-post' : 'telefon'}
+                  {contactMode === 'unavailable'
+                    ? 'SMS är tillfälligt nere'
+                    : <>Välj tjänst, tid &amp; fyll i namn + {contactMode === 'email' ? 'e-post' : 'telefon'}</>}
                 </span>
               )}
             </button>
@@ -1525,7 +1544,11 @@ export function BookingWizard({
                   />
                 </label>
               ) : (
-                <p className="wizard-muted">Kontrollerar kontaktväg…</p>
+                <p className={contactMode === 'unavailable' ? 'fc-alert' : 'wizard-muted'}>
+                  {contactMode === 'unavailable'
+                    ? 'SMS är tillfälligt nere. Försök igen om en stund.'
+                    : 'Kontrollerar kontaktväg…'}
+                </p>
               )}
               <div className="fc-label" style={{ marginTop: 4 }}>
                 Något vi bör veta?

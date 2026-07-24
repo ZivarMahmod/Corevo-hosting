@@ -29,7 +29,7 @@ acceptansfallet men får inte hårdkodas i motorn.
 - Kundadmin, Sida-redigering och andra köpta moduler finns kvar när bokning är av.
 - Ingen ny tabell eller produktionsdeploy ingår.
 - Den publika tabellpolicyn visar avsiktligt bara `live/paused`. Därför används
-  migration `20260723160000_public_module_state_read.sql`: en smal
+  migration `0129_public_module_state_read.sql`: en smal
   `security definer`-funktion som endast returnerar `module_key` + `state` för
   aktiva tenants. Den är körd och verifierad på Supabase-previewbranchen
   `localhost-acceptance`, aldrig i produktion.

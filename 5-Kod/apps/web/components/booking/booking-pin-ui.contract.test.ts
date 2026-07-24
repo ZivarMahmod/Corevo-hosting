@@ -23,11 +23,17 @@ describe('booking wizard PIN gate', () => {
     expect(source).toContain("contactMode === 'sms'")
     expect(source).toContain('autoComplete="one-time-code"')
     expect(source).toContain('inputMode="numeric"')
+    expect(source).toContain('pin.length !== 4')
+    expect(source).toContain('pattern="[0-9]{4}"')
+    expect(source).toContain('maxLength={4}')
   })
 
-  it('falls back to the e-mail field when the first SMS delivery fails', () => {
+  it('falls back to e-mail only when the server explicitly allows it', () => {
     expect(source).toMatch(
-      /res\.reason === 'delivery_unavailable' && contactMode === 'sms'[\s\S]*?setContactMode\('email'\)/,
+      /res\.reason === 'delivery_unavailable' && res\.channel === 'email'[\s\S]*?setContactMode\('email'\)/,
+    )
+    expect(source).not.toContain(
+      "res.reason === 'delivery_unavailable' && verification.channel === 'sms'",
     )
   })
 

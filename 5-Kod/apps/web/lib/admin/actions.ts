@@ -33,6 +33,10 @@ import { captureException } from '@/lib/observability'
 import { getAdminLocationPreferences } from './location-context'
 import { notificationQueueMessage, queueBookingEvent } from '@/lib/notifications/booking-events'
 import { mergeScopedSettings, parseSettingsScope, type SettingsScope } from './scoped-settings'
+import {
+  isBookingVerificationMode,
+  type BookingVerificationMode,
+} from '@/lib/platform/booking-variant'
 import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -1678,6 +1682,7 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const contactEmail = String(fd.get('contact_email') ?? '').trim()
   const contactPhone = String(fd.get('contact_phone') ?? '').trim()
   const customerAccounts = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
+  const bookingVerificationModeRaw = String(fd.get('booking_verification_mode') ?? '')
   const bookingExternalUrlRaw = String(fd.get('booking_external_url') ?? '').trim()
   const bookingExternalUrl = normalizeBookingExternalUrl(bookingExternalUrlRaw)
 
@@ -1706,6 +1711,8 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
   )
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
+  if (includesScope('booking') && !isBookingVerificationMode(bookingVerificationModeRaw))
+    return { error: 'Ogiltigt kanalval för bokningskoder.' }
   if (includesScope('booking') && bookingExternalUrlRaw && !bookingExternalUrl)
     return { error: 'Extern bokningslänk måste vara en fullständig https-länk.' }
   if (scope === 'all' && timezone && !isValidTz(timezone))
@@ -1732,8 +1739,11 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     .maybeSingle()
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
   const settings = mergeScopedSettings(prev, scope, {
-    bookingExternalUrl: includesScope('booking') ? bookingExternalUrl : undefined,
     cancellationHours: includesScope('booking') ? cancelHours : undefined,
+    bookingVerificationMode: includesScope('booking')
+      ? bookingVerificationModeRaw as BookingVerificationMode
+      : undefined,
+    bookingExternalUrl: includesScope('booking') ? bookingExternalUrl : undefined,
     contact:
       scope === 'all' ? { email: contactEmail || null, phone: contactPhone || null } : undefined,
     customerAccountsEnabled: includesScope('booking') ? customerAccounts : undefined,

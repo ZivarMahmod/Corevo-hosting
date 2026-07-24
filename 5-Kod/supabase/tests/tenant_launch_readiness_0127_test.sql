@@ -1,4 +1,4 @@
--- Goal 76 preview runtime acceptance.
+-- Goal 76 / migration 0127 preview runtime acceptance.
 -- One prepared statement; the inner subtransaction always rolls back its writes.
 
 do $outer$

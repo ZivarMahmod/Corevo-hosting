@@ -42,4 +42,10 @@ describe('public booking PIN action contract', () => {
     expect(source).toContain("rateLimitKey(bucket, ctx.tenantId, 'ip', ip)")
     expect(source).toContain("rateLimitKey(bucket, ctx.tenantId, 'target', limiterPart)")
   })
+
+  it('keeps the challenge visible after three errors so the customer can request a new code', () => {
+    expect(source).toMatch(
+      /row\.outcome === 'attempts_exhausted'[\s\S]*?reason: 'invalid_pin'[\s\S]*?attemptsRemaining: 0/,
+    )
+  })
 })
