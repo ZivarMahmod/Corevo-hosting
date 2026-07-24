@@ -78,6 +78,10 @@ export function BookingProvider({
   reachable = true,
   websiteOnly = false,
   externalUrl = null,
+  countryCode,
+  locale,
+  currency,
+  defaultTimeZone,
   children,
 }: {
   services: WizardService[]
@@ -109,6 +113,10 @@ export function BookingProvider({
   websiteOnly?: boolean
   /** Validated HTTPS destination for website-only tenants. */
   externalUrl?: string | null
+  countryCode?: string
+  locale?: string
+  currency?: string
+  defaultTimeZone?: string
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -254,6 +262,10 @@ export function BookingProvider({
           presentation={presentation}
           pickerMode={previewPrefs.pickerMode}
           staffAvatarMode={previewPrefs.staffAvatarMode}
+          countryCode={countryCode}
+          locale={locale}
+          currency={currency}
+          defaultTimeZone={defaultTimeZone}
         />
       ) : null}
     </BookingContext.Provider>

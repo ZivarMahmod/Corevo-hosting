@@ -1,5 +1,6 @@
 import 'server-only'
 import { accentForeground } from '@corevo/ui'
+import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
 // Swedish transactional email templates — "biljett"-look (barbershop-editorial
 // redesign, kanon: 4-Dokument-Underlag/01-acceptans/Frisörbokningsformulär redesign/
@@ -27,6 +28,7 @@ export type BookingEmailData = {
   serviceName: string
   startISO: string
   timeZone: string
+  locale?: string
   staffTitle?: string | null
   /** Public self-service manage/cancel link (HMAC-token URL); omit/null = no link. */
   manageUrl?: string | null
@@ -69,16 +71,16 @@ const LABEL = `font-family:${MONO};font-size:10px;letter-spacing:.1em;text-trans
 const VALUE = `font-family:${SANS};font-size:14px;font-weight:600;color:${C.ink}`
 
 /** "{longDate} · kl. {time}" i salongens tidszon (biljettens Tid-rad). */
-function fmt(startISO: string, timeZone: string): string {
+function fmt(startISO: string, timeZone: string, locale: string): string {
   try {
     const d = new Date(startISO)
-    const date = new Intl.DateTimeFormat('sv-SE', {
+    const date = new Intl.DateTimeFormat(locale, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       timeZone,
     }).format(d)
-    const time = new Intl.DateTimeFormat('sv-SE', {
+    const time = new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
       minute: '2-digit',
       timeZone,
@@ -214,7 +216,7 @@ function priceFooter(d: BookingEmailData, accent: string): string {
  * optional footer band (price / paid amount) behind another dashed divider.
  */
 function ticket(d: BookingEmailData, footerHtml = ''): string {
-  const when = fmt(d.startISO, d.timeZone)
+  const when = fmt(d.startISO, d.timeZone, d.locale ?? DEFAULT_TENANT_REGION.locale)
   const staffLabel = d.staffNoun?.trim() || 'Hos'
   const staff = d.staffTitle ? ticketRow(staffLabel, esc(d.staffTitle)) : ''
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1.5px solid ${C.ink};background:${C.surface}">
@@ -356,7 +358,8 @@ export function receiptEmail(
     vatRate?: number | null
   },
 ): { subject: string; html: string } {
-  const amount = (d.amountCents / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2 })
+  const locale = d.locale ?? DEFAULT_TENANT_REGION.locale
+  const amount = (d.amountCents / 100).toLocaleString(locale, { minimumFractionDigits: 2 })
   const cur = d.currency.toUpperCase()
   const { accent } = resolveAccent(d.accentColor)
   const paid = ticketFooter(
@@ -368,8 +371,8 @@ export function receiptEmail(
     typeof d.vatRate === 'number' && d.vatRate > 0
       ? (() => {
           const vatCents = Math.round((d.amountCents * d.vatRate) / (100 + d.vatRate))
-          const vat = (vatCents / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2 })
-          return `<p style="margin:6px 0 0;font-size:12px;color:${C.ink2}">varav moms (${d.vatRate.toLocaleString('sv-SE')} %): ${vat} ${esc(cur)}</p>`
+          const vat = (vatCents / 100).toLocaleString(locale, { minimumFractionDigits: 2 })
+          return `<p style="margin:6px 0 0;font-size:12px;color:${C.ink2}">varav moms (${d.vatRate.toLocaleString(locale)} %): ${vat} ${esc(cur)}</p>`
         })()
       : ''
   const orgLine = d.orgNr

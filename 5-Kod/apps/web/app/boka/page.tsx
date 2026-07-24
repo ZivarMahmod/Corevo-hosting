@@ -41,7 +41,7 @@ export default async function BokaPage({
 }) {
   const bundle = await currentTenant()
   if (!bundle) notFound()
-  const { tenant } = bundle
+  const { tenant, settings } = bundle
   const bookingAccess = bookingModuleAccess(await getTenantModuleStates(tenant.id, tenant.slug))
   if (bookingAccess === 'hidden') notFound()
 
@@ -162,6 +162,10 @@ export default async function BokaPage({
           pickerMode={pickerMode}
           staffAvatarMode={staffAvatarMode}
           brandName={tenant.name}
+          countryCode={settings.countryCode}
+          locale={settings.locale}
+          currency={settings.currency}
+          defaultTimeZone={settings.defaultTimeZone}
           preselectLocationId={preselection.locationId}
           preselectServiceId={preselection.serviceId}
           preselectStaffId={preselectStaffId}

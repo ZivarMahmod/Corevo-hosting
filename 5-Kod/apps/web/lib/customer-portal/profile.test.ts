@@ -54,8 +54,8 @@ describe('portal profile name', () => {
   })
 
   it('binds proof to the exact current contact digest, never a colliding presentation mask', async () => {
-    const currentPhone = '+46700000001'
-    const historicalPhone = '+46799999901'
+    const currentPhone = '+46701234501'
+    const historicalPhone = '+46709876501'
     const currentEmail = 'adam@example.se'
     const historicalEmail = 'anna@example.se'
     expect(maskBookingContact('sms', historicalPhone)).toBe(maskBookingContact('sms', currentPhone))
@@ -74,7 +74,7 @@ describe('portal profile name', () => {
         ...baseEvidence,
         proofs: [{
           channel: 'sms', contactDigest: historicalPhoneDigest,
-          maskedDestination: maskBookingContact('sms', historicalPhone), maskValid: true,
+          maskedDestination: '+46 ••• •• 01', maskValid: true,
         }],
       }, recovery_tenant_slug: null }], error: null,
     })
@@ -86,7 +86,7 @@ describe('portal profile name', () => {
         proofs: [
           {
             channel: 'sms', contactDigest: currentPhoneDigest,
-            maskedDestination: maskBookingContact('sms', currentPhone), maskValid: true,
+            maskedDestination: '+46 ••• •• 01', maskValid: true,
           },
           {
             channel: 'email', contactDigest: historicalEmailDigest,
@@ -98,7 +98,7 @@ describe('portal profile name', () => {
     await expect(getPortalProfileSnapshot()).resolves.toMatchObject({
       outcome: 'ok',
       profile: {
-        verifiedContact: { channel: 'sms', maskedDestination: '+46 ••• •• 01' },
+        verifiedContact: { channel: 'sms', maskedDestination: '070 ••• •• 01' },
         secondaryContact: { channel: 'email', maskedDestination: 'a•••@example.se', verified: false },
       },
     })

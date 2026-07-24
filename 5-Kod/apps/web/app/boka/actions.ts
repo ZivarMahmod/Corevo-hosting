@@ -42,6 +42,7 @@ import {
 import { dispatchNotificationOutboxById } from '@/lib/notifications/outbox'
 import { deliverImmediateBookingOutbox } from '@/lib/notifications/booking-immediate'
 import { logger } from '@/lib/observability'
+import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
 // Public reads run as anon. Proposed starts are filtered through
 // get_public_bookable_starts (never raw busy intervals). The rate-limited server
@@ -131,6 +132,10 @@ type TenantContext = {
   tenantId: string
   slug: string
   name: string
+  countryCode: string
+  locale: string
+  currency: string
+  defaultTimeZone: string
   timeZone: string
   /** Primary active location — the default scope when a caller omits a location
    *  (single-location tenants, /boka back-compat, rebok-flödet). May be null on
@@ -153,18 +158,35 @@ async function getTenantContext(): Promise<TenantContext | null> {
   if (!tenant) return null
   // Primär aktiv plats: ger både tidszon (oförändrat) OCH default-scope (id) som
   // location-aware availability faller tillbaka på när ingen plats valts.
-  const { data: loc } = await supabase
-    .from('locations')
-    .select('id, timezone')
-    .eq('tenant_id', tenant.id)
-    .eq('is_primary', true)
-    .eq('active', true)
-    .maybeSingle()
+  const [{ data: loc }, { data: region }] = await Promise.all([
+    supabase
+      .from('locations')
+      .select('id, timezone')
+      .eq('tenant_id', tenant.id)
+      .eq('is_primary', true)
+      .eq('active', true)
+      .maybeSingle(),
+    supabase
+      .from('tenant_settings')
+      .select('country_code, locale, currency, default_timezone')
+      .eq('tenant_id', tenant.id)
+      .maybeSingle(),
+  ])
+  if (
+    !region
+    || region.country_code !== DEFAULT_TENANT_REGION.countryCode
+    || region.locale !== DEFAULT_TENANT_REGION.locale
+    || region.currency !== DEFAULT_TENANT_REGION.currency
+  ) return null
   return {
     tenantId: tenant.id,
     slug: tenant.slug,
     name: tenant.name,
-    timeZone: loc?.timezone ?? 'Europe/Stockholm',
+    countryCode: region.country_code,
+    locale: region.locale,
+    currency: region.currency,
+    defaultTimeZone: region.default_timezone,
+    timeZone: loc?.timezone ?? region.default_timezone,
     locationId: loc?.id ?? null,
   }
 }
@@ -596,7 +618,7 @@ async function startBookingVerificationInternal(
     }
   }
 
-  const contact = normalizeBookingContact(channel, input.contact)
+  const contact = normalizeBookingContact(channel, input.contact, ctx.countryCode)
   if (!contact) {
     return {
       ok: false,
@@ -643,7 +665,7 @@ async function startBookingVerificationInternal(
       p_session_token: sessionToken,
       p_channel: channel,
       p_contact_digest: contactDigest,
-      p_contact_masked: maskBookingContact(channel, contact),
+      p_contact_masked: maskBookingContact(channel, contact, ctx.countryCode),
       p_pin_digest: pinDigest,
       ...(previous ? { p_previous_challenge: previous.challengeId } : {}),
     })
@@ -742,7 +764,7 @@ async function startBookingVerificationInternal(
     channel,
     challengeId: row.challenge_id,
     sessionToken,
-    maskedContact: maskBookingContact(channel, contact),
+    maskedContact: maskBookingContact(channel, contact, ctx.countryCode),
     expiresAt: row.expires_at,
     resendAt: row.resend_after,
   }
@@ -813,7 +835,7 @@ export async function verifyAndCreateBooking(
     return { ok: false, reason: 'invalid', message: 'Onlinebokningen är inte öppen just nu.' }
   }
   const name = input.name.trim()
-  const contact = normalizeBookingContact(input.channel, input.contact)
+  const contact = normalizeBookingContact(input.channel, input.contact, ctx.countryCode)
   if (!validSelection(input) || !name || name.length > 200 || !contact || !/^\d{4}$/.test(input.pin)) {
     return { ok: false, reason: 'invalid', message: 'Kontrollera uppgifterna och den fyrsiffriga koden.' }
   }
@@ -979,7 +1001,11 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
         line_items: [
           {
             quantity: 1,
-            price_data: { currency: 'sek', unit_amount: amount, product_data: { name: serviceName } },
+            price_data: {
+              currency: ctx.currency.toLowerCase(),
+              unit_amount: amount,
+              product_data: { name: serviceName },
+            },
           },
         ],
         // application_fee_amount UTELÄMNAS medvetet ⇒ fee = 0.
@@ -1010,7 +1036,7 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
       p_booking: bookingId,
       p_tenant: ctx.tenantId,
       p_amount_cents: amount,
-      p_currency: 'sek',
+      p_currency: ctx.currency.toLowerCase(),
       p_checkout_session: session.id,
       p_connected_account: tenant.stripe_account_id,
     },

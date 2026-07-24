@@ -2866,9 +2866,13 @@ export type Database = {
         Row: {
           billing_model: string
           branding: Json
+          country_code: string
           created_at: string
+          currency: string
+          default_timezone: string
           flat_monthly_fee_cents: number
           id: string
+          locale: string
           payment_mode: string
           payments_enabled: boolean
           per_booking_fee_cents: number
@@ -2882,9 +2886,13 @@ export type Database = {
         Insert: {
           billing_model?: string
           branding?: Json
+          country_code?: string
           created_at?: string
+          currency?: string
+          default_timezone?: string
           flat_monthly_fee_cents?: number
           id?: string
+          locale?: string
           payment_mode?: string
           payments_enabled?: boolean
           per_booking_fee_cents?: number
@@ -2898,9 +2906,13 @@ export type Database = {
         Update: {
           billing_model?: string
           branding?: Json
+          country_code?: string
           created_at?: string
+          currency?: string
+          default_timezone?: string
           flat_monthly_fee_cents?: number
           id?: string
+          locale?: string
           payment_mode?: string
           payments_enabled?: boolean
           per_booking_fee_cents?: number

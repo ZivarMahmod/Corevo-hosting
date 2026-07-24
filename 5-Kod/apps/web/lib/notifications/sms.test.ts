@@ -46,11 +46,12 @@ describe('parseSmsDeliveryMode', () => {
 })
 
 describe('telefon- och avsändarnormalisering', () => {
-  it('normaliserar endast entydiga nummer till E.164', () => {
+  it('normaliserar endast svenska mobilnummer till E.164', () => {
     expect(toE164('0701234567')).toBe('+46701234567')
     expect(toE164('070-123 45 67')).toBe('+46701234567')
     expect(toE164('0046701234567')).toBe('+46701234567')
-    expect(toE164('+45 12 34 56 78')).toBe('+4512345678')
+    expect(toE164('+45 12 34 56 78')).toBeNull()
+    expect(toE164('081234567')).toBeNull()
     expect(toE164('12345')).toBeNull()
     expect(toE164('abc')).toBeNull()
   })

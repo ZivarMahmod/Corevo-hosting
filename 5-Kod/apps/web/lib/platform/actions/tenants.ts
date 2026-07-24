@@ -17,6 +17,7 @@ import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
 import { reportActionError } from './observe'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
+import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
 /**
  * Onboarding-studions inline slug-koll (Dunder-fix 2026-07-11): tidigare
@@ -30,8 +31,6 @@ export async function isSlugTaken(slug: string): Promise<boolean> {
   const { data } = await supabase.from('tenants').select('id').eq('slug', clean).maybeSingle()
   return !!data
 }
-
-const DEFAULT_TZ = 'Europe/Stockholm'
 
 // Storefront theme (the five named layouts). Picking a theme writes settings.theme,
 // which the public layout reads → [data-theme] on the storefront root. The old A/B
@@ -197,6 +196,10 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     setup_fee_cents: setupFee,
     per_booking_fee_cents: perBookingFee,
     flat_monthly_fee_cents: flatMonthlyFee,
+    country_code: DEFAULT_TENANT_REGION.countryCode,
+    locale: DEFAULT_TENANT_REGION.locale,
+    currency: DEFAULT_TENANT_REGION.currency,
+    default_timezone: DEFAULT_TENANT_REGION.defaultTimeZone,
   })
   if (sErr) {
     await rollback()
@@ -209,7 +212,12 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   //    the tenant can never take a booking.
   const { data: primaryLocation, error: lErr } = await supabase
     .from('locations')
-    .insert({ tenant_id: tenantId, name, timezone: DEFAULT_TZ, is_primary: true })
+    .insert({
+      tenant_id: tenantId,
+      name,
+      timezone: DEFAULT_TENANT_REGION.defaultTimeZone,
+      is_primary: true,
+    })
     .select('id')
     .single()
   if (lErr || !primaryLocation) {

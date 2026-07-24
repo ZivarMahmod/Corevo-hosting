@@ -97,7 +97,7 @@ function onlyRow(value: unknown): Record<string, unknown> | null {
 function validMask(channel: BookingVerificationChannel, value: unknown): value is string {
   if (typeof value !== 'string' || value.length > 200 || CONTROL.test(value)) return false
   return channel === 'sms'
-    ? /^\+[0-9]{2} ••• •• [0-9]{2}$/.test(value)
+    ? /^(?:07[0-9]|\+[0-9]{2}) ••• •• [0-9]{2}$/.test(value)
     : /^[^@\s•]•••@[^@\s•]+\.[^@\s•]+$/u.test(value)
 }
 

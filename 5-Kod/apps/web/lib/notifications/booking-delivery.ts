@@ -15,6 +15,7 @@ import {
   type BookingEmailData,
 } from './templates'
 import type { ClaimedNotificationOutboxRow } from './outbox'
+import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
 type PreparedEmail = {
   ok: true
@@ -58,7 +59,16 @@ type BookingDeliveryRow = {
   services: { name: string } | null
   staff: { title: string | null } | null
   locations: { timezone: string } | null
-  tenants: { name: string; slug: string } | null
+  tenants: {
+    name: string
+    slug: string
+    tenant_settings: {
+      country_code: string
+      locale: string
+      currency: string
+      default_timezone: string
+    } | null
+  } | null
   customers: {
     id: string
     tenant_id: string
@@ -83,9 +93,9 @@ function payloadRecord(row: ClaimedNotificationOutboxRow): Record<string, unknow
     : null
 }
 
-function formatWhen(startISO: string, timeZone: string): string {
+function formatWhen(startISO: string, timeZone: string, locale: string): string {
   try {
-    return new Intl.DateTimeFormat('sv-SE', {
+    return new Intl.DateTimeFormat(locale, {
       weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone,
     }).format(new Date(startISO))
   } catch {
@@ -135,7 +145,7 @@ export async function prepareBookingDelivery(
   if (!admin) return { ok: false, reason: 'link_unavailable' }
   const { data, error } = await admin
     .from('bookings')
-    .select('id, tenant_id, customer_id, status, start_ts, services(name), staff(title), locations(timezone), tenants(name,slug), customers(id,tenant_id,email,phone,auth_user_id)')
+    .select('id, tenant_id, customer_id, status, start_ts, services(name), staff(title), locations(timezone), tenants(name,slug,tenant_settings(country_code,locale,currency,default_timezone)), customers(id,tenant_id,email,phone,auth_user_id)')
     .eq('id', outbox.booking_id)
     .eq('tenant_id', outbox.tenant_id)
     .maybeSingle()
@@ -153,6 +163,13 @@ export async function prepareBookingDelivery(
     || customer.id !== outbox.customer_id
     || customer.tenant_id !== outbox.tenant_id
   ) return { ok: false, reason: 'no_recipient' }
+  const region = tenant.tenant_settings
+  if (
+    !region
+    || region.country_code !== DEFAULT_TENANT_REGION.countryCode
+    || region.locale !== DEFAULT_TENANT_REGION.locale
+    || region.currency !== DEFAULT_TENANT_REGION.currency
+  ) return { ok: false, reason: 'payload_invalid' }
 
   // Relationship/completion messages are marketing. Consent and the explicit
   // recommendation opt-in may be revoked after routing but before delivery, so
@@ -206,8 +223,13 @@ export async function prepareBookingDelivery(
 
   const tenantName = tenant.name
   const serviceName = booking.services?.name ?? 'Bokning'
-  const timeZone = booking.locations?.timezone ?? 'Europe/Stockholm'
-  const when = formatWhen(booking.start_ts, timeZone)
+  const timeZone = booking.locations?.timezone ?? region.default_timezone
+  try {
+    new Intl.DateTimeFormat(region.locale, { timeZone }).format()
+  } catch {
+    return { ok: false, reason: 'payload_invalid' }
+  }
+  const when = formatWhen(booking.start_ts, timeZone, region.locale)
 
   if (outbox.chosen_channel === 'push') {
     const body = outbox.event_type === 'booking_request_received'
@@ -258,6 +280,7 @@ export async function prepareBookingDelivery(
     serviceName,
     startISO: booking.start_ts,
     timeZone,
+    locale: region.locale,
     staffTitle: booking.staff?.title ?? null,
     manageUrl,
     accountClaimUrl,

@@ -17,13 +17,23 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
-- Den samlade localhostacceptansen genom Goal 82 är körd:
-  `352` testfiler och `2 763` tester passerar tillsammans. Goal 74–82 är lokalt
+- Den samlade localhostacceptansen genom Goal 83 är körd:
+  `354` testfiler och `2 769` tester passerar tillsammans. Goal 74–83 är lokalt
   låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
   tillsammans med Zivar. Protokoll finns i
-  `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81:s och Goal
-  82:s testlistor i `6-Testing/`. Produktion är orörd.
+  `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81–83:s
+  testlistor i `6-Testing/`. Produktion är orörd.
+- Goal 83 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. `tenant_settings` äger nu
+  `SE`/`sv-SE`/`SEK` och en portabel IANA-standardtidszon, medan platsens
+  tidszon fortsatt äger bokningskalendern. Bokning, notifiering, prisformat,
+  onboarding och kundportal läser samma kontrakt. Endast PTS-öppna svenska
+  mobilserier normaliseras till E.164; gamla `+46`-maskbevis förblir säkert
+  kompatibla men visas lokalt. Previewmigration `0131`, rollback, RLS/grants,
+  advisors, full webbsvit, typecheck, lint/build, desktop/mobil och tre
+  oberoende reviews är gröna. Full i18n, skatt och ett andra land är uttryckligen
+  senare delar. Produktion är orörd.
 - Goal 82 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. Tenantägda mutationer kräver nu
   aktiv tenant i server- och DB-lagret, medan pausade tenants behåller
@@ -194,10 +204,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-74–82 är lokalt låsta och den samlade kodacceptansen är grön. Goal-82
-verifierade aktiv-tenant-grinden, läsbart pausläge, `can_edit_site`,
-behörighetsstyrda adminvägar och branschneutral personalcopy. Nästa byggdel är
-Goal-83: tenantens regionala grundkontrakt.
+Goal-74–83 är lokalt låsta och den samlade kodacceptansen är grön. Goal-83
+verifierade det svenska tenantkontraktet för land, språk, valuta, tidszon och
+telefon genom bokning, notifiering, onboarding och portal. Nästa byggdel är
+Goal-84: komplett onboarding till första bokning.
 Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
@@ -205,11 +215,13 @@ Den godkända ordningen och lokala låsgränsen för Goal 81–86 finns i
 `1-Planering/19-lanseringsprogram/08-goal81-86-exekveringsplan.md`.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
-innehåller inga kopierade produktionsdata och har exakt `129` kanoniskt
-numrerade migrationer genom `0130`. Därtill finns en preview-only
-korrektionspost, `tenant_mutation_lifecycle_claim_guard`, som ger totalt `130`
-historikrader och för previewschemat till den slutliga lokala definitionen av
-Goal-82:s `0130`.
+innehåller inga kopierade produktionsdata och har `130` kanoniskt numrerade
+migrationer genom `0131`. Därtill finns tre preview-only korrektionsposter:
+`tenant_mutation_lifecycle_claim_guard`,
+`tenant_regional_phone_and_cascade_correction` och
+`tenant_regional_runtime_compatibility_correction`. De ger totalt `133`
+historikrader och för previewschemat till samma slutliga definition som
+källmigrationerna `0130–0131`.
 Produktion `clylvowtowbtotrahuad` är orörd.
 
 Relationspaketet är publicerat från den verifierade leveransen och produktionen

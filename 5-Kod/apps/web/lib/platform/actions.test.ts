@@ -211,6 +211,22 @@ describe('createTenant writes the goal-20 columns', () => {
     expect((captured.tenants?.[0] as { city: unknown }).city).toBeNull()
   })
 
+  it('writes the Swedish regional contract and the same primary timezone', async () => {
+    const captured = seedCtx()
+    createServiceClientMock.mockReturnValue(null)
+
+    const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
+
+    expect(res.error).toBeUndefined()
+    expect(captured.tenant_settings?.[0]).toMatchObject({
+      country_code: 'SE',
+      locale: 'sv-SE',
+      currency: 'SEK',
+      default_timezone: 'Europe/Stockholm',
+    })
+    expect(captured.locations?.[0]).toMatchObject({ timezone: 'Europe/Stockholm' })
+  })
+
   it('invalidates the persistent customer layout after a successful create', async () => {
     seedCtx()
     createServiceClientMock.mockReturnValue(null)

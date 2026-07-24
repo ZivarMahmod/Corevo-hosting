@@ -63,7 +63,7 @@ describe('booking contact', () => {
   })
 
   it('maskerar kontakt utan att lagra den i challenge-metadata', () => {
-    expect(maskBookingContact('sms', '+46701234567')).toBe('+46 ••• •• 67')
+    expect(maskBookingContact('sms', '+46701234567')).toBe('070 ••• •• 67')
     expect(maskBookingContact('email', 'kund@example.com')).toBe('k•••@example.com')
   })
 })

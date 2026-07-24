@@ -43,7 +43,9 @@ describe('Goal 81 booking matrix wiring', () => {
     const wizard = read('./BookingWizard.tsx')
 
     expect(wizard).toContain("from '@/lib/booking/contact-normalization'")
-    expect(wizard).toContain('normalizeBookingContact(contactMode, selectedContact())')
+    expect(wizard).toContain(
+      'normalizeBookingContact(contactMode, selectedContact(), countryCode)',
+    )
     expect(wizard).toContain("'Skriv ett giltigt mobilnummer.'")
     expect(wizard).toContain("'Skriv en giltig e-postadress.'")
   })

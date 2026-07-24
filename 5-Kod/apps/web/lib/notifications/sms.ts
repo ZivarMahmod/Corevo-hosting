@@ -4,6 +4,8 @@ import { createServiceClient } from '@/lib/platform/service'
 import { prepareBookingDelivery } from './booking-delivery'
 import type { ClaimedNotificationOutboxRow, NotificationDeliveryResult } from './outbox'
 import { getSmsEnabled, parseSmsDeliveryMode, type SmsDeliveryMode } from './settings'
+import { normalizeBookingContact } from '@/lib/booking/contact-normalization'
+import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
 const ELKS_ENDPOINT = 'https://api.46elks.com/a1/sms'
 const DEFAULT_SENDER = 'Corevo'
@@ -67,12 +69,11 @@ type ResolvedSmsTransport = {
 
 type SmsTransportResolver = () => Promise<ResolvedSmsTransport | null>
 
-export function toE164(raw: string): string | null {
-  const cleaned = raw.replace(/[\s\-()]/g, '')
-  if (/^\+\d{8,15}$/.test(cleaned)) return cleaned
-  if (/^00\d{8,15}$/.test(cleaned)) return `+${cleaned.slice(2)}`
-  if (/^0\d{8,9}$/.test(cleaned)) return `+46${cleaned.slice(1)}`
-  return null
+export function toE164(
+  raw: string,
+  countryCode = DEFAULT_TENANT_REGION.countryCode,
+): string | null {
+  return normalizeBookingContact('sms', raw, countryCode)
 }
 
 export function sanitizeSenderId(name?: string | null): string {

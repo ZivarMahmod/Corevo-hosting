@@ -52,7 +52,9 @@ function safeText(value: unknown, minimum: number, maximum: number): string | nu
 }
 
 function isSafeMaskedDestination(channel: 'sms' | 'email', value: string): boolean {
-  if (channel === 'sms') return /^\+[0-9]{2} ••• •• [0-9]{2}$/.test(value)
+  if (channel === 'sms') {
+    return /^(?:07[0-9]|\+[0-9]{2}) ••• •• [0-9]{2}$/.test(value)
+  }
   return /^[^@\s•]•••@[^@\s•]+\.[^@\s•]+$/u.test(value)
 }
 
@@ -143,6 +145,9 @@ async function exactContact(input: {
     !isSafeMaskedDestination(input.channel, maskedDestination)
   ) return null
   const expectedDigest = await bookingContactDigest(input.channel, normalized)
+  const legacyMaskedDestination = input.channel === 'sms'
+    ? `+46 ••• •• ${normalized.slice(-2)}`
+    : maskedDestination
   const matching = input.proofs.filter((proof) => (
     proof.channel === input.channel && proof.contactDigest === expectedDigest
   ))
@@ -150,7 +155,10 @@ async function exactContact(input: {
     !proof.maskValid ||
     containsUnicode17Forbidden(proof.maskedDestination) ||
     !isSafeMaskedDestination(input.channel, proof.maskedDestination) ||
-    proof.maskedDestination !== maskedDestination
+    (
+      proof.maskedDestination !== maskedDestination
+      && proof.maskedDestination !== legacyMaskedDestination
+    )
   ))) return null
   if (input.required && matching.length === 0) return null
   return { maskedDestination, verified: matching.length > 0 }

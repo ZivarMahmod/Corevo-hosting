@@ -17,6 +17,10 @@ import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { withBranschMedia } from '@/components/storefront/images'
 import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
+import {
+  DEFAULT_TENANT_REGION,
+  type TenantRegion,
+} from '@/lib/tenant-region'
 
 export type Tenant = Pick<
   Tables<'tenants'>,
@@ -31,7 +35,13 @@ export type Service = Tables<'services'> & {
 }
 type TenantSettingsRow = Pick<
   Tables<'tenant_settings'>,
-  'branding' | 'settings' | 'payment_mode'
+  | 'branding'
+  | 'settings'
+  | 'payment_mode'
+  | 'country_code'
+  | 'locale'
+  | 'currency'
+  | 'default_timezone'
 >
 
 export type LayoutConfig = { nav_variant?: string; hero_variant?: string }
@@ -70,7 +80,7 @@ function parseTheme(raw: unknown): StorefrontTheme {
  *  Each field is null until the owner fills it in — render-on-present only. */
 export type TenantContact = { email: string | null; phone: string | null }
 
-export type TenantSettings = {
+export type TenantSettings = TenantRegion & {
   branding: TenantBranding
   layout: LayoutConfig
   /** Storefront theme preset (validated; default leander) → [data-theme] on root. */
@@ -151,6 +161,10 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     return s.length > 0 ? s : null
   }
   return {
+    countryCode: row?.country_code ?? DEFAULT_TENANT_REGION.countryCode,
+    locale: row?.locale ?? DEFAULT_TENANT_REGION.locale,
+    currency: row?.currency ?? DEFAULT_TENANT_REGION.currency,
+    defaultTimeZone: row?.default_timezone ?? DEFAULT_TENANT_REGION.defaultTimeZone,
     branding,
     layout,
     // Lives in the settings JSON (`theme: "leander"`); validated against the known
@@ -362,7 +376,7 @@ export async function getTenantBySlug(slug: string): Promise<TenantBundle | null
       if (error || !tenant) return null
       const { data: settingsRow } = await supabase
         .from('tenant_settings')
-        .select('branding, settings, payment_mode')
+        .select('branding, settings, payment_mode, country_code, locale, currency, default_timezone')
         .eq('tenant_id', tenant.id) // app-layer scope
         .maybeSingle()
       const settings = parseSettings(settingsRow ?? null)

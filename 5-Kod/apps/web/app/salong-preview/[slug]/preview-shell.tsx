@@ -226,6 +226,10 @@ export async function PreviewShell({
         variant={settings.bookingVariant}
         pickerMode={bookingPrefs.pickerMode}
         staffAvatarMode={bookingPrefs.staffAvatarMode}
+        countryCode={settings.countryCode}
+        locale={settings.locale}
+        currency={settings.currency}
+        defaultTimeZone={settings.defaultTimeZone}
       >
         {/* CartProvider omsluter nav+main+footer (navens korg-knapp använder useCart) —
             samma ordning som (public)/layout. */}
@@ -273,6 +277,10 @@ export async function PreviewShell({
             bokaOnline={bokning.online}
             pickerMode={bookingPrefs.pickerMode}
             staffAvatarMode={bookingPrefs.staffAvatarMode}
+            countryCode={settings.countryCode}
+            locale={settings.locale}
+            currency={settings.currency}
+            defaultTimeZone={settings.defaultTimeZone}
             previewControlled
           />
         ) : null}

@@ -7,16 +7,11 @@ import { commerceReleaseGate } from '@/lib/release/commerce'
 import { buildCancelToken } from '@/lib/booking/cancel-token'
 import { bookingStatusPresentation } from '@/lib/booking/confirmation-status'
 import { GoogleReviewNudge } from '@/components/kund/GoogleReviewNudge'
+import { formatTenantMoney } from '@/lib/tenant-region'
 import '../../../ticket.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Bokningsstatus' }
-
-const kr = new Intl.NumberFormat('sv-SE', {
-  style: 'currency',
-  currency: 'SEK',
-  maximumFractionDigits: 0,
-})
 
 // ── "Lägg till i kalender": en RFC5545-iCal-fil (.ics) byggd server-side från
 // fält vi redan har (start_ts/end_ts/service/personal/salong). Inget extra
@@ -89,10 +84,14 @@ export default async function ConfirmationPage({
   const bundle = await currentTenant()
   if (!bundle || booking.tenant_slug !== bundle.tenant.slug) notFound()
 
-  const tz = booking.location_timezone ?? 'Europe/Stockholm'
+  const { settings } = bundle
+  const tz = booking.location_timezone ?? settings.defaultTimeZone
   const start = new Date(booking.start_ts)
-  const longDate = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full', timeZone: tz }).format(start)
-  const time = new Intl.DateTimeFormat('sv-SE', {
+  const longDate = new Intl.DateTimeFormat(settings.locale, {
+    dateStyle: 'full',
+    timeZone: tz,
+  }).format(start)
+  const time = new Intl.DateTimeFormat(settings.locale, {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: tz,
@@ -116,7 +115,9 @@ export default async function ConfirmationPage({
     : (booking.service_name ?? 'Bokning')
   const descParts = [
     booking.staff_title ? `Hos ${booking.staff_title}` : null,
-    booking.price_cents ? `Pris: ${kr.format((booking.price_cents ?? 0) / 100)}` : null,
+    booking.price_cents
+      ? `Pris: ${formatTenantMoney(booking.price_cents ?? 0, settings)}`
+      : null,
   ].filter(Boolean) as string[]
   const icsHref = `data:text/calendar;charset=utf-8,${encodeURIComponent(
     buildIcs({
@@ -193,7 +194,9 @@ export default async function ConfirmationPage({
         </div>
         <div className="tkt-stub-foot">
           <span className="tkt-foot-label">{footLabel}</span>
-          <span className="tkt-price">{kr.format((booking.price_cents ?? 0) / 100)}</span>
+          <span className="tkt-price">
+            {formatTenantMoney(booking.price_cents ?? 0, settings)}
+          </span>
         </div>
       </div>
 
@@ -206,7 +209,7 @@ export default async function ConfirmationPage({
         </p>
       ) : paid ? (
         <p className="tkt-note tkt-note--paid">
-          ✓ Betald online — {kr.format((booking.price_cents ?? 0) / 100)}. Kvitto skickas via Stripe.
+          ✓ Betald online — {formatTenantMoney(booking.price_cents ?? 0, settings)}. Kvitto skickas via Stripe.
         </p>
       ) : refunded ? (
         <p className="tkt-note">Betalningen är återbetald.</p>

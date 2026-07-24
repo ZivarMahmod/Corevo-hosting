@@ -20,6 +20,10 @@ import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant
 import { normalizeBookingContact } from '@/lib/booking/contact-normalization'
 import { bookingDateWindow } from '@/lib/booking/tz'
 import {
+  DEFAULT_TENANT_REGION,
+  formatTenantMoney,
+} from '@/lib/tenant-region'
+import {
   buildTenantBookingPath,
   resolveLocationSelection,
   serviceAvailableAtLocation,
@@ -54,12 +58,6 @@ export type WizardLocation = {
   timeZone: string
   maxAdvanceDays: number
 }
-
-const kr = new Intl.NumberFormat('sv-SE', {
-  style: 'currency',
-  currency: 'SEK',
-  maximumFractionDigits: 0,
-})
 
 // Initialer-discfärger (designpaketet): round-robin per medarbetare i listan.
 const DISC_COLORS = ['#BC4A1C', '#2E5A46', '#B07A1E', '#7A4A2E'] as const
@@ -134,6 +132,10 @@ export function BookingWizard({
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   brandName,
+  countryCode = DEFAULT_TENANT_REGION.countryCode,
+  locale = DEFAULT_TENANT_REGION.locale,
+  currency = DEFAULT_TENANT_REGION.currency,
+  defaultTimeZone = DEFAULT_TENANT_REGION.defaultTimeZone,
   preselectLocationId = null,
   preselectServiceId = null,
   preselectStaffId = null,
@@ -173,6 +175,11 @@ export function BookingWizard({
   /** Salongens wordmark på biljettens huvudrad (steg 5). OPTIONAL — mounts som
    *  inte skickar den får den neutrala fallbacken 'Bokning'. */
   brandName?: string
+  /** Server-resolved tenant region. Locations still own calendar timezone. */
+  countryCode?: string
+  locale?: string
+  currency?: string
+  defaultTimeZone?: string
   /** Aktiv same-tenant plats ur /boka?plats=<locationId>. Okänt id ignoreras. */
   preselectLocationId?: string | null
   /** goal-64: förvald tjänst ur /boka?tjanst=<serviceId> (prisraden vet sin tjänst).
@@ -247,7 +254,7 @@ export function BookingWizard({
   ) // 'any' | staffId
   const [date, setDate] = useState<string | null>(null)
   const [slots, setSlots] = useState<SlotOption[]>([])
-  const [timeZone, setTimeZone] = useState('Europe/Stockholm')
+  const [timeZone, setTimeZone] = useState(defaultTimeZone)
   const [slot, setSlot] = useState<SlotOption | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
   const [error, setError] = useState<string | null>(null)
@@ -299,9 +306,9 @@ export function BookingWizard({
           selectedLocation.timeZone,
           selectedLocation.maxAdvanceDays,
         )
-      : bookingDateWindow(new Date(), 'Europe/Stockholm', 90)
+      : bookingDateWindow(new Date(), defaultTimeZone, 90)
     return keys.map(calendarDate)
-  }, [selectedLocation])
+  }, [defaultTimeZone, selectedLocation])
 
   // Månader som bokningsfönstret (days) täcker — kalenderbläddringen begränsas hit.
   const calMonths = useMemo(() => {
@@ -315,16 +322,16 @@ export function BookingWizard({
   }, [days])
 
   const fmtTime = (iso: string) =>
-    new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone }).format(
+    new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone }).format(
       new Date(iso),
     )
   const fmtDow = (d: Date) =>
-    new Intl.DateTimeFormat('sv-SE', { weekday: 'short' }).format(d).replace('.', '')
+    new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d).replace('.', '')
   const fmtMon = (d: Date) =>
-    new Intl.DateTimeFormat('sv-SE', { month: 'short' }).format(d).replace('.', '')
+    new Intl.DateTimeFormat(locale, { month: 'short' }).format(d).replace('.', '')
   // Lång datum-rad till biljetten (steg 5) — speglar /boka/bekraftelse-rutten.
   const fmtLongDate = (iso: string) =>
-    new Intl.DateTimeFormat('sv-SE', {
+    new Intl.DateTimeFormat(locale, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -503,7 +510,7 @@ export function BookingWizard({
       setError('SMS är tillfälligt nere. Försök igen om en stund.')
       return
     }
-    const contact = normalizeBookingContact(contactMode, selectedContact())
+    const contact = normalizeBookingContact(contactMode, selectedContact(), countryCode)
     if (!contact) {
       setError(contactMode === 'sms'
         ? 'Skriv ett giltigt mobilnummer.'
@@ -1008,7 +1015,9 @@ export function BookingWizard({
                       }}
                     >
                       <span>{s.name.length > 18 ? `${s.name.slice(0, 17)}…` : s.name}</span>
-                      <span className="ckompakt-chip-meta">{kr.format(s.priceCents / 100)}</span>
+                      <span className="ckompakt-chip-meta">
+                        {formatTenantMoney(s.priceCents, { locale, currency })}
+                      </span>
                     </button>
                   )
                 })}
@@ -1234,9 +1243,9 @@ export function BookingWizard({
   const firstOfMonth = new Date(cal.y, cal.m, 1)
   const startCol = (firstOfMonth.getDay() + 6) % 7 // Mån-först
   const daysInMonth = new Date(cal.y, cal.m + 1, 0).getDate()
-  const monthName = new Intl.DateTimeFormat('sv-SE', { month: 'long' }).format(firstOfMonth)
+  const monthName = new Intl.DateTimeFormat(locale, { month: 'long' }).format(firstOfMonth)
   const calTitle = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${cal.y}`
-  const ariaDay = new Intl.DateTimeFormat('sv-SE', {
+  const ariaDay = new Intl.DateTimeFormat(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -1312,7 +1321,9 @@ export function BookingWizard({
                         ) : null}
                       </span>
                       <span className="wizard-card-meta">
-                        <span className="fc-price">{kr.format(s.priceCents / 100)}</span>
+                        <span className="fc-price">
+                          {formatTenantMoney(s.priceCents, { locale, currency })}
+                        </span>
                         <span className="fc-dur">{s.durationMin} min</span>
                       </span>
                       {service?.id === s.id ? <span className="fc-ring" aria-hidden /> : null}
@@ -1533,7 +1544,9 @@ export function BookingWizard({
                   {service.durationMin} min
                 </span>
               </span>
-              <span className="fc-summary-price">{kr.format(service.priceCents / 100)}</span>
+              <span className="fc-summary-price">
+                {formatTenantMoney(service.priceCents, { locale, currency })}
+              </span>
             </div>
             <form
               ref={formRef}
@@ -1672,7 +1685,9 @@ export function BookingWizard({
                 <span className="fc-ticket-footlabel">
                   {bookingStatus === 'pending' ? 'Pris om tiden bekräftas' : 'Att betala på plats'}
                 </span>
-                <span className="fc-ticket-price">{kr.format(service.priceCents / 100)}</span>
+                <span className="fc-ticket-price">
+                  {formatTenantMoney(service.priceCents, { locale, currency })}
+                </span>
               </div>
             </div>
 

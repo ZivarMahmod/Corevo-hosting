@@ -195,6 +195,10 @@ export default async function PublicLayout({ children }: { children: React.React
         variant={settings.bookingVariant}
         pickerMode={bookingPrefs.pickerMode}
         staffAvatarMode={bookingPrefs.staffAvatarMode}
+        countryCode={settings.countryCode}
+        locale={settings.locale}
+        currency={settings.currency}
+        defaultTimeZone={settings.defaultTimeZone}
       >
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
@@ -255,6 +259,10 @@ export default async function PublicLayout({ children }: { children: React.React
             bokaOnline={bokning.online}
             pickerMode={bookingPrefs.pickerMode}
             staffAvatarMode={bookingPrefs.staffAvatarMode}
+            countryCode={settings.countryCode}
+            locale={settings.locale}
+            currency={settings.currency}
+            defaultTimeZone={settings.defaultTimeZone}
           />
         ) : null}
         {chrome.Footer ? (
