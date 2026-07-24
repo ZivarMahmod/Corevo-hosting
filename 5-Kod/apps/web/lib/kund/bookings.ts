@@ -23,6 +23,7 @@ export type KundBooking = {
   staffId: string
   serviceName: string | null
   staffTitle: string | null
+  locationId: string
   timeZone: string
   note: string | null
   customerId?: string | null
@@ -36,6 +37,7 @@ type BookingJoinRow = {
   price_cents: number | null
   service_id: string
   staff_id: string
+  location_id: string
   note: string | null
   customer_id: string | null
   services: { name: string } | null
@@ -44,7 +46,7 @@ type BookingJoinRow = {
 }
 
 const SELECT =
-  'id, status, start_ts, end_ts, price_cents, service_id, staff_id, customer_id, note, ' +
+  'id, status, start_ts, end_ts, price_cents, service_id, staff_id, location_id, customer_id, note, ' +
   'services(name), staff(title), locations(timezone)'
 
 function map(r: BookingJoinRow): KundBooking {
@@ -58,6 +60,7 @@ function map(r: BookingJoinRow): KundBooking {
     staffId: r.staff_id,
     serviceName: r.services?.name ?? null,
     staffTitle: r.staff?.title ?? null,
+    locationId: r.location_id,
     timeZone: r.locations?.timezone ?? 'Europe/Stockholm',
     note: sanitizeBookingNote(r.note),
     customerId: r.customer_id,

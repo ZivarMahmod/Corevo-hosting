@@ -440,6 +440,7 @@ export async function rebookBooking(
     p_start: startISO,
     p_customer: user.id,
     p_note: old.note ?? undefined,
+    p_location: old.locationId,
   })
   if (createErr || !newId) {
     if (createErr?.code === '23P01') return { error: 'Tiden togs precis. Välj en annan tid.' }

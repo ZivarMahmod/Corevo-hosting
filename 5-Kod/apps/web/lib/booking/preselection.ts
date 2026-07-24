@@ -2,6 +2,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 
 export type BookingLocationRef = { id: string }
 export type BookingServiceRef = { id: string; locationId?: string | null }
+export type BookingStaffRef = { id: string }
 export type BookingSearchParams = Record<string, string | string[] | undefined>
 
 type ResolveInput = {
@@ -72,8 +73,8 @@ export function resolveBookingQueryPreselection({
 
 function oneQueryValue(
   searchParams: BookingSearchParams,
-  canonicalKey: 'plats' | 'tjanst',
-  aliasKey: 'location' | 'service',
+  canonicalKey: string,
+  aliasKey: string,
 ): string | null {
   // Canonical-key presence wins even when malformed. This prevents an attacker
   // from smuggling a valid alias beside a duplicate/array canonical value.
@@ -83,6 +84,20 @@ function oneQueryValue(
   return typeof value === 'string' && value.trim() === value && value.length > 0
     ? value
     : null
+}
+
+/** Staff deep links share the same fail-closed dialect rule as location/service:
+ * Swedish `personal` wins over `staff`, and only an already-loaded active
+ * same-tenant staff row may reach the client wizard. */
+export function resolveBookingStaffSearchParam({
+  searchParams,
+  staff,
+}: {
+  searchParams: BookingSearchParams
+  staff: readonly BookingStaffRef[]
+}): string | null {
+  const staffId = oneQueryValue(searchParams, 'personal', 'staff')
+  return staff.some((member) => member.id === staffId) ? staffId : null
 }
 
 /** Public `/boka` query dialect. Output remains the existing Swedish live keys

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildTenantBookingPath,
   resolveBookingSearchParams,
+  resolveBookingStaffSearchParam,
   resolveBookingQueryPreselection,
   resolveLocationSelection,
 } from './preselection'
@@ -11,6 +12,8 @@ const LOCATION_B = '22222222-2222-4222-8222-222222222222'
 const SERVICE_GLOBAL = '33333333-3333-4333-8333-333333333333'
 const SERVICE_A = '44444444-4444-4444-8444-444444444444'
 const SERVICE_B = '55555555-5555-4555-8555-555555555555'
+const STAFF_A = '66666666-6666-4666-8666-666666666666'
+const STAFF_B = '77777777-7777-4777-8777-777777777777'
 
 const locations = [{ id: LOCATION_A }, { id: LOCATION_B }]
 const services = [
@@ -91,6 +94,28 @@ describe('resolveBookingSearchParams', () => {
       locations,
       services,
     })).toEqual({ locationId: null, serviceId: null })
+  })
+})
+
+describe('resolveBookingStaffSearchParam', () => {
+  const staff = [{ id: STAFF_A }, { id: STAFF_B }]
+
+  it('reads personal and accepts staff as a compatibility alias', () => {
+    expect(resolveBookingStaffSearchParam({ searchParams: { personal: STAFF_A }, staff }))
+      .toBe(STAFF_A)
+    expect(resolveBookingStaffSearchParam({ searchParams: { staff: STAFF_B }, staff }))
+      .toBe(STAFF_B)
+  })
+
+  it('gives personal precedence and rejects arrays or ids outside loaded active rows', () => {
+    expect(resolveBookingStaffSearchParam({
+      searchParams: { personal: ['bad', STAFF_A], staff: STAFF_A },
+      staff,
+    })).toBeNull()
+    expect(resolveBookingStaffSearchParam({
+      searchParams: { personal: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', staff: STAFF_A },
+      staff,
+    })).toBeNull()
   })
 })
 

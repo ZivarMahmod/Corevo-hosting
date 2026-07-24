@@ -55,7 +55,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
       {canChange ? (
         <div className={styles.actions}>
-          <RebookPanel bookingId={booking.id} serviceId={booking.serviceId} />
+          <RebookPanel
+            bookingId={booking.id}
+            serviceId={booking.serviceId}
+            locationId={booking.locationId}
+          />
           <CancelButton bookingId={booking.id} />
         </div>
       ) : isActive ? (

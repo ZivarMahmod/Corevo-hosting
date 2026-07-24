@@ -15,6 +15,7 @@ function booking(status: string, id: string, serviceId = 'service-1'): KundBooki
     staffId: 'staff-1',
     serviceName: `Tjänst ${id}`,
     staffTitle: 'Alex',
+    locationId: 'location-1',
     timeZone: 'Europe/Stockholm',
     note: null,
   }

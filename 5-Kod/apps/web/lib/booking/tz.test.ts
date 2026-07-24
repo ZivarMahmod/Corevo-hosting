@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canonicalInstant, zonedTimeToUtc, weekdayOf } from './tz'
+import { bookingDateWindow, canonicalInstant, zonedTimeToUtc, weekdayOf } from './tz'
 
 describe('canonicalInstant', () => {
   it('ger samma nyckel för Postgres +00:00 och JavaScript Z', () => {
@@ -56,5 +56,20 @@ describe('weekdayOf', () => {
     // Noon-anchored so a DST boundary can't shift the weekday.
     expect(weekdayOf('2026-03-29')).toBe(0) // Sunday
     expect(weekdayOf('2026-10-25')).toBe(0) // Sunday
+  })
+})
+
+describe('bookingDateWindow', () => {
+  it('starts on today in the selected location timezone and includes max days ahead', () => {
+    const now = new Date('2026-07-24T22:30:00.000Z')
+    expect(bookingDateWindow(now, 'Europe/Stockholm', 2)).toEqual([
+      '2026-07-25',
+      '2026-07-26',
+      '2026-07-27',
+    ])
+    expect(bookingDateWindow(now, 'America/Los_Angeles', 1)).toEqual([
+      '2026-07-24',
+      '2026-07-25',
+    ])
   })
 })

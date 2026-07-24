@@ -182,9 +182,11 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-74–80 är lokalt låsta och den samlade kodacceptansen är grön. Nästa
-byggdel är Goal-81: bokningsmotorns fyra lägen genom den verkliga
-plats-/djuplänksmatrisen. Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
+Goal-74–81 är lokalt låsta och den samlade kodacceptansen är grön. Goal-81
+verifierade bokningsmotorns queryalias, latest-request-wins, platsägda
+datumregler, legacy-ombokning och compact/inline-kontaktvalidering i samma
+motor. Nästa byggdel är Goal-82: personaladmin och tenantlivscykel.
+Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
 Den godkända ordningen och lokala låsgränsen för Goal 81–86 finns i

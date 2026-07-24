@@ -17,6 +17,8 @@ import {
 } from '@/app/boka/actions'
 import type { BookingContactAvailability } from '@/lib/notifications/giada'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
+import { normalizeBookingContact } from '@/lib/booking/contact-normalization'
+import { bookingDateWindow } from '@/lib/booking/tz'
 import {
   buildTenantBookingPath,
   resolveLocationSelection,
@@ -49,6 +51,8 @@ export type WizardLocation = {
   id: string
   name: string
   isPrimary: boolean
+  timeZone: string
+  maxAdvanceDays: number
 }
 
 const kr = new Intl.NumberFormat('sv-SE', {
@@ -105,6 +109,11 @@ function StaffAvatar({
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function calendarDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year!, month! - 1, day!, 12)
 }
 
 /** Presentation variant.
@@ -257,6 +266,7 @@ export function BookingWizard({
   const [slotTakenNotice, setSlotTakenNotice] = useState<string | null>(null)
   // Kalender-vyns månadsmarkör: index i calMonths (månader som bokningsfönstret rör).
   const [calCursor, setCalCursor] = useState(0)
+  const slotRequestRef = useRef(0)
 
   // Giada-health bestämmer vilket ENDA kontaktfält som visas. Servern gör om
   // kontrollen när koden skickas; ett modem som dör mellan render och klick kan
@@ -280,21 +290,18 @@ export function BookingWizard({
     return () => window.clearInterval(timer)
   }, [verification])
 
-  // Bokningsfönstret (Zivar 2026-07-09: "borde kunna väljas månadsvis …
-  // åtminstone några månader fram"): 90 dagar ≈ 3 månader. Tiderna hämtas
-  // per vald dag (getAvailableSlots), så fönstret kostar inget förrän en dag
-  // klickas — motorn räknar godtyckligt långt fram ur veckoschema-mallen.
-  const BOOKING_WINDOW_DAYS = 90
+  const selectedLocation = locations.find((location) => location.id === locationId)
+    ?? locations.find((location) => location.id === defaultLocationId)
   const days = useMemo(() => {
-    const out: Date[] = []
-    const base = new Date()
-    for (let i = 0; i < BOOKING_WINDOW_DAYS; i++) {
-      const d = new Date(base)
-      d.setDate(base.getDate() + i)
-      out.push(d)
-    }
-    return out
-  }, [])
+    const keys = selectedLocation
+      ? bookingDateWindow(
+          new Date(),
+          selectedLocation.timeZone,
+          selectedLocation.maxAdvanceDays,
+        )
+      : bookingDateWindow(new Date(), 'Europe/Stockholm', 90)
+    return keys.map(calendarDate)
+  }, [selectedLocation])
 
   // Månader som bokningsfönstret (days) täcker — kalenderbläddringen begränsas hit.
   const calMonths = useMemo(() => {
@@ -328,6 +335,7 @@ export function BookingWizard({
   // variants: the wizard's day handler (per service+staff+day) and compact's
   // effect (refetch whenever service OR staff OR day changes).
   function fetchSlots(serviceId: string, choice: string, d: string, locId: string | null) {
+    const request = ++slotRequestRef.current
     setSlot(null)
     setError(null)
     setSlotsError(null)
@@ -335,6 +343,7 @@ export function BookingWizard({
       // locId vidarebefordras → location-aware availability. null (en-plats/saknat
       // val) → servern faller tillbaka på tenantens primära plats.
       const res = await getAvailableSlots(serviceId, choice === 'any' ? null : choice, d, locId)
+      if (request !== slotRequestRef.current) return
       if (res.ok) {
         setSlots(res.slots)
         setTimeZone(res.timeZone)
@@ -349,6 +358,7 @@ export function BookingWizard({
   // dag/tid) nollställs så inget val släpar med från en annan plats. Anropas bara
   // i flerplatsläget; i en-plats-läget rörs detta aldrig.
   function pickLocation(id: string) {
+    slotRequestRef.current += 1
     setLocationId(id)
     const next = resolveLocationSelection({
       services,
@@ -362,7 +372,10 @@ export function BookingWizard({
     // impossible-to-advance wizard.
     if (!compact) setStep(next.step)
     setStaffChoice('any')
-    setDate(compact ? ymd(days[0]!) : null)
+    const pickedLocation = locations.find((location) => location.id === id)
+    setDate(compact && pickedLocation
+      ? bookingDateWindow(new Date(), pickedLocation.timeZone, pickedLocation.maxAdvanceDays)[0]!
+      : null)
     setSlots([])
     setSlot(null)
     setSlotsError(null)
@@ -375,6 +388,7 @@ export function BookingWizard({
   // explicit "Fortsätt"). Each picker only sets state; the bottom action bar
   // advances. Selecting a service/staff still RESETS downstream choices.
   function pickService(s: WizardService) {
+    slotRequestRef.current += 1
     setService(s)
     // goal-64: kom besökaren via /boka?personal=… utan tjänst i länken, appliceras
     // personal-förvalet nu — men BARA om hen kan utföra just den valda tjänsten.
@@ -388,6 +402,7 @@ export function BookingWizard({
   }
 
   function pickStaff(choice: string) {
+    slotRequestRef.current += 1
     setStaffChoice(choice)
     setDate(null)
     setSlots([])
@@ -488,6 +503,13 @@ export function BookingWizard({
       setError('SMS är tillfälligt nere. Försök igen om en stund.')
       return
     }
+    const contact = normalizeBookingContact(contactMode, selectedContact())
+    if (!contact) {
+      setError(contactMode === 'sms'
+        ? 'Skriv ett giltigt mobilnummer.'
+        : 'Skriv en giltig e-postadress.')
+      return
+    }
     setError(null)
     if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID()
     startTransition(async () => {
@@ -497,7 +519,7 @@ export function BookingWizard({
           serviceId: service.id,
           staffId: slot.staffId,
           startISO: slot.start,
-          contact: selectedContact(),
+          contact,
           locationId,
         })
       } catch {
@@ -611,6 +633,7 @@ export function BookingWizard({
   // klar bokning (se effekten nedan). Steg 5 navigerar i stället med en riktig
   // tenantbunden bokningslänk enligt kundportalkontraktet.
   function resetWizard() {
+    slotRequestRef.current += 1
     const resetLocationId = multiLocation && !compact ? null : defaultLocationId
     const resetServices = servicesAvailableAtLocation(services, resetLocationId)
     setStep(1)
@@ -906,11 +929,11 @@ export function BookingWizard({
           <button
             type="button"
             className="wizard-cta"
-            disabled={pin.length !== 6 || pending}
+            disabled={pin.length !== 4 || pending}
             onClick={verifyPin}
           >
             <span className="wizard-cta-label">{pending ? 'Verifierar…' : 'Verifiera & boka'}</span>
-            {pin.length !== 6 && !pending ? <span className="wizard-cta-sub">Fyll i 6 siffror</span> : null}
+            {pin.length !== 4 && !pending ? <span className="wizard-cta-sub">Fyll i 4 siffror</span> : null}
           </button>
           <ConsentLine />
         </div>
@@ -976,8 +999,10 @@ export function BookingWizard({
                       className={`ckompakt-chip${on ? ' selected' : ''}`}
                       aria-pressed={on}
                       onClick={() => {
+                        slotRequestRef.current += 1
                         setService(s)
                         setStaffChoice('any')
+                        setSlots([])
                         setSlot(null)
                         setError(null)
                       }}
@@ -1001,7 +1026,12 @@ export function BookingWizard({
                   type="button"
                   className={`ckompakt-chip${staffChoice === 'any' ? ' selected' : ''}`}
                   aria-pressed={staffChoice === 'any'}
-                  onClick={() => setStaffChoice('any')}
+                  onClick={() => {
+                    slotRequestRef.current += 1
+                    setStaffChoice('any')
+                    setSlots([])
+                    setSlot(null)
+                  }}
                 >
                   Alla
                 </button>
@@ -1013,7 +1043,12 @@ export function BookingWizard({
                       type="button"
                       className={`ckompakt-chip${on ? ' selected' : ''}`}
                       aria-pressed={on}
-                      onClick={() => setStaffChoice(m.id)}
+                      onClick={() => {
+                        slotRequestRef.current += 1
+                        setStaffChoice(m.id)
+                        setSlots([])
+                        setSlot(null)
+                      }}
                     >
                       {m.title ?? staffNoun}
                     </button>
@@ -1034,7 +1069,10 @@ export function BookingWizard({
                       className={`wizard-day${isSel ? ' selected' : ''}`}
                       aria-pressed={isSel}
                       onClick={() => {
+                        slotRequestRef.current += 1
                         setSlotTakenNotice(null)
+                        setSlots([])
+                        setSlot(null)
                         setDate(key)
                       }}
                     >

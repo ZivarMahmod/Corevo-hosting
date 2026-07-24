@@ -12,6 +12,7 @@ alla lokala byggdelar och Zivars gemensamma localhostacceptans är klara.
 5. **Goal 78 — webbplatsläge och extern bokning**
 6. **Goal 79 — FreshCuts fasta kundwebb**
 7. **Goal 80 — superadminens kundarbetsyta**
+8. **Goal 81 — bokningsmotorns fulla variantmatris**
 
 Den samlade branchen är `codex/launch-inventory-customer-design`. Goal 74 är
 arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Goal
@@ -19,9 +20,6 @@ arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Go
 
 ## Nästa byggordning
 
-8. **Goal 81 — bokningsmotorns fulla variantmatris**
-   Lås samma bokningsmotor genom wizard, compact, drawer och inline med
-   platsval, djuplänkar, tidszon, datumregler och latest-request-wins.
 9. **Goal 82 — personaladmin och tenantlivscykel**
    Lås roll-/platsbehörighet, pausad tenant, personalens riktiga vardagsflöden
    och branschneutral copy utan ny redesign.
@@ -50,7 +48,7 @@ releasebevis, inte skäl att hålla lokalt färdig produktkod öppen.
 ## Regler
 
 - En aktiv byggdel åt gången: beslut → test → kod → verifiering → lokal låsning.
-- Inget Goal 82–86 öppnas som aktiv goal-fil innan föregående del är låst.
+- Inget Goal 83–86 öppnas som aktiv goal-fil innan föregående del är låst.
 - `corevo.se`-roten är POS-/plattformsyta; tenantstorefront använder
   `*.boka.corevo.se`.
 - Ingen parallell motor, kö, roll-, person- eller statusmodell byggs.
