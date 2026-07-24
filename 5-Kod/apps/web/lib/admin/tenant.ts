@@ -30,6 +30,35 @@ export type AdminTenant = {
 
 const FALLBACK_TZ = 'Europe/Stockholm'
 
+export class TenantMutationDeniedError extends Error {
+  constructor() {
+    super('tenant_mutation_requires_active_tenant')
+    this.name = 'TenantMutationDeniedError'
+  }
+}
+
+/**
+ * Fail-closed lifecycle fence for tenant-owned writes. Platform root and a live,
+ * DB-verified partner identity retain their existing scoped operator path; their
+ * target tenant is authorized separately before this helper is called.
+ */
+export async function requireActiveTenantMutation(
+  user: CurrentUser,
+  tenantId: string,
+  client?: Awaited<ReturnType<typeof createClient>>,
+): Promise<void> {
+  if (user.platformAdmin || (user.partnerAdmin && user.partnerId)) return
+  if (!tenantId || user.tenantId !== tenantId) throw new TenantMutationDeniedError()
+
+  const supabase = client ?? (await createClient())
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('status')
+    .eq('id', tenantId)
+    .maybeSingle()
+  if (error || data?.status !== 'active') throw new TenantMutationDeniedError()
+}
+
 /**
  * Resolve the logged-in admin's own tenant (id + slug + name + primary tz).
  * tenant_id comes from the verified JWT (session), NEVER from client input;
@@ -54,7 +83,7 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
   const [{ data: tenant }, { data: loc }, { data: settingsRow }] = await Promise.all([
     supabase
       .from('tenants')
-      .select('id, slug, name, status, vertical_id, stripe_charges_enabled')
+      .select('id, slug, name, vertical_id, stripe_charges_enabled')
       .eq('id', tenantId)
       .maybeSingle(),
     supabase
@@ -71,8 +100,6 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
       .maybeSingle(),
   ])
   if (!tenant) return null
-  // Soft-deleted tenant → no admin context, so every downstream admin action denies.
-  if (tenant.status === 'deleted') return null
 
   // Bransch terminology overlay (verticals.terminology) → admin label surfaces.
   // Separate read (NOT an embedded join) on purpose: a verticals RLS/shape change

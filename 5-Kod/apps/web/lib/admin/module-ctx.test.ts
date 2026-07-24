@@ -9,15 +9,21 @@ vi.mock('@/lib/auth/session', () => ({ requirePortal: vi.fn() }))
 vi.mock('@/lib/admin/tenant', () => ({
   getAdminTenant: vi.fn(),
   loadAdminTenantById: vi.fn(),
+  requireActiveTenantMutation: vi.fn(),
 }))
 
 import { moduleCtx } from './module-ctx'
 import { requirePortal } from '@/lib/auth/session'
-import { getAdminTenant, loadAdminTenantById } from '@/lib/admin/tenant'
+import {
+  getAdminTenant,
+  loadAdminTenantById,
+  requireActiveTenantMutation,
+} from '@/lib/admin/tenant'
 
 const mRequire = vi.mocked(requirePortal)
 const mByJwt = vi.mocked(getAdminTenant)
 const mById = vi.mocked(loadAdminTenantById)
+const mRequireActive = vi.mocked(requireActiveTenantMutation)
 
 const OWN = { id: 't-own', slug: 'own', name: 'Egen' }
 const OTHER = { id: 't-other', slug: 'other', name: 'Annan' }
@@ -30,6 +36,7 @@ function fd(entries: Record<string, string>): FormData {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mRequireActive.mockResolvedValue(undefined)
 })
 
 describe('moduleCtx — salon_admin (JWT-forced tenant)', () => {
@@ -41,6 +48,10 @@ describe('moduleCtx — salon_admin (JWT-forced tenant)', () => {
   it('resolves the JWT tenant and IGNORES a posted tenantId (no cross-tenant escalation)', async () => {
     const ctx = await moduleCtx(fd({ tenantId: 't-other' }))
     expect(ctx?.tenant.id).toBe('t-own')
+    expect(mRequireActive).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'u1' }),
+      't-own',
+    )
     // The escalation path must never even be consulted for a salon admin.
     expect(mById).not.toHaveBeenCalled()
   })
@@ -60,6 +71,10 @@ describe('moduleCtx — platform_admin (tenant from the form)', () => {
     mById.mockResolvedValue(OTHER as never)
     const ctx = await moduleCtx(fd({ tenantId: 't-other' }))
     expect(ctx?.tenant.id).toBe('t-other')
+    expect(mRequireActive).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'p1' }),
+      't-other',
+    )
     expect(mById).toHaveBeenCalledWith('t-other')
     expect(mByJwt).not.toHaveBeenCalled()
   })

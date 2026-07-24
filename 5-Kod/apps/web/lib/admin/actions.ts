@@ -6,7 +6,12 @@ import type { Database } from '@corevo/db'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
 import type { AdminArea } from '@/lib/auth/admin-areas'
-import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
+import {
+  getAdminTenant,
+  requireActiveTenantMutation,
+  revalidateTenant,
+  type AdminTenant,
+} from './tenant'
 import { kronorToCents } from './format'
 import {
   uploadImage,
@@ -116,6 +121,7 @@ async function adminCtx(
   const user = await requireAdminArea(area)
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
+  await requireActiveTenantMutation(user, tenant.id)
   return { user, tenant }
 }
 

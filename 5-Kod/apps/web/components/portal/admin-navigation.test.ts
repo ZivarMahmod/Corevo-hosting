@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { adminAreas, adminMobileNavigation } from './admin-navigation'
+import * as adminNavigation from './admin-navigation'
 import { activeTopnavArea } from './Topnav'
 
 /** goal-65: kund-adminens toppnav. Reglerna som testas är låsta beslut, inte smak:
@@ -108,5 +109,55 @@ describe('mobil admin-navigation', () => {
     const mobile = adminMobileNavigation(areas)
 
     expect([...mobile.tabs, ...mobile.more]).toEqual(areas)
+  })
+
+  it('döljer kalenderns muterande FAB för personal som inte är operational manager', () => {
+    expect(adminMobileNavigation(adminAreas([], 3), false).action).toBeUndefined()
+  })
+})
+
+describe('behörighetsfiltrerade admin-genvägar', () => {
+  type QuickActionFactory = (input: {
+    roleLevel: number
+    grantedAreas?: readonly string[]
+    canManageBookings: boolean
+  }) => Array<{ href: string; label: string; icon: string }>
+  const quickActions = (adminNavigation as unknown as {
+    adminQuickActions?: QuickActionFactory
+  }).adminQuickActions
+
+  it('behåller Kunder som basåtkomst för vanlig personal', () => {
+    expect(quickActions).toBeTypeOf('function')
+    if (!quickActions) return
+    expect(
+      quickActions({ roleLevel: 3, grantedAreas: [], canManageBookings: false }).map(
+        (action) => action.label,
+      ),
+    ).toEqual(['Kunder'])
+  })
+
+  it('visar bokningsmutationerna för owner eller operational manager', () => {
+    expect(quickActions).toBeTypeOf('function')
+    if (!quickActions) return
+    expect(
+      quickActions({ roleLevel: 3, grantedAreas: [], canManageBookings: true }).map(
+        (action) => action.label,
+      ),
+    ).toEqual(['Ny bokning', 'Blockera tid', 'Kunder'])
+  })
+
+  it('visar Statistik först när ytan är roll- eller grant-tillåten', () => {
+    expect(quickActions).toBeTypeOf('function')
+    if (!quickActions) return
+    expect(
+      quickActions({
+        roleLevel: 3,
+        grantedAreas: ['statistik'],
+        canManageBookings: false,
+      }).map((action) => action.label),
+    ).toEqual(['Kunder', 'Statistik'])
+    expect(
+      quickActions({ roleLevel: 6, canManageBookings: true }).map((action) => action.label),
+    ).toEqual(['Ny bokning', 'Blockera tid', 'Kunder', 'Statistik'])
   })
 })

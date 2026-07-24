@@ -13,6 +13,7 @@ import {
   type CustomerNotes,
 } from './customer'
 import { createAdminServiceClient } from '@/lib/admin/service'
+import { requireActiveTenantMutation } from '@/lib/admin/tenant'
 import {
   notificationQueueMessage,
   queueBookingEvent,
@@ -30,6 +31,12 @@ const HAIR_TYPES = new Set(['rakt', 'vågigt', 'lockigt', 'afro'])
 const HAIR_LENGTHS = new Set(['kort', 'medel', 'långt'])
 const SENSITIVITIES = new Set(['normal', 'känslig hårbotten', 'känslig hud'])
 
+async function requirePersonalMutation() {
+  const user = await requirePortal('personal')
+  await requireActiveTenantMutation(user, user.tenantId ?? '')
+  return user
+}
+
 // ── Booking status: completed / no_show ──────────────────────────────────────
 // staff_id is constrained to the caller's OWN staff ids (server-resolved) +
 // status to active, so a staff can never mutate a colleague's or another
@@ -39,7 +46,7 @@ export async function setBookingStatus(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requirePortal('personal')
+  const user = await requirePersonalMutation()
   const bookingId = String(formData.get('bookingId') ?? '')
   const status = String(formData.get('status') ?? '')
   if (!bookingId) return { error: 'Saknar bokning.' }
@@ -118,7 +125,7 @@ export async function setBookingStatus(
 // name-only customer relation plus the booking. A booking collision rolls both
 // writes back. Contact identity never rides bookings.note.
 export async function createWalkIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requirePortal('personal')
+  const user = await requirePersonalMutation()
   const serviceId = String(formData.get('serviceId') ?? '')
   const startLocal = String(formData.get('start') ?? '')
   const name = String(formData.get('name') ?? '').trim()
@@ -182,7 +189,7 @@ export async function rebookOwnBooking(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requirePortal('personal')
+  const user = await requirePersonalMutation()
   const bookingId = String(formData.get('bookingId') ?? '')
   const startLocal = String(formData.get('start') ?? '')
   if (!bookingId) return { error: 'Saknar bokning.' }
@@ -256,7 +263,7 @@ export async function cancelOwnBooking(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requirePortal('personal')
+  const user = await requirePersonalMutation()
   const bookingId = String(formData.get('bookingId') ?? '')
   if (!bookingId) return { error: 'Saknar bokning.' }
 
@@ -313,7 +320,7 @@ export async function upsertCustomerNotes(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requirePortal('personal')
+  const user = await requirePersonalMutation()
   const customerId = String(formData.get('customerId') ?? '')
   const locationId = String(formData.get('locationId') ?? '')
   if (!customerId) return { error: 'Saknar kund.' }
@@ -440,7 +447,7 @@ export async function getCustomerContact(customerId: string): Promise<ContactRes
 // shared zonedTimeToUtc in the staff's location timezone so the stored UTC
 // interval lines up with what the M3 availability engine subtracts.
 export async function addTimeOff(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requirePortal('personal')
+  const user = await requirePersonalMutation()
   const startLocal = String(formData.get('start') ?? '')
   const endLocal = String(formData.get('end') ?? '')
   const reason = String(formData.get('reason') ?? '').trim()
@@ -483,7 +490,7 @@ export async function addTimeOff(_prev: ActionState, formData: FormData): Promis
 }
 
 export async function deleteTimeOff(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requirePortal('personal')
+  const user = await requirePersonalMutation()
   const id = String(formData.get('id') ?? '')
   if (!id) return { error: 'Saknar rad.' }
 

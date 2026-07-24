@@ -24,7 +24,11 @@ import {
   platformMobileNavigation,
   platformSubnavForUser,
 } from './platform-navigation'
-import { adminAreas, adminMobileNavigation } from './admin-navigation'
+import {
+  adminAreas,
+  adminMobileNavigation,
+  adminQuickActions,
+} from './admin-navigation'
 import { personalAreas, personalMobileNavigation } from './personal-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
@@ -151,11 +155,14 @@ export async function PortalShell({
     // ska ha en synlig väg i meny/topnav/⌘K fast rollnivån inte når minLevel.
     // Samma memberGrantsArea-beslut som sidgrinden — nav:en hittar aldrig på egna regler.
     let grantedAreas: readonly string[] | undefined
+    let memberPermissions: Awaited<ReturnType<typeof getMemberPermissions>> | undefined
     if (portal === 'admin' && !user.platformAdmin && user.roleLevel === 3 && user.tenantId && user.staffId) {
       try {
-        grantedAreas = grantedAdminAreas(
-          await getMemberPermissions({ tenantId: user.tenantId, staffId: user.staffId }),
-        )
+        memberPermissions = await getMemberPermissions({
+          tenantId: user.tenantId,
+          staffId: user.staffId,
+        })
+        grantedAreas = grantedAdminAreas(memberPermissions)
       } catch {
         // Behörighetsläsningen får aldrig fälla skalet — utan tillägg gäller rollnivån.
         grantedAreas = undefined
@@ -301,6 +308,8 @@ export async function PortalShell({
     // varje riktig läsning, action och guard.
     if (portal === 'platform' || portal === 'admin') {
       const isPlatform = portal === 'platform'
+      const tenantReadOnly =
+        portal === 'admin' && bundle !== null && bundle.tenant.status !== 'active'
       const topAreas = isPlatform
         ? platformAreasForUser(user.platformAdmin)
         : adminAreas(
@@ -309,6 +318,11 @@ export async function PortalShell({
             grantedAreas,
             locationPreferences ? locationPreferences.accessScope === 'organization' : undefined,
           )
+      // CalendarBoard and the location-admin RPCs require owner scope or the
+      // explicit operational manager grant. Page visibility alone is not write access.
+      const canManageBookings =
+        navRoleLevel >= 6 || memberPermissions?.operationalRole === 'manager'
+      const canMutateBookings = !tenantReadOnly && canManageBookings
       return (
         <div
           className={`tenant-root portal-shell ${topnavStyles.shell}`}
@@ -321,7 +335,9 @@ export async function PortalShell({
             areas={topAreas}
             adminMobileChrome={!isPlatform}
             mobileNavigation={
-              isPlatform ? platformMobileNavigation(topAreas) : adminMobileNavigation(topAreas)
+              isPlatform
+                ? platformMobileNavigation(topAreas)
+                : adminMobileNavigation(topAreas, canMutateBookings)
             }
             subnav={isPlatform ? platformSubnavForUser(user.platformAdmin) : undefined}
             paletteItems={paletteItems}
@@ -347,12 +363,12 @@ export async function PortalShell({
                     { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
                     { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
                   ]
-                : [
-                    { href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' },
-                    { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' },
-                    { href: '/admin/kunder', label: 'Kunder', icon: 'users' },
-                    { href: '/admin/statistik', label: 'Statistik', icon: 'chartBars' },
-                  ]
+                : adminQuickActions({
+                    roleLevel: navRoleLevel,
+                    grantedAreas,
+                    canManageBookings,
+                    tenantActive: !tenantReadOnly,
+                  })
             }
             contextLink={
               !isPlatform && contextLink
@@ -368,7 +384,25 @@ export async function PortalShell({
             signOut={<SignOutButton />}
           />
           <main className={`portal-main ${topnavStyles.main}`}>
-            <ToastProvider>{children}</ToastProvider>
+            {tenantReadOnly ? (
+              <aside className={topnavStyles.tenantReadOnlyBanner} role="status" aria-live="polite">
+                <strong>Företaget är pausat.</strong>{' '}
+                <span>
+                  Du kan fortfarande läsa innehållet. Ändringar är låsta tills Corevo aktiverar
+                  kontot igen.
+                </span>
+              </aside>
+            ) : null}
+            {isPlatform ? (
+              <ToastProvider>{children}</ToastProvider>
+            ) : (
+              <fieldset
+                className={topnavStyles.tenantReadOnlyContent}
+                disabled={tenantReadOnly}
+              >
+                <ToastProvider>{children}</ToastProvider>
+              </fieldset>
+            )}
           </main>
         </div>
       )

@@ -17,12 +17,24 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
-- Den samlade localhostacceptansen för de aktuella Goal 74–80-delarna är körd:
-  `350` testfiler och `2737` tester passerar tillsammans. Goal 74–80 är lokalt
+- Den samlade localhostacceptansen genom Goal 82 är körd:
+  `352` testfiler och `2 763` tester passerar tillsammans. Goal 74–82 är lokalt
   låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
-  tillsammans med Zivar. Protokoll:
-  `6-Testing/samlad-localhostacceptans-goal-74-80.md`. Produktion är orörd.
+  tillsammans med Zivar. Protokoll finns i
+  `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81:s och Goal
+  82:s testlistor i `6-Testing/`. Produktion är orörd.
+- Goal 82 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Tenantägda mutationer kräver nu
+  aktiv tenant i server- och DB-lagret, medan pausade tenants behåller
+  behöriga läsvyer. `can_edit_site`, ägare/manager/personal, platsgränser,
+  adminens genvägar och branschneutral personalcopy är låsta utan redesign.
+  Previewmigration `0130_tenant_mutation_lifecycle.sql` och dess rollbackade
+  runtimeprov är gröna; helper-grants och tom `search_path` är verifierade.
+  Full websvit, typecheck, lint utan fel, Next-build och oberoende
+  `SPEC PASS — CLEAN` är gröna. `/admin` är konsolfri och utan horisontell
+  overflow på desktop och mobil; sessionen saknade tenantkoppling, så writes
+  täcks av testerna och preview-SQL. Produktion är orörd.
 - Goal 80 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. Superadminens valda kundkort är nu
   en egen fullbreddsyta enligt 1320px-kanon i stället för att pressas bredvid
@@ -182,10 +194,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-74–81 är lokalt låsta och den samlade kodacceptansen är grön. Goal-81
-verifierade bokningsmotorns queryalias, latest-request-wins, platsägda
-datumregler, legacy-ombokning och compact/inline-kontaktvalidering i samma
-motor. Nästa byggdel är Goal-82: personaladmin och tenantlivscykel.
+Goal-74–82 är lokalt låsta och den samlade kodacceptansen är grön. Goal-82
+verifierade aktiv-tenant-grinden, läsbart pausläge, `can_edit_site`,
+behörighetsstyrda adminvägar och branschneutral personalcopy. Nästa byggdel är
+Goal-83: tenantens regionala grundkontrakt.
 Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
@@ -193,9 +205,11 @@ Den godkända ordningen och lokala låsgränsen för Goal 81–86 finns i
 `1-Planering/19-lanseringsprogram/08-goal81-86-exekveringsplan.md`.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
-innehåller inga kopierade produktionsdata och har exakt `128` kanoniskt
-numrerade migrationer genom `0129`, inklusive Goal-74:s tre-försöksmigration,
-Goal-75:s säkerhets-/regexmigrationer och syntetisk portaldata.
+innehåller inga kopierade produktionsdata och har exakt `129` kanoniskt
+numrerade migrationer genom `0130`. Därtill finns en preview-only
+korrektionspost, `tenant_mutation_lifecycle_claim_guard`, som ger totalt `130`
+historikrader och för previewschemat till den slutliga lokala definitionen av
+Goal-82:s `0130`.
 Produktion `clylvowtowbtotrahuad` är orörd.
 
 Relationspaketet är publicerat från den verifierade leveransen och produktionen

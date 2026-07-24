@@ -3,7 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
-import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
+import {
+  getAdminTenant,
+  requireActiveTenantMutation,
+  revalidateTenant,
+  type AdminTenant,
+} from './tenant'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { addDays } from '@/lib/personal/format'
 
@@ -22,6 +27,7 @@ async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | 
   const user = await requireAdminArea('scheman')
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
+  await requireActiveTenantMutation(user, tenant.id)
   return { user, tenant }
 }
 

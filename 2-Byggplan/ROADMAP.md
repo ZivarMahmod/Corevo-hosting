@@ -13,16 +13,14 @@ alla lokala byggdelar och Zivars gemensamma localhostacceptans är klara.
 6. **Goal 79 — FreshCuts fasta kundwebb**
 7. **Goal 80 — superadminens kundarbetsyta**
 8. **Goal 81 — bokningsmotorns fulla variantmatris**
+9. **Goal 82 — personaladmin och tenantlivscykel**
 
 Den samlade branchen är `codex/launch-inventory-customer-design`. Goal 74 är
 arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Goal
-77–80 är verifierade lokalt enligt respektive klar-fil.
+77–82 är verifierade lokalt enligt respektive klar-fil.
 
 ## Nästa byggordning
 
-9. **Goal 82 — personaladmin och tenantlivscykel**
-   Lås roll-/platsbehörighet, pausad tenant, personalens riktiga vardagsflöden
-   och branschneutral copy utan ny redesign.
 10. **Goal 83 — tenantens regionala grundkontrakt**
     Gör locale, land, valuta, tidszon och telefonformat serverägda. Svensk
     lansering förblir enda releasescope; inget andra land byggs.

@@ -9,6 +9,7 @@ const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const read = (relative: string) => fs.readFileSync(path.join(WEB_ROOT, relative), 'utf8')
 const topnav = read('components/portal/Topnav.tsx')
 const portalShell = read('components/portal/PortalShell.tsx')
+const adminNavigation = read('components/portal/admin-navigation.ts')
 const switcher = read('components/portal/LocationSwitcher.tsx')
 const detailsHook = read('components/portal/useDismissibleDetails.ts')
 const css = read('components/portal/Topnav.module.css')
@@ -20,10 +21,10 @@ type QuickAction = { href: string; label: string; icon: string }
 
 function quickActionsFromPortalShell(source: string): {
   platform: QuickAction[]
-  admin: QuickAction[]
+  adminExpression: string
 } {
   const sourceFile = ts.createSourceFile('PortalShell.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
-  let result: { platform: QuickAction[]; admin: QuickAction[] } | null = null
+  let result: { platform: QuickAction[]; adminExpression: string } | null = null
 
   function readBranch(expression: ts.Expression): QuickAction[] {
     if (!ts.isArrayLiteralExpression(expression)) {
@@ -59,7 +60,7 @@ function quickActionsFromPortalShell(source: string): {
       }
       result = {
         platform: readBranch(expression.whenTrue),
-        admin: readBranch(expression.whenFalse),
+        adminExpression: expression.whenFalse.getText(sourceFile),
       }
     }
     ts.forEachChild(node, visit)
@@ -85,17 +86,17 @@ describe('del 02: universal toppbanner v2', () => {
   it('bär genvägsraden som cirkulära ikonknappar i bannern, inte som dashboardkort', () => {
     expect(topnav).toContain('styles.quickGroup')
     expect(topnav).toContain('styles.quickTab')
-    expect(portalShell).toContain("{ href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' }")
-    expect(portalShell).toContain("{ href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' }")
-    expect(portalShell).toContain("{ href: '/admin/kunder', label: 'Kunder', icon: 'users' }")
-    expect(portalShell).toContain("{ href: '/admin/statistik', label: 'Statistik', icon: 'chartBars' }")
+    expect(adminNavigation).toContain("{ href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' }")
+    expect(adminNavigation).toContain("{ href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' }")
+    expect(adminNavigation).toContain("{ href: '/admin/kunder', label: 'Kunder', icon: 'users' }")
+    expect(adminNavigation).toContain("{ href: '/admin/statistik', label: 'Statistik', icon: 'chartBars' }")
     expect(dashboardPage).not.toContain('GENVÄGAR')
     // Mobilen har FAB + flikar — genvägsraden är desktop/tablet.
     expect(css).toMatch(/\.mobileAdmin \.quickGroup\s*\{[\s\S]*?display:\s*none;/)
   })
 
   it('ger plattformen exakt fyra genvägar utan att ändra kundadminens array', () => {
-    const { platform, admin } = quickActionsFromPortalShell(portalShell)
+    const { platform, adminExpression } = quickActionsFromPortalShell(portalShell)
 
     expect(platform).toEqual([
       { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' },
@@ -103,12 +104,7 @@ describe('del 02: universal toppbanner v2', () => {
       { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
       { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
     ])
-    expect(admin).toEqual([
-      { href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' },
-      { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' },
-      { href: '/admin/kunder', label: 'Kunder', icon: 'users' },
-      { href: '/admin/statistik', label: 'Statistik', icon: 'chartBars' },
-    ])
+    expect(adminExpression).toContain('adminQuickActions')
   })
 
   it('visar otillåtna ytor låsta i stället för att dölja dem', () => {
@@ -123,6 +119,20 @@ describe('del 02: universal toppbanner v2', () => {
     expect(portalShell).toContain("label: 'Mitt konto'")
     expect(portalShell).toContain("label: 'Hjälp & support'")
     expect(`${topnav}\n${portalShell}`).not.toMatch(/notis|notification|badge/i)
+  })
+
+  it('förklarar globalt att en pausad tenant är läsbar men skrivskyddad', () => {
+    expect(portalShell).toContain("bundle.tenant.status !== 'active'")
+    expect(portalShell).toContain('Företaget är pausat')
+    expect(portalShell).toContain('Du kan fortfarande läsa')
+    expect(portalShell).toContain('Ändringar är låsta')
+    expect(portalShell).toContain('role="status"')
+    expect(portalShell).toContain('<fieldset')
+    expect(portalShell).toContain('disabled={tenantReadOnly}')
+    expect(portalShell).toContain('topnavStyles.tenantReadOnlyContent')
+    expect(css).toMatch(
+      /\.tenantReadOnlyContent\s*\{[\s\S]*?border:\s*0;[\s\S]*?padding:\s*0;[\s\S]*?min-inline-size:\s*0;/,
+    )
   })
 
   it('annonserar Mer som aktuell sida när en samlad mobilflik är aktiv', () => {

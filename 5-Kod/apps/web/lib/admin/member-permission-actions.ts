@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { createClient } from '@/lib/supabase/server'
+import { requireActiveTenantMutation } from '@/lib/admin/tenant'
 
 export type MemberPermissionActionState = { success?: string; error?: string }
 
@@ -10,7 +11,8 @@ export async function saveMemberPermissions(
   _previous: MemberPermissionActionState,
   formData: FormData,
 ): Promise<MemberPermissionActionState> {
-  await requireOrganizationOwner('installningar')
+  const user = await requireOrganizationOwner('installningar')
+  await requireActiveTenantMutation(user, user.tenantId ?? '')
   const staffId = String(formData.get('staff_id') ?? '').trim()
   const operationalRole = String(formData.get('operational_role') ?? '')
   if (!/^[0-9a-f-]{36}$/i.test(staffId)) return { error: 'Ogiltig medarbetare.' }

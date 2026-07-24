@@ -1,6 +1,11 @@
 import 'server-only'
 import { requirePortal, type CurrentUser } from '@/lib/auth/session'
-import { getAdminTenant, loadAdminTenantById, type AdminTenant } from '@/lib/admin/tenant'
+import {
+  getAdminTenant,
+  loadAdminTenantById,
+  requireActiveTenantMutation,
+  type AdminTenant,
+} from '@/lib/admin/tenant'
 
 /**
  * Dual-guard authorization fence for MODULE actions (webshop/blogg/media/offert) —
@@ -31,9 +36,11 @@ export async function moduleCtx(
     if (!tenantId) return null
     const tenant = await loadAdminTenantById(tenantId)
     if (!tenant) return null
+    await requireActiveTenantMutation(user, tenant.id)
     return { user, tenant }
   }
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
+  await requireActiveTenantMutation(user, tenant.id)
   return { user, tenant }
 }

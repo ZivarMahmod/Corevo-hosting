@@ -3,7 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
-import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
+import {
+  getAdminTenant,
+  requireActiveTenantMutation,
+  type AdminTenant,
+} from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
 import { giftCardVoidable, giftStatusLabel, kronorToCents, type GiftCardStatus } from './types'
 import { commerceReleaseGate } from '@/lib/release/commerce'
@@ -22,6 +26,7 @@ async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | 
   const user = await requireAdminArea('presentkort')
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
+  await requireActiveTenantMutation(user, tenant.id)
   if (!commerceReleaseGate(tenant.id).presentkort) return null
   return { user, tenant }
 }

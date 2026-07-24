@@ -42,6 +42,25 @@
   letter-spacing: 0.005em;
 }
 
+.tenantReadOnlyBanner {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--c-warning) 38%, transparent);
+  border-radius: 10px;
+  background: var(--c-warning-bg);
+  color: var(--c-ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tenantReadOnlyContent {
+  width: 100%;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
 :global(:root[data-bo-theme='dark']) .shell[data-world='backoffice'] {
   --c-cream: #121210;
   --c-paper: #1c1c18;

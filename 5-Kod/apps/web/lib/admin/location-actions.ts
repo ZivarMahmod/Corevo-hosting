@@ -3,12 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdminArea } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
+import { requireActiveTenantMutation } from '@/lib/admin/tenant'
 
 export async function setAdminPrimaryLocation(
   locationId: string,
 ): Promise<{ success?: true; error?: string }> {
-  await requireAdminArea('oversikt')
+  const user = await requireAdminArea('oversikt')
   if (!locationId) return { error: 'Välj en plats.' }
+  await requireActiveTenantMutation(user, user.tenantId ?? '')
   const supabase = await createClient()
   const locationRpc = supabase as unknown as {
     rpc(

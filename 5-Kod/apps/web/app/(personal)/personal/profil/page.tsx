@@ -6,6 +6,7 @@ import { getMyWorkingHours, getMyTimeOff } from '@/lib/personal/schedule'
 import { fmtDateTime, WEEKDAYS_SV } from '@/lib/personal/format'
 import { getNotificationPreferences } from '@/lib/personal/notification-preferences'
 import { NotificationPreferences } from '@/components/personal/NotificationPreferences'
+import { DEFAULT_STAFF_NOUN } from '@/components/storefront/staff-noun'
 import styles from '@/components/personal/personal-pwa.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +33,7 @@ export default async function PersonalProfilePage() {
   const now = Date.now()
   const upcoming = absences.find((row) => new Date(row.endTs).getTime() >= now)
   const displayName = user.name || primary?.title || user.email?.split('@')[0] || 'Inloggad'
-  const roleLabel = user.roleLevel >= 6 ? 'ÄGARE' : 'FRISÖR'
+  const roleLabel = user.roleLevel >= 6 ? 'ÄGARE' : DEFAULT_STAFF_NOUN.toUpperCase()
 
   return (
     <section className={styles.profileScreen} data-accept="personal-profile">

@@ -2,7 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdminArea } from '@/lib/auth/session'
-import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
+import {
+  getAdminTenant,
+  requireActiveTenantMutation,
+  type AdminTenant,
+} from '@/lib/admin/tenant'
 import { createClient } from '@/lib/supabase/server'
 import { adminDaySlots, type AdminSlot } from '@/lib/admin/calendar-slots'
 import { seriesOccurrences, REPEAT_KINDS, type RepeatKind } from '@/lib/admin/block-series'
@@ -18,6 +22,14 @@ import {
  *  staff↔plats-fence och tenant-validering gäller därför oförändrat. */
 
 export type SlotsState = { slots?: AdminSlot[]; error?: string }
+
+async function calendarMutationCtx(): Promise<AdminTenant | null> {
+  const user = await requireAdminArea('bokningar')
+  const tenant = await getAdminTenant(user)
+  if (!tenant) return null
+  await requireActiveTenantMutation(user, tenant.id)
+  return tenant
+}
 
 export async function loadDaySlots(input: {
   serviceId: string
@@ -163,8 +175,7 @@ export async function moveBooking(input: {
   /** När flytten startades i en frånvarokö auditeras upplösningen atomiskt. */
   absenceTimeOffId?: string
 }): Promise<MoveBookingState> {
-  const user = await requireAdminArea('bokningar')
-  const tenant = await getAdminTenant(user)
+  const tenant = await calendarMutationCtx()
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
   if (
     !input.bookingId ||
@@ -354,8 +365,7 @@ export async function markBlockImpactHandled(input: {
   resolution: 'contacted' | 'rescheduled' | 'cancelled' | 'handled'
   note?: string
 }): Promise<BlockState> {
-  const user = await requireAdminArea('bokningar')
-  const tenant = await getAdminTenant(user)
+  const tenant = await calendarMutationCtx()
   if (!tenant || !input.timeOffId || !input.bookingId) return { error: 'Bokningen saknas.' }
   const supabase = await createClient()
   const impactRpc = supabase as unknown as {
@@ -408,8 +418,7 @@ export async function createBlock(input: {
   reason: string
   repeat?: RepeatKind
 }): Promise<BlockState> {
-  const user = await requireAdminArea('bokningar')
-  const tenant = await getAdminTenant(user)
+  const tenant = await calendarMutationCtx()
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
 
   const start = new Date(input.startIso)
@@ -493,8 +502,7 @@ export async function removeBlock(
   blockId: string,
   scope: 'en' | 'framat' = 'en',
 ): Promise<BlockState> {
-  const user = await requireAdminArea('bokningar')
-  const tenant = await getAdminTenant(user)
+  const tenant = await calendarMutationCtx()
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
   if (!blockId) return { error: 'Ogiltig blockering.' }
 
@@ -741,8 +749,7 @@ export async function createAdminBooking(
   _prev: CreateBookingState,
   fd: FormData,
 ): Promise<CreateBookingState> {
-  const user = await requireAdminArea('bokningar')
-  const tenant = await getAdminTenant(user)
+  const tenant = await calendarMutationCtx()
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
 
   const serviceId = String(fd.get('service') ?? '')
