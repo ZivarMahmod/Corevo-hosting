@@ -627,7 +627,7 @@ async function createFixtureViaStudio(page, platformBase, fixture) {
   await branches.first().click()
   await page.getByRole('button', { name: 'Nästa', exact: true }).click()
   await page.getByPlaceholder('t.ex. Klippoteket').fill(fixture.name)
-  await page.getByPlaceholder('klippoteket').fill(fixture.slug)
+  await page.getByPlaceholder('klippoteket', { exact: true }).fill(fixture.slug)
   await page.getByRole('button', { name: 'Nästa', exact: true }).click()
   await page.getByRole('button', { name: 'Nästa', exact: true }).click()
 
