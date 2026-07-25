@@ -108,6 +108,16 @@ describe('goal-72 S3 kunddetalj', () => {
     )
   })
 
+  it('keeps the tolerant primary-address lookup deterministic', () => {
+    const addressQuery = tenantLoader.match(
+      /supabase\s+\.from\('locations'\)\s+\.select\('address'\)[\s\S]*?\.maybeSingle\(\),/,
+    )?.[0]
+
+    expect(addressQuery).toMatch(
+      /\.select\('address'\)\s+\.eq\('tenant_id', tenantId\)\s+\.order\('is_primary', \{ ascending: false \}\)\s+\.order\('created_at', \{ ascending: true \}\)\s+\.order\('id', \{ ascending: true \}\)\s+\.limit\(1\)\s+\.maybeSingle\(\),/,
+    )
+  })
+
   it('degrades only the opening-hours card when its read fails', () => {
     expect(page).toMatch(
       /listLocationOpeningHours\(id, primaryLocation\.id\)[\s\S]{0,80}catch\(\(\) => null\)/,

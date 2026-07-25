@@ -92,6 +92,26 @@ function shouldProveLiveBlockers(tenantStatus, readiness) {
   return tenantStatus === 'provisioning' && readiness?.ready === false
 }
 
+function acceptanceMode(argv) {
+  return argv.includes('--smoke') ? 'smoke' : 'lock'
+}
+
+function assertFixtureAvailability(mode, fixtures) {
+  if (mode === 'smoke') return
+  const existing = fixtures.filter(Boolean).map((fixture) => fixture.slug)
+  assert.equal(
+    existing.length,
+    0,
+    `Lock kräver nya canonical fixtures; finns redan: ${existing.join(', ')}`,
+  )
+}
+
+function acceptanceSuccess(mode) {
+  return mode === 'smoke'
+    ? 'goal84: SMOKE/reuse OK — inte ett slutligt lockbevis'
+    : 'goal84: preview-browseracceptans LOCK OK'
+}
+
 async function startRelay() {
   const secret = randomBytes(32).toString('base64url')
   const captures = new Map()
@@ -229,6 +249,38 @@ async function startRelay() {
 
 async function runSelfTest() {
   const source = readFileSync(fileURLToPath(import.meta.url), 'utf8')
+  assert.equal(typeof acceptanceMode, 'function')
+  assert.equal(acceptanceMode([]), 'lock')
+  assert.equal(acceptanceMode(['--smoke']), 'smoke')
+
+  assert.equal(typeof assertFixtureAvailability, 'function')
+  const existingWebsite = { slug: WEBSITE_FIXTURE.slug }
+  const existingBooking = { slug: BOOKING_FIXTURE.slug }
+  assert.doesNotThrow(() => assertFixtureAvailability('lock', [null, null]))
+  assert.throws(
+    () => assertFixtureAvailability('lock', [existingWebsite, null]),
+    /goal84-webb-acceptans/,
+  )
+  assert.throws(
+    () => assertFixtureAvailability('lock', [null, existingBooking]),
+    /goal84-acceptans/,
+  )
+  assert.throws(
+    () => assertFixtureAvailability('lock', [existingWebsite, existingBooking]),
+    /goal84-webb-acceptans.*goal84-acceptans/,
+  )
+  assert.doesNotThrow(
+    () => assertFixtureAvailability('smoke', [existingWebsite, existingBooking]),
+  )
+
+  assert.equal(typeof acceptanceSuccess, 'function')
+  assert.equal(acceptanceSuccess('lock'), 'goal84: preview-browseracceptans LOCK OK')
+  assert.equal(
+    acceptanceSuccess('smoke'),
+    'goal84: SMOKE/reuse OK — inte ett slutligt lockbevis',
+  )
+  assert.notEqual(acceptanceSuccess('smoke'), acceptanceSuccess('lock'))
+
   assert(!source.includes('bootstrap' + 'Platform('), 'Goal 84 får inte skapa en tillfällig plattformsoperatör.')
   assert(!source.includes('ensureFixture' + 'Owner('), 'Ägaren måste komma från Studio-vägen.')
   assert(!source.includes('?? tenantRead.data?.find((row) => ' + "row.slug === 'demo')"), 'FreshCut får inte falla tillbaka till Demo.')
@@ -546,8 +598,9 @@ async function createFixtureViaStudio(page, platformBase, fixture) {
   return id
 }
 
-async function ensureFixture(client, page, platformBase, fixture) {
+async function ensureFixture(client, page, platformBase, fixture, mode) {
   let tenant = await tenantBySlug(client, fixture.slug)
+  assertFixtureAvailability(mode, [tenant])
   if (!tenant) {
     const id = await createFixtureViaStudio(page, platformBase, fixture)
     tenant = await tenantBySlug(client, fixture.slug)
@@ -1015,7 +1068,7 @@ async function freshCutSnapshot(client) {
   return { tenant, modules: modules.data ?? [], counts }
 }
 
-async function runAcceptance() {
+async function runAcceptance(mode) {
   const config = readConfig(process.env)
   const { createClient } = await import('@supabase/supabase-js')
   const { chromium } = await import('@playwright/test')
@@ -1032,6 +1085,10 @@ async function runAcceptance() {
     relay = await startRelay()
     app = await startNext(config, relay)
     identity = await loginSeededPlatform(createClient, config)
+    assertFixtureAvailability(mode, await Promise.all([
+      tenantBySlug(identity.platform, WEBSITE_FIXTURE.slug),
+      tenantBySlug(identity.platform, BOOKING_FIXTURE.slug),
+    ]))
     browser = await chromium.launch({ headless: true })
     const context = await browser.newContext({
       locale: 'sv-SE',
@@ -1047,6 +1104,7 @@ async function runAcceptance() {
       page,
       app.platform,
       WEBSITE_FIXTURE,
+      mode,
     )
     const websiteReadiness = await launchReadiness(identity.platform, website.id)
     assert.equal(websiteReadiness.booking_required, false)
@@ -1059,6 +1117,7 @@ async function runAcceptance() {
       page,
       app.platform,
       BOOKING_FIXTURE,
+      mode,
     )
     if (bookingTenant.status === 'provisioning') {
       const initialReadiness = await launchReadiness(identity.platform, bookingTenant.id)
@@ -1096,7 +1155,7 @@ async function runAcceptance() {
     await mobileOverflowSmoke(browser, context, app.platform, app.storefront, bookingTenant)
     assert.deepEqual(await freshCutSnapshot(identity.platform), baseline)
     await context.close()
-    console.log('goal84: preview-browseracceptans OK')
+    console.log(acceptanceSuccess(mode))
   } catch (error) {
     failed = true
     failure = error
@@ -1141,7 +1200,7 @@ async function runAcceptance() {
 
 try {
   if (process.argv.includes('--self-test')) await runSelfTest()
-  else await runAcceptance()
+  else await runAcceptance(acceptanceMode(process.argv.slice(2)))
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error)
   // PIN-koden får aldrig hamna i terminalen, inte ens om ett verktygsfel råkar bära den.

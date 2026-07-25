@@ -526,6 +526,8 @@ export async function getTenantDetail(
       .select('address')
       .eq('tenant_id', tenantId)
       .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
       .limit(1)
       .maybeSingle(),
     // Strict active primary location for the booking frame.

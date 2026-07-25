@@ -16,9 +16,6 @@ begin
     -- Run through the preview SQL/migration connection with no request JWT.
     -- Goal 82 deliberately blocks service-role writes to provisioning tenants;
     -- the trusted maintenance session is the existing seed/test seam.
-    perform pg_catalog.set_config('request.jwt.claim.role', '', true);
-    perform pg_catalog.set_config('request.jwt.claims', '{}', true);
-
     insert into public.tenants (slug, name, status)
     values ('goal84-readiness-runtime', 'Goal 84 readiness runtime', 'provisioning')
     returning id into v_tenant;
@@ -88,8 +85,6 @@ begin
     exception
       when sqlstate '55000' then null;
     end;
-    perform pg_catalog.set_config('request.jwt.claim.role', '', true);
-    perform pg_catalog.set_config('request.jwt.claims', '{}', true);
     insert into public.tenant_modules (tenant_id, module_key, state)
     values (v_tenant, 'booking', 'off');
     if 'working_hours' = any (private.tenant_launch_missing(v_tenant)) then
@@ -111,11 +106,11 @@ begin
        or (v_readiness ->> 'transitioned')::boolean is not true then
       raise exception 'goal84_explicit_booking_off_publish_failed';
     end if;
-    perform pg_catalog.set_config('request.jwt.claim.role', '', true);
-    perform pg_catalog.set_config('request.jwt.claims', '{}', true);
     update public.tenants set status = 'provisioning' where id = v_tenant;
     update public.tenant_modules set state = 'live'
     where tenant_id = v_tenant and module_key = 'booking';
+    perform pg_catalog.set_config('request.jwt.claim.role', '', true);
+    perform pg_catalog.set_config('request.jwt.claims', '{}', true);
     update public.location_opening_hours set weekday = 1
     where tenant_id = v_tenant and location_id = v_location;
 
@@ -198,11 +193,11 @@ begin
     if (v_readiness ->> 'transitioned')::boolean is not false then
       raise exception 'goal84_publish_not_idempotent';
     end if;
-    perform pg_catalog.set_config('request.jwt.claim.role', '', true);
-    perform pg_catalog.set_config('request.jwt.claims', '{}', true);
 
     -- The same private source must block both the RPC and a direct status bypass.
     update public.tenants set status = 'provisioning' where id = v_tenant;
+    perform pg_catalog.set_config('request.jwt.claim.role', '', true);
+    perform pg_catalog.set_config('request.jwt.claims', '{}', true);
     update public.location_opening_hours
        set source = 'staff_union', confirmed_at = null
      where tenant_id = v_tenant and location_id = v_location;
