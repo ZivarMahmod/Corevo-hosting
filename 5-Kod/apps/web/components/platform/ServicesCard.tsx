@@ -174,7 +174,7 @@ function ServiceRow({ tenantId, service, staff }: { tenantId: string; service: S
           </span>
           <span className={styles.svcSumMeta}>
             {service.duration_min} min
-            {staff.length > 0 ? ` · ${service.staffIds.length || 'alla'} i personalen` : ''}
+            {staff.length > 0 ? ` · Kopplad personal: ${service.staffIds.length}` : ''}
             {booked ? ` · ${service.bookingCount} bokning(ar)` : ''}
           </span>
         </span>

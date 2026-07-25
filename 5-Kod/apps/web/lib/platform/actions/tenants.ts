@@ -61,19 +61,19 @@ type Branding = {
 // ── Step 1: create tenant (transaktion via cascade-rollback) ────────────────────
 /**
  * Create a tenant + default settings + primary location + owner/staff roles, then
- * (best-effort) invite the salon_admin. "Transaction": tenants is the parent and
+ * invite the required salon_admin. "Transaction": tenants is the parent and
  * every child FKs it ON DELETE CASCADE, so any mid-flow failure deletes the tenant
  * and the partial children vanish with it. All DB writes use the authed platform
  * client (RLS bypass via is_platform_admin); only the auth-user invite needs the
- * service role — which degrades gracefully when SUPABASE_SERVICE_ROLE_KEY is unset.
+ * service role. A missing service role fails closed and rolls the tenant back.
  */
 export async function createTenant(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, scope } = await platformCtx()
 
   const name = String(fd.get('name') ?? '').trim()
   const slugCheck = validateSlug(String(fd.get('slug') ?? ''))
-  // Owner (design "Ägare & roll"): name is invite-metadata only (public.users has no
-  // name column — frozen schema), email triggers the magic-link invite when set.
+  // Owner (design "Ägare & roll"): name is invite-metadata only; email is required
+  // because no later owner-invite product path exists.
   const ownerName = String(fd.get('owner_name') ?? '').trim().slice(0, 120)
   const ownerEmail = String(fd.get('owner_email') ?? '').trim().toLowerCase()
   // Salongens stad (#14): real public column. Empty → leave null (never write '').
@@ -121,7 +121,8 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // egna ord visas i wizard-UI:t (terminology); detta är server-sidans säkra fallback.
   if (!name) return { error: 'Ange ett namn.' }
   if (!slugCheck.ok) return { error: slugCheck.reason }
-  if (ownerEmail && !EMAIL_RE.test(ownerEmail)) return { error: 'Ogiltig e-postadress för ägaren.' }
+  if (!ownerEmail) return { error: 'Ange ägarens e-postadress.' }
+  if (!EMAIL_RE.test(ownerEmail)) return { error: 'Ogiltig e-postadress för ägaren.' }
   if (!theme) return { error: 'Välj en av de 12 godkända mallarna.' }
   const slug = slugCheck.slug
 
@@ -290,23 +291,20 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     }
   }
 
-  // 5) invite the owner (salon_admin) via magic-link (service role; graceful degrade
-  //    when key absent). Owner name rides along as auth user_metadata.full_name
+  // 5) invite the required owner (salon_admin) via magic-link. A missing service
+  //    role fails closed below. Owner name rides along as auth user_metadata.full_name
   //    (public.users has no name column — frozen schema).
   let inviteNote = ''
-  // Orphan-salong guard (CHECKLISTA W0 #2): non-null = the owner was requested but
-  // couldn't be created+linked → roll the whole tenant back so no half-provisioned
-  // "ghost salon" lingers. Only set when ownerEmail was given; owner-less onboarding
-  // never trips it.
+  // Orphan-salong guard (CHECKLISTA W0 #2): if the required owner cannot be
+  // created+linked, roll the whole tenant back so no half-provisioned tenant lingers.
   let ownerFailed: string | null = null
   if (ownerEmail) {
     const svc = createServiceClient()
     if (!svc) {
-      // No service role → we literally cannot create the owner's auth account. Don't
-      // leave an un-ownable salon behind; roll back below. Survivable: onboard WITHOUT
-      // an owner email and invite later, or ops sets SUPABASE_SERVICE_ROLE_KEY.
+      // No service role → we cannot create the required owner's auth account. Don't
+      // leave an unownable tenant behind; roll back below.
       ownerFailed =
-        'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa kunden utan ägar-epost och bjud in ägaren senare'
+        'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops)'
     } else {
       // Carry the salon name into invite user_metadata so the Supabase invite
       // template can greet with the salon's name ({{ .Data.tenant_name }}) instead

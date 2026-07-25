@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useActionState, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createTenant, type ActionState } from '@/lib/platform/actions'
 import {
   BOOKING_VARIANTS,
@@ -312,13 +312,13 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
       <PageHead
         eyebrow="Plattform"
         title="Onboarda ny kund"
-        lede="Du skapar kunderna — inte publik self-service. Välj bransch först; fyll resten du vill, inget fält är tvingande."
+        lede="Du skapar kunderna — inte publik self-service. Välj bransch först; ägarens e-post krävs för att kunden ska kunna skapas."
       />
 
       <div style={{ marginBottom: 18 }}>
         <Callout tone="info">
-          Inga forcerade måste-fält. Skapandet är <b>atomiskt</b>: bransch + moduler + slug +
-          settings + ägarroll i ett svep.
+          Ägarens e-post är obligatorisk. Skapandet är <b>atomiskt</b>: bransch + moduler +
+          slug + settings + ägarkonto i ett svep.
         </Callout>
       </div>
 
@@ -688,6 +688,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                 hint="Får en magic-link-invite — bekräftar och sätter eget lösenord."
                 ph="agare@kund.se"
                 type="email"
+                required
                 value={ownerEmail}
                 onChange={setOwnerEmail}
               />
@@ -761,20 +762,24 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
 const fieldLabel = { fontSize: 13, fontWeight: 600, color: 'var(--c-ink)', fontFamily: 'var(--font-ui)' } as const
 
 function Field({
-  label, hint, ph, type = 'text', value, onChange,
+  label, hint, ph, type = 'text', required = false, value, onChange,
 }: {
   label: string
   hint?: string
   ph?: string
   type?: string
+  required?: boolean
   value: string
   onChange: (v: string) => void
 }) {
+  const id = useId()
   return (
     <div>
-      <label style={fieldLabel}>{label}</label>
+      <label htmlFor={id} style={fieldLabel}>{label}</label>
       <input
+        id={id}
         type={type}
+        required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={ph}

@@ -14,6 +14,9 @@ import { DomainPanel } from '@/components/platform/DomainPanel'
 import { GoogleReviewCard } from '@/components/platform/GoogleReviewCard'
 import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
+import { LocationOpeningHours } from '@/components/admin/LocationOpeningHours'
+import { listLocationOpeningHours } from '@/lib/admin/schedule-data'
+import { savePlatformLocationBookingSettings } from '@/lib/platform/actions/location-hours'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { CustomerAccountsCard } from '@/components/platform/CustomerAccountsCard'
 import { TenantLegalCard } from '@/components/platform/TenantLegalCard'
@@ -126,7 +129,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     launchReadiness,
     operative,
     copy,
+    primaryLocation,
   } = detail
+  const locationOpeningHours = primaryLocation
+    ? await listLocationOpeningHours(id, primaryLocation.id).catch(() => null)
+    : null
   const customizationLevel = deriveCustomizationLevel(
     (settings?.settings ?? null) as Record<string, unknown> | null,
     branding as unknown as Record<string, unknown>,
@@ -449,8 +456,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               </>
             ) : (
               <p className={styles.noteText}>
-                Ingen administratör inbjuden ännu. Bjud in en ägare via Onboarda kund, eller skapa
-                personal i Personal-fliken.
+                Ingen administratör är kopplad. Det här är äldre eller ofullständig data
+                som behöver rättas av drift innan kunden publiceras.
               </p>
             )}
           </Card>
@@ -494,6 +501,30 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
     Personal: (
       <div className={styles.maxCol}>
+        {!primaryLocation ? (
+          <div style={{ marginBottom: '2.25rem' }}>
+            <EmptyState
+              icon="building"
+              title="Ingen primärplats"
+              text="Kunden saknar en aktiv primärplats. Öppettider kan inte bekräftas förrän platsen är skapad och markerad som primär."
+            />
+          </div>
+        ) : locationOpeningHours === null ? (
+          <div style={{ marginBottom: '2.25rem' }}>
+            <EmptyState
+              icon="alert"
+              title="Öppettiderna kunde inte läsas"
+              text="Övriga delar av kundkortet fungerar fortfarande. Ladda om sidan och försök igen."
+            />
+          </div>
+        ) : (
+          <LocationOpeningHours
+            location={primaryLocation}
+            rows={locationOpeningHours}
+            tenantId={tenant.id}
+            action={savePlatformLocationBookingSettings}
+          />
+        )}
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Personal · {staffList.length}</h2>
@@ -501,8 +532,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           </div>
           <p className={styles.noteText} style={{ marginBottom: 14 }}>
             Hantera kundens personal direkt härifrån — redigera namn/titel, aktivera/inaktivera,
-            och sätt varje medarbetares veckoschema. Öppettiderna på storefronten härleds från
-            schemat. Ändringar slår igenom på bokningen direkt.
+            och sätt varje medarbetares veckoschema. Platsens öppettider och bokningsregler
+            bekräftas ovan. Ändringar slår igenom på bokningen direkt.
           </p>
           <PersonalCard
             tenantId={tenant.id}
@@ -513,8 +544,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         </Card>
         <p className={styles.noteText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon name="info" size={14} style={{ color: 'var(--c-info)', flex: 'none' }} />
-          Lägg till, redigera, schemalägg och ge inlogg åt personalen — allt härifrån. Öppettiderna
-          på storefronten härleds ur veckoschemana.
+          Lägg till, redigera, schemalägg och ge inlogg åt personalen — allt härifrån.
         </p>
       </div>
     ),

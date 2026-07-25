@@ -25,6 +25,7 @@ export type PlatformAuditAction =
   | 'tenant.staff_update' // super-admin edits a staff member (title/active) on a chosen tenant
   | 'tenant.staff_remove' // super-admin soft-removes (active=false) a staff member on a chosen tenant
   | 'tenant.staff_schedule' // super-admin sets a staff member's weekly working_hours on a chosen tenant
+  | 'tenant.location_hours_save' // super-admin confirms a location's booking frame
   | 'tenant.service_create' // super-admin adds a service to a chosen tenant (ongoing services management)
   | 'tenant.service_update' // super-admin edits a service (name/price/duration/active) on a chosen tenant
   | 'tenant.service_delete' // super-admin deletes a service on a chosen tenant

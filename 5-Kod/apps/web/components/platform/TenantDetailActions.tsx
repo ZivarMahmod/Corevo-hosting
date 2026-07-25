@@ -36,7 +36,7 @@ export function TenantHeaderActions({
 
   function resetPassword() {
     if (!salonAdminEmail) {
-      notify('Ingen administratör inbjuden ännu — bjud in en ägare först.', 'warning')
+      notify('Administratör saknas — lösenordsåterställning kan inte skickas.', 'warning')
       return
     }
     if (!serviceRoleAvailable) {

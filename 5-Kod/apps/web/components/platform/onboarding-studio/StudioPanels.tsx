@@ -341,7 +341,7 @@ function PanelTema({ cfg, dispatch, presets }: PanelProps) {
 
 /** modval — W1-REAL UI + W3 booking-variant sub-choice. Real catalog × preset state
  *  from modulesForVertical; rec/opt grouping derived from defaultState!=='off' (§10.7);
- *  booking restricted to live/paused; everything else off/draft/live/paused. setModule
+ *  booking supports live/paused/off; everything else off/draft/live/paused. setModule
  *  writes cfg.moduleStates. The booking row also carries the bokningsvariant picker
  *  (W3, form-parity → setVariant → cfg.variant). */
 function PanelModval({ cfg, dispatch, presets }: PanelProps) {
@@ -353,7 +353,7 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
   const renderRow = (moduleKey: string, name: string) => {
     const isBooking = moduleKey === 'booking'
     const cur = resolveModuleState(cfg, moduleKey, presets)
-    const choices: ModuleState[] = isBooking ? ['live', 'paused'] : [...MODULE_STATES]
+    const choices: ModuleState[] = isBooking ? ['live', 'paused', 'off'] : [...MODULE_STATES]
     return (
       <div
         key={moduleKey}
@@ -374,13 +374,16 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
           </span>
         </div>
         <ModuleStatePills value={cur} choices={choices} onChange={(state) => dispatch({ type: 'setModule', key: moduleKey, state })} />
-        <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '8px 0 0' }}>{MODULE_STATE_HINTS[cur]}</p>
+        <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
+          {MODULE_STATE_HINTS[cur]}
+          {isBooking && cur === 'off' ? ' Kundens Boka-knappar kan använda en extern länk som sparas i admin.' : ''}
+        </p>
         {/* booking.variant — operator picks how the booking presents. FORM-PARITY port
             of CreateTenantForm's booking sub-choice (the design data defines BOOKING_VARIANTS
             but renders NO picker; the shipped form does, so the studio must not regress it).
             drawer/inline are presentation-deferred (readBookingMode → wizard) but still
             honest picks. → setVariant → buildCreateTenantFormData emits cfg.variant. */}
-        {isBooking ? (
+        {isBooking && cur !== 'off' ? (
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--c-line)' }}>
             <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--c-ink)', marginBottom: 8 }}>
               Bokningsvariant — hur bokningen presenteras (99 % sker på mobil)
@@ -428,7 +431,7 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
   return (
     <Panel
       title="Moduler"
-      sub="Förvalda enligt branschen — redan rätt för de flesta. Ändra fritt om kunden behöver något extra. Bokning är alltid minst live."
+      sub="Förvalda enligt branschen — redan rätt för de flesta. Ändra fritt om kunden behöver något extra."
     >
       <div style={{ ...groupEyebrow, color: 'var(--c-gold-600)', marginBottom: 10 }}>Branschens förval</div>
       {rec.length === 0 ? (
@@ -467,10 +470,11 @@ function PanelAgare({ cfg, dispatch }: PanelProps) {
         <Field
           label="Ägarens e-post"
           type="email"
+          required
           ph="agare@foretag.se"
           value={cfg.ownerEmail}
           onChange={(v) => dispatch({ type: 'setOwnerEmail', value: v })}
-          hint="Får en engångs magic-link-invite vid lansering."
+          hint="Får en engångs magic-link-invite när kunden skapas."
         />
       </div>
     </Panel>
@@ -489,17 +493,17 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
     { label: 'Namn & subdomän', done: !!cfg.name.trim() && !!cfg.slug },
     { label: 'Temamall', done: !!cfg.theme },
     { label: `Tjänster (${namedServices.length} tillagda — läggs i adminen)`, done: namedServices.length > 0, optional: true },
-    { label: 'Ägare inbjuds via mail', done: !!cfg.ownerEmail.trim() },
+    { label: 'Ägare inbjuds via e-post', done: !!cfg.ownerEmail.trim() },
   ]
-  // createTenant's only HARD blockers are name + a valid slug (actions.ts). Gate on those
-  // + a theme so the gold button never fires a guaranteed-fail submit. booking is force-
-  // floored to live in buildCreateTenantFormData, so we don't depend on the catalog read
+  // Mirror createTenant's owner/name/slug requirements + a theme so the gold button
+  // never fires a guaranteed-fail submit. Unset booking
+  // floors to live in buildCreateTenantFormData, so we don't depend on the catalog read
   // (which fail-softs to [] and would otherwise permanently disable Lansera).
   // Tjänststeget togs bort 2026-07-11 (onboardingen ska vara superlätt att komma
   // igång — tjänster läggs i kundens admin EFTER lansering). Grinden krävde ändå
   // en namngiven tjänst men inget steg fanns att lägga den i → Lansera var
   // permanent disabled. Kravet är nu rådgivande (checklistan visar antalet), och
-  // createTenants riktiga hard-blockers (namn + giltig slug + tema) gatar knappen.
+  // createTenants riktiga hard-blockers (namn + giltig slug + tema + ägare) gatar knappen.
   const ready =
     !!cfg.name.trim()
     && !!cfg.slug

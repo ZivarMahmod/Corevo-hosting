@@ -411,6 +411,14 @@ export type TenantDetail = {
   openingHours: { day: string; time: string }[] | null
   /** Primär location-adress (footern på storefronten) — super-admin kontakt-kort. */
   primaryAddress: string | null
+  /** Primärplatsens bokningsram — används av superadminens Personal-flik. */
+  primaryLocation: {
+    id: string
+    name: string
+    slotStepMin: number
+    minNoticeMin: number
+    maxAdvanceDays: number
+  } | null
   /** Verifierad egen domän, primär först. null → slug.corevo.se. */
   primaryDomain: string | null
 }
@@ -465,7 +473,7 @@ export async function getTenantDetail(
   if (tenantErr) throw new Error(`getTenantDetail: ${tenantErr.message}`)
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, locationRes, domainRes, launchReadiness] = await Promise.all([
+  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, addressRes, locationRes, domainRes, launchReadiness] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     // Editable service rows for the super-admin services surface. All services (active
@@ -512,13 +520,23 @@ export async function getTenantDetail(
     // ponytail: capped at 5000 newest — a service with ANY booking still counts >0, which is
     // all the delete/archive decision needs; upgrade = 0054 service_booking_counts() RPC.
     supabase.from('bookings').select('service_id').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(5000),
-    // Primary location address (footern på storefronten) — super-admin kontakt-kort.
+    // Address stays readable from legacy/inactive location rows.
     supabase
       .from('locations')
       .select('address')
       .eq('tenant_id', tenantId)
       .order('is_primary', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    // Strict active primary location for the booking frame.
+    supabase
+      .from('locations')
+      .select('id, name, slot_step_min, min_notice_min, max_advance_days')
+      .eq('tenant_id', tenantId)
+      .eq('active', true)
+      .eq('is_primary', true)
       .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
       .limit(1)
       .maybeSingle(),
     supabase
@@ -540,8 +558,31 @@ export async function getTenantDetail(
     bookings: exactCount('bookings', bookingsRes),
     completed: exactCount('completed bookings', completedRes),
   }
-  const locAddrRaw = (locationRes.data as { address?: unknown } | null)?.address
+  if (addressRes.error) {
+    throw new Error(`getTenantDetail primary address: ${addressRes.error.message}`)
+  }
+  if (locationRes.error) {
+    throw new Error(`getTenantDetail primary location: ${locationRes.error.message}`)
+  }
+  const locAddrRaw = (addressRes.data as { address?: unknown } | null)?.address
   const primaryAddress = typeof locAddrRaw === 'string' && locAddrRaw.trim() ? locAddrRaw.trim() : null
+  const locationRaw = locationRes.data as {
+    id?: unknown
+    name?: unknown
+    slot_step_min?: unknown
+    min_notice_min?: unknown
+    max_advance_days?: unknown
+  } | null
+  const primaryLocation =
+    typeof locationRaw?.id === 'string' && typeof locationRaw.name === 'string'
+      ? {
+          id: locationRaw.id,
+          name: locationRaw.name,
+          slotStepMin: typeof locationRaw.slot_step_min === 'number' ? locationRaw.slot_step_min : 15,
+          minNoticeMin: typeof locationRaw.min_notice_min === 'number' ? locationRaw.min_notice_min : 0,
+          maxAdvanceDays: typeof locationRaw.max_advance_days === 'number' ? locationRaw.max_advance_days : 365,
+        }
+      : null
   const domainRaw = (domainRes.data as { domain?: unknown } | null)?.domain
   const primaryDomain = typeof domainRaw === 'string' && domainRaw.trim() ? domainRaw.trim() : null
 
@@ -704,6 +745,7 @@ export async function getTenantDetail(
     social,
     openingHours: openingHours && openingHours.length > 0 ? openingHours : null,
     primaryAddress,
+    primaryLocation,
     primaryDomain,
   }
 }

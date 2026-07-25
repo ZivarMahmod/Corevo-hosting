@@ -6,10 +6,12 @@ import { getTenantDetail } from '@/lib/platform/tenants'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const page = fs.readFileSync(path.join(HERE, 'page.tsx'), 'utf8')
+const tenantLoader = fs.readFileSync(path.join(process.cwd(), 'lib/platform/tenants.ts'), 'utf8')
 
 type CountMetric = 'active services' | 'active staff' | 'working hours' | 'bookings' | 'completed bookings'
+type FailingRead = CountMetric | 'primary address' | 'primary location'
 
-function detailClient(failingMetric: CountMetric) {
+function detailClient(failingRead: FailingRead | null, legacyAddress: string | null = null) {
   return {
     from(table: string) {
       const filters = new Map<string, unknown>()
@@ -28,7 +30,7 @@ function detailClient(failingMetric: CountMetric) {
 
       const result = () => {
         const countMetric = metric()
-        if (countMetric === failingMetric) {
+        if (countMetric === failingRead) {
           return { data: null, count: null, error: { message: `boom ${countMetric}` } }
         }
         return { data: [], count: isHeadCount ? 0 : null, error: null }
@@ -65,6 +67,25 @@ function detailClient(failingMetric: CountMetric) {
               error: null,
             })
           }
+          if (
+            table === 'locations'
+            && filters.get('active') === true
+            && failingRead === 'primary location'
+          ) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'boom primary location' },
+            })
+          }
+          if (table === 'locations' && !filters.has('active') && failingRead === 'primary address') {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'boom primary address' },
+            })
+          }
+          if (table === 'locations' && !filters.has('active') && legacyAddress) {
+            return Promise.resolve({ data: { address: legacyAddress }, error: null })
+          }
           return Promise.resolve({ data: null, error: null })
         },
         then(resolve: (value: ReturnType<typeof result>) => unknown) {
@@ -78,6 +99,30 @@ function detailClient(failingMetric: CountMetric) {
 }
 
 describe('goal-72 S3 kunddetalj', () => {
+  it('wires the primary location booking frame into the platform Personal tab', () => {
+    expect(page).toContain('LocationOpeningHours')
+    expect(page).toContain('savePlatformLocationBookingSettings')
+    expect(page).toContain('primaryLocation')
+    expect(tenantLoader).toMatch(
+      /from\('locations'\)[\s\S]{0,300}eq\('tenant_id', tenantId\)[\s\S]{0,120}eq\('active', true\)[\s\S]{0,120}eq\('is_primary', true\)[\s\S]{0,120}order\('created_at', \{ ascending: true \}\)[\s\S]{0,120}order\('id', \{ ascending: true \}\)[\s\S]{0,80}limit\(1\)/,
+    )
+  })
+
+  it('degrades only the opening-hours card when its read fails', () => {
+    expect(page).toMatch(
+      /listLocationOpeningHours\(id, primaryLocation\.id\)[\s\S]{0,80}catch\(\(\) => null\)/,
+    )
+    expect(page).toContain('Öppettiderna kunde inte läsas')
+    expect(page).toContain('Övriga delar av kundkortet fungerar fortfarande.')
+    expect(page).toContain('<PersonalCard')
+  })
+
+  it('shows an honest empty state when the customer has no primary location', () => {
+    expect(page).toContain('Ingen primärplats')
+    expect(page).toContain('Kunden saknar en aktiv primärplats.')
+    expect(page).toMatch(/!primaryLocation[\s\S]{0,500}locationOpeningHours === null/)
+  })
+
   it('läser uteblivna exakt och tenant-scopat på servern', () => {
     expect(page).toMatch(
       /from\('bookings'\)[\s\S]{0,180}select\('id', \{ count: 'exact', head: true \}\)[\s\S]{0,120}eq\('tenant_id', id\)[\s\S]{0,80}eq\('status', 'no_show'\)/,
@@ -109,5 +154,33 @@ describe('goal-72 S3 kunddetalj', () => {
     await expect(getTenantDetail('tenant-1', detailClient(metric) as never)).rejects.toThrow(
       `boom ${metric}`,
     )
+  })
+
+  it('kastar vid DB-fel för primärplatsen i stället för att visa ett falskt tomläge', async () => {
+    await expect(
+      getTenantDetail('tenant-1', detailClient('primary location') as never),
+    ).rejects.toThrow('boom primary location')
+  })
+
+  it('behåller ett ärligt tomläge när primärplatsläsningen lyckas utan träff', async () => {
+    const detail = await getTenantDetail('tenant-1', detailClient(null) as never)
+
+    expect(detail?.primaryLocation).toBeNull()
+  })
+
+  it('visar adress från en äldre platsrad utan att kalla den bokningsbar primärplats', async () => {
+    const detail = await getTenantDetail(
+      'tenant-1',
+      detailClient(null, '  Arvsgatan 7  ') as never,
+    )
+
+    expect(detail?.primaryAddress).toBe('Arvsgatan 7')
+    expect(detail?.primaryLocation).toBeNull()
+  })
+
+  it('kastar vid DB-fel för platsadressen i stället för att visa en falskt tom adress', async () => {
+    await expect(
+      getTenantDetail('tenant-1', detailClient('primary address') as never),
+    ).rejects.toThrow('boom primary address')
   })
 })

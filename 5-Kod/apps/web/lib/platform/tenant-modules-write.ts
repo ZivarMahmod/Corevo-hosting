@@ -75,16 +75,16 @@ export function normalizeSelections(selections: ModuleSelection[]): ModuleSelect
 /**
  * Validate the chosen module keys against the real `modules` catalog (FK target).
  * Returns only the selections whose key exists, so a stale/typo'd key from the client
- * can never 23503 the whole insert. Returns [] when the catalog read fails (caller
- * then writes nothing — booking is re-added by normalizeSelections upstream anyway).
+ * can never 23503 the whole insert. A failed or incomplete catalog must abort
+ * onboarding; otherwise an explicit booking=off could silently become missing=live.
  */
 async function filterToCatalog(
   supabase: PlatformClient,
   selections: ModuleSelection[],
-): Promise<ModuleSelection[]> {
+): Promise<ModuleSelection[] | null> {
   if (selections.length === 0) return []
   const { data, error } = await supabase.from('modules').select('key')
-  if (error || !data) return []
+  if (error || !data) return null
   const known = new Set(data.map((r) => r.key))
   return selections.filter((s) => known.has(s.moduleKey))
 }
@@ -120,7 +120,9 @@ export async function writeTenantVerticalAndModules(
   //    fence to the catalog so no unknown key 23503s the insert.
   const normalized = normalizeSelections(selections)
   const valid = await filterToCatalog(supabase, normalized)
-  if (valid.length === 0) return { ok: true } // nothing to write (shouldn't happen — booking is always present)
+  if (!valid || !valid.some((selection) => selection.moduleKey === 'booking')) {
+    return { ok: false }
+  }
 
   const rows = valid.map((s) => ({
     tenant_id: tenantId,

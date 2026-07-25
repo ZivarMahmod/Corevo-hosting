@@ -28,7 +28,7 @@ export type StepId =
   | 'agare'
   | 'live'
 
-/** One step in a phase. `req:true` = required before Lansera (branch/namn/tema/live).
+/** One step in a phase. `req:true` = required before Skapa (branch/namn/tema/ägare/live).
  *  `hint` is verbatim design data (additive over the documented {id,label,icon,req});
  *  it is NOT rendered in the W1 rail but kept so a later wave can surface it. */
 export type StudioStep = {
@@ -77,7 +77,7 @@ export const PHASES: StudioPhase[] = [
     name: 'Klart',
     sub: 'Ägare, sista koll, live',
     steps: [
-      { id: 'agare', label: 'Ägare & inbjudan', icon: 'user', req: false, hint: 'Magic-link → eget lösen' },
+      { id: 'agare', label: 'Ägare & inbjudan', icon: 'user', req: true, hint: 'Magic-link → eget lösen' },
       { id: 'live', label: 'Granska & skapa', icon: 'rocket', req: true, hint: 'Skapa under konfiguration' },
     ],
   },

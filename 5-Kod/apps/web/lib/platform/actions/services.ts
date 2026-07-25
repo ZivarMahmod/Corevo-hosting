@@ -261,7 +261,7 @@ export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<Ac
     success:
       staffIds.length > 0
         ? `${staffIds.length} i personalen kan utföra tjänsten.`
-        : 'Ingen personal kopplad — alla kan utföra tjänsten (ingen begränsning).',
+        : 'Ingen personal är kopplad till tjänsten.',
   }
 }
 

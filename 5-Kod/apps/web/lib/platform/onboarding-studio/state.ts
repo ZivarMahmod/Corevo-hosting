@@ -113,15 +113,15 @@ export type PanelProps = {
 
 /**
  * Translate a StudioCfg into the exact FormData `createTenant` expects (build-contract
- * §6). Mirrors CreateTenantForm's hidden-input shape; createTenant's only hard
- * requirements are `name` + a valid `slug`, the rest is optional/defaulted.
+ * §6). Mirrors CreateTenantForm's hidden-input shape; createTenant requires `name`,
+ * a valid `slug`, a selectable theme and `owner_email`.
  *
  * - `vertical_id`  emitted always (`branch ?? ''`); server coerces empty → null.
  * - `theme`        one of the 5 lowercase storefront keys, else server → 'leander'.
  * - `booking_variant` cfg.variant (operator-picked in the booking module row, W3;
  *                  defaults to 'wizard'). createTenant re-validates via isBookingVariant.
- * - `modules`      JSON {key:state} of cfg.moduleStates with booking floored to
- *                  live/paused (mirrors moduleSubmitMap); off-keys allowed (server drops).
+ * - `modules`      JSON {key:state} of cfg.moduleStates with unset booking floored to
+ *                  live (mirrors moduleSubmitMap); explicit off-keys are preserved.
  * - `color_accent` ONLY when accent !== '' (omitted otherwise — theme owns palette).
  * - `services`     JSON [{name, price_cents}] (W4); kr→öre via krToOre, empty names
  *                  dropped. createTenant re-validates (parseServiceInputs) + inserts.
@@ -139,7 +139,7 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   fd.set('booking_variant', cfg.variant)
 
   const modules: Record<string, ModuleState> = { ...cfg.moduleStates }
-  modules.booking = modules.booking === 'paused' ? 'paused' : 'live'
+  modules.booking = modules.booking === 'paused' || modules.booking === 'off' ? modules.booking : 'live'
   fd.set('modules', JSON.stringify(modules))
 
   if (cfg.accent !== '') fd.set('color_accent', cfg.accent)

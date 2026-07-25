@@ -27,15 +27,33 @@ arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Go
 11. **Goal 84 — komplett onboarding till första bokning**
     Bevisa create → configure → publish → nåbar storefront → första verifierade
     bokning mot Supabase-preview.
-12. **Goal 85 — fail-closed lokal releaseövning**
+12. **Goal 87 — modulstate, readiness och DB-säkerhet**
+    Lås dagens modulstates, defaults, publika grindar, readiness, RLS och
+    katalogkontrakt.
+13. **Goal 88 — en kundarbetsyta och en sidmotor**
+    Samla superadmin och kundadmin på SidaStudioV2/revisioner och gör varje
+    verklig modul nåbar från rätt yta.
+14. **Goal 89 — storefront, preview och mallslots**
+    Låt preview och publikt använda samma modulägda loaders i mallägda fasta
+    slots, med säkert mallbyte.
+15. **Goal 90 — innehållsmoduler**
+    Lås blogg, kurser och galleri end-to-end.
+16. **Goal 91 — presentkort och lojalitet**
+    Lås atomisk inlösen, audit och capability-grindar.
+17. **Goal 92 — media, offert och webshop**
+    Verkställ mediakvot och lås dagens offert- och commerceflöden.
+18. **Goal 93 — katalog och mekanisk mallacceptans**
+    Synka modul-/vertikalkatalogen och mekaniskt verifiera de tolv
+    Corevo-mallarna.
+19. **Goal 85 — fail-closed lokal releaseövning**
     Lås migrations-, säkerhets-, host-, scheduler-, rollback- och
     deploykontrakt utan att deploya produktion.
-13. **Goal 86 — en gemensam localhostacceptans**
+20. **Goal 86 — en gemensam localhostacceptans**
     En kort användarmatris för Goal 74–85. Zivar testar en gång; godkända delar
     fryses och inga nya funktioner läggs till före samlad release.
 
 Full exekveringsplan finns i
-`1-Planering/19-lanseringsprogram/08-goal81-86-exekveringsplan.md`.
+`1-Planering/22-modulprogram/01-lokal-fardigstallandeplan.md`.
 
 ## Samlad release efter Goal 86
 
@@ -46,7 +64,8 @@ releasebevis, inte skäl att hålla lokalt färdig produktkod öppen.
 ## Regler
 
 - En aktiv byggdel åt gången: beslut → test → kod → verifiering → lokal låsning.
-- Inget Goal 83–86 öppnas som aktiv goal-fil innan föregående del är låst.
+- Endast pågående byggdel har en aktiv goal-fil; senare mål beskrivs i
+  färdigställandeplanen tills föregående del är låst.
 - `corevo.se`-roten är POS-/plattformsyta; tenantstorefront använder
   `*.boka.corevo.se`.
 - Ingen parallell motor, kö, roll-, person- eller statusmodell byggs.

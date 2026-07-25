@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   parseModuleSelections,
   normalizeSelections,
+  writeTenantVerticalAndModules,
   type ModuleSelection,
 } from '@/lib/platform/tenant-modules-write'
 
@@ -78,5 +79,27 @@ describe('normalizeSelections — safe booking default + explicit website-only',
 
   it('always includes booking even from an empty selection', () => {
     expect(normalizeSelections([])).toEqual([{ moduleKey: 'booking', state: 'live' }])
+  })
+})
+
+describe('writeTenantVerticalAndModules — catalog fence', () => {
+  it.each([
+    { data: null, error: { message: 'catalog unavailable' } },
+    { data: [], error: null },
+  ])('fails closed when booking cannot be validated against the module catalog', async (catalog) => {
+    const insert = vi.fn()
+    const supabase = {
+      from: vi.fn((table: string) => table === 'modules'
+        ? { select: vi.fn().mockResolvedValue(catalog) }
+        : { insert }),
+    }
+
+    await expect(writeTenantVerticalAndModules(
+      supabase as never,
+      'tenant-a',
+      null,
+      [{ moduleKey: 'booking', state: 'off' }],
+    )).resolves.toEqual({ ok: false })
+    expect(insert).not.toHaveBeenCalled()
   })
 })
