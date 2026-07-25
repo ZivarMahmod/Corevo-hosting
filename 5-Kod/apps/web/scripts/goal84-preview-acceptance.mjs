@@ -591,7 +591,7 @@ async function loginSeededPlatform(createClient, config) {
 async function loginPlatform(page, base, identity) {
   await page.goto(`${base}/login`)
   await page.getByLabel('E-post').fill(identity.email)
-  await page.getByLabel('Lösenord').fill(identity.password)
+  await page.locator('input[name="password"]').fill(identity.password)
   await Promise.all([
     page.waitForURL((url) => url.pathname !== '/login', { timeout: 30_000 }),
     page.getByRole('button', { name: 'Logga in' }).click(),
