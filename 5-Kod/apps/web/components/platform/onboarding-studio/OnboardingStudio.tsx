@@ -15,6 +15,7 @@
 // Inline-styled against the [data-world="backoffice"] --c-* tokens (project
 // convention; no *.module.css). Flag-OFF (CreateTenantForm) is never touched.
 import {
+  startTransition,
   useActionState,
   useEffect,
   useMemo,
@@ -112,7 +113,7 @@ function StudioMachine({
   // Lansera → build the FormData and fire the proven createTenant action. The success
   // effect above flips us to the result stage; an error lands in result.error (below).
   const onLaunch = () => {
-    formAction(buildCreateTenantFormData(cfg))
+    startTransition(() => formAction(buildCreateTenantFormData(cfg)))
   }
 
   // Bransch-NAMNET (cfg bär bara nyckeln) → preview/resultat-attrappernas placeholder-
