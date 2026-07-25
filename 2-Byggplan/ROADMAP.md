@@ -14,19 +14,15 @@ alla lokala byggdelar och Zivars gemensamma localhostacceptans är klara.
 7. **Goal 80 — superadminens kundarbetsyta**
 8. **Goal 81 — bokningsmotorns fulla variantmatris**
 9. **Goal 82 — personaladmin och tenantlivscykel**
+10. **Goal 83 — tenantens regionala grundkontrakt**
+11. **Goal 84 — komplett onboarding till första bokning**
 
 Den samlade branchen är `codex/launch-inventory-customer-design`. Goal 74 är
 arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Goal
-77–82 är verifierade lokalt enligt respektive klar-fil.
+77–84 är verifierade lokalt enligt respektive klar-fil.
 
 ## Nästa byggordning
 
-10. **Goal 83 — tenantens regionala grundkontrakt**
-    Gör locale, land, valuta, tidszon och telefonformat serverägda. Svensk
-    lansering förblir enda releasescope; inget andra land byggs.
-11. **Goal 84 — komplett onboarding till första bokning**
-    Bevisa create → configure → publish → nåbar storefront → första verifierade
-    bokning mot Supabase-preview.
 12. **Goal 87 — modulstate, readiness och DB-säkerhet**
     Lås dagens modulstates, defaults, publika grindar, readiness, RLS och
     katalogkontrakt.

@@ -250,7 +250,7 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
             <input
               value={cfg.slug}
               onChange={(e) =>
-                dispatch({ type: 'setSlug', value: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })
+                dispatch({ type: 'setSlug', value: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })
               }
               placeholder="klippoteket"
               autoCapitalize="none"

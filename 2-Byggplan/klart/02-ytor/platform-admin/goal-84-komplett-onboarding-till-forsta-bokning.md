@@ -1,5 +1,8 @@
 # Goal 84 — komplett onboarding till första bokning
 
+Status: **VERIFIERAT KLAR 2026-07-25** på
+`codex/launch-inventory-customer-design`.
+
 ## Mål
 
 Bevisa en sammanhängande previewkedja från superadminens nya kund till en
@@ -30,9 +33,10 @@ FreshCut och externa transportörer får inte ändras.
   kundarbetsytan.
 - Primärplatsen ska väljas deterministiskt med samma ordning i TypeScript och
   SQL även om gammal data har flera `is_primary=true`.
-- Slå ihop de oapplicerade förslagen 0132 och 0133 till en additiv migration.
-  Migrationen ersätter privata readiness-källan och de två publika funktioner
-  som annars skulle rapportera ett annat `booking_required`.
+- Migration `0132` ersätter readiness-källan och de två publika funktioner som
+  annars skulle rapportera ett annat `booking_required`.
+- Migration `0133` bryter rolläsningens RLS-rekursion och låter endast en
+  behörig tenantskopad global operatör bekräfta platsöppettider.
 - Behåll readiness-nyckeln `working_hours`; ingen ny UI-state behövs.
 - Platformactionen ska använda `platformCtx`, `assertPlatformTenantAccess` och
   den befintliga RPC:ns DB-grind.
@@ -91,4 +95,17 @@ FreshCut och externa transportörer får inte ändras.
 5. Full `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`.
 6. Oberoende spec- och kodgranskning.
 
-Goal 84 flyttas till `2-Byggplan/klart/` först när samtliga bevis är gröna.
+## Låsbevis
+
+- Färsk browseracceptans från tomma fixtures:
+  `goal84: preview-browseracceptans LOCK OK`.
+- SQL-runtime för `0132` och `0133`: grön på
+  `localhost-acceptance` (`cwnhpesrgolflkmyjbrm`).
+- Full testsvit: 362 filer / 2 819 test.
+- Typecheck, lint utan fel och produktionsbuild: gröna.
+- Security/performance advisors: 0 error.
+- Tillfällig testmejlhook borttagen och normal rate limit återställd.
+- FreshCut oförändrad; produktion orörd.
+
+Fullt protokoll:
+`6-Testing/goal-84-komplett-onboarding-till-forsta-bokning-testlista.md`.

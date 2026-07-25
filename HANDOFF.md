@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-24.
+Senast uppdaterad: 2026-07-25.
 
 ## Läsordning
 
@@ -17,13 +17,25 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
-- Den samlade localhostacceptansen genom Goal 83 är körd:
-  `354` testfiler och `2 769` tester passerar tillsammans. Goal 74–83 är lokalt
+- Den samlade localhostacceptansen genom Goal 84 är körd:
+  `362` testfiler och `2 819` tester passerar tillsammans. Goal 74–84 är lokalt
   låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
   tillsammans med Zivar. Protokoll finns i
-  `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81–83:s
+  `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81–84:s
   testlistor i `6-Testing/`. Produktion är orörd.
+- Goal 84 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Ett färskt browserlås från tomma
+  fixtures skapade och publicerade både webbplatsläge och komplett
+  bokningsgrund, genomförde en fyrsiffrigt PIN-verifierad bokning, avbokade den
+  genom produktflödet och avslutade
+  `goal84: preview-browseracceptans LOCK OK`. Migration `0133` bryter
+  ägarprofilens RLS-rekursion och tillåter endast behörig tenantskopad global
+  operatör att bekräfta öppettider. Runtimeprov, advisors, mobilsmoke, full
+  testsvit, typecheck, lint/build och oberoende säkerhets-/selectorgranskning är
+  gröna. Testmejlhooken är borttagen, normal rate limit återställd, FreshCut är
+  oförändrad och produktion orörd. Protokoll:
+  `6-Testing/goal-84-komplett-onboarding-till-forsta-bokning-testlista.md`.
 - Goal 83 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. `tenant_settings` äger nu
   `SE`/`sv-SE`/`SEK` och en portabel IANA-standardtidszon, medan platsens
@@ -204,10 +216,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-74–83 är lokalt låsta och den samlade kodacceptansen är grön. Goal-83
-verifierade det svenska tenantkontraktet för land, språk, valuta, tidszon och
-telefon genom bokning, notifiering, onboarding och portal. Nästa byggdel är
-Goal-84: komplett onboarding till första bokning.
+Goal-74–84 är lokalt låsta och den samlade kodacceptansen är grön. Goal-84
+bevisade hela previewkedjan från ny kund till publicerad storefront, verifierad
+fyrasiffrig PIN-bokning och produktavbokning. Nästa byggdel enligt roadmap är
+Goal-87, men den är uttryckligen inte startad i denna session.
 Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
@@ -215,13 +227,12 @@ Den godkända ordningen och lokala låsgränsen för Goal 81–86 finns i
 `1-Planering/19-lanseringsprogram/08-goal81-86-exekveringsplan.md`.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
-innehåller inga kopierade produktionsdata och har `130` kanoniskt numrerade
-migrationer genom `0131`. Därtill finns tre preview-only korrektionsposter:
+innehåller inga kopierade produktionsdata. Readiness `0132` och RLS-/öppettidsfix
+`0133` är runtimeverifierade där. Previewns migrationshistorik innehåller även
+äldre timestampade korrektionsposter och ska inte repareras i denna låsning:
 `tenant_mutation_lifecycle_claim_guard`,
 `tenant_regional_phone_and_cascade_correction` och
-`tenant_regional_runtime_compatibility_correction`. De ger totalt `133`
-historikrader och för previewschemat till samma slutliga definition som
-källmigrationerna `0130–0131`.
+`tenant_regional_runtime_compatibility_correction`.
 Produktion `clylvowtowbtotrahuad` är orörd.
 
 Relationspaketet är publicerat från den verifierade leveransen och produktionen

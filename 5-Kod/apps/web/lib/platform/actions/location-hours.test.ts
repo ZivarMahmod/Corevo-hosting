@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   revalidateTenantById: vi.fn(),
   audit: vi.fn(),
+  report: vi.fn(),
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
@@ -15,6 +16,7 @@ vi.mock('../guard', () => ({
 }))
 vi.mock('../audit', () => ({ logPlatformAction: (...args: unknown[]) => mocks.audit(...args) }))
 vi.mock('@/lib/admin/tenant', () => ({ revalidateTenantById: mocks.revalidateTenantById }))
+vi.mock('./observe', () => ({ reportActionError: (...args: unknown[]) => mocks.report(...args) }))
 
 import { savePlatformLocationBookingSettings } from './location-hours'
 
@@ -102,6 +104,11 @@ describe('savePlatformLocationBookingSettings', () => {
     await expect(savePlatformLocationBookingSettings({}, form())).resolves.toEqual({
       error: 'Något gick fel. Försök igen.',
     })
+    expect(mocks.report).toHaveBeenCalledWith(
+      'savePlatformLocationBookingSettings.location',
+      { message: 'location query failed' },
+      { tenantId: 'tenant-1' },
+    )
     expect(supabase.rpc).not.toHaveBeenCalled()
   })
 

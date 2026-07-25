@@ -18,14 +18,14 @@ const WEBSITE_FIXTURE = {
   slug: 'goal84-webb-acceptans',
   name: 'Goal 84 webbacceptans',
   ownerName: 'Goal 84 webbägare',
-  ownerEmail: 'goal84-webb-owner@example.com',
+  ownerEmail: 'goal84-webb-owner@corevo.se',
   bookingState: 'off',
 }
 const BOOKING_FIXTURE = {
   slug: 'goal84-acceptans',
   name: 'Goal 84 acceptans',
   ownerName: 'Goal 84 ägare',
-  ownerEmail: 'goal84-owner@example.com',
+  ownerEmail: 'goal84-owner@corevo.se',
   bookingState: 'live',
 }
 const SERVICE_NAME = 'Goal 84 behandling'
@@ -88,7 +88,12 @@ function sameSecret(presented, expected) {
   return left.length === right.length && timingSafeEqual(left, right)
 }
 
-function shouldProveLiveBlockers(tenantStatus, readiness) {
+function shouldProveLiveBlockers(mode, tenantStatus, readiness) {
+  if (mode === 'lock') {
+    assert.equal(tenantStatus, 'provisioning', 'Färsk bokningskund ska börja under konfiguration.')
+    assert.equal(readiness?.ready, false, 'Ofullständig bokningskund får inte vara redo.')
+    return true
+  }
   return tenantStatus === 'provisioning' && readiness?.ready === false
 }
 
@@ -317,9 +322,12 @@ async function runSelfTest() {
   assert.match(source, /createServiceViaUi/)
   assert.match(source, /createStaffAndBookingSetupViaUi/)
   assert.doesNotMatch(source, /from\('(services|staff|staff_services|working_hours|users|roles)'\)[\s\S]{0,500}\.(?:insert|upsert|update|delete)\(/)
-  assert.equal(shouldProveLiveBlockers('provisioning', { ready: false }), true)
-  assert.equal(shouldProveLiveBlockers('provisioning', { ready: true }), false)
-  assert.equal(shouldProveLiveBlockers('active', { ready: false }), false)
+  assert.equal(shouldProveLiveBlockers('lock', 'provisioning', { ready: false }), true)
+  assert.throws(() => shouldProveLiveBlockers('lock', 'provisioning', { ready: true }))
+  assert.throws(() => shouldProveLiveBlockers('lock', 'active', { ready: false }))
+  assert.equal(shouldProveLiveBlockers('smoke', 'provisioning', { ready: false }), true)
+  assert.equal(shouldProveLiveBlockers('smoke', 'provisioning', { ready: true }), false)
+  assert.equal(shouldProveLiveBlockers('smoke', 'active', { ready: false }), false)
 
   const sampleBookingId = '11111111-2222-3333-4444-555555555555'
   let capturedBookingId
@@ -643,9 +651,16 @@ async function createFixtureViaStudio(page, platformBase, fixture) {
   await page.getByLabel('Ägarens e-post', { exact: true }).fill(fixture.ownerEmail)
   await page.getByRole('button', { name: 'Nästa', exact: true }).click()
   await page.getByRole('button', { name: `Skapa ${fixture.name}`, exact: true }).click()
-  await page.getByText(`${fixture.name} är skapad`, { exact: true }).waitFor({ timeout: 45_000 })
+  const created = page.getByText(`${fixture.name} är skapad`, { exact: true })
+  const alert = page.getByRole('alert').filter({ hasText: /\S/ }).first()
+  await Promise.race([
+    created.waitFor({ timeout: 45_000 }),
+    alert.waitFor({ timeout: 45_000 }).then(async () => {
+      throw new Error(`Studio-error: ${await alert.textContent()}`)
+    }),
+  ])
   const href = await page
-    .getByRole('link', { name: 'Öppna & hantera kunden', exact: true })
+    .getByRole('link', { name: /Öppna & hantera kunden/ })
     .getAttribute('href')
   const id = href?.match(/^\/kunder\/([0-9a-f-]+)$/i)?.[1]
   assert(id, 'Studio-resultatet saknar tenant-id.')
@@ -745,16 +760,17 @@ async function createServiceViaUi(page, platformBase, tenantId) {
 async function createStaffAndBookingSetupViaUi(page, platformBase, tenantId) {
   await page.goto(`${platformBase}/kunder/${tenantId}`)
   await page.getByRole('tab', { name: 'Personal', exact: true }).click()
-  const staffName = page.getByText(STAFF_TITLE, { exact: true })
-  if ((await staffName.count()) === 0) {
-    const addForm = page.locator('form').filter({ has: page.locator('input[name="title"][placeholder*="Anna"]') })
+  const staffRow = page.locator('details').filter({ hasText: STAFF_TITLE })
+  if ((await staffRow.count()) === 0) {
+    const addForm = page.locator('form').filter({
+      has: page.getByRole('button', { name: 'Lägg till (utan inlogg)', exact: true }),
+    })
     await addForm.locator('input[name="title"]').fill(STAFF_TITLE)
     await addForm.getByRole('button', { name: 'Lägg till (utan inlogg)', exact: true }).click()
     await page.getByRole('status').filter({ hasText: `Medarbetare "${STAFF_TITLE}" tillagd hos kunden.` }).waitFor()
   }
-  await staffName.first().waitFor()
-  await staffName.first().click()
-  const staffRow = page.locator('details').filter({ hasText: STAFF_TITLE })
+  await staffRow.first().waitFor()
+  await staffRow.first().click()
   await staffRow.getByRole('checkbox', { name: SERVICE_NAME, exact: true }).check()
   await staffRow.getByRole('button', { name: 'Spara tjänster', exact: true }).click()
   await staffRow.getByRole('status').filter({ hasText: 'tjänst(er) kopplade' }).waitFor()
@@ -818,10 +834,13 @@ async function confirmOpeningHours(client, page, platformBase, tenantId) {
   await page.getByLabel('Måndag, pass 1, stänger', { exact: true }).fill('17:00')
   await page.getByLabel('Minsta framförhållning (minuter)', { exact: true }).fill('1500')
   await page.getByRole('button', { name: 'Spara och bekräfta', exact: true }).click()
-  await page
-    .locator('p[role="status"]')
-    .filter({ hasText: 'Öppettider och bokningsregler sparade.' })
-    .waitFor()
+  const status = page.locator('p[role="status"]').filter({ hasText: /\S/ }).first()
+  await status.waitFor()
+  assert.equal(
+    (await status.textContent())?.trim(),
+    'Öppettider och bokningsregler sparade.',
+    'Öppettidskortet sparade inte',
+  )
 
   const location = await client
     .from('locations')
@@ -942,7 +961,7 @@ async function createVerifiedBooking(
   await acceptCookies(page)
   await page.getByRole('button', { name: new RegExp(SERVICE_NAME) }).first().click()
   await wizardNext(page)
-  await page.locator('.wizard-stepbody').getByRole('button', { name: 'Alla', exact: true }).click()
+  await page.locator('.wizard-stepbody').getByRole('button', { name: /^Alla\b/ }).click()
   await wizardNext(page)
   await pickFirstAvailableSlot(page)
   await wizardNext(page)
@@ -1173,11 +1192,9 @@ async function runAcceptance(mode) {
       BOOKING_FIXTURE,
       mode,
     )
-    if (bookingTenant.status === 'provisioning') {
-      const initialReadiness = await launchReadiness(identity.platform, bookingTenant.id)
-      if (shouldProveLiveBlockers(bookingTenant.status, initialReadiness)) {
-        await proveLiveBlockers(identity.platform, page, app.platform, bookingTenant)
-      }
+    const initialReadiness = await launchReadiness(identity.platform, bookingTenant.id)
+    if (shouldProveLiveBlockers(mode, bookingTenant.status, initialReadiness)) {
+      await proveLiveBlockers(identity.platform, page, app.platform, bookingTenant)
     }
     await confirmOpeningHours(
       identity.platform,

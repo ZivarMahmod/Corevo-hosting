@@ -26,9 +26,9 @@ import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
  */
 export async function isSlugTaken(slug: string): Promise<boolean> {
   const { supabase } = await platformCtx()
-  const clean = slug.toLowerCase().replace(/[^a-z0-9]/g, '')
-  if (!clean) return false
-  const { data } = await supabase.from('tenants').select('id').eq('slug', clean).maybeSingle()
+  const checked = validateSlug(slug)
+  if (!checked.ok) return false
+  const { data } = await supabase.from('tenants').select('id').eq('slug', checked.slug).maybeSingle()
   return !!data
 }
 
@@ -346,6 +346,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
         // efter apply. Håll den tillfälliga typbryggan vid just denna insert.
         const { error: uErr } = await supabase.from('users').insert(ownerProfile as never)
         if (uErr) {
+          await reportActionError('createTenant.owner_profile_insert', uErr, { tenantId })
           // The auth user WAS created but couldn't be linked (most likely the email
           // already has an account). Best-effort delete it so the rollback below doesn't
           // leave an orphan auth identity dangling without its tenant.
