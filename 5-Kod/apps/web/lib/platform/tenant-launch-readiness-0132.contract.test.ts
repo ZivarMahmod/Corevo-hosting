@@ -20,9 +20,7 @@ const previewFixturePath = resolve(
 )
 const migration = readFileSync(migrationPath, 'utf8').toLowerCase()
 const runtime = readFileSync(runtimePath, 'utf8').toLowerCase()
-const previewFixture = existsSync(previewFixturePath)
-  ? readFileSync(previewFixturePath, 'utf8').toLowerCase()
-  : ''
+const previewFixture = readFileSync(previewFixturePath, 'utf8').toLowerCase()
 
 const freshCutServiceIds = [
   '55555555-0000-0000-0000-000000000001',
@@ -208,7 +206,6 @@ describe('goal-84 preview-only FreshCut fixture', () => {
     expect(previewFixturePath.replaceAll('\\', '/')).toMatch(
       /\/supabase\/seeds\/preview\/goal84-freshcut-fixture\.sql$/,
     )
-    expect(existsSync(previewFixturePath)).toBe(true)
     expect(instructions).toContain('direct or pooled')
     expect(instructions).toContain('session and transaction modes are allowed')
     expect(instructions).toContain('nonempty incoming request context')
@@ -239,6 +236,7 @@ describe('goal-84 preview-only FreshCut fixture', () => {
 
   it('guards the fixed synthetic tenant, slug collision and required baseline rows', () => {
     const firstWrite = previewFixture.indexOf('update public.tenant_settings ts')
+    expect(firstWrite).toBeGreaterThan(0)
     expect(previewFixture).toContain('11111111-1111-1111-1111-111111111111')
     expect(previewFixture).toMatch(/v_existing_slug not in \('demo', 'freshcut'\)/)
     expect(previewFixture).toMatch(
@@ -261,7 +259,9 @@ describe('goal-84 preview-only FreshCut fixture', () => {
       'into v_location',
       'goal84_preview_service_tenant_collision',
     ]) {
-      expect(previewFixture.indexOf(guard)).toBeLessThan(firstWrite)
+      const guardIndex = previewFixture.indexOf(guard)
+      expect(guardIndex).toBeGreaterThan(0)
+      expect(guardIndex).toBeLessThan(firstWrite)
     }
   })
 

@@ -93,7 +93,19 @@ function shouldProveLiveBlockers(tenantStatus, readiness) {
 }
 
 function acceptanceMode(argv) {
+  const unknown = argv.filter((argument) => !['--lock', '--smoke'].includes(argument))
+  assert.equal(unknown.length, 0, `Okänt argument: ${unknown.join(', ')}`)
+  assert(
+    !(argv.includes('--lock') && argv.includes('--smoke')),
+    '--lock och --smoke kan inte kombineras.',
+  )
   return argv.includes('--smoke') ? 'smoke' : 'lock'
+}
+
+function cliMode(argv) {
+  if (!argv.includes('--self-test')) return acceptanceMode(argv)
+  assert.equal(argv.length, 1, '--self-test måste användas ensamt.')
+  return 'self-test'
 }
 
 function assertFixtureAvailability(mode, fixtures) {
@@ -249,9 +261,25 @@ async function startRelay() {
 
 async function runSelfTest() {
   const source = readFileSync(fileURLToPath(import.meta.url), 'utf8')
+  assert.equal(typeof cliMode, 'function')
+  assert.equal(cliMode(['--self-test']), 'self-test')
+  assert.throws(
+    () => cliMode(['--self-test', '--unknown']),
+    /måste användas ensamt/,
+  )
+  assert.throws(
+    () => cliMode(['--self-test', '--lock', '--smoke']),
+    /måste användas ensamt/,
+  )
   assert.equal(typeof acceptanceMode, 'function')
   assert.equal(acceptanceMode([]), 'lock')
+  assert.equal(acceptanceMode(['--lock']), 'lock')
   assert.equal(acceptanceMode(['--smoke']), 'smoke')
+  assert.throws(() => acceptanceMode(['--unknown']), /Okänt argument/)
+  assert.throws(
+    () => acceptanceMode(['--lock', '--smoke']),
+    /kan inte kombineras/,
+  )
 
   assert.equal(typeof assertFixtureAvailability, 'function')
   const existingWebsite = { slug: WEBSITE_FIXTURE.slug }
@@ -328,6 +356,12 @@ async function runSelfTest() {
   assert(
     bookingCleanupIndex >= 0 && bookingCleanupIndex < browserCleanupIndex,
     'Testbokningen måste städas via UI före browsern stängs.',
+  )
+  const failureThrowIndex = cleanupSource.indexOf('if (failed) throw failure')
+  const successLogIndex = cleanupSource.indexOf('console.log(acceptanceSuccess(mode))')
+  assert(
+    failureThrowIndex >= 0 && successLogIndex > failureThrowIndex,
+    'Slutlig framgång får loggas först efter städning och felkontroll.',
   )
 
   const valid = {
@@ -1155,7 +1189,6 @@ async function runAcceptance(mode) {
     await mobileOverflowSmoke(browser, context, app.platform, app.storefront, bookingTenant)
     assert.deepEqual(await freshCutSnapshot(identity.platform), baseline)
     await context.close()
-    console.log(acceptanceSuccess(mode))
   } catch (error) {
     failed = true
     failure = error
@@ -1196,11 +1229,13 @@ async function runAcceptance(mode) {
     }
   }
   if (failed) throw failure
+  console.log(acceptanceSuccess(mode))
 }
 
 try {
-  if (process.argv.includes('--self-test')) await runSelfTest()
-  else await runAcceptance(acceptanceMode(process.argv.slice(2)))
+  const mode = cliMode(process.argv.slice(2))
+  if (mode === 'self-test') await runSelfTest()
+  else await runAcceptance(mode)
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error)
   // PIN-koden får aldrig hamna i terminalen, inte ens om ett verktygsfel råkar bära den.
