@@ -621,7 +621,7 @@ async function bookingModuleState(client, tenantId) {
 
 async function createFixtureViaStudio(page, platformBase, fixture) {
   await page.goto(`${platformBase}/kunder/ny`)
-  await page.getByText('Onboarding-studio', { exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Vilken bransch?', exact: true }).waitFor()
   const branches = page.getByRole('radio')
   assert((await branches.count()) > 0, 'Onboarding Studio saknar branschval.')
   await branches.first().click()
