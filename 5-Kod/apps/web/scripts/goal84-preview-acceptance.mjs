@@ -61,7 +61,7 @@ function readConfig(env) {
   if (serviceKey.length < 32) throw new Error('Preview service role key saknas.')
   if (pinPepper.length < 32) throw new Error('BOOKING_PIN_PEPPER måste vara minst 32 tecken.')
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(platformEmail)) throw new Error('GOAL84_SUPERADMIN_EMAIL saknas.')
-  if (platformPassword.length < 12) throw new Error('GOAL84_SUPERADMIN_PASSWORD saknas.')
+  if (platformPassword.length === 0) throw new Error('GOAL84_SUPERADMIN_PASSWORD saknas.')
 
   return {
     ref,
@@ -373,6 +373,26 @@ async function runSelfTest() {
     GOAL84_SUPERADMIN_EMAIL: 'seeded-superadmin@example.com',
     GOAL84_SUPERADMIN_PASSWORD: 'seeded-password-that-is-long-enough',
   }
+  const canonicalSeed = readFileSync(
+    path.resolve(WEB_DIR, '../../supabase/seed.sql'),
+    'utf8',
+  )
+  const canonicalCredential = canonicalSeed.match(
+    /'platform@corevo\.se',\s*crypt\('([^']+)'/,
+  )
+  assert(canonicalCredential, 'Canonical preview-superadmin saknas i seed.sql.')
+  assert.doesNotThrow(
+    () => readConfig({
+      ...valid,
+      GOAL84_SUPERADMIN_EMAIL: 'platform@corevo.se',
+      GOAL84_SUPERADMIN_PASSWORD: canonicalCredential[1],
+    }),
+    'Den seedade preview-superadminens befintliga credential måste accepteras.',
+  )
+  assert.throws(
+    () => readConfig({ ...valid, GOAL84_SUPERADMIN_PASSWORD: '' }),
+    /GOAL84_SUPERADMIN_PASSWORD saknas/,
+  )
   assert.throws(
     () => readConfig({ ...valid, NEXT_PUBLIC_SUPABASE_URL: `https://${PROD_REF}.supabase.co` }),
     /production/,
