@@ -13,6 +13,27 @@ type FailingRead = CountMetric | 'primary address' | 'primary location'
 
 function detailClient(failingRead: FailingRead | null, legacyAddress: string | null = null) {
   return {
+    rpc(name: string) {
+      if (name === 'tenant_launch_readiness') {
+        return Promise.resolve({
+          data: {
+            ready: true,
+            booking_required: false,
+            canonical_host: null,
+            tenant_status: 'active',
+            missing: [],
+          },
+          error: null,
+        })
+      }
+      if (name === 'tenant_module_readiness') {
+        return Promise.resolve({
+          data: { ready: true, tenant_status: 'active', modules: {} },
+          error: null,
+        })
+      }
+      throw new Error(`unexpected rpc: ${name}`)
+    },
     from(table: string) {
       const filters = new Map<string, unknown>()
       let isHeadCount = false

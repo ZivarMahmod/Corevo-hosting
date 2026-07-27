@@ -34,7 +34,7 @@ async function resolveTenantAssetId(
 // ── Blog posts ─────────────────────────────────────────────────────────────────
 
 export async function createBlogPost(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'blogg')
   if (!ctx) return { error: NO_TENANT }
 
   const title = String(fd.get('title') ?? '').trim()
@@ -84,7 +84,7 @@ export async function createBlogPost(_p: ActionState, fd: FormData): Promise<Act
 }
 
 export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'blogg')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -163,7 +163,7 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
  * after archive/draft → keep the original published_at (do not reset).
  */
 export async function setBlogPostStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'blogg')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -204,7 +204,7 @@ export async function setBlogPostStatus(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function deleteBlogPost(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'blogg')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()

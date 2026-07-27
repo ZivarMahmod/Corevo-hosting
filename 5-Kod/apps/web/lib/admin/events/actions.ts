@@ -54,7 +54,7 @@ function parseEventFields(fd: FormData):
 }
 
 export async function createTenantEvent(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const parsed = parseEventFields(fd)
@@ -73,7 +73,7 @@ export async function createTenantEvent(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function updateTenantEvent(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -96,7 +96,7 @@ export async function updateTenantEvent(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function setTenantEventStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -120,7 +120,7 @@ export async function setTenantEventStatus(_p: ActionState, fd: FormData): Promi
 }
 
 export async function deleteTenantEvent(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -152,7 +152,7 @@ export async function deleteTenantEvent(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function setRegistrationStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()

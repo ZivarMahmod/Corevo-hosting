@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-25.
+Senast uppdaterad: 2026-07-27.
 
 ## Läsordning
 
@@ -17,13 +17,26 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
-- Den samlade localhostacceptansen genom Goal 84 är körd:
-  `362` testfiler och `2 819` tester passerar tillsammans. Goal 74–84 är lokalt
-  låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
+- Den samlade kodacceptansen genom Goal 87 är körd:
+  `366` testfiler och `2 857` tester passerar tillsammans. Goal 74–84 och 87 är
+  lokalt låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
   tillsammans med Zivar. Protokoll finns i
   `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81–84:s
-  testlistor i `6-Testing/`. Produktion är orörd.
+  och Goal 87:s testlistor i `6-Testing/`. Produktion är orörd.
+- Goal 87 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Alla nio moduler använder nu samma
+  DB-ägda stateflöde `off → draft → live ↔ paused`, med laglig avstängning,
+  första default-config, bevarad data och fail-closed readiness. Publik läsning
+  kräver `live|paused`; nya publika boknings-, butik- och offertactions kräver
+  `live` och grön readiness. Tre append-only Goal 87-migrationer är applicerade
+  endast på `localhost-acceptance`; de låser även RLS-bypassande publika RPC:er
+  och shopkvittots token-fence före modulstate-beslutet. Fem rollbackade
+  SQL-runtimeprov, katalog-/policy-/grantbevis, advisors, 72 fokuserade tester,
+  full webbsvit 366/2 857,
+  typecheck, lint utan fel, produktionsbuild och oberoende DB-/kodreview är
+  gröna. Produktion är orörd. Protokoll:
+  `6-Testing/goal-87-modulstate-readiness-db-sakerhet-testlista.md`.
 - Goal 84 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. Ett färskt browserlås från tomma
   fixtures skapade och publicerade både webbplatsläge och komplett
@@ -216,19 +229,18 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-74–84 är lokalt låsta och den samlade kodacceptansen är grön. Goal-84
-bevisade hela previewkedjan från ny kund till publicerad storefront, verifierad
-fyrasiffrig PIN-bokning och produktavbokning. Nästa byggdel enligt roadmap är
-Goal-87, men den är uttryckligen inte startad i denna session.
+Goal-74–84 och Goal 87 är lokalt låsta och den samlade kodacceptansen är grön.
+Goal 87 låste modulernas gemensamma state-, readiness- och DB-säkerhetsgrund.
+Nästa byggdel enligt roadmap är Goal 88: en kundarbetsyta och en sidmotor.
 Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
-Den godkända ordningen och lokala låsgränsen för Goal 81–86 finns i
-`1-Planering/19-lanseringsprogram/08-goal81-86-exekveringsplan.md`.
+Den godkända ordningen finns i `2-Byggplan/ROADMAP.md`.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
 innehåller inga kopierade produktionsdata. Readiness `0132` och RLS-/öppettidsfix
-`0133` är runtimeverifierade där. Previewns migrationshistorik innehåller även
+`0133` samt Goal 87:s tre modulmigrationer är runtimeverifierade där.
+Previewns migrationshistorik innehåller även
 äldre timestampade korrektionsposter och ska inte repareras i denna låsning:
 `tenant_mutation_lifecycle_claim_guard`,
 `tenant_regional_phone_and_cascade_correction` och

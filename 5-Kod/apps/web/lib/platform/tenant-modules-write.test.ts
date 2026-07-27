@@ -70,10 +70,10 @@ describe('normalizeSelections — safe booking default + explicit website-only',
     const out = normalizeSelections([
       { moduleKey: 'booking', state: 'live' },
       { moduleKey: 'media_library', state: 'off' },
-      { moduleKey: 'loyalty', state: 'draft' },
+      { moduleKey: 'lojalitet', state: 'draft' },
     ])
     expect(out.find((s) => s.moduleKey === 'media_library')).toBeUndefined()
-    expect(out).toContainEqual({ moduleKey: 'loyalty', state: 'draft' })
+    expect(out).toContainEqual({ moduleKey: 'lojalitet', state: 'draft' })
     expect(out).toContainEqual({ moduleKey: 'booking', state: 'live' })
   })
 
@@ -101,5 +101,54 @@ describe('writeTenantVerticalAndModules — catalog fence', () => {
       [{ moduleKey: 'booking', state: 'off' }],
     )).resolves.toEqual({ ok: false })
     expect(insert).not.toHaveBeenCalled()
+  })
+
+  it('provisions requested states through off → draft → live → paused without app-owned config', async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null })
+    const transitions: { state: string; keys: string[] }[] = []
+    const update = vi.fn((value: { state: string }) => ({
+      eq: vi.fn(() => ({
+        in: vi.fn((_column: string, keys: string[]) => {
+          transitions.push({ state: value.state, keys })
+          return Promise.resolve({ error: null })
+        }),
+      })),
+    }))
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === 'modules') {
+          return {
+            select: vi.fn().mockResolvedValue({
+              data: [
+                { key: 'booking' },
+                { key: 'shop' },
+                { key: 'lojalitet' },
+              ],
+              error: null,
+            }),
+          }
+        }
+        return { insert, update }
+      }),
+    }
+
+    await expect(
+      writeTenantVerticalAndModules(supabase as never, 'tenant-a', null, [
+        { moduleKey: 'booking', state: 'live' },
+        { moduleKey: 'shop', state: 'paused' },
+        { moduleKey: 'lojalitet', state: 'draft' },
+      ]),
+    ).resolves.toEqual({ ok: true })
+
+    expect(insert).toHaveBeenCalledWith([
+      { tenant_id: 'tenant-a', module_key: 'booking', state: 'off' },
+      { tenant_id: 'tenant-a', module_key: 'shop', state: 'off' },
+      { tenant_id: 'tenant-a', module_key: 'lojalitet', state: 'off' },
+    ])
+    expect(transitions).toEqual([
+      { state: 'draft', keys: ['booking', 'shop', 'lojalitet'] },
+      { state: 'live', keys: ['booking', 'shop'] },
+      { state: 'paused', keys: ['shop'] },
+    ])
   })
 })

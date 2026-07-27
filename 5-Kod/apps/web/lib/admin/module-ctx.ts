@@ -6,6 +6,12 @@ import {
   requireActiveTenantMutation,
   type AdminTenant,
 } from '@/lib/admin/tenant'
+import { getAdminModuleStates } from '@/lib/admin/modules'
+import {
+  isModuleAdminWritable,
+  type ModuleKey,
+  type TenantModuleStates,
+} from '@/lib/tenant-modules'
 
 /**
  * Dual-guard authorization fence for MODULE actions (webshop/blogg/media/offert) —
@@ -13,7 +19,7 @@ import {
  * and the super-admin kundkort (/kunder/[id]), goal-54 §1. Same trust model as
  * sidaCtx (lib/platform/guard.ts):
  *
- *   • platform_admin  → tenantId comes from the form's hidden `tenantId` field
+ *   • platform operator → tenantId comes from the form's hidden `tenantId` field
  *     (the kundkort mounts the module tools with a tenantId prop). Missing/unknown
  *     id → null → action denies. RLS lets the read through only because of the
  *     baked platform_admin claim.
@@ -26,21 +32,30 @@ import {
  */
 export async function moduleCtx(
   fd: FormData,
+  moduleKey?: ModuleKey,
 ): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
   // ROLL-SEPARATION: modulerna (webshop/blogg/media/offert/kurser) ÄR systemytor —
   // alla ligger på salon_admin-nivå i lib/auth/admin-areas.ts. requirePortal('admin')
   // = nivå 6 håller därför personalen (nivå 3) ute från VARJE modul-mutation.
   const user = await requirePortal('admin') // platform_admin always passes
-  if (user.platformAdmin) {
+  let tenant: AdminTenant | null
+  if (user.platformAdmin || (user.partnerAdmin && user.partnerId)) {
     const tenantId = String(fd.get('tenantId') ?? '').trim()
     if (!tenantId) return null
-    const tenant = await loadAdminTenantById(tenantId)
-    if (!tenant) return null
-    await requireActiveTenantMutation(user, tenant.id)
-    return { user, tenant }
+    tenant = await loadAdminTenantById(tenantId)
+  } else {
+    tenant = await getAdminTenant(user)
   }
-  const tenant = await getAdminTenant(user)
   if (!tenant) return null
   await requireActiveTenantMutation(user, tenant.id)
+
+  if (moduleKey) {
+    const adminStates = await getAdminModuleStates(tenant.id)
+    const states = Object.fromEntries(
+      Object.entries(adminStates).map(([key, row]) => [key, row.state]),
+    ) as TenantModuleStates
+    if (!isModuleAdminWritable(states, moduleKey)) return null
+  }
+
   return { user, tenant }
 }

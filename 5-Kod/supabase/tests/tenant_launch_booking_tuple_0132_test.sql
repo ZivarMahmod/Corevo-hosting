@@ -37,8 +37,8 @@ begin
     insert into public.locations (tenant_id, name, is_primary, active)
     values (v_tenant, 'Primär plats', true, true)
     returning id into v_location;
-    insert into public.tenant_modules (tenant_id, module_key, state)
-    values (v_tenant, 'booking', 'live');
+    -- Missing booking is deliberately the legacy-live case. Goal 87 forbids
+    -- manufacturing a direct live row; explicit rows start at off below.
     insert into public.services (tenant_id, location_id, name, duration_min, active)
     values (v_tenant, v_location, 'Verifierbar tjänst', 60, true)
     returning id into v_service;
@@ -61,8 +61,6 @@ begin
 
     -- Historical contract: no booking row is still live, while explicit off is
     -- the only website-only state that may skip booking readiness.
-    delete from public.tenant_modules
-    where tenant_id = v_tenant and module_key = 'booking';
     update public.location_opening_hours set weekday = 2
     where tenant_id = v_tenant and location_id = v_location;
     if not ('working_hours' = any (private.tenant_launch_missing(v_tenant))) then
@@ -85,6 +83,8 @@ begin
     exception
       when sqlstate '55000' then null;
     end;
+    perform pg_catalog.set_config('request.jwt.claim.role', '', true);
+    perform pg_catalog.set_config('request.jwt.claims', '{}', true);
     insert into public.tenant_modules (tenant_id, module_key, state)
     values (v_tenant, 'booking', 'off');
     if 'working_hours' = any (private.tenant_launch_missing(v_tenant)) then
@@ -107,10 +107,12 @@ begin
       raise exception 'goal84_explicit_booking_off_publish_failed';
     end if;
     update public.tenants set status = 'provisioning' where id = v_tenant;
-    update public.tenant_modules set state = 'live'
-    where tenant_id = v_tenant and module_key = 'booking';
     perform pg_catalog.set_config('request.jwt.claim.role', '', true);
     perform pg_catalog.set_config('request.jwt.claims', '{}', true);
+    update public.tenant_modules set state = 'draft'
+    where tenant_id = v_tenant and module_key = 'booking';
+    update public.tenant_modules set state = 'live'
+    where tenant_id = v_tenant and module_key = 'booking';
     update public.location_opening_hours set weekday = 1
     where tenant_id = v_tenant and location_id = v_location;
 

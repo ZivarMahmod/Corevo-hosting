@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       audit_log: {
@@ -465,75 +440,6 @@ export type Database = {
           },
         ]
       }
-      customer_notification_prefs: {
-        Row: {
-          created_at: string
-          customer_id: string
-          email_enabled: boolean
-          marketing_consent: boolean
-          marketing_consent_at: string | null
-          marketing_consent_source: string | null
-          preferred_channel: string | null
-          push_enabled: boolean
-          sms_enabled: boolean
-          tenant_id: string
-          updated_at: string
-          want_offers: boolean
-          want_open_slots: boolean
-          want_recommendations: boolean
-          want_reminders: boolean
-        }
-        Insert: {
-          created_at?: string
-          customer_id: string
-          email_enabled?: boolean
-          marketing_consent?: boolean
-          marketing_consent_at?: string | null
-          marketing_consent_source?: string | null
-          preferred_channel?: string | null
-          push_enabled?: boolean
-          sms_enabled?: boolean
-          tenant_id: string
-          updated_at?: string
-          want_offers?: boolean
-          want_open_slots?: boolean
-          want_recommendations?: boolean
-          want_reminders?: boolean
-        }
-        Update: {
-          created_at?: string
-          customer_id?: string
-          email_enabled?: boolean
-          marketing_consent?: boolean
-          marketing_consent_at?: string | null
-          marketing_consent_source?: string | null
-          preferred_channel?: string | null
-          push_enabled?: boolean
-          sms_enabled?: boolean
-          tenant_id?: string
-          updated_at?: string
-          want_offers?: boolean
-          want_open_slots?: boolean
-          want_recommendations?: boolean
-          want_reminders?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "customer_notification_prefs_customer_tenant_fkey"
-            columns: ["customer_id", "tenant_id"]
-            isOneToOne: true
-            referencedRelation: "customers"
-            referencedColumns: ["id", "tenant_id"]
-          },
-          {
-            foreignKeyName: "customer_notification_prefs_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       customer_notes: {
         Row: {
           allergies: string[]
@@ -599,7 +505,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_notes_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customer_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_notification_prefs: {
+        Row: {
+          created_at: string
+          customer_id: string
+          email_enabled: boolean
+          marketing_consent: boolean
+          marketing_consent_at: string | null
+          marketing_consent_source: string | null
+          preferred_channel: string | null
+          push_enabled: boolean
+          sms_enabled: boolean
+          tenant_id: string
+          updated_at: string
+          want_offers: boolean
+          want_open_slots: boolean
+          want_recommendations: boolean
+          want_reminders: boolean
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          email_enabled?: boolean
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
+          preferred_channel?: string | null
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          tenant_id: string
+          updated_at?: string
+          want_offers?: boolean
+          want_open_slots?: boolean
+          want_recommendations?: boolean
+          want_reminders?: boolean
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          email_enabled?: boolean
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
+          preferred_channel?: string | null
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          tenant_id?: string
+          updated_at?: string
+          want_offers?: boolean
+          want_open_slots?: boolean
+          want_recommendations?: boolean
+          want_reminders?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notification_prefs_customer_tenant_fkey"
+            columns: ["customer_id", "tenant_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id", "tenant_id"]
+          },
+          {
+            foreignKeyName: "customer_notification_prefs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -882,6 +864,128 @@ export type Database = {
           },
         ]
       }
+      location_closures: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_ts: string
+          id: string
+          location_id: string
+          reason: string | null
+          start_ts: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_ts: string
+          id?: string
+          location_id: string
+          reason?: string | null
+          start_ts: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_ts?: string
+          id?: string
+          location_id?: string
+          reason?: string | null
+          start_ts?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_closures_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_closures_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_closures_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_opening_hours: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          end_time: string
+          id: string
+          location_id: string
+          source: string
+          start_time: string
+          tenant_id: string
+          updated_at: string | null
+          weekday: number
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          end_time: string
+          id?: string
+          location_id: string
+          source: string
+          start_time: string
+          tenant_id: string
+          updated_at?: string | null
+          weekday: number
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          location_id?: string
+          source?: string
+          start_time?: string
+          tenant_id?: string
+          updated_at?: string | null
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_opening_hours_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_opening_hours_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_opening_hours_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           active: boolean
@@ -889,7 +993,10 @@ export type Database = {
           created_at: string
           id: string
           is_primary: boolean
+          max_advance_days: number
+          min_notice_min: number
           name: string
+          slot_step_min: number
           tenant_id: string
           timezone: string
           updated_at: string | null
@@ -900,7 +1007,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_primary?: boolean
+          max_advance_days?: number
+          min_notice_min?: number
           name: string
+          slot_step_min?: number
           tenant_id: string
           timezone?: string
           updated_at?: string | null
@@ -911,7 +1021,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_primary?: boolean
+          max_advance_days?: number
+          min_notice_min?: number
           name?: string
+          slot_step_min?: number
           tenant_id?: string
           timezone?: string
           updated_at?: string | null
@@ -1385,6 +1498,267 @@ export type Database = {
           },
         ]
       }
+      partner_license_months: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          month: string
+          partner_id: string
+          qualified_at: string
+          tenant_id: string
+          unit_price_ore: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          month: string
+          partner_id: string
+          qualified_at: string
+          tenant_id: string
+          unit_price_ore: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          month?: string
+          partner_id?: string
+          qualified_at?: string
+          tenant_id?: string
+          unit_price_ore?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_license_months_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_license_months_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_license_price_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          effective_at: string
+          id: string
+          new_price_ore: number
+          old_price_ore: number | null
+          partner_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          effective_at?: string
+          id?: string
+          new_price_ore: number
+          old_price_ore?: number | null
+          partner_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          effective_at?: string
+          id?: string
+          new_price_ore?: number
+          old_price_ore?: number | null
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_license_price_events_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_members: {
+        Row: {
+          created_at: string
+          invited_at: string
+          joined_at: string | null
+          partner_id: string
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          invited_at?: string
+          joined_at?: string | null
+          partner_id: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          invited_at?: string
+          joined_at?: string | null
+          partner_id?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_members_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_sms_configs: {
+        Row: {
+          callback_secret_id: string | null
+          configured_at: string | null
+          created_at: string
+          enabled: boolean
+          partner_id: string
+          password_secret_id: string | null
+          provider_key: string
+          sender: string | null
+          updated_at: string
+          username_secret_id: string | null
+        }
+        Insert: {
+          callback_secret_id?: string | null
+          configured_at?: string | null
+          created_at?: string
+          enabled?: boolean
+          partner_id: string
+          password_secret_id?: string | null
+          provider_key?: string
+          sender?: string | null
+          updated_at?: string
+          username_secret_id?: string | null
+        }
+        Update: {
+          callback_secret_id?: string | null
+          configured_at?: string | null
+          created_at?: string
+          enabled?: boolean
+          partner_id?: string
+          password_secret_id?: string | null
+          provider_key?: string
+          sender?: string | null
+          updated_at?: string
+          username_secret_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_sms_configs_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_tenant_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          occurred_at: string
+          partner_id: string
+          tenant_id: string
+          tenant_status: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          occurred_at?: string
+          partner_id: string
+          tenant_id: string
+          tenant_status: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          partner_id?: string
+          tenant_id?: string
+          tenant_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_tenant_events_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_tenant_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          country_code: string
+          created_at: string
+          currency: string
+          id: string
+          license_price_ore: number
+          name: string
+          slug: string
+          status: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          currency: string
+          id?: string
+          license_price_ore: number
+          name: string
+          slug: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          license_price_ore?: number
+          name?: string
+          slug?: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_disputes: {
         Row: {
           amount_cents: number | null
@@ -1508,261 +1882,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      partner_license_months: {
-        Row: {
-          closed_at: string | null
-          created_at: string
-          month: string
-          partner_id: string
-          qualified_at: string
-          tenant_id: string
-          unit_price_ore: number
-          updated_at: string
-        }
-        Insert: {
-          closed_at?: string | null
-          created_at?: string
-          month: string
-          partner_id: string
-          qualified_at: string
-          tenant_id: string
-          unit_price_ore: number
-          updated_at?: string
-        }
-        Update: {
-          closed_at?: string | null
-          created_at?: string
-          month?: string
-          partner_id?: string
-          qualified_at?: string
-          tenant_id?: string
-          unit_price_ore?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "partner_license_months_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "partner_license_months_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      partner_license_price_events: {
-        Row: {
-          actor_user_id: string | null
-          created_at: string
-          effective_at: string
-          id: string
-          new_price_ore: number
-          old_price_ore: number | null
-          partner_id: string
-        }
-        Insert: {
-          actor_user_id?: string | null
-          created_at?: string
-          effective_at?: string
-          id?: string
-          new_price_ore: number
-          old_price_ore?: number | null
-          partner_id: string
-        }
-        Update: {
-          actor_user_id?: string | null
-          created_at?: string
-          effective_at?: string
-          id?: string
-          new_price_ore?: number
-          old_price_ore?: number | null
-          partner_id?: string
-        }
-        Relationships: [{
-          foreignKeyName: "partner_license_price_events_partner_id_fkey"
-          columns: ["partner_id"]
-          isOneToOne: false
-          referencedRelation: "partners"
-          referencedColumns: ["id"]
-        }]
-      }
-      partner_members: {
-        Row: {
-          created_at: string
-          invited_at: string
-          joined_at: string | null
-          partner_id: string
-          role: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          invited_at?: string
-          joined_at?: string | null
-          partner_id: string
-          role?: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          invited_at?: string
-          joined_at?: string | null
-          partner_id?: string
-          role?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [{
-          foreignKeyName: "partner_members_partner_id_fkey"
-          columns: ["partner_id"]
-          isOneToOne: false
-          referencedRelation: "partners"
-          referencedColumns: ["id"]
-        }]
-      }
-      partner_sms_configs: {
-        Row: {
-          callback_secret_id: string | null
-          configured_at: string | null
-          created_at: string
-          enabled: boolean
-          partner_id: string
-          password_secret_id: string | null
-          provider_key: string
-          sender: string | null
-          updated_at: string
-          username_secret_id: string | null
-        }
-        Insert: {
-          callback_secret_id?: string | null
-          configured_at?: string | null
-          created_at?: string
-          enabled?: boolean
-          partner_id: string
-          password_secret_id?: string | null
-          provider_key?: string
-          sender?: string | null
-          updated_at?: string
-          username_secret_id?: string | null
-        }
-        Update: {
-          callback_secret_id?: string | null
-          configured_at?: string | null
-          created_at?: string
-          enabled?: boolean
-          partner_id?: string
-          password_secret_id?: string | null
-          provider_key?: string
-          sender?: string | null
-          updated_at?: string
-          username_secret_id?: string | null
-        }
-        Relationships: [{
-          foreignKeyName: "partner_sms_configs_partner_id_fkey"
-          columns: ["partner_id"]
-          isOneToOne: true
-          referencedRelation: "partners"
-          referencedColumns: ["id"]
-        }]
-      }
-      partner_tenant_events: {
-        Row: {
-          actor_user_id: string | null
-          created_at: string
-          event_type: string
-          id: string
-          occurred_at: string
-          partner_id: string
-          tenant_id: string
-          tenant_status: string
-        }
-        Insert: {
-          actor_user_id?: string | null
-          created_at?: string
-          event_type: string
-          id?: string
-          occurred_at?: string
-          partner_id: string
-          tenant_id: string
-          tenant_status: string
-        }
-        Update: {
-          actor_user_id?: string | null
-          created_at?: string
-          event_type?: string
-          id?: string
-          occurred_at?: string
-          partner_id?: string
-          tenant_id?: string
-          tenant_status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "partner_tenant_events_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "partner_tenant_events_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      partners: {
-        Row: {
-          country_code: string
-          created_at: string
-          currency: string
-          id: string
-          license_price_ore: number
-          name: string
-          slug: string
-          status: string
-          timezone: string
-          updated_at: string
-        }
-        Insert: {
-          country_code?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          license_price_ore: number
-          name: string
-          slug: string
-          status?: string
-          timezone?: string
-          updated_at?: string
-        }
-        Update: {
-          country_code?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          license_price_ore?: number
-          name?: string
-          slug?: string
-          status?: string
-          timezone?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       push_subscriptions: {
         Row: {
@@ -2452,6 +2571,124 @@ export type Database = {
           },
         ]
       }
+      site_revisions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lock_version: number
+          published_at: string | null
+          published_by: string | null
+          snapshot: Json
+          source_revision_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lock_version?: number
+          published_at?: string | null
+          published_by?: string | null
+          snapshot: Json
+          source_revision_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lock_version?: number
+          published_at?: string | null
+          published_by?: string | null
+          snapshot?: Json
+          source_revision_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_revisions_source_revision_id_fkey"
+            columns: ["source_revision_id"]
+            isOneToOne: false
+            referencedRelation: "site_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_revisions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slot_holds: {
+        Row: {
+          created_at: string
+          end_ts: string
+          expires_at: string
+          id: string
+          service_id: string | null
+          session_token: string
+          staff_id: string
+          start_ts: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_ts: string
+          expires_at: string
+          id?: string
+          service_id?: string | null
+          session_token: string
+          staff_id: string
+          start_ts: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          end_ts?: string
+          expires_at?: string
+          id?: string
+          service_id?: string | null
+          session_token?: string
+          staff_id?: string
+          start_ts?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slot_holds_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_holds_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_holds_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff: {
         Row: {
           active: boolean
@@ -2754,6 +2991,66 @@ export type Database = {
           },
         ]
       }
+      tenant_member_permissions: {
+        Row: {
+          can_edit_site: boolean
+          can_manage_customers: boolean
+          can_view_all_calendars: boolean
+          can_view_daily_metrics: boolean
+          id: string
+          notify_booking_changes: boolean
+          notify_daily_reminder: boolean
+          notify_new_booking: boolean
+          operational_role: string
+          staff_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          can_edit_site?: boolean
+          can_manage_customers?: boolean
+          can_view_all_calendars?: boolean
+          can_view_daily_metrics?: boolean
+          id?: string
+          notify_booking_changes?: boolean
+          notify_daily_reminder?: boolean
+          notify_new_booking?: boolean
+          operational_role?: string
+          staff_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          can_edit_site?: boolean
+          can_manage_customers?: boolean
+          can_view_all_calendars?: boolean
+          can_view_daily_metrics?: boolean
+          id?: string
+          notify_booking_changes?: boolean
+          notify_daily_reminder?: boolean
+          notify_new_booking?: boolean
+          operational_role?: string
+          staff_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_member_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_member_permissions_tenant_id_staff_id_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       tenant_modules: {
         Row: {
           activated_at: string | null
@@ -2795,66 +3092,6 @@ export type Database = {
           },
           {
             foreignKeyName: "tenant_modules_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tenant_member_permissions: {
-        Row: {
-          can_edit_site: boolean
-          can_manage_customers: boolean
-          can_view_all_calendars: boolean
-          can_view_daily_metrics: boolean
-          notify_booking_changes: boolean
-          notify_daily_reminder: boolean
-          notify_new_booking: boolean
-          id: string
-          operational_role: string
-          staff_id: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          can_edit_site?: boolean
-          can_manage_customers?: boolean
-          can_view_all_calendars?: boolean
-          can_view_daily_metrics?: boolean
-          notify_booking_changes?: boolean
-          notify_daily_reminder?: boolean
-          notify_new_booking?: boolean
-          id?: string
-          operational_role?: string
-          staff_id: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          can_edit_site?: boolean
-          can_manage_customers?: boolean
-          can_view_all_calendars?: boolean
-          can_view_daily_metrics?: boolean
-          notify_booking_changes?: boolean
-          notify_daily_reminder?: boolean
-          notify_new_booking?: boolean
-          id?: string
-          operational_role?: string
-          staff_id?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tenant_member_permissions_tenant_id_staff_id_fkey"
-            columns: ["tenant_id", "staff_id"]
-            isOneToOne: false
-            referencedRelation: "staff"
-            referencedColumns: ["tenant_id", "id"]
-          },
-          {
-            foreignKeyName: "tenant_member_permissions_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2933,66 +3170,6 @@ export type Database = {
           },
         ]
       }
-      site_revisions: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          lock_version: number
-          published_at: string | null
-          published_by: string | null
-          snapshot: Json
-          source_revision_id: string | null
-          status: string
-          tenant_id: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          lock_version?: number
-          published_at?: string | null
-          published_by?: string | null
-          snapshot: Json
-          source_revision_id?: string | null
-          status?: string
-          tenant_id: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          lock_version?: number
-          published_at?: string | null
-          published_by?: string | null
-          snapshot?: Json
-          source_revision_id?: string | null
-          status?: string
-          tenant_id?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "site_revisions_source_revision_id_fkey"
-            columns: ["source_revision_id"]
-            isOneToOne: false
-            referencedRelation: "site_revisions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "site_revisions_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tenants: {
         Row: {
           city: string | null
@@ -3064,6 +3241,7 @@ export type Database = {
           created_at: string
           end_ts: string
           id: string
+          kind: string
           location_id: string | null
           reason: string | null
           series_id: string | null
@@ -3075,6 +3253,7 @@ export type Database = {
           created_at?: string
           end_ts: string
           id?: string
+          kind?: string
           location_id?: string | null
           reason?: string | null
           series_id?: string | null
@@ -3086,6 +3265,7 @@ export type Database = {
           created_at?: string
           end_ts?: string
           id?: string
+          kind?: string
           location_id?: string | null
           reason?: string | null
           series_id?: string | null
@@ -3117,41 +3297,110 @@ export type Database = {
           },
         ]
       }
+      user_location_access: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          location_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location_id?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_location_access_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_location_access_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_location_access_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_location_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
+          access_scope: string
           created_at: string
           email: string | null
           full_name: string | null
           id: string
           phone: string | null
+          primary_location_id: string | null
           role_id: string | null
           status: string
           tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
+          access_scope?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
+          primary_location_id?: string | null
           role_id?: string | null
           status?: string
           tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          access_scope?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          primary_location_id?: string | null
           role_id?: string | null
           status?: string
           tenant_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "users_primary_location_id_fkey"
+            columns: ["primary_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "users_role_id_fkey"
             columns: ["role_id"]
@@ -3327,23 +3576,93 @@ export type Database = {
         Args: { p_prefix?: string; p_tenant: string }
         Returns: string
       }
-      check_rate_limit: {
-        Args: { p_key: string; p_max: number; p_window_secs: number }
+      ack_customer_erasure_auth_cleanup: {
+        Args: {
+          p_auth_user: string
+          p_claim_token: string
+          p_cleanup_id: string
+        }
         Returns: boolean
       }
-      atomic_erase_tenant_customer: {
-        Args: { p_actor: string; p_customer: string; p_tenant: string }
+      ack_notification_outbox: {
+        Args: {
+          p_cost_currency?: string | null
+          p_cost_ore: number | null
+          p_id: string
+          p_lease_token: string
+          p_parts?: number | null
+          p_provider_ref: string | null
+          p_skip_reason: string | null
+          p_status: string
+        }
+        Returns: boolean
+      }
+      admin_customer_rows: {
+        Args: { p_customer?: string; p_tenant: string }
         Returns: {
-          auth_user_id: string | null
-          erased_bookings: number
+          display_name: string
+          first_seen_at: string
+          full_name: string
+          hidden_at: string
+          id: string
+          last_seen_at: string
+          last_visit_ts: string
+          loyalty_points: number
+          name_hidden: boolean
           status: string
+          visits: number
         }[]
       }
       atomic_erase_self_customer_account: {
         Args: { p_auth_user: string; p_tenant: string }
         Returns: {
-          auth_user_id: string | null
+          auth_user_id: string
           erased_bookings: number
+          status: string
+        }[]
+      }
+      atomic_erase_tenant_customer: {
+        Args: { p_actor: string; p_customer: string; p_tenant: string }
+        Returns: {
+          auth_user_id: string
+          erased_bookings: number
+          status: string
+        }[]
+      }
+      begin_notification_delivery: {
+        Args: { p_id: string; p_lease_token: string }
+        Returns: boolean
+      }
+      begin_payment_refund_delivery: {
+        Args: { p_id: string; p_lease_token: string }
+        Returns: boolean
+      }
+      booking_payment_event_matches: {
+        Args: {
+          p_booking: string
+          p_connected_account: string
+          p_payment_intent: string
+          p_tenant: string
+        }
+        Returns: boolean
+      }
+      cancel_booking_verification: {
+        Args: {
+          p_challenge: string
+          p_session_token: string
+          p_tenant_slug: string
+        }
+        Returns: boolean
+      }
+      check_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_secs: number }
+        Returns: boolean
+      }
+      claim_customer_account: {
+        Args: { p_purpose: string; p_tenant: string; p_token_hash: string }
+        Returns: {
+          customer_id: string
+          merged: boolean
           status: string
         }[]
       }
@@ -3362,206 +3681,6 @@ export type Database = {
           tenant_id: string
         }[]
       }
-      fail_customer_erasure_auth_cleanup: {
-        Args: {
-          p_auth_user: string
-          p_claim_token: string
-          p_cleanup_id: string
-          p_error_code: string
-        }
-        Returns: boolean
-      }
-      ack_customer_erasure_auth_cleanup: {
-        Args: {
-          p_auth_user: string
-          p_claim_token: string
-          p_cleanup_id: string
-        }
-        Returns: boolean
-      }
-      set_tenant_member_permissions: {
-        Args: {
-          p_can_edit_site: boolean
-          p_can_manage_customers: boolean
-          p_can_view_all_calendars: boolean
-          p_can_view_daily_metrics: boolean
-          p_operational_role: string
-          p_staff: string
-        }
-        Returns: undefined
-      }
-      set_my_notification_preferences: {
-        Args: {
-          p_notify_booking_changes: boolean
-          p_notify_daily_reminder: boolean
-          p_notify_new_booking: boolean
-        }
-        Returns: undefined
-      }
-      confirm_shop_order: {
-        Args: {
-          p_customer?: string
-          p_guest_email?: string
-          p_guest_name?: string
-          p_guest_phone?: string
-          p_note?: string
-          p_order_id: string
-          p_payment_method?: string
-          p_pickup_location?: string
-          p_ship_address?: string
-          p_shipping_option?: string
-          p_token: string
-        }
-        Returns: {
-          order_id: string
-          requires_payment: boolean
-        }[]
-      }
-      create_admin_booking: {
-        Args: {
-          p_customer_id?: string
-          p_guest_email?: string
-          p_guest_name?: string
-          p_guest_phone?: string
-          p_location?: string
-          p_note?: string
-          p_request_id: string
-          p_service: string
-          p_staff: string
-          p_start: string
-        }
-        Returns: Json
-      }
-      create_staff_with_defaults: {
-        Args: {
-          p_location?: string
-          p_profile?: string
-          p_title: string
-        }
-        Returns: string
-      }
-      create_customer_account_claim: {
-        Args: {
-          p_customer: string
-          p_expires_at: string
-          p_purpose: string
-          p_tenant: string
-          p_token_hash: string
-        }
-        Returns: string
-      }
-      customer_loyalty_totals: {
-        Args: {
-          p_customer: string
-          p_tenant: string
-        }
-        Returns: {
-          balance: number
-          entry_count: number
-          lifetime: number
-        }[]
-      }
-      confirm_booking_payment: {
-        Args: {
-          p_booking: string
-          p_connected_account: string
-          p_payment_intent: string
-          p_tenant: string
-        }
-        Returns: Json
-      }
-      booking_payment_event_matches: {
-        Args: {
-          p_booking: string
-          p_connected_account: string
-          p_payment_intent: string
-          p_tenant: string
-        }
-        Returns: boolean
-      }
-      finalize_customer_booking_rebook: {
-        Args: {
-          p_customer: string | null
-          p_customer_profile: string
-          p_new_booking: string
-          p_old_booking: string
-          p_tenant: string
-        }
-        Returns: Json
-      }
-      compensate_customer_booking_rebook: {
-        Args: {
-          p_customer: string | null
-          p_customer_profile: string
-          p_new_booking: string
-          p_old_booking: string
-          p_tenant: string
-        }
-        Returns: Json
-      }
-      confirm_shop_order_payment: {
-        Args: {
-          p_connected_account: string
-          p_order: string
-          p_payment_intent: string
-          p_tenant: string
-        }
-        Returns: Json
-      }
-      prepare_booking_checkout_payment: {
-        Args: {
-          p_amount_cents: number
-          p_booking: string
-          p_checkout_session: string
-          p_connected_account: string
-          p_currency: string
-          p_tenant: string
-        }
-        Returns: boolean
-      }
-      record_payment_refund_webhook: {
-        Args: {
-          p_connected_account: string
-          p_payment_intent: string
-          p_provider_ref: string
-          p_tenant: string
-        }
-        Returns: Json
-      }
-      create_public_booking: {
-        Args: {
-          p_customer?: string
-          p_guest_email?: string
-          p_guest_name?: string
-          p_guest_phone?: string
-          p_location?: string
-          p_note?: string
-          p_request_id?: string
-          p_service: string
-          p_staff: string
-          p_start: string
-          p_tenant_slug: string
-        }
-        Returns: string
-      }
-      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
-      customer_contact_hash: {
-        Args: { p_email: string; p_phone: string; p_tenant: string }
-        Returns: string
-      }
-      event_seats_left: { Args: { p_event: string }; Returns: number }
-      create_onsite_event_registration: {
-        Args: {
-          p_email: string
-          p_event: string
-          p_message: string
-          p_name: string
-          p_party_size: number
-          p_phone: string
-          p_tenant: string
-        }
-        Returns: Json
-      }
       claim_due_booking_reminders: {
         Args: {
           p_claim: string
@@ -3570,78 +3689,6 @@ export type Database = {
           p_now: string
         }
         Returns: string[]
-      }
-      inspect_customer_account_claim: {
-        Args: {
-          p_purpose: string
-          p_tenant: string
-          p_token_hash: string
-        }
-        Returns: boolean
-      }
-      reconcile_customer_account_claim: {
-        Args: {
-          p_auth_user: string
-          p_purpose: string
-          p_tenant: string
-          p_token_hash: string
-        }
-        Returns: boolean
-      }
-      claim_customer_account: {
-        Args: {
-          p_purpose: string
-          p_tenant: string
-          p_token_hash: string
-        }
-        Returns: {
-          customer_id: string
-          merged: boolean
-          status: string
-        }[]
-      }
-      enqueue_notification: {
-        Args: {
-          p_booking: string | null
-          p_category: string
-          p_channel: string
-          p_consent_state: Json | null
-          p_customer: string | null
-          p_event_key: string
-          p_event_type: string
-          p_fallback_channel: string | null
-          p_max_attempts: number
-          p_payload: Json | null
-          p_staff: string | null
-          p_tenant: string
-        }
-        Returns: {
-          id: string
-          inserted: boolean
-        }[]
-      }
-      route_booking_notification: {
-        Args: {
-          p_allow: boolean
-          p_booking: string
-          p_category: string
-          p_event_key: string
-          p_event_type: string
-          p_expected_statuses: string[]
-          p_outbox_id: string | null
-          p_payload: Json
-          p_skip_reason: string | null
-          p_staff: string | null
-          p_tenant: string
-          p_type_opt_in: string | null
-        }
-        Returns: {
-          chosen_channel: string | null
-          id: string
-          inserted: boolean
-          skip_reason: string | null
-          status: string
-        }[]
       }
       claim_notification_outbox: {
         Args: {
@@ -3657,6 +3704,7 @@ export type Database = {
           category: string
           chosen_channel: string | null
           consent_state: Json | null
+          cost_currency: string | null
           cost_ore: number | null
           created_at: string
           customer_id: string | null
@@ -3680,6 +3728,95 @@ export type Database = {
           tenant_id: string
           updated_at: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_notification_outbox_by_id: {
+        Args: {
+          p_id: string
+          p_lease_seconds: number
+          p_lease_token: string
+          p_now: string
+        }
+        Returns: {
+          attempt_count: number
+          available_at: string
+          booking_id: string | null
+          category: string
+          chosen_channel: string | null
+          consent_state: Json | null
+          cost_currency: string | null
+          cost_ore: number | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          event_key: string
+          event_type: string
+          fallback_channel: string | null
+          id: string
+          last_error: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
+          max_attempts: number
+          partner_id: string | null
+          parts: number | null
+          payload: Json
+          provider_ref: string | null
+          sent_at: string | null
+          skip_reason: string | null
+          staff_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_payment_refund_job_by_id: {
+        Args: {
+          p_id: string
+          p_lease_seconds: number
+          p_lease_token: string
+          p_now: string
+        }
+        Returns: {
+          attempt_count: number
+          booking_id: string
+          connected_account_id: string
+          id: string
+          lease_token: string
+          payment_id: string
+          payment_intent_id: string
+          provider_idempotency_key: string
+          tenant_id: string
+        }[]
+      }
+      claim_payment_refund_jobs: {
+        Args: {
+          p_lease_seconds: number
+          p_lease_token: string
+          p_limit: number
+          p_now: string
+        }
+        Returns: {
+          attempt_count: number
+          booking_id: string
+          connected_account_id: string
+          id: string
+          lease_token: string
+          payment_id: string
+          payment_intent_id: string
+          provider_idempotency_key: string
+          tenant_id: string
+        }[]
       }
       claim_sms_notification_outbox: {
         Args: {
@@ -3688,71 +3825,745 @@ export type Database = {
           p_limit: number
           p_now: string
         }
-        Returns: Database["public"]["Tables"]["notifications_outbox"]["Row"][]
-      }
-      begin_notification_delivery: {
-        Args: {
-          p_id: string
-          p_lease_token: string
+        Returns: {
+          attempt_count: number
+          available_at: string
+          booking_id: string | null
+          category: string
+          chosen_channel: string | null
+          consent_state: Json | null
+          cost_currency: string | null
+          cost_ore: number | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          event_key: string
+          event_type: string
+          fallback_channel: string | null
+          id: string
+          last_error: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
+          max_attempts: number
+          partner_id: string | null
+          parts: number | null
+          payload: Json
+          provider_ref: string | null
+          sent_at: string | null
+          skip_reason: string | null
+          staff_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications_outbox"
+          isOneToOne: false
+          isSetofReturn: true
         }
+      }
+      compensate_customer_booking_rebook: {
+        Args: {
+          p_customer: string | null
+          p_customer_profile: string
+          p_new_booking: string
+          p_old_booking: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      complete_payment_refund_job: {
+        Args: { p_id: string; p_lease_token: string; p_provider_ref: string }
         Returns: boolean
       }
-      ack_notification_outbox: {
+      confirm_booking_payment: {
         Args: {
-          p_cost_currency?: string | null
-          p_cost_ore: number | null
-          p_id: string
-          p_lease_token: string
-          p_parts?: number | null
-          p_provider_ref: string | null
-          p_skip_reason: string | null
-          p_status: string
+          p_booking: string
+          p_connected_account: string
+          p_payment_intent: string
+          p_tenant: string
         }
-        Returns: boolean
+        Returns: Json
       }
-      retry_notification_outbox: {
+      confirm_shop_order: {
         Args: {
-          p_error: string
-          p_id: string
-          p_lease_token: string
-          p_retry_at: string
+          p_customer?: string
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_note?: string
+          p_order_id: string
+          p_payment_method?: string
+          p_pickup_location?: string
+          p_ship_address?: string
+          p_shipping_option?: string
+          p_token: string
         }
-        Returns: string | null
+        Returns: {
+          order_id: string
+          requires_payment: boolean
+        }[]
       }
-      record_sms_delivery: {
+      confirm_shop_order_payment: {
         Args: {
-          p_delivered_at: string | null
-          p_partner?: string
-          p_provider_ref: string
-          p_status: string
+          p_connected_account: string
+          p_order: string
+          p_payment_intent: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      contain_staff_invite_profile: {
+        Args: { p_auth_user: string; p_role: string; p_tenant: string }
+        Returns: string
+      }
+      create_admin_booking: {
+        Args: {
+          p_customer_id?: string
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_location?: string
+          p_note?: string
+          p_request_id: string
+          p_service: string
+          p_staff: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      create_admin_time_off: {
+        Args: {
+          p_end: string
+          p_kind: string
+          p_location: string
+          p_reason?: string
+          p_series_id?: string
+          p_staff: string
+          p_start: string
         }
         Returns: string
       }
-      scrub_notification_outbox_customer: {
+      create_admin_time_off_series: {
         Args: {
-          p_booking_ids: string[]
-          p_customer_ids: string[]
+          p_kind: string
+          p_location: string
+          p_occurrences: Json
+          p_reason?: string
+          p_series_id?: string
+          p_staff: string
+        }
+        Returns: string[]
+      }
+      create_customer_account_claim: {
+        Args: {
+          p_customer: string
+          p_expires_at: string
+          p_purpose: string
+          p_tenant: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
+      create_my_time_off: {
+        Args: {
+          p_end: string
+          p_location: string
+          p_reason?: string
+          p_staff: string
+          p_start: string
+        }
+        Returns: string
+      }
+      create_onsite_event_registration: {
+        Args: {
+          p_email: string
+          p_event: string
+          p_message: string
+          p_name: string
+          p_party_size: number
+          p_phone: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      create_public_booking: {
+        Args: {
+          p_customer?: string
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_location?: string
+          p_note?: string
+          p_request_id?: string
+          p_service: string
+          p_staff: string
+          p_start: string
+          p_tenant_slug: string
+        }
+        Returns: string
+      }
+      create_staff_walk_in: {
+        Args: {
+          p_location: string
+          p_name?: string
+          p_service: string
+          p_staff: string
+          p_start: string
+        }
+        Returns: string
+      }
+      create_staff_with_defaults: {
+        Args: { p_location?: string; p_profile?: string; p_title: string }
+        Returns: string
+      }
+      create_storefront_booking: {
+        Args: {
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_location?: string
+          p_note?: string
+          p_request_id?: string
+          p_service: string
+          p_staff: string
+          p_start: string
+          p_tenant_slug: string
+        }
+        Returns: string
+      }
+      create_storefront_booking_with_release: {
+        Args: {
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_location?: string
+          p_note?: string
+          p_online_payment_released?: boolean
+          p_request_id?: string
+          p_service: string
+          p_staff: string
+          p_start: string
+          p_tenant_slug: string
+        }
+        Returns: {
+          booking_id: string
+          booking_status: string
+          requires_payment: boolean
+        }[]
+      }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      customer_contact_hash: {
+        Args: { p_email: string; p_phone: string; p_tenant: string }
+        Returns: string
+      }
+      customer_loyalty_totals: {
+        Args: { p_customer: string; p_tenant: string }
+        Returns: {
+          balance: number
+          entry_count: number
+          lifetime: number
+        }[]
+      }
+      customer_portal_cancel_booking: {
+        Args: {
+          p_booking_public_id: string
+          p_expected_cutoff_hours: number
+          p_idempotency_key: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: {
+          booking_status: string
+          outcome: string
+          refund_job_id: string
+        }[]
+      }
+      customer_portal_contact_change_context: {
+        Args: {
+          p_flow_public_id: string
+          p_flow_subject_digest: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: {
+          action: string
+          outcome: string
+        }[]
+      }
+      customer_portal_create_challenge: {
+        Args: {
+          p_channel: string
+          p_code_digest: string
+          p_contact_digest: string
+          p_customer: string
+          p_expires_at: string
+          p_key_version: number
+          p_public_id: string
+          p_purpose: string
+          p_subject_digest: string
+          p_tenant: string
+        }
+        Returns: {
+          challenge_public_id: string
+          outcome: string
+          should_deliver: boolean
+        }[]
+      }
+      customer_portal_exchange_link: {
+        Args: {
+          p_key_version: number
+          p_link_public_id: string
+          p_new_session_digest: string
+          p_new_session_public_id: string
+          p_token_digest: string
+        }
+        Returns: {
+          outcome: string
+          session_public_id: string
+          tenant_slug: string
+        }[]
+      }
+      customer_portal_finalize_contact_change: {
+        Args: {
+          p_code_digest: string
+          p_current_contact_digest: string
+          p_current_destination: string
+          p_flow_public_id: string
+          p_flow_subject_digest: string
+          p_key_version: number
+          p_new_session_digest: string
+          p_new_session_public_id: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: {
+          action: string
+          attempts_remaining: number
+          outcome: string
+        }[]
+      }
+      customer_portal_gdpr_scrub: {
+        Args: { p_customer: string; p_tenant: string }
+        Returns: number
+      }
+      customer_portal_get_booking: {
+        Args: {
+          p_booking_public_id: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: Json
+      }
+      customer_portal_list_bookings: {
+        Args: {
+          p_cursor_id?: string
+          p_cursor_start?: string
+          p_page_size?: number
+          p_scope?: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: Json
+      }
+      customer_portal_mint_link: {
+        Args: {
+          p_customer: string
+          p_delivery_intent_id?: string
+          p_expires_at: string
+          p_key_version: number
+          p_purpose: string
+          p_tenant: string
+          p_token_digest: string
+        }
+        Returns: {
+          expires_at: string
+          link_public_id: string
+        }[]
+      }
+      customer_portal_prepare_contact_change_destination: {
+        Args: {
+          p_code_digest: string
+          p_current_contact_digest: string
+          p_current_destination: string
+          p_expires_at: string
+          p_flow_public_id: string
+          p_flow_subject_digest: string
+          p_key_version: number
+          p_new_booking_contact_digest: string
+          p_new_channel: string
+          p_new_contact_digest: string
+          p_new_contact_masked: string
+          p_new_destination: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: {
+          channel: string
+          delivery_destination: string
+          expires_at: string
+          masked_destination: string
+          outcome: string
+          tenant_name: string
+        }[]
+      }
+      customer_portal_prepare_recovery_delivery: {
+        Args: {
+          p_code_digest: string
+          p_current_booking_contact_digest: string
+          p_current_contact_digest: string
+          p_current_destination: string
+          p_lease_token: string
+          p_outbox_id: string
+        }
+        Returns: string
+      }
+      customer_portal_prepare_recovery_resend: {
+        Args: { p_challenge_public_id: string; p_subject_digest: string }
+        Returns: {
+          booking_contact_digest: string
+          channel: string
+          contact_digest: string
+          delivery_destination: string
+          outcome: string
+          tenant_name: string
+          tenant_slug: string
+        }[]
+      }
+      customer_portal_profile_snapshot: {
+        Args: { p_secret_digest: string; p_session_public_id: string }
+        Returns: {
+          outcome: string
+          profile: Json
+          recovery_tenant_slug: string
+        }[]
+      }
+      customer_portal_record_challenge_delivery: {
+        Args: {
+          p_challenge_public_id: string
+          p_delivered: boolean
+          p_subject_digest: string
+        }
+        Returns: string
+      }
+      customer_portal_record_contact_change_delivery: {
+        Args: {
+          p_code_digest: string
+          p_delivered: boolean
+          p_flow_public_id: string
+          p_flow_subject_digest: string
+          p_secret_digest: string
+          p_session_public_id: string
+          p_stage: string
+        }
+        Returns: string
+      }
+      customer_portal_record_recovery_delivery: {
+        Args: {
+          p_booking_contact_digest: string
+          p_challenge_public_id: string
+          p_delivered: boolean
+          p_subject_digest: string
+        }
+        Returns: string
+      }
+      customer_portal_record_recovery_outbox_delivery: {
+        Args: {
+          p_delivered: boolean
+          p_lease_token: string
+          p_outbox_id: string
+        }
+        Returns: string
+      }
+      customer_portal_recovery_delivery_target: {
+        Args: { p_lease_token: string; p_outbox_id: string }
+        Returns: {
+          booking_contact_digest: string
+          challenge_public_id: string
+          channel: string
+          contact_digest: string
+          delivery_destination: string
+          expires_at: string
+          outcome: string
+          tenant_name: string
+        }[]
+      }
+      customer_portal_recovery_outbox_candidates: {
+        Args: { p_limit: number; p_now: string }
+        Returns: {
+          id: string
+        }[]
+      }
+      customer_portal_recovery_state: {
+        Args: { p_challenge_public_id: string; p_subject_digest: string }
+        Returns: {
+          attempts_remaining: number
+          outcome: string
+          resend_after: string
+          tenant_slug: string
+        }[]
+      }
+      customer_portal_resend_contact_change: {
+        Args: {
+          p_code_digest: string
+          p_current_contact_digest: string
+          p_current_destination: string
+          p_expires_at: string
+          p_flow_public_id: string
+          p_flow_subject_digest: string
+          p_secret_digest: string
+          p_session_public_id: string
+          p_stage: string
+        }
+        Returns: {
+          channel: string
+          delivery_destination: string
+          expires_at: string
+          masked_destination: string
+          outcome: string
+          retry_after_seconds: number
+          tenant_name: string
+        }[]
+      }
+      customer_portal_resend_recovery: {
+        Args: {
+          p_challenge_public_id: string
+          p_expires_at: string
+          p_key_version: number
+          p_new_code_digest: string
+          p_new_public_id: string
+          p_new_subject_digest: string
+          p_subject_digest: string
+        }
+        Returns: {
+          challenge_public_id: string
+          created: boolean
+          outbox_id: string
+          outcome: string
+        }[]
+      }
+      customer_portal_revoke_booking_trusts: {
+        Args: {
+          p_secret_digest: string
+          p_session_public_id: string
+          p_trust_public_id?: string
         }
         Returns: number
       }
+      customer_portal_revoke_other_sessions: {
+        Args: { p_secret_digest: string; p_session_public_id: string }
+        Returns: number
+      }
+      customer_portal_revoke_session: {
+        Args: { p_secret_digest: string; p_session_public_id: string }
+        Returns: string
+      }
+      customer_portal_security_snapshot: {
+        Args: { p_secret_digest: string; p_session_public_id: string }
+        Returns: {
+          outcome: string
+          recovery_tenant_slug: string
+          security: Json
+        }[]
+      }
+      customer_portal_session_snapshot: {
+        Args: {
+          p_rotated_key_version?: number
+          p_rotated_secret_digest?: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: {
+          outcome: string
+          recovery_tenant_slug: string
+          snapshot: Json
+        }[]
+      }
+      customer_portal_start_contact_change: {
+        Args: {
+          p_action: string
+          p_code_digest: string
+          p_current_contact_digest: string
+          p_current_contact_masked: string
+          p_current_destination: string
+          p_expires_at: string
+          p_flow_public_id: string
+          p_flow_subject_digest: string
+          p_key_version: number
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: {
+          channel: string
+          delivery_destination: string
+          expires_at: string
+          flow_public_id: string
+          masked_destination: string
+          outcome: string
+          tenant_name: string
+        }[]
+      }
+      customer_portal_start_recovery: {
+        Args: {
+          p_booking_contact_digest: string
+          p_code_digest: string
+          p_contact_digest: string
+          p_expires_at: string
+          p_key_version: number
+          p_lookup: string
+          p_public_id: string
+          p_subject_digest: string
+          p_tenant_slug: string
+        }
+        Returns: {
+          challenge_public_id: string
+          created: boolean
+          outbox_id: string
+          outcome: string
+        }[]
+      }
+      customer_portal_update_name: {
+        Args: {
+          p_display_name: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: string
+      }
+      customer_portal_verify_challenge: {
+        Args: {
+          p_challenge_public_id: string
+          p_code_digest: string
+          p_subject_digest: string
+        }
+        Returns: {
+          attempts_remaining: number
+          customer_id: string
+          outcome: string
+        }[]
+      }
+      customer_portal_verify_contact_change_current: {
+        Args: {
+          p_code_digest: string
+          p_flow_public_id: string
+          p_flow_subject_digest: string
+          p_secret_digest: string
+          p_session_public_id: string
+        }
+        Returns: {
+          attempts_remaining: number
+          outcome: string
+        }[]
+      }
+      customer_portal_verify_recovery_and_mint_session: {
+        Args: {
+          p_challenge_public_id: string
+          p_code_digest: string
+          p_key_version: number
+          p_new_session_digest: string
+          p_new_session_public_id: string
+          p_subject_digest: string
+        }
+        Returns: {
+          attempts_remaining: number
+          outcome: string
+          tenant_slug: string
+        }[]
+      }
+      delete_admin_time_off: {
+        Args: { p_delete_series?: boolean; p_time_off: string }
+        Returns: number
+      }
+      delete_my_time_off: { Args: { p_time_off: string }; Returns: boolean }
+      discard_site_draft: {
+        Args: { p_expected_lock_version: number; p_tenant: string }
+        Returns: string
+      }
+      enqueue_notification: {
+        Args: {
+          p_booking: string | null
+          p_category: string
+          p_channel: string
+          p_consent_state: Json | null
+          p_customer: string | null
+          p_event_key: string
+          p_event_type: string
+          p_fallback_channel: string | null
+          p_max_attempts: number
+          p_payload: Json | null
+          p_staff: string | null
+          p_tenant: string
+        }
+        Returns: {
+          id: string
+          inserted: boolean
+        }[]
+      }
+      event_seats_left: { Args: { p_event: string }; Returns: number }
       expire_abandoned_pending_bookings: {
         Args: { p_ttl_min?: number }
         Returns: number
       }
-      admin_customer_rows: {
-        Args: { p_tenant: string; p_customer?: string }
+      fail_customer_erasure_auth_cleanup: {
+        Args: {
+          p_auth_user: string
+          p_claim_token: string
+          p_cleanup_id: string
+          p_error_code: string
+        }
+        Returns: boolean
+      }
+      finalize_customer_booking_rebook: {
+        Args: {
+          p_customer: string | null
+          p_customer_profile: string
+          p_new_booking: string
+          p_old_booking: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      finalize_verified_storefront_booking: {
+        Args: {
+          p_challenge: string
+          p_contact_digest: string
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_location?: string
+          p_note?: string
+          p_online_payment_released?: boolean
+          p_pin_digest: string
+          p_request_id?: string
+          p_service: string
+          p_session_token: string
+          p_staff: string
+          p_start: string
+          p_tenant_slug: string
+        }
         Returns: {
-          id: string
-          display_name: string | null
-          full_name: string | null
-          name_hidden: boolean
+          attempts_remaining: number
+          booking_id: string
+          booking_status: string
+          outbox_id: string
+          outcome: string
+          requires_payment: boolean
+        }[]
+      }
+      get_admin_time_off_impacts: {
+        Args: { p_time_off: string }
+        Returns: {
+          booking_id: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          end_ts: string
+          handled: boolean
+          resolution: string
+          service_name: string
+          start_ts: string
           status: string
-          first_seen_at: string
-          last_seen_at: string | null
-          hidden_at: string | null
-          visits: number
-          last_visit_ts: string | null
-          loyalty_points: number
         }[]
       }
       get_busy_intervals: {
@@ -3778,6 +4589,19 @@ export type Database = {
           pii_visible: boolean
         }[]
       }
+      get_public_bookable_starts: {
+        Args: {
+          p_location: string
+          p_service: string
+          p_staff_ids: string[]
+          p_starts: string[]
+          p_tenant: string
+        }
+        Returns: {
+          staff_id: string
+          start_ts: string
+        }[]
+      }
       get_public_booking: {
         Args: { p_id: string }
         Returns: {
@@ -3798,18 +4622,28 @@ export type Database = {
           tenant_slug: string
         }[]
       }
-      replace_staff_services: {
-        Args: { p_services: string[]; p_staff: string }
-        Returns: undefined
-      }
-      restore_schedule_backup: { Args: never; Returns: undefined }
-      set_staff_active: {
-        Args: { p_active: boolean; p_staff: string }
-        Returns: boolean
-      }
       get_public_shop_order: {
         Args: { p_id: string; p_token: string }
         Returns: Json
+      }
+      get_public_tenant_module_states: {
+        Args: { p_tenant: string }
+        Returns: {
+          module_key: string
+          state: string
+        }[]
+      }
+      get_scheduler_health: {
+        Args: {
+          p_max_age_seconds?: number
+          p_now: string
+          p_scheduler_name: string
+        }
+        Returns: Json
+      }
+      inspect_customer_account_claim: {
+        Args: { p_purpose: string; p_tenant: string; p_token_hash: string }
+        Returns: boolean
       }
       join_loyalty_club: {
         Args: {
@@ -3820,33 +4654,92 @@ export type Database = {
         }
         Returns: string
       }
+      mark_admin_time_off_booking_handled: {
+        Args: {
+          p_booking: string
+          p_note?: string
+          p_resolution: string
+          p_time_off: string
+        }
+        Returns: undefined
+      }
       mark_shop_order_paid: { Args: { p_order_id: string }; Returns: undefined }
-      prune_expired_shop_reserves: { Args: never; Returns: number }
-      prune_contact_messages: { Args: { p_months?: number }; Returns: number }
-      prune_expired_slot_holds: { Args: never; Returns: number }
-      sweep_customer_portal_contact_changes: {
-        Args: { p_now?: string }
-        Returns: number
+      partner_update_tenant_user: {
+        Args: {
+          p_access_scope: string
+          p_role: string
+          p_status: string
+          p_tenant: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      payment_refund_health: { Args: never; Returns: Json }
+      place_slot_hold: {
+        Args: {
+          p_service: string
+          p_staff: string
+          p_start: string
+          p_tenant_slug: string
+          p_token: string
+          p_ttl_min?: number
+        }
+        Returns: string
       }
       platform_booking_stats: {
         Args: never
         Returns: {
           completed: number
-          last_at: string | null
+          last_at: string
           tenant_id: string
           total: number
         }[]
+      }
+      platform_create_customer: {
+        Args: {
+          p_email?: string
+          p_full_name: string
+          p_phone?: string
+          p_tenant: string
+        }
+        Returns: string
       }
       platform_cron_health: {
         Args: never
         Returns: {
           active: boolean
           jobname: string
-          last_duration_ms: number | null
-          last_message: string | null
-          last_start: string | null
-          last_status: string | null
+          last_duration_ms: number
+          last_message: string
+          last_start: string
+          last_status: string
           schedule: string
+        }[]
+      }
+      platform_customer_safe_rows: {
+        Args: {
+          p_customer?: string
+          p_limit?: number
+          p_query?: string
+          p_tenant?: string
+        }
+        Returns: {
+          auth_user_id: string
+          display_name: string
+          first_seen_at: string
+          full_name: string
+          has_email: boolean
+          has_phone: boolean
+          id: string
+          last_seen_at: string
+          masked_email: string
+          masked_phone: string
+          name_hidden: boolean
+          status: string
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+          visits: number
         }[]
       }
       platform_drift_health: {
@@ -3921,57 +4814,22 @@ export type Database = {
           license_price_ore: number
           license_total_ore: number
           licensed_tenants: number
-          member_email: string | null
-          member_joined_at: string | null
-          member_status: string | null
+          member_email: string
+          member_joined_at: string
+          member_status: string
           partner_id: string
           partner_name: string
           partner_slug: string
           partner_status: string
-          sms_cost_ore: number
           sms_cost_currency: string
+          sms_cost_ore: number
           sms_provider_enabled: boolean
           sms_provider_key: string
           timezone: string
         }[]
       }
-      platform_create_customer: {
-        Args: {
-          p_email?: string
-          p_full_name: string
-          p_phone?: string
-          p_tenant: string
-        }
-        Returns: string
-      }
-      platform_customer_safe_rows: {
-        Args: {
-          p_customer?: string
-          p_limit?: number
-          p_query?: string
-          p_tenant?: string
-        }
-        Returns: {
-          auth_user_id: string | null
-          display_name: string | null
-          first_seen_at: string | null
-          full_name: string | null
-          has_email: boolean
-          has_phone: boolean
-          id: string
-          last_seen_at: string | null
-          masked_email: string
-          masked_phone: string
-          name_hidden: boolean
-          status: string
-          tenant_id: string
-          tenant_name: string
-          tenant_slug: string
-          visits: number
-        }[]
-      }
       platform_replace_service_staff: {
-        Args: { p_staff_ids?: string[]; p_service: string; p_tenant: string }
+        Args: { p_service: string; p_staff_ids?: string[]; p_tenant: string }
         Returns: number
       }
       platform_replace_staff_schedule: {
@@ -3996,35 +4854,232 @@ export type Database = {
         Args: { p_message: string; p_status: string; p_tenant: string }
         Returns: boolean
       }
-      partner_update_tenant_user: {
+      prepare_booking_checkout_payment: {
         Args: {
-          p_access_scope: string
-          p_role: string
-          p_status: string
+          p_amount_cents: number
+          p_booking: string
+          p_checkout_session: string
+          p_connected_account: string
+          p_currency: string
           p_tenant: string
-          p_user: string
         }
-        Returns: undefined
+        Returns: boolean
+      }
+      prepare_staff_invite_cleanup: {
+        Args: { p_auth_user: string; p_role: string; p_tenant: string }
+        Returns: string
+      }
+      preview_admin_time_off_impacts: {
+        Args: {
+          p_end: string
+          p_location: string
+          p_staff: string
+          p_start: string
+        }
+        Returns: {
+          booking_id: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          end_ts: string
+          handled: boolean
+          resolution: string
+          service_name: string
+          start_ts: string
+          status: string
+        }[]
+      }
+      prune_contact_messages: { Args: { p_months?: number }; Returns: number }
+      prune_expired_shop_reserves: { Args: never; Returns: number }
+      prune_expired_slot_holds: { Args: never; Returns: number }
+      publish_site_draft: {
+        Args: { p_expected_lock_version: number; p_tenant: string }
+        Returns: {
+          lock_version: number
+          revision_id: string
+          snapshot: Json
+        }[]
+      }
+      publish_tenant: { Args: { p_tenant: string }; Returns: Json }
+      reconcile_customer_account_claim: {
+        Args: {
+          p_auth_user: string
+          p_purpose: string
+          p_tenant: string
+          p_token_hash: string
+        }
+        Returns: boolean
+      }
+      record_booking_verification_delivery: {
+        Args: { p_challenge: string; p_session_token: string }
+        Returns: boolean
+      }
+      record_payment_refund_webhook: {
+        Args: {
+          p_connected_account: string
+          p_payment_intent: string
+          p_provider_ref: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      record_scheduler_heartbeat: {
+        Args: {
+          p_error_code: string
+          p_observed_at: string
+          p_phase: string
+          p_run_id: string
+          p_scheduler_name: string
+        }
+        Returns: boolean
+      }
+      record_shop_order_refund: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
+      record_sms_delivery: {
+        Args: {
+          p_delivered_at: string | null
+          p_partner?: string
+          p_provider_ref: string
+          p_status: string
+        }
+        Returns: string
       }
       refresh_partner_license_month: {
         Args: { p_month?: string }
         Returns: number
       }
-      resolve_partner_sms_config: {
-        Args: { p_tenant: string }
-        Returns: {
-          callback_secret: string | null
-          callback_username: string
-          cost_currency: string
-          password: string | null
-          provider_key: string
-          sender: string | null
-          username: string | null
-        }[]
+      release_shop_order: {
+        Args: { p_order_id: string; p_status?: string; p_token?: string }
+        Returns: undefined
+      }
+      release_slot_hold: {
+        Args: { p_staff: string; p_start: string; p_token: string }
+        Returns: undefined
+      }
+      replace_staff_services: {
+        Args: { p_services: string[]; p_staff: string }
+        Returns: undefined
+      }
+      reschedule_admin_absence_booking: {
+        Args: {
+          p_booking: string
+          p_expected_staff: string
+          p_expected_start: string
+          p_location: string
+          p_service: string
+          p_staff: string
+          p_start: string
+          p_time_off: string
+        }
+        Returns: Json
+      }
+      reschedule_admin_booking: {
+        Args: {
+          p_booking: string
+          p_expected_staff: string
+          p_expected_start: string
+          p_location: string
+          p_service: string
+          p_staff: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      reserve_shop_order: {
+        Args: {
+          p_fulfilment?: string
+          p_items: Json
+          p_tenant_slug: string
+          p_token?: string
+          p_ttl_min?: number
+        }
+        Returns: string
       }
       resolve_partner_sms_callback: {
         Args: { p_partner: string }
+        Returns: string
+      }
+      resolve_partner_sms_config: {
+        Args: { p_tenant: string }
+        Returns: {
+          callback_secret: string
+          callback_username: string
+          cost_currency: string
+          password: string
+          provider_key: string
+          sender: string
+          username: string
+        }[]
+      }
+      resolve_tenant_by_domain: { Args: { p_host: string }; Returns: string }
+      restore_schedule_backup: { Args: never; Returns: undefined }
+      restore_site_revision: {
+        Args: {
+          p_expected_lock_version?: number
+          p_source_revision_id: string
+          p_tenant: string
+        }
+        Returns: {
+          lock_version: number
+          revision_id: string
+        }[]
+      }
+      retry_notification_outbox: {
+        Args: {
+          p_error: string
+          p_id: string
+          p_lease_token: string
+          p_retry_at: string
+        }
         Returns: string | null
+      }
+      retry_payment_refund_job: {
+        Args: {
+          p_id: string
+          p_lease_token: string
+          p_reason: string
+          p_retry_at: string
+        }
+        Returns: string
+      }
+      review_payment_refund_job: {
+        Args: { p_id: string; p_lease_token: string; p_reason: string }
+        Returns: boolean
+      }
+      route_booking_notification: {
+        Args: {
+          p_allow: boolean
+          p_booking: string
+          p_category: string
+          p_event_key: string
+          p_event_type: string
+          p_expected_statuses: string[]
+          p_outbox_id: string | null
+          p_payload: Json
+          p_skip_reason: string | null
+          p_staff: string | null
+          p_tenant: string
+          p_type_opt_in: string | null
+        }
+        Returns: {
+          chosen_channel: string | null
+          id: string
+          inserted: boolean
+          skip_reason: string | null
+          status: string
+        }[]
+      }
+      save_location_booking_settings: {
+        Args: {
+          p_hours: Json
+          p_location: string
+          p_max_advance_days: number
+          p_min_notice_min: number
+          p_slot_step_min: number
+        }
+        Returns: undefined
       }
       save_partner_sms_config: {
         Args: {
@@ -4038,53 +5093,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      sync_partner_license_open_month: {
-        Args: { p_partner?: string }
-        Returns: number
-      }
-      record_shop_order_refund: { Args: { p_order_id: string }; Returns: boolean }
-      release_shop_order: {
-        Args: { p_order_id: string; p_status?: string; p_token?: string }
-        Returns: undefined
-      }
-      reserve_shop_order: {
-        Args: {
-          p_fulfilment?: string
-          p_items: Json
-          p_tenant_slug: string
-          p_token?: string
-          p_ttl_min?: number
-        }
-        Returns: string
-      }
-      resolve_tenant_by_domain: { Args: { p_host: string }; Returns: string }
-      seed_explicit_slots_from_hours: {
-        Args: { p_staff: string; p_step?: number }
-        Returns: number
-      }
-      discard_site_draft: {
-        Args: { p_expected_lock_version: number; p_tenant: string }
-        Returns: string
-      }
-      publish_site_draft: {
-        Args: { p_expected_lock_version: number; p_tenant: string }
-        Returns: {
-          lock_version: number
-          revision_id: string
-          snapshot: Json
-        }[]
-      }
-      restore_site_revision: {
-        Args: {
-          p_expected_lock_version?: number
-          p_source_revision_id: string
-          p_tenant: string
-        }
-        Returns: {
-          lock_version: number
-          revision_id: string
-        }[]
-      }
       save_site_draft: {
         Args: {
           p_expected_lock_version?: number
@@ -4096,7 +5104,89 @@ export type Database = {
           revision_id: string
         }[]
       }
+      scrub_customer_account_claims: {
+        Args: { p_customer_ids: string[] }
+        Returns: number
+      }
+      scrub_notification_outbox_customer: {
+        Args: { p_booking_ids: string[]; p_customer_ids: string[] }
+        Returns: number
+      }
+      seed_explicit_slots_from_hours: {
+        Args: { p_staff: string; p_step?: number }
+        Returns: number
+      }
+      service_booking_counts: {
+        Args: { p_tenant: string }
+        Returns: {
+          cnt: number
+          service_id: string
+        }[]
+      }
+      set_admin_booking_status: {
+        Args: { p_booking: string; p_status: string }
+        Returns: Json
+      }
+      set_my_notification_preferences: {
+        Args: {
+          p_notify_booking_changes: boolean
+          p_notify_daily_reminder: boolean
+          p_notify_new_booking: boolean
+        }
+        Returns: undefined
+      }
+      set_my_primary_location: {
+        Args: { p_location: string }
+        Returns: undefined
+      }
       set_primary_location: { Args: { p_location: string }; Returns: undefined }
+      set_staff_active: {
+        Args: { p_active: boolean; p_staff: string }
+        Returns: boolean
+      }
+      set_tenant_member_permissions: {
+        Args: {
+          p_can_edit_site: boolean
+          p_can_manage_customers: boolean
+          p_can_view_all_calendars: boolean
+          p_can_view_daily_metrics: boolean
+          p_operational_role: string
+          p_staff: string
+        }
+        Returns: undefined
+      }
+      start_booking_verification: {
+        Args: {
+          p_channel: string
+          p_contact_digest: string
+          p_contact_masked: string
+          p_pin_digest: string
+          p_previous_challenge?: string
+          p_service: string
+          p_session_token: string
+          p_staff: string
+          p_start: string
+          p_tenant_slug: string
+        }
+        Returns: {
+          challenge_id: string
+          expires_at: string
+          hold_id: string
+          pin_outbox_id: string
+          resend_after: string
+        }[]
+      }
+      sweep_customer_portal_contact_changes: {
+        Args: { p_now?: string }
+        Returns: number
+      }
+      sync_partner_license_open_month: {
+        Args: { p_partner?: string }
+        Returns: number
+      }
+      tenant_launch_readiness: { Args: { p_tenant: string }; Returns: Json }
+      tenant_module_readiness: { Args: { p_tenant: string }; Returns: Json }
+      tenant_storage_usage: { Args: { p_tenant: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never
@@ -4225,9 +5315,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

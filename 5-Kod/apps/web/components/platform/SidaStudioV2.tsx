@@ -12,6 +12,9 @@ import {
 } from '@/lib/platform/actions/site-revisions'
 import type { SiteRevision, SiteSnapshot } from '@/lib/platform/site-revisions'
 import styles from './SidaStudioV2.module.css'
+import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
+
+export { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
 
 const MESSAGE_SOURCE = 'corevo-sida'
 const HISTORY_BACK_TARGET = '__corevo_history_back__'
@@ -70,21 +73,6 @@ export type SidaStudioV2Props = {
   manifestData: SiteEditorManifest
   liveModules?: string[]
   scheduleHours: { day: string; time: string }[] | null
-}
-
-export function resolveSiteEditorTabId(
-  tabs: ReadonlyArray<Pick<SiteEditorTab, 'id'>>,
-  requestedTabId: string | null | undefined,
-): string {
-  return requestedTabId && tabs.some((tab) => tab.id === requestedTabId)
-    ? requestedTabId
-    : tabs[0]?.id ?? ''
-}
-
-export function siteEditorTabHref(tabId: string, currentSearch: string): string {
-  const params = new URLSearchParams(currentSearch)
-  params.set('flik', tabId)
-  return `/admin/sida?${params.toString()}`
 }
 
 const sameSnapshot = (a: SiteSnapshot, b: SiteSnapshot) => JSON.stringify(a) === JSON.stringify(b)

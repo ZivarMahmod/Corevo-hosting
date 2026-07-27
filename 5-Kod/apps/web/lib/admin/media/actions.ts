@@ -36,7 +36,7 @@ async function sha256Hex(buf: ArrayBuffer): Promise<string> {
  * best available signal until those rows age out. New rows always store their hash.
  */
 export async function uploadMediaAssets(formData: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(formData)
+  const ctx = await moduleCtx(formData, 'media_library')
   if (!ctx) return { error: NO_TENANT }
 
   const files = formData
@@ -128,7 +128,7 @@ export async function uploadMediaAssets(formData: FormData): Promise<ActionState
  * runs only AFTER a successful DB delete). No payment/billing writes. Never throws.
  */
 export async function deleteMediaAsset(formData: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(formData)
+  const ctx = await moduleCtx(formData, 'media_library')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(formData.get('id') ?? '')
@@ -165,7 +165,7 @@ export async function deleteMediaAsset(formData: FormData): Promise<ActionState>
  * Never throws.
  */
 export async function updateMediaAlt(formData: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(formData)
+  const ctx = await moduleCtx(formData, 'media_library')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(formData.get('id') ?? '')

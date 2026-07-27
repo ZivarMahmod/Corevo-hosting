@@ -6,8 +6,8 @@ import 'server-only'
 // Why this passes the DB state-guard (migration 0026 §9): off→draft (module
 // activation) is super-admin only. createTenant runs under platformCtx → the authed
 // client carries the platform_admin JWT claim (private.is_platform_admin()), so the
-// guard admits a row inserted with state 'draft'/'live'/'paused'. A tenant-admin
-// going through PostgREST without that claim would be blocked — exactly the contract.
+// guard admits the legal off→draft activation. Requested live/paused states are then
+// reached through the same state machine; no privileged shortcut bypasses it.
 //
 // Atomicity: these writes happen INSIDE createTenant's cascade-rollback window
 // (tenants is the parent; tenant_modules FKs it ON DELETE CASCADE). The caller calls
@@ -96,9 +96,9 @@ async function filterToCatalog(
  *
  * Steps:
  *  1) tenants.vertical_id = verticalKey (when a bransch was chosen; null = skip).
- *  2) tenant_modules: one row per normalized, catalog-validated selection. Each is
- *     state-guard-admitted because the platform client carries platform_admin.
- *     activated_at is stamped by the DB guard when state leaves 'off'.
+ *  2) tenant_modules: one off row per normalized, catalog-validated selection.
+ *     Requested draft/live/paused targets are reached in legal follow-up steps. The
+ *     DB guard copies default_config and stamps activated_at on first activation.
  */
 export async function writeTenantVerticalAndModules(
   supabase: PlatformClient,
@@ -127,11 +127,46 @@ export async function writeTenantVerticalAndModules(
   const rows = valid.map((s) => ({
     tenant_id: tenantId,
     module_key: s.moduleKey,
-    state: s.state,
-    config: {},
+    state: 'off' as const,
   }))
   const { error: mErr } = await supabase.from('tenant_modules').insert(rows)
   if (mErr) return { ok: false }
+
+  const draftKeys = valid
+    .filter((selection) => selection.state !== 'off')
+    .map((selection) => selection.moduleKey)
+  if (draftKeys.length > 0) {
+    const { error } = await supabase
+      .from('tenant_modules')
+      .update({ state: 'draft' })
+      .eq('tenant_id', tenantId)
+      .in('module_key', draftKeys)
+    if (error) return { ok: false }
+  }
+
+  const liveKeys = valid
+    .filter((selection) => selection.state === 'live' || selection.state === 'paused')
+    .map((selection) => selection.moduleKey)
+  if (liveKeys.length > 0) {
+    const { error } = await supabase
+      .from('tenant_modules')
+      .update({ state: 'live' })
+      .eq('tenant_id', tenantId)
+      .in('module_key', liveKeys)
+    if (error) return { ok: false }
+  }
+
+  const pausedKeys = valid
+    .filter((selection) => selection.state === 'paused')
+    .map((selection) => selection.moduleKey)
+  if (pausedKeys.length > 0) {
+    const { error } = await supabase
+      .from('tenant_modules')
+      .update({ state: 'paused' })
+      .eq('tenant_id', tenantId)
+      .in('module_key', pausedKeys)
+    if (error) return { ok: false }
+  }
 
   return { ok: true }
 }

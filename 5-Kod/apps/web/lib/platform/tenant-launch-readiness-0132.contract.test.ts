@@ -102,44 +102,61 @@ describe('goal-84 launch readiness booking tuple', () => {
     expect(migration).toContain('(select private.role_level()) = 2')
   })
 
-  it('keeps direct setup claim-free and resets only after service-role module restoration', () => {
+  it('keeps direct setup and legal module restoration claim-free', () => {
     const serviceRole = "perform pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);"
     const serviceClaims = '\'{"role":"service_role"}\''
     const roleReset = "perform pg_catalog.set_config('request.jwt.claim.role', '', true);"
     const claimsReset = "perform pg_catalog.set_config('request.jwt.claims', '{}', true);"
-    const initialLiveEnd = runtime.indexOf("values (v_tenant, 'booking', 'live');")
+    const initialSetupEnd = runtime.indexOf(
+      'update public.location_opening_hours set weekday = 2',
+    )
+    const initialOff = runtime.indexOf("values (v_tenant, 'booking', 'off');")
     const websitePublish = runtime.indexOf('v_readiness := public.publish_tenant(v_tenant);')
     const websiteStatusReset = runtime.indexOf(
       "update public.tenants set status = 'provisioning' where id = v_tenant;",
       websitePublish,
     )
-    const bookingLiveRestore = runtime.indexOf(
-      "update public.tenant_modules set state = 'live'",
+    const bookingDraftRestore = runtime.indexOf(
+      "update public.tenant_modules set state = 'draft'",
       websiteStatusReset,
     )
+    const bookingLiveRestore = runtime.indexOf(
+      "update public.tenant_modules set state = 'live'",
+      bookingDraftRestore,
+    )
+    const firstServiceRole = runtime.indexOf(serviceRole)
+    const firstServiceClaims = runtime.indexOf(serviceClaims, firstServiceRole)
+    const firstRoleReset = runtime.indexOf(roleReset, firstServiceClaims)
+    const firstClaimsReset = runtime.indexOf(claimsReset, firstRoleReset)
     const serviceRoleBeforePublish = runtime.lastIndexOf(serviceRole, websitePublish)
     const serviceClaimsBeforePublish = runtime.lastIndexOf(serviceClaims, websitePublish)
-    const firstRoleReset = runtime.indexOf(roleReset, serviceRoleBeforePublish)
-    const firstClaimsReset = runtime.indexOf(claimsReset, serviceClaimsBeforePublish)
-    expect(initialLiveEnd).toBeGreaterThan(0)
-    expect(runtime.slice(0, initialLiveEnd)).not.toContain(
+    const publishRoleReset = runtime.indexOf(roleReset, serviceClaimsBeforePublish)
+    const publishClaimsReset = runtime.indexOf(claimsReset, publishRoleReset)
+    expect(initialSetupEnd).toBeGreaterThan(0)
+    expect(runtime.slice(0, initialSetupEnd)).not.toContain(
       "set_config('request.jwt.claim",
     )
     expect(
       runtime.match(
         /perform pg_catalog\.set_config\('request\.jwt\.claim\.role', '', true\);\s*perform pg_catalog\.set_config\('request\.jwt\.claims', '\{\}', true\);/g,
       ) ?? [],
-    ).toHaveLength(3)
+    ).toHaveLength(4)
     expect(runtime).not.toContain(
       "perform pg_catalog.set_config('request.jwt.claims', '', true);",
     )
-    expect(serviceRoleBeforePublish).toBeGreaterThan(initialLiveEnd)
+    expect(firstServiceRole).toBeGreaterThan(initialSetupEnd)
+    expect(firstServiceClaims).toBeGreaterThan(firstServiceRole)
+    expect(firstRoleReset).toBeGreaterThan(firstServiceClaims)
+    expect(firstClaimsReset).toBeGreaterThan(firstRoleReset)
+    expect(initialOff).toBeGreaterThan(firstClaimsReset)
+    expect(serviceRoleBeforePublish).toBeGreaterThan(initialOff)
     expect(serviceClaimsBeforePublish).toBeGreaterThan(serviceRoleBeforePublish)
     expect(websitePublish).toBeGreaterThan(serviceClaimsBeforePublish)
     expect(websiteStatusReset).toBeGreaterThan(websitePublish)
-    expect(bookingLiveRestore).toBeGreaterThan(websiteStatusReset)
-    expect(firstRoleReset).toBeGreaterThan(bookingLiveRestore)
-    expect(firstClaimsReset).toBeGreaterThan(firstRoleReset)
+    expect(publishRoleReset).toBeGreaterThan(websiteStatusReset)
+    expect(publishClaimsReset).toBeGreaterThan(publishRoleReset)
+    expect(bookingDraftRestore).toBeGreaterThan(publishClaimsReset)
+    expect(bookingLiveRestore).toBeGreaterThan(bookingDraftRestore)
   })
 
   it('keeps protected status resets service-scoped and the direct bypass unprivileged', () => {

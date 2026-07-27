@@ -22,7 +22,7 @@ export async function updateOffertRequest(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'offert')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -87,7 +87,7 @@ export async function deleteOffertRequest(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'offert')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -130,7 +130,7 @@ export async function deleteOffertRequest(
  * rullar inte tillbaka svaret.
  */
 export async function sendOffertReply(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'offert')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()

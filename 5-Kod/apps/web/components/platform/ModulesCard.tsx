@@ -2,7 +2,11 @@
 
 import { useActionState } from 'react'
 import { setModuleState, type ActionState, type TenantModuleRow } from '@/lib/platform/tenant-modules-admin'
-import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
+import {
+  MODULE_STATES,
+  canTransitionModuleState,
+  type ModuleState,
+} from '@/lib/tenant-modules'
 import { Badge, type BadgeTone } from '@/components/portal/ui'
 import styles from './platform.module.css'
 
@@ -74,7 +78,9 @@ function ModuleRow({ tenantId, module }: { tenantId: string; module: TenantModul
           <>
             <label className={styles.field} style={{ minWidth: 130 }}>
               <select name="state" defaultValue={module.state} aria-label={`Läge för ${module.name}`}>
-                {MODULE_STATES.map((s) => (
+                {MODULE_STATES.filter((s) =>
+                  canTransitionModuleState(module.state, s, true),
+                ).map((s) => (
                   <option key={s} value={s}>
                     {STATE_LABEL[s]}
                   </option>

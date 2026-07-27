@@ -19,6 +19,11 @@ import { sendOrderPlacedEmail } from '@/lib/notifications/shop'
 import { deliverIssuedGiftCards } from '@/lib/notifications/gift'
 import { logger } from '@/lib/observability'
 import { commerceReleaseGate } from '@/lib/release/commerce'
+import {
+  getTenantModuleStates,
+  isModuleLive,
+  isModulePublicReadable,
+} from '@/lib/tenant-modules'
 
 // Webshop köp-räls (goal-49). Runs as the anon role — the order INSERT goes
 // through the SECURITY DEFINER RPC:er in migration 0042 (reserve_shop_order /
@@ -48,7 +53,16 @@ async function getTenantContext(): Promise<TenantCtx | null> {
 
 async function requireReleasedShopContext(): Promise<TenantCtx | null> {
   const ctx = await getTenantContext()
-  return ctx && commerceReleaseGate(ctx.tenantId).shop ? ctx : null
+  if (!ctx || !commerceReleaseGate(ctx.tenantId).shop) return null
+  const states = await getTenantModuleStates(ctx.tenantId, ctx.slug)
+  return isModuleLive(states, 'shop') ? ctx : null
+}
+
+async function requireReadableShopContext(): Promise<TenantCtx | null> {
+  const ctx = await getTenantContext()
+  if (!ctx || !commerceReleaseGate(ctx.tenantId).shop) return null
+  const states = await getTenantModuleStates(ctx.tenantId, ctx.slug)
+  return isModulePublicReadable(states, 'shop') ? ctx : null
 }
 
 export type ReserveInput = {
@@ -327,7 +341,7 @@ export type PublicShopOrder = {
 /** Token-gated order read for the confirmation page (PII boundary: null token rejected). */
 export async function getShopOrder(orderId: string, token: string): Promise<PublicShopOrder | null> {
   if (!orderId || !token) return null
-  const ctx = await requireReleasedShopContext()
+  const ctx = await requireReadableShopContext()
   if (!ctx) return null
   const supabase = createPublicClient()
   const { data, error } = await supabase.rpc('get_public_shop_order', { p_id: orderId, p_token: token })

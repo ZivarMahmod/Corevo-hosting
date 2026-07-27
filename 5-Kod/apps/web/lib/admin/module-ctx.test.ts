@@ -11,9 +11,13 @@ vi.mock('@/lib/admin/tenant', () => ({
   loadAdminTenantById: vi.fn(),
   requireActiveTenantMutation: vi.fn(),
 }))
+vi.mock('@/lib/admin/modules', () => ({
+  getAdminModuleStates: vi.fn(),
+}))
 
 import { moduleCtx } from './module-ctx'
 import { requirePortal } from '@/lib/auth/session'
+import { getAdminModuleStates } from '@/lib/admin/modules'
 import {
   getAdminTenant,
   loadAdminTenantById,
@@ -24,6 +28,7 @@ const mRequire = vi.mocked(requirePortal)
 const mByJwt = vi.mocked(getAdminTenant)
 const mById = vi.mocked(loadAdminTenantById)
 const mRequireActive = vi.mocked(requireActiveTenantMutation)
+const mModuleStates = vi.mocked(getAdminModuleStates)
 
 const OWN = { id: 't-own', slug: 'own', name: 'Egen' }
 const OTHER = { id: 't-other', slug: 'other', name: 'Annan' }
@@ -37,6 +42,7 @@ function fd(entries: Record<string, string>): FormData {
 beforeEach(() => {
   vi.clearAllMocks()
   mRequireActive.mockResolvedValue(undefined)
+  mModuleStates.mockResolvedValue({})
 })
 
 describe('moduleCtx — salon_admin (JWT-forced tenant)', () => {
@@ -59,6 +65,29 @@ describe('moduleCtx — salon_admin (JWT-forced tenant)', () => {
   it('no tenant on the account → null (deny)', async () => {
     mByJwt.mockResolvedValue(null as never)
     expect(await moduleCtx(fd({ tenantId: 't-other' }))).toBeNull()
+  })
+
+  it.each([
+    ['draft', true],
+    ['live', true],
+    ['off', false],
+    ['paused', false],
+  ] as const)('allows blogg mutations=%s only in draft/live', async (state, allowed) => {
+    mModuleStates.mockResolvedValue({ blogg: { state, config: {} } })
+
+    const ctx = await moduleCtx(fd({}), 'blogg')
+
+    expect(Boolean(ctx)).toBe(allowed)
+    expect(mModuleStates).toHaveBeenCalledWith('t-own')
+  })
+
+  it('denies an explicit module key when its row is missing', async () => {
+    expect(await moduleCtx(fd({}), 'blogg')).toBeNull()
+  })
+
+  it('keeps keyless tenant-wide mutations ungated', async () => {
+    expect(await moduleCtx(fd({}))).not.toBeNull()
+    expect(mModuleStates).not.toHaveBeenCalled()
   })
 })
 
@@ -87,5 +116,25 @@ describe('moduleCtx — platform_admin (tenant from the form)', () => {
   it('unknown tenantId → null (deny)', async () => {
     mById.mockResolvedValue(null as never)
     expect(await moduleCtx(fd({ tenantId: 'nope' }))).toBeNull()
+  })
+})
+
+describe('moduleCtx — partner operator (RLS-scoped tenant from the form)', () => {
+  it('uses the posted tenant and keeps the module-state gate', async () => {
+    mRequire.mockResolvedValue({
+      id: 'partner-user',
+      platformAdmin: false,
+      partnerAdmin: true,
+      partnerId: 'partner-a',
+      tenantId: null,
+    } as never)
+    mById.mockResolvedValue(OTHER as never)
+    mModuleStates.mockResolvedValue({ blogg: { state: 'draft', config: {} } })
+
+    const ctx = await moduleCtx(fd({ tenantId: 't-other' }), 'blogg')
+
+    expect(ctx?.tenant.id).toBe('t-other')
+    expect(mById).toHaveBeenCalledWith('t-other')
+    expect(mByJwt).not.toHaveBeenCalled()
   })
 })

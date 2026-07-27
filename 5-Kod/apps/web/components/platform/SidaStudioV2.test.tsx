@@ -1,33 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
 
 const componentPath = path.resolve(__dirname, 'SidaStudioV2.tsx')
 const cssPath = path.resolve(__dirname, 'SidaStudioV2.module.css')
 const component = existsSync(componentPath) ? readFileSync(componentPath, 'utf8') : ''
 const css = existsSync(cssPath) ? readFileSync(cssPath, 'utf8') : ''
 
-type TabResolver = (
-  tabs: ReadonlyArray<{ id: string }>,
-  requestedTabId: string | null | undefined,
-) => string
-type TabHrefBuilder = (tabId: string, currentSearch: string) => string
-
 describe('SidaStudioV2 acceptance shell', () => {
-  it('resolves valid deep-linked tabs and preserves the URL contract', async () => {
-    const studio = await import('./SidaStudioV2') as unknown as {
-      resolveSiteEditorTabId?: TabResolver
-      siteEditorTabHref?: TabHrefBuilder
-    }
-    expect(studio.resolveSiteEditorTabId).toBeTypeOf('function')
-    expect(studio.siteEditorTabHref).toBeTypeOf('function')
-
+  it('resolves valid deep-linked tabs and preserves the URL contract', () => {
     const tabs = [{ id: 'allmant' }, { id: 'kontakt' }, { id: 'bokning' }]
-    expect(studio.resolveSiteEditorTabId!(tabs, 'bokning')).toBe('bokning')
-    expect(studio.resolveSiteEditorTabId!(tabs, 'kontakt')).toBe('kontakt')
-    expect(studio.resolveSiteEditorTabId!(tabs, 'saknas')).toBe('allmant')
-    expect(studio.resolveSiteEditorTabId!(tabs, null)).toBe('allmant')
-    expect(studio.siteEditorTabHref!('bokning', 'kampanj=sommar&flik=kontakt'))
+    expect(resolveSiteEditorTabId(tabs, 'bokning')).toBe('bokning')
+    expect(resolveSiteEditorTabId(tabs, 'kontakt')).toBe('kontakt')
+    expect(resolveSiteEditorTabId(tabs, 'saknas')).toBe('allmant')
+    expect(resolveSiteEditorTabId(tabs, null)).toBe('allmant')
+    expect(siteEditorTabHref('bokning', 'kampanj=sommar&flik=kontakt'))
       .toBe('/admin/sida?kampanj=sommar&flik=bokning')
   })
 

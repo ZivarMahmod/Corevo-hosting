@@ -17,7 +17,7 @@ const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
 async function moduleCtx(fd: FormData) {
-  const ctx = await resolveModuleCtx(fd)
+  const ctx = await resolveModuleCtx(fd, 'shop')
   return ctx && commerceReleaseGate(ctx.tenant.id).shop ? ctx : null
 }
 
