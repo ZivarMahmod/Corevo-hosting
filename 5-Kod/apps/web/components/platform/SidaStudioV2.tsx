@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import type { CSSProperties } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
 import {
@@ -14,6 +15,7 @@ import type { SiteRevision, SiteSnapshot } from '@/lib/platform/site-revisions'
 import styles from './SidaStudioV2.module.css'
 import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
 import type { SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
+import { ThemePicker, type ThemeCopyMode } from './ThemePicker'
 
 export { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
 export type { SiteEditorCard, SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
@@ -30,6 +32,7 @@ type ColorKey = keyof typeof COLOR_LABELS
 type ImageSlot = 'logo_url' | 'hero_images' | 'gallery_images' | 'about_image' | 'closing_image'
 
 export type SidaStudioV2Props = {
+  surface: 'standalone' | 'embedded'
   tenantId: string
   effectiveSnapshot: SiteSnapshot
   publishedSnapshot: SiteSnapshot
@@ -44,6 +47,7 @@ export type SidaStudioV2Props = {
   manifestData: SiteEditorManifest
   liveModules?: string[]
   scheduleHours: { day: string; time: string }[] | null
+  canChangeTemplate?: boolean
 }
 
 const sameSnapshot = (a: SiteSnapshot, b: SiteSnapshot) => JSON.stringify(a) === JSON.stringify(b)
@@ -125,6 +129,7 @@ async function cropFocusedImage(file: File, ratio: number, focusX: number, focus
 }
 
 export function SidaStudioV2({
+  surface,
   tenantId,
   effectiveSnapshot,
   publishedSnapshot,
@@ -139,11 +144,13 @@ export function SidaStudioV2({
   manifestData,
   liveModules = [],
   scheduleHours,
+  canChangeTemplate = false,
 }: SidaStudioV2Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const previewStageRef = useRef<HTMLDivElement>(null)
   const scanRequestRef = useRef(0)
   const historyGuardRef = useRef(false)
   const allowHistoryLeaveRef = useRef(false)
@@ -159,6 +166,9 @@ export function SidaStudioV2({
   const [mobileSurface, setMobileSurface] = useState<'panel' | 'preview'>('panel')
   const [leaveHref, setLeaveHref] = useState<string | null>(null)
   const [visibleCopyFields, setVisibleCopyFields] = useState<Set<string> | null>(null)
+  const [previewTheme, setPreviewTheme] = useState<string | null>(null)
+  const [previewCopyMode, setPreviewCopyMode] = useState<ThemeCopyMode>('keep')
+  const [previewStageWidth, setPreviewStageWidth] = useState(0)
   const [isPending, startTransition] = useTransition()
 
   const tabs = useMemo(
@@ -212,10 +222,35 @@ export function SidaStudioV2({
     () => resolvePreviewSnapshot(published, activeTab ? [activeTab] : [], scheduleHours),
     [activeTab, published, scheduleHours],
   )
-  const previewSrc = `${previewPath}${activeTab?.path ?? ''}`
+  const previewingTemplateDefaults = Boolean(previewTheme && previewCopyMode === 'template')
+  const previewSrc = useMemo(() => {
+    const activePath = activeTab?.path ?? ''
+    const [routePath, routeSearch = ''] = activePath.split('?')
+    const q = new URLSearchParams(routeSearch)
+    if (previewTheme) q.set('theme', previewTheme)
+    if (previewTheme) q.set('copy', previewCopyMode)
+    const query = q.toString()
+    return `${previewPath}${routePath}${query ? `?${query}` : ''}`
+  }, [activeTab?.path, previewCopyMode, previewPath, previewTheme])
   const displayPath = activeTab?.path.startsWith('?')
     ? `/${activeTab.path}`
     : activeTab?.path || '/'
+  const previewWidth = device === 'desktop' ? 1360 : 390
+  const previewScale = surface === 'embedded' && previewStageWidth > 0
+    ? Math.min(1, Math.max(0.1, (previewStageWidth - 2) / previewWidth))
+    : 1
+  const previewDeviceStyle: CSSProperties | undefined = surface === 'embedded'
+    ? {
+        width: previewWidth,
+        height: `${100 / previewScale}%`,
+        left: '50%',
+        marginLeft: -(previewWidth * previewScale) / 2,
+        position: 'absolute',
+        top: 0,
+        transform: `scale(${previewScale})`,
+        transformOrigin: 'top left',
+      }
+    : undefined
   const selectTab = useCallback((nextTabId: string) => {
     setTabId(nextTabId)
     setMobileSurface('panel')
@@ -229,6 +264,7 @@ export function SidaStudioV2({
   }, [initialTabId, requestedTabId, tabs])
 
   const postSnapshot = useCallback(() => {
+    if (previewingTemplateDefaults) return
     iframeRef.current?.contentWindow?.postMessage({
       source: MESSAGE_SOURCE,
       type: 'site-snapshot-preview',
@@ -236,8 +272,9 @@ export function SidaStudioV2({
       imageSlots: activeImageSlots,
       tokens: injectTenantTokens(previewSnapshot.branding),
     }, window.location.origin)
-  }, [activeImageSlots, previewSnapshot])
+  }, [activeImageSlots, previewSnapshot, previewingTemplateDefaults])
   const postPublishedSnapshot = useCallback(() => {
+    if (previewingTemplateDefaults) return
     iframeRef.current?.contentWindow?.postMessage({
       source: MESSAGE_SOURCE,
       type: 'site-snapshot-preview',
@@ -245,7 +282,7 @@ export function SidaStudioV2({
       imageSlots: activeImageSlots,
       tokens: injectTenantTokens(publishedPreviewSnapshot.branding),
     }, window.location.origin)
-  }, [activeImageSlots, publishedPreviewSnapshot])
+  }, [activeImageSlots, previewingTemplateDefaults, publishedPreviewSnapshot])
   const scanPreview = useCallback(() => {
     const requestId = ++scanRequestRef.current
     iframeRef.current?.contentWindow?.postMessage({
@@ -299,6 +336,25 @@ export function SidaStudioV2({
     const timer = window.setTimeout(scanPreview, 0)
     return () => window.clearTimeout(timer)
   }, [scanPreview, previewSrc])
+  useEffect(() => {
+    if (surface !== 'embedded') return
+    const stage = previewStageRef.current
+    if (!stage) return
+    const measure = () => setPreviewStageWidth(stage.clientWidth)
+    measure()
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure)
+      return () => window.removeEventListener('resize', measure)
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }, [surface])
+  useEffect(() => {
+    if (!dirty && !hasDraft) return
+    setPreviewTheme(null)
+    setPreviewCopyMode('keep')
+  }, [dirty, hasDraft])
   useEffect(() => {
     if (dirty && !historyGuardRef.current) {
       window.history.pushState(
@@ -477,7 +533,10 @@ export function SidaStudioV2({
   }, window.location.origin)
 
   return (
-    <section className={`sida-studio-host ${styles.shell}`} data-accept="editor-shell">
+    <section
+      className={`sida-studio-host ${styles.shell}${surface === 'embedded' ? ` ${styles.embedded}` : ''}`}
+      data-accept="editor-shell"
+    >
       <header className={styles.toolbar} data-accept="editor-toolbar">
         <div className={styles.identity}>
           <strong>Redigera sidan</strong>
@@ -524,6 +583,32 @@ export function SidaStudioV2({
         <div className={`${styles.panel} ${mobileSurface === 'preview' ? styles.mobileHidden : ''}`} data-accept="editor-panel">
           {activeTab?.id === 'allmant' ? (
             <>
+              {canChangeTemplate && !dirty && !hasDraft ? (
+                <EditorCard title="Mall">
+                  <p className={styles.cardNote}>
+                    Förhandsvisa en annan mall. Bytet publiceras separat från sidans utkast.
+                  </p>
+                  <ThemePicker
+                    tenantId={tenantId}
+                    current={published.settings.theme}
+                    onPreview={(theme, copyMode) => {
+                      setPreviewTheme(theme === published.settings.theme ? null : theme)
+                      setPreviewCopyMode(copyMode)
+                    }}
+                    onPublished={() => {
+                      setPreviewTheme(null)
+                      setPreviewCopyMode('keep')
+                      router.refresh()
+                    }}
+                  />
+                </EditorCard>
+              ) : canChangeTemplate ? (
+                <EditorCard title="Mall">
+                  <p className={styles.cardNote}>
+                    Publicera eller kasta sidans ändringar innan du byter mall.
+                  </p>
+                </EditorCard>
+              ) : null}
               <EditorCard title="Företagsnamn">
                 <FieldShell label="Företagsnamn" custom={working.tenant.name !== published.tenant.name}
                   help="Visas i sidhuvudet, sidfoten och bokningen. Samma namn som i er admin."
@@ -587,8 +672,17 @@ export function SidaStudioV2({
           {activeTab?.id === 'bokning' ? <BookingFields snapshot={working} published={published} update={update} onShow={showField} /> : null}
         </div>
 
-        <div className={`${styles.preview} ${mobileSurface === 'panel' ? styles.mobileHidden : ''}`} data-accept="editor-preview">
-          <div className={`${styles.previewDevice} ${device === 'mobile' ? styles.mobileDevice : ''}`} data-accept="preview-device">
+        <div
+          ref={previewStageRef}
+          className={`${styles.preview} ${mobileSurface === 'panel' ? styles.mobileHidden : ''}`}
+          data-accept="editor-preview"
+        >
+          <div
+            className={`${styles.previewDevice} ${device === 'mobile' ? styles.mobileDevice : ''}`}
+            data-accept="preview-device"
+            data-preview-device={device}
+            style={previewDeviceStyle}
+          >
             {isActive ? <iframe ref={iframeRef} src={previewSrc} title={`Förhandsvisning av ${activeTab?.label ?? 'sidan'}`}
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups" onLoad={bootstrapPreview} />
               : <div className={styles.blocked}><strong>Sidan är pausad</strong><p>Kontakta Corevo för att aktivera förhandsvisningen.</p></div>}

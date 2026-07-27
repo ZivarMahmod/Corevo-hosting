@@ -44,21 +44,26 @@ import { KursAdmin } from '@/components/admin/KursAdmin'
 import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { OffertInbox } from '@/components/admin/OffertInbox'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
-import { SidaStudioLazy } from '@/components/platform/SidaStudioLazy'
+import { SidaStudioV2Lazy } from '@/components/platform/SidaStudioV2Lazy'
 import { getVerticalCopy } from '@/components/storefront/vertical-copy'
+import { resolveThemeContent } from '@/components/storefront/theme-content'
+import { buildSiteEditorManifest, type EditorManifestKind } from '@/lib/platform/site-editor-manifest'
 import {
-  readBookingVerificationMode,
-  readPickerMode,
-  readStaffAvatarMode,
-} from '@/lib/platform/booking-variant'
-import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
+  buildSiteSnapshot,
+  deriveSiteScheduleHours,
+  loadSiteRevisionState,
+} from '@/lib/platform/site-revisions'
 import { createClient } from '@/lib/supabase/server'
 import {
   tenantStorefrontAppUrl,
   tenantStorefrontHost,
 } from '@/lib/storefront-url'
 import { READINESS_LABELS } from '@/lib/platform/tenant-readiness'
-import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
+import {
+  STOREFRONT_THEMES,
+  DEFAULT_STOREFRONT_THEME,
+  type StorefrontTheme,
+} from '@/lib/tenant-data'
 import {
   TenantDetailTabs,
   type TenantTabKey,
@@ -112,10 +117,14 @@ export const metadata: Metadata = { title: 'Plattform · Kund' }
 export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Self-gate (task): the (platform) layout already gates, and every read re-checks
   // the role in platformCtx — this is belt-and-suspenders parity with the brief.
-  await requirePlatformOperator()
+  const operator = await requirePlatformOperator()
 
   const { id } = await params
-  const detail = await getTenantDetail(id)
+  const supabase = await createClient()
+  const [detail, revisionState] = await Promise.all([
+    getTenantDetail(id, supabase),
+    loadSiteRevisionState(supabase, id),
+  ])
   if (!detail) notFound()
   const {
     tenant,
@@ -128,9 +137,16 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     onboarding,
     launchReadiness,
     operative,
-    copy,
     primaryLocation,
   } = detail
+  const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
+  const verticalId = (tenant as { vertical_id?: string | null }).vertical_id ?? null
+  const [verticalCopy, moduleStates] = await Promise.all([
+    getVerticalCopy(verticalId),
+    getAdminModuleStates(id),
+  ])
+  const publishedSnapshot = buildSiteSnapshot(detail)
+  const effectiveSnapshot = revisionState.draft?.snapshot ?? publishedSnapshot
   const locationOpeningHours = primaryLocation
     ? await listLocationOpeningHours(id, primaryLocation.id).catch(() => null)
     : null
@@ -157,7 +173,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // cross-tenant via platform_admin-claimet; skrivvägen går via moduleCtx-dual-
   // guarden (hidden tenantId i varje formulär via TenantScope). Data laddas
   // ENDAST för moduler som är på — av- och draft-moduler kostar inga reads.
-  const moduleStates = await getAdminModuleStates(id)
   const shopOn = isModuleActivated(moduleStates, 'shop')
   const bloggOn = isModuleActivated(moduleStates, 'blogg')
   const offertOn = isModuleActivated(moduleStates, 'offert')
@@ -213,38 +228,24 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // admin och publik sida kan aldrig få olika bild av listan.
   const offertSubjects = parseOffertConfig(moduleAdminConfig(moduleStates, 'offert')).subjects
 
-  // Foto-läget i Bokningsflöde-ytan (Sida-fliken) kräver minst en AKTIV medarbetare
-  // med profilbild (staff.avatar_url, migr 0049) — annars visas valet avstängt med
-  // hint. Platform-adminens cookie-klient läser cross-tenant via platform_admin-claimet.
-  const supabaseForStaffPhoto = await createClient()
-  const [{ data: staffPhotoRows }, { count: noShowCount, error: noShowError }] = await Promise.all([
-    supabaseForStaffPhoto
-      .from('staff')
-      .select('id')
-      .eq('tenant_id', id)
-      .eq('active', true)
-      .not('avatar_url', 'is', null)
-      .limit(1),
-    supabaseForStaffPhoto
-      .from('bookings')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', id)
-      .eq('status', 'no_show'),
-  ])
+  const { count: noShowCount, error: noShowError } = await supabase
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', id)
+    .eq('status', 'no_show')
   if (noShowError) throw new Error(`Tenant overview no_show: ${noShowError.message}`)
-  const hasStaffPhoto = (staffPhotoRows?.length ?? 0) > 0
   const noShows = noShowCount ?? 0
 
   // Stripe-läget per kund (goal-54 körning 5): kundkortets Integrationer-flik bär
   // den RIKTIGA Stripe-panelen (samma StripeConnectCard som kund-adminens
   // /admin/installningar, dual-guardad via moduleCtx) — inte bara en status-rad.
   const [{ data: stripeRow }, { data: paymentsRow }] = await Promise.all([
-    supabaseForStaffPhoto
+    supabase
       .from('tenants')
       .select('stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted')
       .eq('id', id)
       .maybeSingle(),
-    supabaseForStaffPhoto
+    supabase
       .from('tenant_settings')
       .select('payments_enabled')
       .eq('tenant_id', id)
@@ -281,15 +282,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // layouts), fenced to the catalog keys that 1:1 match the `templates` table. The
   // preview iframe points at the REAL public storefront (slug/custom-domain origin).
   const rawTheme = (settings?.settings as { theme?: unknown } | null)?.theme
-  const activeTemplateKey =
+  const activeTemplateKey: StorefrontTheme =
     typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
-      ? rawTheme
+      ? rawTheme as StorefrontTheme
       : DEFAULT_STOREFRONT_THEME
+  const manifestKind: EditorManifestKind = activeTemplateKey === 'kalla' || activeTemplateKey === 'snitt'
+    ? activeTemplateKey
+    : 'generic'
   const storefrontUrl = url
 
   // Kund-överblick (Översikt): presentation data comes from the existing reads;
   // launch readiness comes only from the DB RPC used by the activation trigger.
-  const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
   // goal-72 1c: juridikfälten (settings.legal) — samma parse-regler som lib/tenant-data.
   const rawLegal = (rawSettings.legal ?? {}) as Record<string, unknown>
   const tenantLegal = {
@@ -302,7 +305,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   }
   // Bransch läses ur SANNINGSKÄLLAN tenants.vertical_id (styr admin-terminologin,
   // 0026) — inte settings.vertical-jsonben som kunde glida isär (rapport 02 §1.7).
-  const verticalId = (tenant as { vertical_id?: string | null }).vertical_id ?? null
   const vertical =
     verticalId ??
     (typeof rawSettings.vertical === 'string' && rawSettings.vertical.trim()
@@ -688,46 +690,27 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
       <>
-        <SidaStudioLazy
+        <SidaStudioV2Lazy
+          surface="embedded"
           tenantId={tenant.id}
+          effectiveSnapshot={effectiveSnapshot}
+          publishedSnapshot={publishedSnapshot}
+          draft={revisionState.draft}
+          history={revisionState.history}
           previewPath={`/salong-preview/${tenant.slug}`}
           storefrontUrl={storefrontUrl}
           storefrontHost={storefrontHost}
-          templateKey={activeTemplateKey}
           isActive={isActive}
-          branding={branding}
-          copy={copy}
-          heroImages={branding.hero_images ?? []}
-          galleryImages={branding.gallery_images ?? []}
-          name={tenant.name}
-          social={detail.social}
-          openingHours={detail.openingHours}
-          contactEmail={contactEmail}
-          contactPhone={contactPhone}
-          address={detail.primaryAddress}
-          bookingVariant={operative.bookingVariant}
-          pickerMode={readPickerMode(rawSettings)}
-          staffAvatars={readStaffAvatarMode(rawSettings)}
-          bookingVerificationMode={readBookingVerificationMode(rawSettings)}
-          bookingExternalUrl={normalizeBookingExternalUrl(
-            (rawSettings.booking as Record<string, unknown> | undefined)?.external_url,
+          manifestData={buildSiteEditorManifest(
+            manifestKind,
+            resolveThemeContent(activeTemplateKey, null, verticalCopy),
+            activeTemplateKey,
           )}
-          hasStaffPhoto={hasStaffPhoto}
-          staffTeam={staffList.map((s) => ({
-            id: s.id,
-            title: s.title,
-            active: s.active,
-            avatarUrl: s.avatar_url,
-            showOnSite: s.show_on_site,
-            // goal-64: teamsidans presentationsfält (0057) — redigeras i samma rad.
-            shortName: s.short_name,
-            specialties: s.specialties,
-            bio: s.bio,
-          }))}
-          verticalCopy={await getVerticalCopy(verticalId)}
           liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort', 'lojalitet', 'galleri'].filter((k) =>
             isModuleActivated(moduleStates, k),
           )}
+          scheduleHours={deriveSiteScheduleHours(detail)}
+          canChangeTemplate={operator.platformAdmin}
         />
       </>
     ),

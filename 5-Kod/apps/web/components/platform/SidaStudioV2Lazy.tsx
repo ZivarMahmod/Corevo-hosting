@@ -22,5 +22,10 @@ const SidaStudioV2 = dynamic(
 
 /** Loads the interactive editor as a browser asset; auth and reads stay server-side. */
 export function SidaStudioV2Lazy(props: SidaStudioV2Props) {
-  return <SidaStudioV2 {...props} />
+  return (
+    <SidaStudioV2
+      key={`${props.tenantId}:${props.publishedSnapshot.settings.theme}`}
+      {...props}
+    />
+  )
 }

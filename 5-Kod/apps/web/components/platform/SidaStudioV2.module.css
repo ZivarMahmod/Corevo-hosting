@@ -25,6 +25,11 @@
   font-family: var(--font-instrumentsans), 'Instrument Sans', system-ui, sans-serif;
 }
 
+.embedded {
+  height: auto;
+  overflow: visible;
+}
+
 .toolbar {
   padding: 12px 24px;
   display: flex;
@@ -169,12 +174,20 @@
   grid-template-columns: 470px minmax(0, 1fr);
   flex: 1;
 }
+.embedded .workspace {
+  grid-template-columns: minmax(400px, 1fr) minmax(480px, 1.15fr);
+  gap: 16px;
+  align-items: start;
+}
 .panel {
   min-width: 0;
   padding: 16px 18px 40px;
   overflow-y: auto;
   border-right: 1px solid var(--editor-line);
   background: var(--editor-panel);
+}
+.embedded .panel {
+  overflow: visible;
 }
 .card {
   margin: 0 0 14px;
@@ -313,6 +326,14 @@
   overflow: hidden;
   background: #0c0c0b;
 }
+.embedded .preview {
+  position: sticky;
+  top: 78px;
+  align-self: start;
+  height: calc(100vh - 220px);
+  min-height: 420px;
+  overflow: auto;
+}
 .previewUrl {
   display: none;
   align-items: center;
@@ -365,6 +386,16 @@
   .identity { min-width: 140px; }
   .toolbarActions .status,
   .toolbarActions > a { display: none; }
+}
+
+@media (max-width: 991px) {
+  .embedded .workspace {
+    grid-template-columns: 1fr;
+  }
+  .embedded .preview {
+    position: relative;
+    top: auto;
+  }
 }
 
 @media (max-width: 767px) {
@@ -434,6 +465,7 @@
   .previewDevice,
   .mobileDevice { width: 100%; border: 0; }
   .mobileHidden { display: none; }
+  .embedded .mobileHidden { display: none; }
   .mobilePublish {
     position: fixed;
     right: 12px;

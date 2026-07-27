@@ -73,6 +73,7 @@ export default async function AdminSidaPage({ searchParams }: AdminSidaPageProps
 
   return (
     <SidaStudioV2Lazy
+      surface="standalone"
       tenantId={detail.tenant.id}
       effectiveSnapshot={effectiveSnapshot}
       publishedSnapshot={publishedSnapshot}
