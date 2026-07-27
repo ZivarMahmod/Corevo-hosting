@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { buildSiteEditorManifest } from './site-editor-manifest'
 import { resolveTenantTabKey, tenantTabHref } from '@/components/platform/TenantDetailTabs.tabs'
 
 describe('Goal 88 shared site-editor contracts', () => {
+  it('keeps the complete manifest assembly out of the admin route', () => {
+    const route = readFileSync(path.resolve(import.meta.dirname, '../../app/(admin)/admin/sida/page.tsx'), 'utf8')
+    const shared = readFileSync(path.resolve(import.meta.dirname, 'site-editor-manifest.ts'), 'utf8')
+
+    expect(route).toContain('buildSiteEditorManifest(')
+    expect(route).not.toContain('function manifestFor(')
+    expect(route).not.toContain('function genericModuleTabs(')
+    expect(shared).toContain("id: 'hero-images'")
+    expect(shared).toContain('mergeThemeDefaults(defaults, themeHomeFields)')
+    expect(shared).toContain("admin: '/admin/offerter'")
+    expect(shared).toContain("route.id === 'galleri' ? 'Bildbibliotek'")
+  })
+
   it('keeps the manifest React-free and sends module editors to real admin routes', () => {
     const manifest = buildSiteEditorManifest('generic', {
       heroImages: [],

@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
-const canonical = readFileSync(path.join(WEB_ROOT, 'app/(admin)/admin/sida/page.tsx'), 'utf8')
+const canonical = [
+  readFileSync(path.join(WEB_ROOT, 'app/(admin)/admin/sida/page.tsx'), 'utf8'),
+  readFileSync(path.join(WEB_ROOT, 'lib/platform/site-editor-manifest.ts'), 'utf8'),
+].join('\n')
 const legacy = readFileSync(path.join(WEB_ROOT, 'app/(admin)/admin/sida/redigera/page.tsx'), 'utf8')
 
 describe('admin site editor routes', () => {
