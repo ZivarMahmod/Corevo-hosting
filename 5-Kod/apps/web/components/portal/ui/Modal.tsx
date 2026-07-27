@@ -48,6 +48,11 @@ export function Modal({
   const cardRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const closingRef = useRef(false)
+  const returnFocusRef = useRef<HTMLElement | null>(
+    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  )
   // Portalas till backoffice-skalets rot: renderad inline ärver dialogen förälderns
   // stacking context (kalenderdockan z-6 < headerns z-60) och hamnar BAKOM toppraden.
   // <body> är däremot utanför skalets --c-*-tokens och gör kortet transparent.
@@ -137,6 +142,7 @@ export function Modal({
         viewport.removeEventListener('scroll', syncVisualViewport)
       }
       document.body.style.overflow = prevOverflow
+      if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
     }
     // mount/unmount only
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -186,8 +186,10 @@
 }
 .panel {
   min-width: 0;
+  margin: 0;
   padding: 16px 18px 40px;
   overflow-y: auto;
+  border: 0;
   border-right: 1px solid var(--editor-line);
   background: var(--editor-panel);
 }

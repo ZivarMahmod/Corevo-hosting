@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
@@ -10,8 +10,11 @@ import {
   restoreSiteRevision,
   saveSiteDraft,
   uploadSiteDraftImage,
+  type SiteRevisionActionState,
 } from '@/lib/platform/actions/site-revisions'
 import type { SiteRevision, SiteSnapshot } from '@/lib/platform/site-revisions'
+import { Modal } from '@/components/portal/ui/Modal'
+import { Button } from '@/components/portal/ui/Button'
 import styles from './SidaStudioV2.module.css'
 import {
   editorFieldTargets,
@@ -35,6 +38,23 @@ const COLOR_LABELS = {
 } as const
 type ColorKey = keyof typeof COLOR_LABELS
 type ImageSlot = 'logo_url' | 'hero_images' | 'gallery_images' | 'about_image' | 'closing_image'
+type RevisionAction = 'save' | 'publish' | 'discard' | 'restore'
+type RestoreRequest =
+  | { kind: 'published' }
+  | { kind: 'history'; revision: SiteRevision }
+
+const REVISION_ACTION_STATUS: Record<RevisionAction, string> = {
+  save: 'Sparar…',
+  publish: 'Publicerar…',
+  discard: 'Kastar…',
+  restore: 'Återställer…',
+}
+const REVISION_ACTION_ERROR: Record<RevisionAction, string> = {
+  save: 'Utkastet kunde inte sparas.',
+  publish: 'Sidan kunde inte publiceras.',
+  discard: 'Utkastet kunde inte kastas.',
+  restore: 'Versionen kunde inte återställas.',
+}
 
 export type SidaStudioV2Props = {
   surface: 'standalone' | 'embedded'
@@ -156,11 +176,14 @@ export function SidaStudioV2({
   const searchParams = useSearchParams()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const previewStageRef = useRef<HTMLDivElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLFieldSetElement>(null)
   const scanRequestRef = useRef(0)
   const historyGuardRef = useRef(false)
   const allowHistoryLeaveRef = useRef(false)
   const committedLeaveRef = useRef(false)
+  const leaveHrefRef = useRef<string | null>(null)
+  const revisionActionRef = useRef<RevisionAction | null>(null)
+  const conflictRef = useRef(false)
   const [working, setWorking] = useState<SiteSnapshot>(effectiveSnapshot)
   const [savedBaseline, setSavedBaseline] = useState<SiteSnapshot>(effectiveSnapshot)
   const [published, setPublished] = useState<SiteSnapshot>(publishedSnapshot)
@@ -176,7 +199,10 @@ export function SidaStudioV2({
   const [previewCopyMode, setPreviewCopyMode] = useState<ThemeCopyMode>('keep')
   const [previewStageWidth, setPreviewStageWidth] = useState(0)
   const [pickMode, setPickMode] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [revisionAction, setRevisionAction] = useState<RevisionAction | null>(null)
+  const [conflict, setConflict] = useState(false)
+  const [restoreRequest, setRestoreRequest] = useState<RestoreRequest | null>(null)
+  const [confirmReload, setConfirmReload] = useState(false)
 
   const tabs = useMemo(
     () => [
@@ -192,6 +218,7 @@ export function SidaStudioV2({
   const pickFields = useMemo(() => fieldTargets.map((target) => target.field), [fieldTargets])
   const dirty = !sameSnapshot(working, savedBaseline)
   const status = dirty ? 'Osparat' : hasDraft ? 'Utkast' : 'Live'
+  const editorLocked = revisionAction !== null || conflict
   const activeFields = useMemo(
     () => activeTab?.cards.flatMap((card) => card.fields ?? []) ?? [],
     [activeTab],
@@ -261,6 +288,7 @@ export function SidaStudioV2({
       }
     : undefined
   const selectTab = useCallback((nextTabId: string) => {
+    if (revisionActionRef.current || conflictRef.current) return
     setVisibleCopyFields(null)
     if (pickMode) setNotice('')
     setPickMode(false)
@@ -271,6 +299,7 @@ export function SidaStudioV2({
   }, [pathname, pickMode, requestedTabId, router, searchParams])
 
   useEffect(() => {
+    if (revisionActionRef.current || conflictRef.current) return
     setPickMode(false)
     setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))
     setMobileSurface('panel')
@@ -318,7 +347,7 @@ export function SidaStudioV2({
     iframeRef.current?.contentWindow?.postMessage({
       source: MESSAGE_SOURCE,
       type: 'editor-pick-mode',
-      enabled,
+      enabled: enabled && !revisionActionRef.current && !conflictRef.current,
       fields: pickFields,
     }, window.location.origin)
   }, [pickFields])
@@ -348,6 +377,7 @@ export function SidaStudioV2({
         enabled?: boolean
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'editor-pick-mode' && data.enabled === false) {
+        if (revisionActionRef.current || conflictRef.current) return
         setPickMode(false)
         setNotice('Väljläget avslutades.')
         return
@@ -360,6 +390,7 @@ export function SidaStudioV2({
         tabId,
       )
       if (picked) {
+        if (revisionActionRef.current || conflictRef.current) return
         setPickMode(false)
         setNotice('')
         setMobileSurface('panel')
@@ -372,6 +403,7 @@ export function SidaStudioV2({
         return
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'preview-route' && typeof data.path === 'string') {
+        if (revisionActionRef.current || conflictRef.current) return
         const target = tabs.find((tab) => tab.path.split('?')[0] === data.path)
         if (target) {
           selectTab(target.id)
@@ -449,7 +481,10 @@ export function SidaStudioV2({
       const url = new URL(anchor.href, window.location.href)
       if (url.origin !== window.location.origin || url.href === window.location.href) return
       event.preventDefault()
-      setLeaveHref(`${url.pathname}${url.search}${url.hash}`)
+      if (revisionActionRef.current || conflictRef.current) return
+      const href = `${url.pathname}${url.search}${url.hash}`
+      leaveHrefRef.current = href
+      setLeaveHref(href)
     }
     const popstate = () => {
       if (allowHistoryLeaveRef.current) {
@@ -463,6 +498,8 @@ export function SidaStudioV2({
         '',
         `${window.location.pathname}${window.location.search}${window.location.hash}`,
       )
+      if (revisionActionRef.current || conflictRef.current) return
+      leaveHrefRef.current = HISTORY_BACK_TARGET
       setLeaveHref(HISTORY_BACK_TARGET)
     }
     window.addEventListener('beforeunload', beforeUnload)
@@ -476,6 +513,7 @@ export function SidaStudioV2({
   }, [dirty])
 
   const update = (recipe: (snapshot: SiteSnapshot) => void) => {
+    if (revisionActionRef.current || conflictRef.current) return
     setWorking((current) => {
       const next = copySnapshot(current)
       recipe(next)
@@ -483,36 +521,69 @@ export function SidaStudioV2({
     })
     setNotice('')
   }
-  const save = useCallback(async (): Promise<number | null> => {
+  const failRevision = (result: SiteRevisionActionState, fallback: string) => {
+    if (result.conflict) {
+      conflictRef.current = true
+      setConflict(true)
+      setPickMode(false)
+    }
+    setNotice(result.error ?? fallback)
+  }
+  const runRevisionAction = (action: RevisionAction, task: () => Promise<void>) => {
+    if (revisionActionRef.current || conflictRef.current) return
+    revisionActionRef.current = action
+    setRevisionAction(action)
+    setPickMode(false)
+    void task()
+      .catch(() => setNotice(REVISION_ACTION_ERROR[action]))
+      .finally(() => {
+        revisionActionRef.current = null
+        setRevisionAction(null)
+      })
+  }
+  const save = async (commit: boolean): Promise<{ version: number; snapshot: SiteSnapshot } | null> => {
     const result = await saveSiteDraft({
       tenantId,
       snapshot: working,
       expectedLockVersion: lockVersion,
     })
     if (result.error || result.lockVersion == null) {
-      setNotice(result.error ?? 'Utkastet kunde inte sparas.')
+      failRevision(result, REVISION_ACTION_ERROR.save)
       return null
     }
-    setLockVersion(result.lockVersion)
-    setHasDraft(true)
-    setDraftAt(new Date().toISOString())
     const resolved = copySnapshot(result.snapshot ?? working)
-    setWorking(resolved)
-    setSavedBaseline(resolved)
-    setNotice(result.success ?? 'Utkastet är sparat.')
-    return result.lockVersion
-  }, [lockVersion, tenantId, working])
-  const runSave = () => startTransition(() => { void save() })
-  const runPublish = () => startTransition(async () => {
+    if (commit) {
+      setLockVersion(result.lockVersion)
+      setHasDraft(true)
+      setDraftAt(new Date().toISOString())
+      setWorking(resolved)
+      setSavedBaseline(resolved)
+      setNotice(result.success ?? 'Utkastet är sparat.')
+    }
+    return { version: result.lockVersion, snapshot: resolved }
+  }
+  const runSave = () => runRevisionAction('save', async () => { await save(true) })
+  const runPublish = () => runRevisionAction('publish', async () => {
     let version = lockVersion
-    if (dirty) version = await save()
+    let saved: Awaited<ReturnType<typeof save>> = null
+    if (dirty) {
+      saved = await save(false)
+      version = saved?.version ?? null
+    }
     if (version == null) return
     const result = await publishSiteDraft({ tenantId, expectedLockVersion: version })
     if (result.error) {
-      setNotice(result.error)
+      if (!result.conflict && saved) {
+        setWorking(saved.snapshot)
+        setSavedBaseline(saved.snapshot)
+        setLockVersion(saved.version)
+        setHasDraft(true)
+        setDraftAt(new Date().toISOString())
+      }
+      failRevision(result, REVISION_ACTION_ERROR.publish)
       return
     }
-    const snapshot = copySnapshot(result.snapshot ?? working)
+    const snapshot = copySnapshot(result.snapshot ?? saved?.snapshot ?? working)
     setWorking(snapshot)
     setPublished(snapshot)
     setSavedBaseline(snapshot)
@@ -522,11 +593,11 @@ export function SidaStudioV2({
     setNotice(result.success ?? 'Sidan är publicerad.')
     router.refresh()
   })
-  const runDiscard = () => startTransition(async () => {
+  const runDiscard = () => runRevisionAction('discard', async () => {
     if (hasDraft && lockVersion != null) {
       const result = await discardSiteDraft({ tenantId, expectedLockVersion: lockVersion })
       if (result.error) {
-        setNotice(result.error)
+        failRevision(result, REVISION_ACTION_ERROR.discard)
         return
       }
     }
@@ -538,17 +609,17 @@ export function SidaStudioV2({
     setDraftAt(null)
     setNotice('Utkastet har kastats.')
   })
-  const runRestore = (revision: SiteRevision) => startTransition(async () => {
+  const runRestore = (revision: SiteRevision) => runRevisionAction('restore', async () => {
     const result = await restoreSiteRevision({
       tenantId,
       sourceRevisionId: revision.id,
       expectedLockVersion: lockVersion,
     })
     if (result.error || result.lockVersion == null) {
-      setNotice(result.error ?? 'Versionen kunde inte återställas.')
+      failRevision(result, REVISION_ACTION_ERROR.restore)
       return
     }
-    const snapshot = copySnapshot(revision.snapshot)
+    const snapshot = copySnapshot(result.snapshot ?? revision.snapshot)
     setWorking(snapshot)
     setSavedBaseline(snapshot)
     setLockVersion(result.lockVersion)
@@ -556,25 +627,67 @@ export function SidaStudioV2({
     setDraftAt(new Date().toISOString())
     setNotice(result.success ?? 'Versionen har återställts som utkast.')
   })
-  const saveAndLeave = () => startTransition(async () => {
-    const href = leaveHref
+  const requestRestore = (revision: SiteRevision) => {
+    if (revisionActionRef.current || conflictRef.current) return
+    if (dirty) {
+      setRestoreRequest({ kind: 'history', revision })
+      return
+    }
+    runRestore(revision)
+  }
+  const restorePublished = () => {
+    if (revisionActionRef.current || conflictRef.current) return
+    setWorking(copySnapshot(published))
+    setNotice('')
+  }
+  const requestPublishedRestore = () => {
+    if (revisionActionRef.current || conflictRef.current) return
+    if (dirty) {
+      setRestoreRequest({ kind: 'published' })
+      return
+    }
+    restorePublished()
+  }
+  const confirmRestore = () => {
+    if (revisionActionRef.current || conflictRef.current) return
+    const request = restoreRequest
+    setRestoreRequest(null)
+    if (request?.kind === 'published') restorePublished()
+    else if (request?.kind === 'history') runRestore(request.revision)
+  }
+  const closeLeaveDialog = () => {
+    leaveHrefRef.current = null
+    committedLeaveRef.current = false
+    setLeaveHref(null)
+  }
+  const saveAndLeave = () => runRevisionAction('save', async () => {
+    const href = leaveHrefRef.current
     committedLeaveRef.current = Boolean(href)
-    const version = await save()
-    if (version == null || !href) {
+    let saved: Awaited<ReturnType<typeof save>>
+    try {
+      saved = await save(true)
+    } catch (error) {
+      committedLeaveRef.current = false
+      throw error
+    }
+    const target = leaveHrefRef.current
+    if (!saved || !target) {
       committedLeaveRef.current = false
       return
     }
-    if (href === HISTORY_BACK_TARGET) {
+    if (target === HISTORY_BACK_TARGET) {
       allowHistoryLeaveRef.current = true
       window.history.go(-2)
       return
     }
-    router.push(href)
+    router.push(target)
   })
   const discardAndLeave = () => {
-    const href = leaveHref
+    if (revisionActionRef.current || conflictRef.current) return
+    const href = leaveHrefRef.current
     committedLeaveRef.current = Boolean(href)
     setWorking(copySnapshot(savedBaseline))
+    leaveHrefRef.current = null
     setLeaveHref(null)
     if (href === HISTORY_BACK_TARGET) {
       allowHistoryLeaveRef.current = true
@@ -605,6 +718,7 @@ export function SidaStudioV2({
     <section
       className={`sida-studio-host ${styles.shell}${surface === 'embedded' ? ` ${styles.embedded}` : ''}`}
       data-accept="editor-shell"
+      aria-busy={revisionAction !== null}
     >
       <header className={styles.toolbar} data-accept="editor-toolbar">
         <div className={styles.identity}>
@@ -614,7 +728,7 @@ export function SidaStudioV2({
         <nav className={styles.tabs} data-accept="editor-tabs" aria-label="Sidans delar">
           {tabs.map((tab) => (
             <button key={tab.id} type="button" className={tab.id === activeTab?.id ? styles.activeTab : ''}
-              onClick={() => selectTab(tab.id)} title={tab.sub}>
+              onClick={() => selectTab(tab.id)} title={tab.sub} disabled={editorLocked}>
               {tab.label}
             </button>
           ))}
@@ -628,26 +742,32 @@ export function SidaStudioV2({
             <button type="button" aria-pressed={device === 'desktop'} onClick={() => setDevice('desktop')}>Dator</button>
             <button type="button" aria-pressed={device === 'mobile'} onClick={() => setDevice('mobile')}>Mobil</button>
           </div>
-          <button type="button" className={styles.pickButton} aria-pressed={pickMode} onClick={() => {
+          <button type="button" className={styles.pickButton} aria-pressed={pickMode} disabled={editorLocked} onClick={() => {
+            if (revisionActionRef.current || conflictRef.current) return
             const enabled = !pickMode
             setPickMode(enabled)
             setNotice(enabled ? 'Klicka på den del i förhandsvisningen som du vill redigera.' : '')
             if (enabled) setMobileSurface('preview')
           }}>Välj på sidan</button>
           <a href={storefrontUrl} target="_blank" rel="noreferrer">Öppna live ↗</a>
-          <button type="button" className={styles.secondary} disabled={!dirty || isPending} onClick={runSave}>Spara utkast</button>
-          <button type="button" className={styles.primary} disabled={(!dirty && !hasDraft) || isPending} onClick={runPublish}>Publicera</button>
+          <button type="button" className={styles.secondary} disabled={!dirty || editorLocked} onClick={runSave}>Spara utkast</button>
+          <button type="button" className={styles.primary} disabled={(!dirty && !hasDraft) || editorLocked} onClick={runPublish}>Publicera</button>
         </div>
       </header>
 
       {hasDraft && !dirty ? (
         <div className={styles.draftBanner} data-accept="draft-banner">
           <span>Utkast sparat {formattedTime(draftAt)} — besökare ser fortfarande den publicerade versionen.</span>
-          <button type="button" onClick={runPublish} disabled={isPending}>Publicera nu</button>
-          <button type="button" onClick={runDiscard} disabled={isPending}>Kasta utkast</button>
+          <button type="button" onClick={runPublish} disabled={editorLocked}>Publicera nu</button>
+          <button type="button" onClick={runDiscard} disabled={editorLocked}>Kasta utkast</button>
         </div>
       ) : null}
-      {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
+      {conflict ? <div className={styles.notice} role="alert">
+        <span>{notice}</span>
+        <button type="button" className={styles.textButton} onClick={() => setConfirmReload(true)}>Ladda om senaste</button>
+      </div> : revisionAction || notice ? (
+        <div className={styles.notice} role="status">{revisionAction ? REVISION_ACTION_STATUS[revisionAction] : notice}</div>
+      ) : null}
 
       <div className={styles.mobileSwitch} aria-label="Redigeringsvy">
         <button type="button" aria-pressed={mobileSurface === 'panel'} onClick={() => setMobileSurface('panel')}>Panel</button>
@@ -655,7 +775,8 @@ export function SidaStudioV2({
       </div>
 
       <div className={styles.workspace}>
-        <div ref={panelRef} className={`${styles.panel} ${mobileSurface === 'preview' ? styles.mobileHidden : ''}`} data-accept="editor-panel">
+        <fieldset ref={panelRef} disabled={editorLocked}
+          className={`${styles.panel} ${mobileSurface === 'preview' ? styles.mobileHidden : ''}`} data-accept="editor-panel">
           {activeTab?.id === 'allmant' ? (
             <>
               {canChangeTemplate && !dirty && !hasDraft ? (
@@ -713,12 +834,12 @@ export function SidaStudioV2({
                   onChange={(value) => update((next) => { next.settings.seo.description = value || null })} />
               </EditorCard>
               <EditorCard title="Versionshistorik">
-                <button type="button" className={styles.textButton} onClick={() => update((next) => Object.assign(next, copySnapshot(published)))}>
+                <button type="button" className={styles.textButton} onClick={requestPublishedRestore}>
                   Återställ till publicerad version
                 </button>
                 {history.length ? <ul className={styles.history}>{history.map((revision) => (
                   <li key={revision.id}><span>{formattedTime(revision.published_at ?? revision.updated_at)}</span>
-                    <button type="button" onClick={() => runRestore(revision)} disabled={isPending}>Återställ</button></li>
+                    <button type="button" onClick={() => requestRestore(revision)}>Återställ</button></li>
                 ))}</ul> : <p className={styles.cardNote}>Ingen tidigare publicering ännu.</p>}
               </EditorCard>
             </>
@@ -745,7 +866,7 @@ export function SidaStudioV2({
 
           {activeTab?.id === 'kontakt' ? <ContactFields snapshot={working} scheduleHours={scheduleHours} update={update} onShow={showField} /> : null}
           {activeTab?.id === 'bokning' ? <BookingFields snapshot={working} published={published} update={update} onShow={showField} /> : null}
-        </div>
+        </fieldset>
 
         <div
           ref={previewStageRef}
@@ -765,17 +886,40 @@ export function SidaStudioV2({
         </div>
       </div>
 
-      <button type="button" className={styles.mobilePublish} disabled={(!dirty && !hasDraft) || isPending} onClick={runPublish}>Publicera</button>
+      <button type="button" className={styles.mobilePublish} disabled={(!dirty && !hasDraft) || editorLocked} onClick={runPublish}>Publicera</button>
 
-      {leaveHref ? <div className={styles.dialogBackdrop} role="presentation">
-        <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="leave-title" data-accept="leave-dialog">
-          <h2 id="leave-title">Lämna redigeraren?</h2>
-          <p>Du har osparade ändringar.</p>
-          <button type="button" className={styles.primary} onClick={saveAndLeave} disabled={isPending}>Spara utkast och lämna</button>
-          <button type="button" className={styles.danger} onClick={discardAndLeave}>Kasta ändringarna</button>
-          <button type="button" className={styles.secondary} onClick={() => setLeaveHref(null)}>Stanna kvar</button>
-        </div>
-      </div> : null}
+      {leaveHref ? <Modal title="Lämna redigeraren?" size="sm" onClose={closeLeaveDialog}
+        footer={<>
+          <Button onClick={saveAndLeave} disabled={editorLocked}>Spara utkast och lämna</Button>
+          <Button variant="ghost" onClick={discardAndLeave} disabled={editorLocked}>Kasta ändringarna</Button>
+          <Button variant="subtle" onClick={closeLeaveDialog} disabled={editorLocked}>Stanna kvar</Button>
+        </>}>
+        <p data-accept="leave-dialog">Du har osparade ändringar.</p>
+      </Modal> : null}
+
+      {restoreRequest ? <Modal
+        title={restoreRequest.kind === 'published' ? 'Återställ publicerad version?' : 'Återställ version?'}
+        size="sm"
+        onClose={() => setRestoreRequest(null)}
+        footer={<>
+          <Button onClick={confirmRestore}>Återställ</Button>
+          <Button variant="ghost" onClick={() => setRestoreRequest(null)}>Avbryt</Button>
+        </>}
+      >
+        <p>Dina lokala ändringar försvinner om du fortsätter.</p>
+      </Modal> : null}
+
+      {confirmReload ? <Modal
+        title="Ladda om senaste?"
+        size="sm"
+        onClose={() => setConfirmReload(false)}
+        footer={<>
+          <Button onClick={() => window.location.reload()}>Ladda om senaste</Button>
+          <Button variant="ghost" onClick={() => setConfirmReload(false)}>Avbryt</Button>
+        </>}
+      >
+        <p>Dina lokala ändringar försvinner. Den senaste sparade versionen laddas från servern.</p>
+      </Modal> : null}
     </section>
   )
 }
