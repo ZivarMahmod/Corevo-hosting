@@ -13,6 +13,11 @@ import {
 } from '@/lib/platform/actions/site-revisions'
 import type { SiteRevision, SiteSnapshot } from '@/lib/platform/site-revisions'
 import styles from './SidaStudioV2.module.css'
+import {
+  editorFieldTargets,
+  focusEditorControl,
+  resolveEditorPickMessage,
+} from './SidaStudioV2.pick'
 import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
 import type { SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
 import { ThemePicker, type ThemeCopyMode } from './ThemePicker'
@@ -151,6 +156,7 @@ export function SidaStudioV2({
   const searchParams = useSearchParams()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const previewStageRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const scanRequestRef = useRef(0)
   const historyGuardRef = useRef(false)
   const allowHistoryLeaveRef = useRef(false)
@@ -169,6 +175,7 @@ export function SidaStudioV2({
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
   const [previewCopyMode, setPreviewCopyMode] = useState<ThemeCopyMode>('keep')
   const [previewStageWidth, setPreviewStageWidth] = useState(0)
+  const [pickMode, setPickMode] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const tabs = useMemo(
@@ -181,6 +188,8 @@ export function SidaStudioV2({
   const requestedTabId = searchParams.get('flik')
   const [tabId, setTabId] = useState(() => resolveSiteEditorTabId(tabs, initialTabId))
   const activeTab = tabs.find((tab) => tab.id === tabId) ?? tabs[0]
+  const fieldTargets = useMemo(() => editorFieldTargets(tabs, tabId), [tabId, tabs])
+  const pickFields = useMemo(() => fieldTargets.map((target) => target.field), [fieldTargets])
   const dirty = !sameSnapshot(working, savedBaseline)
   const status = dirty ? 'Osparat' : hasDraft ? 'Utkast' : 'Live'
   const activeFields = useMemo(
@@ -252,6 +261,7 @@ export function SidaStudioV2({
       }
     : undefined
   const selectTab = useCallback((nextTabId: string) => {
+    setPickMode(false)
     setTabId(nextTabId)
     setMobileSurface('panel')
     if (requestedTabId === nextTabId) return
@@ -259,6 +269,7 @@ export function SidaStudioV2({
   }, [pathname, requestedTabId, router, searchParams])
 
   useEffect(() => {
+    setPickMode(false)
     setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))
     setMobileSurface('panel')
   }, [initialTabId, requestedTabId, tabs])
@@ -301,15 +312,59 @@ export function SidaStudioV2({
       fields: publishedCopy,
     }, window.location.origin)
   }, [publishedCopy])
+  const postPickMode = useCallback((enabled: boolean) => {
+    iframeRef.current?.contentWindow?.postMessage({
+      source: MESSAGE_SOURCE,
+      type: 'editor-pick-mode',
+      enabled,
+      fields: pickFields,
+    }, window.location.origin)
+  }, [pickFields])
   const bootstrapPreview = useCallback(() => {
     postPublishedSnapshot()
     scanPublishedPreview()
-  }, [postPublishedSnapshot, scanPublishedPreview])
+    postPickMode(pickMode)
+  }, [pickMode, postPickMode, postPublishedSnapshot, scanPublishedPreview])
+  const focusPickedField = useCallback((field: string) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const panel = panelRef.current
+      if (!panel) return
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      focusEditorControl(panel, field, reducedMotion)
+    }))
+  }, [])
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== iframeRef.current?.contentWindow) return
-      const data = event.data as { source?: string; type?: string; requestId?: number; fields?: string[]; path?: string }
+      const data = event.data as {
+        source?: string
+        type?: string
+        requestId?: number
+        fields?: string[]
+        path?: string
+        enabled?: boolean
+      }
+      if (data.source === MESSAGE_SOURCE && data.type === 'editor-pick-mode' && data.enabled === false) {
+        setPickMode(false)
+        setNotice('Väljläget avslutades.')
+        return
+      }
+      const picked = resolveEditorPickMessage(
+        event,
+        iframeRef.current?.contentWindow ?? null,
+        window.location.origin,
+        tabs,
+        tabId,
+      )
+      if (picked) {
+        setPickMode(false)
+        setNotice('')
+        setMobileSurface('panel')
+        if (picked.tabId !== tabId) selectTab(picked.tabId)
+        focusPickedField(picked.field)
+        return
+      }
       if (data.source === MESSAGE_SOURCE && data.type === 'preview-ready') {
         bootstrapPreview()
         return
@@ -329,7 +384,19 @@ export function SidaStudioV2({
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [bootstrapPreview, postSnapshot, selectTab, tabs])
+  }, [bootstrapPreview, focusPickedField, postSnapshot, selectTab, tabId, tabs])
+  useEffect(() => { postPickMode(pickMode) }, [pickMode, postPickMode])
+  useEffect(() => () => { postPickMode(false) }, [postPickMode])
+  useEffect(() => {
+    if (!pickMode) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setPickMode(false)
+      setNotice('Väljläget avslutades.')
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [pickMode])
   useEffect(() => { postSnapshot() }, [postSnapshot])
   useEffect(() => { setVisibleCopyFields(null) }, [previewSrc])
   useEffect(() => {
@@ -559,6 +626,12 @@ export function SidaStudioV2({
             <button type="button" aria-pressed={device === 'desktop'} onClick={() => setDevice('desktop')}>Dator</button>
             <button type="button" aria-pressed={device === 'mobile'} onClick={() => setDevice('mobile')}>Mobil</button>
           </div>
+          <button type="button" className={styles.pickButton} aria-pressed={pickMode} onClick={() => {
+            const enabled = !pickMode
+            setPickMode(enabled)
+            setNotice(enabled ? 'Klicka på den del i förhandsvisningen som du vill redigera.' : '')
+            if (enabled) setMobileSurface('preview')
+          }}>Välj på sidan</button>
           <a href={storefrontUrl} target="_blank" rel="noreferrer">Öppna live ↗</a>
           <button type="button" className={styles.secondary} disabled={!dirty || isPending} onClick={runSave}>Spara utkast</button>
           <button type="button" className={styles.primary} disabled={(!dirty && !hasDraft) || isPending} onClick={runPublish}>Publicera</button>
@@ -580,7 +653,7 @@ export function SidaStudioV2({
       </div>
 
       <div className={styles.workspace}>
-        <div className={`${styles.panel} ${mobileSurface === 'preview' ? styles.mobileHidden : ''}`} data-accept="editor-panel">
+        <div ref={panelRef} className={`${styles.panel} ${mobileSurface === 'preview' ? styles.mobileHidden : ''}`} data-accept="editor-panel">
           {activeTab?.id === 'allmant' ? (
             <>
               {canChangeTemplate && !dirty && !hasDraft ? (
@@ -748,7 +821,8 @@ function ColorField({ name, value, options, onChange, onShow }: {
   const choices = value && !options.includes(value) ? [...options, value] : options
   return <div className={styles.colorField}><span className={styles.fieldHead}><b>{COLOR_LABELS[name]}</b>
     <i className={value ? styles.customChip : styles.standardChip}>{value ? 'EGEN FÄRG' : 'STANDARD'}</i></span>
-    <div className={styles.swatches}><button type="button" className={!value ? styles.swatchActive : ''} onClick={() => onChange('')}>Standard</button>
+    <div className={styles.swatches}><button type="button" className={!value ? styles.swatchActive : ''}
+      data-corevo-editor-field={name} onClick={() => onChange('')}>Standard</button>
       {choices.map((color) => <button key={color} type="button" className={value === color ? styles.swatchActive : ''}
         aria-label={`${COLOR_LABELS[name]} ${color}`} title={color} style={{ background: color }} onClick={() => onChange(color)} />)}</div>
     <button type="button" className={styles.showButton} data-accept={`show-field-${name}`} onClick={onShow}>Visa var</button>
@@ -836,7 +910,9 @@ function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onSho
     <input ref={inputRef} className={styles.fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif"
       onChange={(event) => { selectFile(event.target.files?.[0]); event.target.value = '' }} />
     <span className={hasCustom ? styles.customChip : styles.standardChip}>EGNA BILDER</span>
-    {visibleValues.map((url, index) => <div className={styles.imageRow} key={`${url}-${index}`}
+    {visibleValues.map((url, index) => {
+      const editorField = multiple ? `${slot}.${index}` : slot
+      return <div className={styles.imageRow} key={`${url}-${index}`}
       draggable={canReorder}
       onDragStart={(event) => {
         setDraggedIndex(index)
@@ -848,7 +924,7 @@ function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onSho
       onDragEnd={() => setDraggedIndex(null)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" />
-      <button type="button" onClick={() => choose(index)}>Byt bild</button>
+      <button type="button" data-corevo-editor-field={editorField} onClick={() => choose(index)}>Byt bild</button>
       {hasCustom ? <button type="button" onClick={() => {
         const fallback = defaults[index] ?? ''
         onPreview(url, fallback)
@@ -861,7 +937,8 @@ function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onSho
           onClick={() => move(index, index + 1)}>Ner</button>
       </div> : null}
       <button type="button" className={styles.showButton} data-accept={`show-field-${slot}-${index}`} onClick={() => onShow(`${slot}.${index}`, url)}>Visa var</button>
-    </div>)}
+    </div>
+    })}
     {multiple && visibleValues.length < limit ? <button type="button" className={styles.textButton} onClick={() => choose(visibleValues.length)}>+ Lägg till bild</button> : null}
     {!visibleValues.length && !multiple ? <button type="button" className={styles.textButton} onClick={() => choose(0)}>Byt bild</button> : null}
     {crop ? <div className={styles.cropEditor} data-accept="image-crop">
@@ -970,7 +1047,7 @@ function SelectField({ label, field, value, options, custom, onChange, onShow }:
 }) {
   return <label className={styles.field}><span className={styles.fieldHead}><b>{label}</b>
     <i className={custom ? styles.customChip : styles.standardChip}>{custom ? 'EGEN TEXT' : 'STANDARD'}</i></span>
-    <select value={value} onChange={(e) => onChange(e.target.value)}>{options.map(([key, name]) => <option value={key} key={key}>{name}</option>)}</select>
+    <select value={value} data-corevo-editor-field={field} onChange={(e) => onChange(e.target.value)}>{options.map(([key, name]) => <option value={key} key={key}>{name}</option>)}</select>
     <button type="button" className={styles.showButton} data-accept={`show-field-${field}`} onClick={(e) => { e.preventDefault(); onShow(field, value) }}>Visa var</button>
   </label>
 }

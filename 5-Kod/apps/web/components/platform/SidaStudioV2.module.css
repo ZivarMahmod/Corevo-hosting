@@ -126,6 +126,11 @@
   padding-inline: 17px !important;
 }
 .secondary { background: var(--editor-card) !important; }
+.pickButton[aria-pressed='true'] {
+  border-color: #D6AC6A;
+  box-shadow: inset 0 -2px 0 #D6AC6A;
+  color: var(--editor-text);
+}
 .danger { color: var(--editor-danger) !important; }
 
 .deviceButtons {
