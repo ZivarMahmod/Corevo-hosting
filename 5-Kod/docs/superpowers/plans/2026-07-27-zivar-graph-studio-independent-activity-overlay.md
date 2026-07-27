@@ -87,26 +87,46 @@ Ingen staging görs eftersom appens gemensamma baseline ännu är otrackad.
 - Modify: `5-Kod/apps/zivar-graph-studio/brain-graph-3d.mjs`
 - Modify: `5-Kod/apps/zivar-graph-studio/studio.html`
 - Modify: `5-Kod/apps/zivar-graph-studio/styles.css`
+- Test: `5-Kod/apps/zivar-graph-studio/e2e/studio-responsive.spec.cjs`
 
 **Interfaces:**
 - Consumes: `expandActivityEvents(events)`
 - Consumes: `latestActivityPass(events)`
 - Preserves: befintliga `graph.setActivity(events, options)` och JSONL-formatet
 
-- [ ] **Step 1: Stoppa agentkommandon från att mutera användarvyn**
+- [ ] **Step 1: Skriv och kör ett fallerande vy-isoleringskontrakt**
+
+Intercepta `/api/get-activity` med ett `view`-event som försöker byta projekt,
+sökning, confidence och layout. Välj först `Båda`, delad hjärna och
+`EXTRACTED`, öppna sedan agentpanelen och verifiera att valen samt basgrafens
+normala fokusklass består:
+
+```js
+await expect(page.locator('[data-workspace="both"]')).toHaveClass(/active/);
+await expect(page.locator("#brain-mode")).toHaveValue("split");
+await expect(page.locator("#confidence-filter")).toHaveValue("EXTRACTED");
+await expect(page.locator("#graph-canvas")).not.toHaveClass(/activity-focus/);
+```
+
+Run: `pnpm --dir 5-Kod --filter @corevo/zivar-graph-studio test:e2e -- --grep "agent activity never changes user view"`
+
+Expected: FAIL eftersom dagens `applyActivityCommands()` byter vy och
+agentpanelen aktiverar `activity-focus`.
+
+- [ ] **Step 2: Stoppa agentkommandon från att mutera användarvyn**
 
 Ta bort `applyActivityCommands()` och dess anrop från `pollActivity()`. Ta även
 bort `refreshLiveGraph()` om den då saknar anrop. `openDetailTab()` ska inte slå
 på `graph.setActivityFocus()`, eftersom fokusläget tonar ned och döljer
 basgrafen.
 
-- [ ] **Step 2: Lös verkliga mål utan kameraflytt**
+- [ ] **Step 3: Lös verkliga mål utan kameraflytt**
 
 Skicka `expandActivityEvents(playbackEvents())` till `graph.setActivity()`.
 Utöka båda befintliga `targetId()`-implementationerna så att `target.label`
 kan matcha `node.label`; anropa inte `focusTarget()` från live eller replay.
 
-- [ ] **Step 3: Spela senaste passet från början**
+- [ ] **Step 4: Spela senaste passet från början**
 
 Lägg `passStart` i playback-state. När användaren väljer senaste passet:
 
@@ -122,7 +142,7 @@ I replay ska `playbackEvents()` använda
 `state.activity.slice(state.playback.passStart, state.playback.cursor + 1)`.
 Tidslinjens min/max och räknare ska beskriva endast det valda passet.
 
-- [ ] **Step 4: Gör huvudkontrollerna begripliga**
+- [ ] **Step 5: Gör huvudkontrollerna begripliga**
 
 Byt huvudknapparna till `● Följ live`, `▶ Spela senaste passet` och `Pausa`.
 Flytta hastighet, värme och agentfilter till ett `<details>` med texten
@@ -130,7 +150,11 @@ Flytta hastighet, värme och agentfilter till ett `<details>` med texten
 verkliga mål eller top-level `label`/`file` även när noden ligger utanför aktuell
 vy.
 
-- [ ] **Step 5: Kontrollera syntax och självtest**
+- [ ] **Step 6: Kör kontraktet och paketkontrollerna grönt**
+
+Run: `pnpm --dir 5-Kod --filter @corevo/zivar-graph-studio test:e2e -- --grep "agent activity never changes user view"`
+
+Expected: testet grönt utan workspace-, filter- eller fokusklassändring.
 
 Run: `pnpm --dir 5-Kod --filter @corevo/zivar-graph-studio typecheck`
 
@@ -140,7 +164,7 @@ Run: `pnpm --dir 5-Kod --filter @corevo/zivar-graph-studio test`
 
 Expected: `Zivar Graph Studio engine self-check: OK`
 
-- [ ] **Step 6: Kontrollera de ändrade appfilerna**
+- [ ] **Step 7: Kontrollera de ändrade appfilerna**
 
 ```bash
 git status --short -- 5-Kod/apps/zivar-graph-studio
