@@ -261,12 +261,14 @@ export function SidaStudioV2({
       }
     : undefined
   const selectTab = useCallback((nextTabId: string) => {
+    setVisibleCopyFields(null)
+    if (pickMode) setNotice('')
     setPickMode(false)
     setTabId(nextTabId)
     setMobileSurface('panel')
     if (requestedTabId === nextTabId) return
     router.replace(siteEditorTabHref(pathname, nextTabId, searchParams.toString()), { scroll: false })
-  }, [pathname, requestedTabId, router, searchParams])
+  }, [pathname, pickMode, requestedTabId, router, searchParams])
 
   useEffect(() => {
     setPickMode(false)
