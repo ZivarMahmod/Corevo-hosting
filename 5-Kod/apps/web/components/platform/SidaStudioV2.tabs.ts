@@ -7,8 +7,8 @@ export function resolveSiteEditorTabId(
     : tabs[0]?.id ?? ''
 }
 
-export function siteEditorTabHref(tabId: string, currentSearch: string): string {
+export function siteEditorTabHref(pathname: string, tabId: string, currentSearch: string): string {
   const params = new URLSearchParams(currentSearch)
   params.set('flik', tabId)
-  return `/admin/sida?${params.toString()}`
+  return `${pathname}?${params.toString()}`
 }

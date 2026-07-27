@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import Link from 'next/link'
+import { usePathname, useSearchParams } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { Icon, type IconName } from '@/components/portal/ui'
 import styles from './tenant-detail.module.css'
+import { resolveTenantTabKey, tenantTabHref } from './TenantDetailTabs.tabs'
 
 /**
  * Kund-detalj SubTabs — pill rail (icon + label, active pill forest-filled).
@@ -63,7 +66,10 @@ export function TenantDetailTabs({
 }: {
   tabs: Partial<Record<TenantTabKey, ReactNode>>
 }) {
-  const [active, setActive] = useState<TenantTabKey>('Översikt')
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const available = TABS.filter((tab) => tab.key in tabs).map((tab) => tab.key)
+  const active = resolveTenantTabKey(available, searchParams.get('kundflik'))
 
   return (
     <div>
@@ -71,17 +77,16 @@ export function TenantDetailTabs({
         {TABS.filter((t) => t.key in tabs).map((t) => {
           const isActive = active === t.key
           return (
-            <button
+            <Link
               key={t.key}
-              type="button"
               role="tab"
               aria-selected={isActive}
               className={`${styles.subtab}${isActive ? ` ${styles.subtabActive}` : ''}`}
-              onClick={() => setActive(t.key)}
+              href={tenantTabHref(pathname, t.key, searchParams.toString())}
             >
               <Icon name={t.icon} size={15} />
               {t.key}
-            </button>
+            </Link>
           )
         })}
       </div>

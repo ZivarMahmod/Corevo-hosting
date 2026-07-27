@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
 import {
   discardSiteDraft,
@@ -13,8 +13,10 @@ import {
 import type { SiteRevision, SiteSnapshot } from '@/lib/platform/site-revisions'
 import styles from './SidaStudioV2.module.css'
 import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
+import type { SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
 
 export { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
+export type { SiteEditorCard, SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
 
 const MESSAGE_SOURCE = 'corevo-sida'
 const HISTORY_BACK_TARGET = '__corevo_history_back__'
@@ -26,37 +28,6 @@ const COLOR_LABELS = {
 } as const
 type ColorKey = keyof typeof COLOR_LABELS
 type ImageSlot = 'logo_url' | 'hero_images' | 'gallery_images' | 'about_image' | 'closing_image'
-
-export type SiteEditorField = {
-  key: string
-  label: string
-  defaultValue?: string
-  rows?: number
-  help?: string
-}
-export type SiteEditorCard = {
-  id: string
-  title: string
-  fields?: SiteEditorField[]
-  imageSlot?: ImageSlot
-  imageDefaults?: string[]
-  imageLimit?: number
-  statsDefaults?: [string, string][]
-  info?: { text: string; href: string; label: string }
-}
-export type SiteEditorTab = {
-  id: string
-  label: string
-  sub: string
-  path: string
-  cards: SiteEditorCard[]
-  module?: string
-}
-export type SiteEditorManifest = {
-  tabs: SiteEditorTab[]
-  modules?: SiteEditorTab[]
-  swatches: Partial<Record<ColorKey, string[]>>
-}
 
 export type SidaStudioV2Props = {
   tenantId: string
@@ -170,6 +141,7 @@ export function SidaStudioV2({
   scheduleHours,
 }: SidaStudioV2Props) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const scanRequestRef = useRef(0)
@@ -248,8 +220,8 @@ export function SidaStudioV2({
     setTabId(nextTabId)
     setMobileSurface('panel')
     if (requestedTabId === nextTabId) return
-    router.push(siteEditorTabHref(nextTabId, searchParams.toString()), { scroll: false })
-  }, [requestedTabId, router, searchParams])
+    router.replace(siteEditorTabHref(pathname, nextTabId, searchParams.toString()), { scroll: false })
+  }, [pathname, requestedTabId, router, searchParams])
 
   useEffect(() => {
     setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))

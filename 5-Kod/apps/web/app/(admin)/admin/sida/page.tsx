@@ -140,10 +140,10 @@ function genericModuleTabs(fields: ExtraField[]): SiteEditorTab[] {
     { id: 'shop', label: 'Butik', sub: 'Butikssidan · bandtexter', path: '/shop', module: 'shop', admin: '/admin/webshop' },
     { id: 'kurser', label: 'Kurser', sub: 'Kurssidan', path: '/kurser', module: 'kurser', admin: '/admin/kurser' },
     { id: 'blogg', label: 'Blogg', sub: 'Bloggsidan · bandtexter', path: '/blogg', module: 'blogg', admin: '/admin/blogg' },
-    { id: 'offert', label: 'Offert', sub: 'Offertsidan', path: '/offert', module: 'offert', admin: '/admin/offert' },
+    { id: 'offert', label: 'Offert', sub: 'Offertsidan', path: '/offert', module: 'offert', admin: '/admin/offerter' },
     { id: 'presentkort', label: 'Presentkort', sub: 'Presentkortssidan · bandtexter', path: '/presentkort', module: 'presentkort', admin: '/admin/presentkort' },
     { id: 'klubb', label: 'Klubb', sub: 'Medlemskap · texter', path: '/klubb', module: 'lojalitet', admin: '/admin/lojalitet' },
-    { id: 'galleri', label: 'Galleri', sub: 'Gallerisidan · texter', path: '/galleri', module: 'galleri', admin: '/admin/moduler' },
+    { id: 'galleri', label: 'Galleri', sub: 'Gallerisidan · texter', path: '/galleri', module: 'galleri', admin: '/admin/media' },
   ] as const
   return routes.map((route) => ({
     ...route,
@@ -157,7 +157,7 @@ function genericModuleTabs(fields: ExtraField[]): SiteEditorTab[] {
       info: {
         text: 'Sidans data hanteras i sin modul. Här ändrar ni bara sidans texter.',
         href: route.admin,
-        label: `Öppna ${route.label}`,
+        label: route.id === 'galleri' ? 'Bildbibliotek' : `Öppna ${route.label}`,
       },
     }],
   }))

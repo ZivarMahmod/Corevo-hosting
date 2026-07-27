@@ -15,8 +15,10 @@ describe('SidaStudioV2 acceptance shell', () => {
     expect(resolveSiteEditorTabId(tabs, 'kontakt')).toBe('kontakt')
     expect(resolveSiteEditorTabId(tabs, 'saknas')).toBe('allmant')
     expect(resolveSiteEditorTabId(tabs, null)).toBe('allmant')
-    expect(siteEditorTabHref('bokning', 'kampanj=sommar&flik=kontakt'))
+    expect(siteEditorTabHref('/admin/sida', 'bokning', 'kampanj=sommar&flik=kontakt'))
       .toBe('/admin/sida?kampanj=sommar&flik=bokning')
+    expect(siteEditorTabHref('/kunder/tenant-1', 'bokning', 'kundflik=sida&flik=kontakt'))
+      .toBe('/kunder/tenant-1?kundflik=sida&flik=bokning')
   })
 
   it('synchronizes tab clicks and browser URL navigation without a second editor', () => {
@@ -24,7 +26,8 @@ describe('SidaStudioV2 acceptance shell', () => {
     expect(component).toContain("useSearchParams")
     expect(component).toContain("searchParams.get('flik')")
     expect(component).toContain('setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))')
-    expect(component).toContain('router.push(siteEditorTabHref(nextTabId, searchParams.toString())')
+    expect(component).toContain('usePathname')
+    expect(component).toContain('router.replace(siteEditorTabHref(pathname, nextTabId, searchParams.toString())')
   })
 
   it('owns one aggregate working snapshot and all four revision actions', () => {
