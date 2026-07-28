@@ -193,6 +193,10 @@ describe('prepareBookingDelivery', () => {
   })
 
   it('sends SMS guests to passwordless booking management, not the login claim flow', async () => {
+    mocks.createCustomerClaimLink.mockResolvedValue({
+      ok: false,
+      reason: 'claim_create_failed',
+    })
     const prepared = await prepareBookingDelivery({
       ...row,
       chosen_channel: 'sms',
