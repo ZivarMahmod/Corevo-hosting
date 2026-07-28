@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Corevo Graphify</title>
+    <style>
+      :root {
+        font-family:
+          'Segoe UI',
+          Inter,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        color: #f4f4f5;
+        background: #101014;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        display: grid;
+        grid-template-rows: 52px minmax(0, 1fr);
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+        padding: 0 14px;
+        border-bottom: 1px solid #303038;
+        background: #18181d;
+      }
+
+      h1 {
+        flex: 0 1 auto;
+        min-width: 0;
+        margin: 0;
+        overflow: hidden;
+        color: #fafafa;
+        font-size: 15px;
+        font-weight: 650;
+        letter-spacing: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        height: 34px;
+        padding: 3px;
+        border: 1px solid #35353d;
+        border-radius: 6px;
+        background: #111116;
+      }
+
+      button {
+        height: 26px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 4px;
+        color: #a1a1aa;
+        background: transparent;
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        color: #fafafa;
+        background: #292930;
+      }
+
+      button[aria-pressed='true'] {
+        color: #ffffff;
+        background: #3a3a43;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+        margin-left: auto;
+        color: #a1a1aa;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: #f59e0b;
+      }
+
+      .status[data-state='ready'] .status-dot {
+        background: #22c55e;
+      }
+
+      .status[data-state='error'] .status-dot {
+        background: #ef4444;
+      }
+
+      .reload {
+        border: 1px solid #35353d;
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #0f0f13;
+      }
+
+      @media (max-width: 620px) {
+        body {
+          grid-template-rows: 92px minmax(0, 1fr);
+        }
+
+        header {
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 8px 10px;
+        }
+
+        h1 {
+          width: calc(100% - 112px);
+        }
+
+        nav {
+          order: 3;
+          width: 100%;
+        }
+
+        nav button {
+          flex: 1;
+        }
+
+        .status {
+          max-width: 96px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Corevo Graphify</h1>
+      <nav aria-label="Kodbas">
+        <button type="button" data-corpus="corevo" aria-pressed="true">Corevo</button>
+        <button type="button" data-corpus="openDesign" aria-pressed="false">Open Design</button>
+      </nav>
+      <nav aria-label="Vyer">
+        <button type="button" data-view="graph" aria-pressed="true">Graf</button>
+        <button type="button" data-view="callflow" aria-pressed="false">Call flow</button>
+      </nav>
+      <div class="status" data-state="loading" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="status-text">Ansluter</span>
+      </div>
+      <button class="reload" id="reload" type="button">Ladda om</button>
+    </header>
+    <iframe id="content" title="Interaktiv Corevo-kodgraf" src="/graphify-out/graph.html"></iframe>
+
+    <script>
+      const corpora = {
+        corevo: {
+          label: 'Corevo',
+          graph: '/graphify-out/graph.html',
+          callflow: '/graphify-out/5-Kod-callflow.html',
+        },
+        openDesign: {
+          label: 'Open Design',
+          graph: '/graphify-references/open-design/graphify-out/graph.html',
+          callflow:
+            '/graphify-references/open-design/graphify-out/open-design-callflow.html',
+        },
+      }
+      const title = document.querySelector('h1')
+      const frame = document.querySelector('#content')
+      const status = document.querySelector('.status')
+      const statusText = document.querySelector('#status-text')
+      const corpusButtons = [...document.querySelectorAll('[data-corpus]')]
+      const viewButtons = [...document.querySelectorAll('[data-view]')]
+      let activeCorpus = 'corevo'
+      let activeView = 'graph'
+      let version = ''
+      let reloading = false
+
+      function activeUrl() {
+        return corpora[activeCorpus][activeView]
+      }
+
+      function setStatus(state, text) {
+        status.dataset.state = state
+        statusText.textContent = text
+      }
+
+      function reload() {
+        reloading = true
+        setStatus('loading', 'Uppdaterar')
+        frame.src = `${activeUrl()}?v=${Date.now()}`
+      }
+
+      frame.addEventListener('load', () => {
+        reloading = false
+        setStatus('ready', `Aktuell ${new Date().toLocaleTimeString('sv-SE')}`)
+      })
+
+      document.querySelector('#reload').addEventListener('click', reload)
+
+      for (const button of corpusButtons) {
+        button.addEventListener('click', () => {
+          activeCorpus = button.dataset.corpus
+          version = ''
+          title.textContent = `${corpora[activeCorpus].label} Graphify`
+          frame.title = `Interaktiv ${corpora[activeCorpus].label}-kodgraf`
+          for (const candidate of corpusButtons) {
+            candidate.setAttribute('aria-pressed', String(candidate === button))
+          }
+          reload()
+        })
+      }
+
+      for (const button of viewButtons) {
+        button.addEventListener('click', () => {
+          activeView = button.dataset.view
+          version = ''
+          for (const candidate of viewButtons) {
+            candidate.setAttribute('aria-pressed', String(candidate === button))
+          }
+          reload()
+        })
+      }
+
+      async function poll() {
+        try {
+          const response = await fetch(corpora[activeCorpus].graph, {
+            method: 'HEAD',
+            cache: 'no-store',
+          })
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+          }
+          const nextVersion = [
+            response.headers.get('last-modified'),
+            response.headers.get('content-length'),
+          ].join(':')
+          if (version && version !== nextVersion && !reloading) {
+            reload()
+          }
+          version = nextVersion
+          if (!reloading) {
+            setStatus('ready', `Aktuell ${new Date().toLocaleTimeString('sv-SE')}`)
+          }
+        } catch {
+          setStatus('error', 'Grafen saknas')
+        }
+      }
+
+      poll()
+      window.setInterval(poll, 2500)
+    </script>
+  </body>
+</html>

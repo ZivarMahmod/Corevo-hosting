@@ -1,0 +1,6 @@
+# Generated Graphify data is served through MCP. Do not put it in Claude's prompt cache.
+5-Kod/graphify-out/
+5-Kod/graphify-references/
+
+# Query the read-only Open Design reference through Graphify MCP instead.
+4-Dokument-Underlag/08-externa-verktyg/open-design/
