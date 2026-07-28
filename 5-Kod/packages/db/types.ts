@@ -5180,6 +5180,16 @@ export type Database = {
         Args: { p_now?: string }
         Returns: number
       }
+      switch_tenant_theme: {
+        Args: {
+          p_copy: Json
+          p_expected_settings: Json
+          p_expected_vertical: string | null
+          p_tenant: string
+          p_theme: string
+        }
+        Returns: undefined
+      }
       sync_partner_license_open_month: {
         Args: { p_partner?: string }
         Returns: number

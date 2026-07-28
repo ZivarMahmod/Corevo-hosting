@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   publishSiteDraft: vi.fn(),
   restoreSiteRevision: vi.fn(),
   saveSiteDraft: vi.fn(),
+  themePublishingChange: null as null | ((pending: boolean) => void),
   uploadSiteDraftImage: vi.fn(),
 }))
 
@@ -37,17 +38,22 @@ vi.mock('./ThemePicker', () => ({
     current,
     onPreview,
     onPublished,
+    onPublishingChange,
   }: {
     tenantId: string
     current: string
     onPreview?: (theme: string, copyMode: 'keep' | 'template') => void
     onPublished?: () => void
-  }) => (
-    <div role="group" aria-label="Mallväljare" data-tenant-id={tenantId} data-current={current}>
-      <button type="button" onClick={() => onPreview?.('kalla', 'keep')}>Förhandsvisa mall</button>
-      <button type="button" onClick={onPublished}>Bekräfta publicering</button>
-    </div>
-  ),
+    onPublishingChange?: (pending: boolean) => void
+  }) => {
+    mocks.themePublishingChange = onPublishingChange ?? null
+    return (
+      <div role="group" aria-label="Mallväljare" data-tenant-id={tenantId} data-current={current}>
+        <button type="button" onClick={() => onPreview?.('kalla', 'keep')}>Förhandsvisa mall</button>
+        <button type="button" onClick={onPublished}>Bekräfta publicering</button>
+      </div>
+    )
+  },
 }))
 
 import { SidaStudioV2, type SidaStudioV2Props } from './SidaStudioV2'
@@ -239,6 +245,7 @@ beforeEach(async () => {
   mocks.publishSiteDraft.mockReset()
   mocks.restoreSiteRevision.mockReset()
   mocks.saveSiteDraft.mockReset()
+  mocks.themePublishingChange = null
   mocks.uploadSiteDraftImage.mockReset()
   mocks.discardSiteDraft.mockResolvedValue({ success: 'Utkastet har kastats.' })
   mocks.publishSiteDraft.mockResolvedValue({ success: 'Sidan är publicerad.', snapshot })
@@ -372,6 +379,39 @@ describe('SidaStudioV2 template role gate', () => {
     }, 'draft'))
     expect(container.querySelector('[aria-label="Mallväljare"]')).toBeNull()
     expect(container.textContent).toContain('Publicera eller kasta sidans ändringar innan du byter mall.')
+  })
+
+  it('locks same-tick snapshot and revision actions for the full theme publication lifecycle', async () => {
+    await act(async () => renderStudio({
+      surface: 'embedded',
+      canChangeTemplate: true,
+      initialTabId: 'allmant',
+    }, 'embedded-root-publishing'))
+    expect(mocks.themePublishingChange).not.toBeNull()
+
+    const name = field('name')
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    act(() => {
+      mocks.themePublishingChange?.(true)
+      setter?.call(name, 'Får inte sparas')
+      name.dispatchEvent(new InputEvent('input', { bubbles: true, data: 'Får inte sparas' }))
+      button('Återställ').click()
+    })
+    await act(async () => { await Promise.resolve() })
+
+    expect(name.value).toBe('Corevo Test')
+    expect(mocks.restoreSiteRevision).not.toHaveBeenCalled()
+    expect(container.querySelector('fieldset')?.hasAttribute('disabled')).toBe(true)
+    expect(container.querySelector('[data-accept="editor-shell"]')?.getAttribute('aria-busy')).toBe('true')
+    expect(button('Välj på sidan').disabled).toBe(true)
+
+    await act(async () => mocks.themePublishingChange?.(false))
+    expect(container.querySelector('fieldset')?.hasAttribute('disabled')).toBe(false)
+
+    await act(async () => button('Återställ').click())
+    expect(mocks.restoreSiteRevision).toHaveBeenCalledTimes(1)
+    await editField('name', 'Tillåts efter publicering')
+    expect(field('name').value).toBe('Tillåts efter publicering')
   })
 })
 

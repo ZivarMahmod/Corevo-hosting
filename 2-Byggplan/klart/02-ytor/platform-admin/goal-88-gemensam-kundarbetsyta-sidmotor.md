@@ -1,7 +1,9 @@
 # Goal 88 — gemensam kundarbetsyta och sidmotor
 
-Status: **KLAR — lokalt verifierad 2026-07-28** på
-`codex/launch-inventory-customer-design`.
+Status: **KODKLAR — final-head fokuserat verifierad 2026-07-28** på
+`codex/launch-inventory-customer-design`. Den append-only lokala migrationen
+`20260728021500_goal88_atomic_theme_switch.sql` är inte applicerad; isolerad
+rollbackad SQL-runtime återstår före release.
 
 ## Mål
 
@@ -37,7 +39,10 @@ generell HTML/CSS-editor.
 - Modulaktivering stannar i Drift. Sida-manifestet länkar endast till verkliga
   adminytor: `/admin/offerter` för offert och `/admin/media` med etiketten
   Bildbibliotek för dagens galleri-/mediaingång.
-- Ingen databasmigration och inget nytt bibliotek behövs.
+- Grundplanens antagande var att ingen databasmigration behövdes. Slutreviewn
+  motbevisade det: mallbyte och revisionsskrivning måste dela tenant-radlås i
+  databasen. **1 smal append-only lokal migration** lades därför till; inget
+  nytt bibliotek behövs.
 
 ## Task 1 — delat manifest och URL-kontrakt
 
@@ -118,21 +123,49 @@ generell HTML/CSS-editor.
 5. Kör oberoende spec-/kodreview, uppdatera Graphify och skriv utfört
    testprotokoll i `6-Testing/`.
 
+## Task 6 — atomiskt mallbyte efter slutreview
+
+1. `ThemePicker` annonserar synkront redan i formulärets submit och har action-
+   fallback före await. Returnerat fel, throw och avmontering släpper låset
+   direkt; success håller det genom `router.refresh()` tills den publicerade
+   mallen observeras eller den theme-nycklade studion monteras om. Parent sätter
+   både immediate ref och renderad state och låser snapshot, revision,
+   navigation och elementval under hela övergången.
+2. `switch_tenant_theme` tar revisionsmotorns befintliga tenant-radlås,
+   nekar befintligt utkast före text-vertical-CAS, materialiserar saknad
+   settings-rad och gör settings-CAS innan den endast mergar `theme` och `copy`.
+3. Den omvända låsordningen skyddas i samma append-only migration:
+   `save_site_draft` och `restore_site_revision` kanoniserar både live- och
+   snapshot-theme och nekar en verkligt gammal mallsnapshot efter att ett
+   mallbyte har vunnit låset.
+4. SQL:s kanoniska theme-helper speglar hela `STOREFRONT_THEMES` och använder
+   samma `leander`-fallback för saknade eller okända äldre värden.
+5. Migrationen appliceras inte här. Runtimefilen
+   `supabase/tests/goal88_atomic_theme_switch_test.sql` ska köras rollbackad mot
+   en uttryckligt isolerad databas före preview-/produktionsrelease.
+
 ## Verifiering
 
 - Samma revisionsägda `SidaStudioV2`, manifest, snapshot, utkast och historik
   är runtime- och browserverifierade i kundadmin och superadmin.
 - Root-only mallbyte är fail-closed för tenant och partner samt dolt vid dirty
   state eller befintligt utkast.
+- Mallpublicering låser samma-tick editormutationer på klienten. Den lokala
+  migrationskällan serialiserar dessutom mallbyte mot draft-save/restore i
+  båda låsordningarna med tenantlås, CAS och theme-konflikt.
 - Semantiskt fältval, bilduppladdning, konfliktläge, restore, leave och
   browser-back har deterministiska livscykeltester.
 - De två äldre routade assembly-filerna är borttagna; delad CSS och verkliga
   leaf-callers är kvar.
-- Slutbevis: 373 testfiler/2 892 tester, autentiserad read-only browserparitet,
-  typecheck, ESLint 0 fel/7 befintliga varningar, produktionsbuild och
-  oberoende uppgiftsreview är gröna.
-- Produktion, produktionsdata, deploy, migrationer, paket och lockfiler är
-  orörda. Fullt protokoll:
+- Baslinjebevis före den atomiska fixen: 373 testfiler/2 892 tester,
+  autentiserad read-only browserparitet, typecheck, ESLint 0 fel/7 befintliga
+  varningar och produktionsbuild.
+- Final-head-bevis för den atomiska fixen: 5 fokuserade testfiler/44 tester och
+  direkt typecheck är gröna. Full webbsvit/build har inte räknats om i denna
+  fixrunda.
+- Produktion, produktionsdata, previewdatabas, deploy, paket och lockfiler är
+  orörda. En lokal append-only migration och en rollbackad SQL-testfil har
+  lagts till men inte applicerats. Fullt protokoll:
   `6-Testing/goal-88-gemensam-kundarbetsyta-sidmotor-testlista.md`.
 
 ## Utanför målet

@@ -100,6 +100,23 @@ describe('site revision server actions', () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith('/admin/sida')
   })
 
+  it('maps a stale-theme draft rejection to the shared revision conflict state', async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: '40001', message: 'site_revision_theme_conflict' },
+    })
+
+    const result = await saveSiteDraft({
+      tenantId: 'tenant-1',
+      snapshot,
+    })
+
+    expect(result).toEqual({
+      error: 'Utkastet har ändrats i en annan session. Ladda om och försök igen.',
+      conflict: true,
+    })
+  })
+
   it('rejects a malformed client snapshot before the RPC', async () => {
     const result = await saveSiteDraft({
       tenantId: 'tenant-1', snapshot: { tenant: {}, settings: [] } as never,

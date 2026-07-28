@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { setTenantTheme, type ActionState } from '@/lib/platform/actions'
 import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
 import { ThemeGallery } from './ThemeGallery'
@@ -21,6 +21,7 @@ export function ThemePicker({
   current,
   onPreview,
   onPublished,
+  onPublishingChange,
 }: {
   tenantId: string
   current: string
@@ -28,19 +29,73 @@ export function ThemePicker({
   onPreview?: (theme: string, copyMode: ThemeCopyMode) => void
   /** Efter lyckad publicering (mallen ligger nu live). */
   onPublished?: () => void
+  /** Hela publiceringslivscykeln, så den gemensamma editorn kan låsa alla mutationer. */
+  onPublishingChange?: (pending: boolean) => void
 }) {
   const [selected, setSelected] = useState(current)
   const [copyMode, setCopyMode] = useState<ThemeCopyMode | null>(null)
+  const publishingRef = useRef(false)
+  const awaitingThemeRef = useRef<string | null>(null)
+  const currentRef = useRef(current)
+  const mountedRef = useRef(true)
+  const onPublishingChangeRef = useRef(onPublishingChange)
+  currentRef.current = current
+
+  const beginPublishing = useCallback(() => {
+    if (publishingRef.current) return
+    publishingRef.current = true
+    onPublishingChangeRef.current?.(true)
+  }, [])
+
+  const finishPublishing = useCallback(() => {
+    awaitingThemeRef.current = null
+    if (!publishingRef.current) return
+    publishingRef.current = false
+    if (mountedRef.current) onPublishingChangeRef.current?.(false)
+  }, [])
+
+  useEffect(() => {
+    onPublishingChangeRef.current = onPublishingChange
+  }, [onPublishingChange])
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      awaitingThemeRef.current = null
+      if (publishingRef.current) {
+        publishingRef.current = false
+        onPublishingChangeRef.current?.(false)
+      }
+    }
+  }, [])
   // När den SPARADE mallen ändras (efter publicering + revalidate) → synka valet.
   useEffect(() => {
     setSelected(current)
     setCopyMode(null)
-  }, [current])
+    if (awaitingThemeRef.current === current) finishPublishing()
+  }, [current, finishPublishing])
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(async (prev, fd) => {
-    const res = await setTenantTheme(prev, fd)
-    if (res.success) onPublished?.()
-    return res
+    // Native onSubmit announces synchronously before React schedules the action.
+    // Direct/programmatic action calls still get the same lock through this fallback.
+    beginPublishing()
+    const targetTheme = String(fd.get('theme') ?? '')
+    try {
+      const res = await setTenantTheme(prev, fd)
+      if (res.success) {
+        awaitingThemeRef.current = targetTheme
+        onPublished?.()
+        // Normally router.refresh remounts the keyed studio. This also handles a
+        // caller that already supplied the refreshed theme without a remount.
+        if (currentRef.current === targetTheme) finishPublishing()
+      } else {
+        finishPublishing()
+      }
+      return res
+    } catch (error) {
+      finishPublishing()
+      throw error
+    }
   }, {})
 
   const previewing = selected !== current
@@ -60,8 +115,18 @@ export function ThemePicker({
     onPreview?.(selected, next)
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    // The ref makes a second submit in the same event turn a no-op and closes
+    // the gap before useActionState starts its asynchronous reducer.
+    if (publishingRef.current) {
+      event.preventDefault()
+      return
+    }
+    beginPublishing()
+  }
+
   return (
-    <form action={formAction}>
+    <form action={formAction} onSubmit={handleSubmit}>
       <input type="hidden" name="tenantId" value={tenantId} />
       <input type="hidden" name="theme" value={selected} />
 

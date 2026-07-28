@@ -17,14 +17,16 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
-- Den samlade kodacceptansen genom Goal 88 är körd:
-  `373` testfiler och `2 892` tester passerar tillsammans. Goal 74–84 och 87–88 är
-  lokalt låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
+- Den samlade kodacceptansen genom Goal 88 före slutreviewns atomiska mallfix är
+  körd: `373` testfiler och `2 892` tester passerar tillsammans. Fixens
+  final-head-svit är separat grön med `5` testfiler/`44` tester och direkt
+  typecheck. Goal 74–84 och 87–88 är lokalt låsta i samma arbetsyta.
+  Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
   tillsammans med Zivar. Protokoll finns i
   `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81–84:s
   och Goal 87–88:s testlistor i `6-Testing/`. Produktion är orörd.
-- Goal 88 är verifierat klart lokalt på
+- Goal 88 är kodklar lokalt på
   `codex/launch-inventory-customer-design`. Kundadmin och superadmin monterar
   samma revisionsägda `SidaStudioV2`, manifest, utkast och historik; root-only
   mallbyte är fail-closed och embedded-ytan behåller Goal 80:s exakta geometri.
@@ -33,8 +35,15 @@ tenant och ett testfall, aldrig produktdefinitionen.
   gamla routade assembly-filerna är pensionerade medan verkliga leaf-callers
   och delad boknings-CSS är kvar. Autentiserad read-only browserparitet,
   373/2 892 tester, typecheck, lint med 0 fel/7 befintliga varningar,
-  produktionsbuild och oberoende uppgiftsreview är gröna. Ingen migration,
-  deploy eller produktionsdata ändrades. Protokoll:
+  produktionsbuild och oberoende uppgiftsreview var gröna på baslinjen.
+  Slutreviewn hittade därefter theme/draft-racet och krävde **1 ny append-only
+  lokal migration**, `20260728021500_goal88_atomic_theme_switch.sql`.
+  Klient-, action- och SQL-kontrakten är fokuserat gröna. Mallpublicering
+  låser synkront redan vid submit och förblir låst genom refresh/remount;
+  databasen använder samma tenantlås, text-vertical-CAS och kanoniska theme-
+  jämförelse för mallbyte, save och restore. Migrationen är
+  inte applicerad på preview eller produktion och dess rollbackade runtime-SQL
+  återstår därför före release. Deploy och produktionsdata är orörda. Protokoll:
   `6-Testing/goal-88-gemensam-kundarbetsyta-sidmotor-testlista.md`.
 - Goal 87 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. Alla nio moduler använder nu samma

@@ -31,6 +31,7 @@ export type { SiteEditorCard, SiteEditorField, SiteEditorManifest, SiteEditorTab
 const MESSAGE_SOURCE = 'corevo-sida'
 const HISTORY_BACK_TARGET = '__corevo_history_back__'
 const UPLOAD_PENDING_LEAVE_NOTICE = 'Bilden laddas upp. Vänta innan du lämnar sidan.'
+const THEME_PENDING_LEAVE_NOTICE = 'Mallen publiceras. Vänta innan du lämnar sidan.'
 const COLOR_LABELS = {
   color_primary: 'Primärfärg',
   color_accent: 'Knappfärg',
@@ -185,6 +186,7 @@ export function SidaStudioV2({
   const leaveHrefRef = useRef<string | null>(null)
   const revisionActionRef = useRef<RevisionAction | null>(null)
   const uploadPendingRef = useRef(false)
+  const themePublishingRef = useRef(false)
   const conflictRef = useRef(false)
   const noticeRef = useRef<HTMLDivElement>(null)
   const [working, setWorking] = useState<SiteSnapshot>(effectiveSnapshot)
@@ -204,6 +206,7 @@ export function SidaStudioV2({
   const [pickMode, setPickMode] = useState(false)
   const [revisionAction, setRevisionAction] = useState<RevisionAction | null>(null)
   const [uploadPending, setUploadPending] = useState(false)
+  const [themePublishing, setThemePublishing] = useState(false)
   const [conflict, setConflict] = useState(false)
   const [restoreRequest, setRestoreRequest] = useState<RestoreRequest | null>(null)
   const [confirmReload, setConfirmReload] = useState(false)
@@ -222,7 +225,24 @@ export function SidaStudioV2({
   const pickFields = useMemo(() => fieldTargets.map((target) => target.field), [fieldTargets])
   const dirty = !sameSnapshot(working, savedBaseline)
   const status = dirty ? 'Osparat' : hasDraft ? 'Utkast' : 'Live'
-  const editorLocked = revisionAction !== null || uploadPending || conflict
+  const editorLocked = revisionAction !== null || uploadPending || themePublishing || conflict
+  const editorMutationLocked = useCallback(
+    () => Boolean(
+      revisionActionRef.current
+      || uploadPendingRef.current
+      || themePublishingRef.current
+      || conflictRef.current
+    ),
+    [],
+  )
+  const snapshotMutationLocked = useCallback(
+    () => Boolean(
+      revisionActionRef.current
+      || themePublishingRef.current
+      || conflictRef.current
+    ),
+    [],
+  )
   const activeFields = useMemo(
     () => activeTab?.cards.flatMap((card) => card.fields ?? []) ?? [],
     [activeTab],
@@ -292,7 +312,7 @@ export function SidaStudioV2({
       }
     : undefined
   const selectTab = useCallback((nextTabId: string) => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     setVisibleCopyFields(null)
     if (pickMode) setNotice('')
     setPickMode(false)
@@ -300,14 +320,14 @@ export function SidaStudioV2({
     setMobileSurface('panel')
     if (requestedTabId === nextTabId) return
     router.replace(siteEditorTabHref(pathname, nextTabId, searchParams.toString()), { scroll: false })
-  }, [pathname, pickMode, requestedTabId, router, searchParams])
+  }, [editorMutationLocked, pathname, pickMode, requestedTabId, router, searchParams])
 
   useEffect(() => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     setPickMode(false)
     setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))
     setMobileSurface('panel')
-  }, [initialTabId, requestedTabId, tabs, uploadPending])
+  }, [editorMutationLocked, initialTabId, requestedTabId, tabs, themePublishing, uploadPending])
 
   const postSnapshot = useCallback(() => {
     if (previewingTemplateDefaults) return
@@ -351,10 +371,10 @@ export function SidaStudioV2({
     iframeRef.current?.contentWindow?.postMessage({
       source: MESSAGE_SOURCE,
       type: 'editor-pick-mode',
-      enabled: enabled && !revisionActionRef.current && !uploadPendingRef.current && !conflictRef.current,
+      enabled: enabled && !editorMutationLocked(),
       fields: pickFields,
     }, window.location.origin)
-  }, [pickFields])
+  }, [editorMutationLocked, pickFields])
   const bootstrapPreview = useCallback(() => {
     postPublishedSnapshot()
     scanPublishedPreview()
@@ -381,7 +401,7 @@ export function SidaStudioV2({
         enabled?: boolean
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'editor-pick-mode' && data.enabled === false) {
-        if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+        if (editorMutationLocked()) return
         setPickMode(false)
         setNotice('Väljläget avslutades.')
         return
@@ -394,7 +414,7 @@ export function SidaStudioV2({
         tabId,
       )
       if (picked) {
-        if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+        if (editorMutationLocked()) return
         setPickMode(false)
         setNotice('')
         setMobileSurface('panel')
@@ -407,7 +427,7 @@ export function SidaStudioV2({
         return
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'preview-route' && typeof data.path === 'string') {
-        if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+        if (editorMutationLocked()) return
         const target = tabs.find((tab) => tab.path.split('?')[0] === data.path)
         if (target) {
           selectTab(target.id)
@@ -422,7 +442,7 @@ export function SidaStudioV2({
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [bootstrapPreview, focusPickedField, postSnapshot, selectTab, tabId, tabs])
+  }, [bootstrapPreview, editorMutationLocked, focusPickedField, postSnapshot, selectTab, tabId, tabs])
   useEffect(() => { postPickMode(pickMode) }, [pickMode, postPickMode])
   useEffect(() => () => { postPickMode(false) }, [postPickMode])
   useEffect(() => {
@@ -461,7 +481,7 @@ export function SidaStudioV2({
     setPreviewCopyMode('keep')
   }, [dirty, hasDraft])
   useEffect(() => {
-    const guarded = dirty || uploadPending
+    const guarded = dirty || uploadPending || themePublishing
     if (guarded && !historyGuardRef.current) {
       window.history.pushState(
         { ...window.history.state, corevoSidaDirtyGuard: true },
@@ -475,18 +495,26 @@ export function SidaStudioV2({
     }
 
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirty && !uploadPendingRef.current) return
+      if (!dirty && !uploadPendingRef.current && !themePublishingRef.current) return
       event.preventDefault()
       event.returnValue = ''
     }
     const click = (event: MouseEvent) => {
-      if ((!dirty && !uploadPendingRef.current) || event.defaultPrevented || event.button !== 0) return
+      if (
+        (!dirty && !uploadPendingRef.current && !themePublishingRef.current)
+        || event.defaultPrevented
+        || event.button !== 0
+      ) return
       const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]')
       if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return
       const url = new URL(anchor.href, window.location.href)
       if (url.origin !== window.location.origin || url.href === window.location.href) return
       event.preventDefault()
-      if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+      if (themePublishingRef.current) {
+        setNotice(THEME_PENDING_LEAVE_NOTICE)
+        return
+      }
+      if (editorMutationLocked()) return
       const href = `${url.pathname}${url.search}${url.hash}`
       leaveHrefRef.current = href
       setLeaveHref(href)
@@ -497,7 +525,10 @@ export function SidaStudioV2({
         historyGuardRef.current = false
         return
       }
-      if ((!dirty && !uploadPendingRef.current) || !historyGuardRef.current) return
+      if (
+        (!dirty && !uploadPendingRef.current && !themePublishingRef.current)
+        || !historyGuardRef.current
+      ) return
       window.history.pushState(
         { ...window.history.state, corevoSidaDirtyGuard: true },
         '',
@@ -507,7 +538,11 @@ export function SidaStudioV2({
         setNotice(UPLOAD_PENDING_LEAVE_NOTICE)
         return
       }
-      if (revisionActionRef.current || conflictRef.current) return
+      if (themePublishingRef.current) {
+        setNotice(THEME_PENDING_LEAVE_NOTICE)
+        return
+      }
+      if (editorMutationLocked()) return
       leaveHrefRef.current = HISTORY_BACK_TARGET
       setLeaveHref(HISTORY_BACK_TARGET)
     }
@@ -519,10 +554,10 @@ export function SidaStudioV2({
       window.removeEventListener('popstate', popstate)
       document.removeEventListener('click', click, true)
     }
-  }, [dirty, uploadPending])
+  }, [dirty, editorMutationLocked, themePublishing, uploadPending])
 
   const update = (recipe: (snapshot: SiteSnapshot) => void) => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (snapshotMutationLocked()) return
     setWorking((current) => {
       const next = copySnapshot(current)
       recipe(next)
@@ -539,7 +574,7 @@ export function SidaStudioV2({
     setNotice(result.error ?? fallback)
   }
   const runRevisionAction = (action: RevisionAction, task: () => Promise<void>) => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     revisionActionRef.current = action
     setRevisionAction(action)
     setPickMode(false)
@@ -635,7 +670,7 @@ export function SidaStudioV2({
     setNotice(result.success ?? 'Versionen har återställts som utkast.')
   })
   const requestRestore = (revision: SiteRevision) => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     if (dirty) {
       setRestoreRequest({ kind: 'history', revision })
       return
@@ -643,12 +678,12 @@ export function SidaStudioV2({
     runRestore(revision)
   }
   const restorePublished = () => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     setWorking(copySnapshot(published))
     setNotice('')
   }
   const requestPublishedRestore = () => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     if (dirty) {
       setRestoreRequest({ kind: 'published' })
       return
@@ -656,7 +691,7 @@ export function SidaStudioV2({
     restorePublished()
   }
   const confirmRestore = () => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     const request = restoreRequest
     setRestoreRequest(null)
     if (request?.kind === 'published') restorePublished()
@@ -696,7 +731,7 @@ export function SidaStudioV2({
     router.push(target)
   })
   const discardAndLeave = () => {
-    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+    if (editorMutationLocked()) return
     const href = leaveHrefRef.current
     committedLeaveRef.current = Boolean(href)
     setWorking(copySnapshot(savedBaseline))
@@ -715,6 +750,12 @@ export function SidaStudioV2({
     if (pending) setPickMode(false)
     else setNotice((current) => current === UPLOAD_PENDING_LEAVE_NOTICE ? '' : current)
   }
+  const handleThemePublishingChange = useCallback((pending: boolean) => {
+    themePublishingRef.current = pending
+    setThemePublishing(pending)
+    if (pending) setPickMode(false)
+    else setNotice((current) => current === THEME_PENDING_LEAVE_NOTICE ? '' : current)
+  }, [])
 
   const showField = (field: string, value: string) => {
     const imageField = ['logo_url', 'hero_images', 'gallery_images', 'about_image', 'closing_image']
@@ -737,7 +778,7 @@ export function SidaStudioV2({
     <section
       className={`sida-studio-host ${styles.shell}${surface === 'embedded' ? ` ${styles.embedded}` : ''}`}
       data-accept="editor-shell"
-      aria-busy={revisionAction !== null || uploadPending}
+      aria-busy={revisionAction !== null || uploadPending || themePublishing}
     >
       <header className={styles.toolbar} data-accept="editor-toolbar">
         <div className={styles.identity}>
@@ -762,7 +803,7 @@ export function SidaStudioV2({
             <button type="button" aria-pressed={device === 'mobile'} onClick={() => setDevice('mobile')}>Mobil</button>
           </div>
           <button type="button" className={styles.pickButton} aria-pressed={pickMode} disabled={editorLocked} onClick={() => {
-            if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+            if (editorMutationLocked()) return
             const enabled = !pickMode
             setPickMode(enabled)
             setNotice(enabled ? 'Klicka på den del i förhandsvisningen som du vill redigera.' : '')
@@ -808,6 +849,7 @@ export function SidaStudioV2({
                   <ThemePicker
                     tenantId={tenantId}
                     current={published.settings.theme}
+                    onPublishingChange={handleThemePublishingChange}
                     onPreview={(theme, copyMode) => {
                       setPreviewTheme(theme === published.settings.theme ? null : theme)
                       setPreviewCopyMode(copyMode)

@@ -1,9 +1,9 @@
 # Goal 88 — gemensam kundarbetsyta och sidmotor
 
-Status: **Goal 88 lokalt verifierad 2026-07-28**
+Status: **Goal 88 kodklar; final-head fokuserat verifierad 2026-07-28**
 
 Gren: `codex/launch-inventory-customer-design`
-Produktion och produktionsdata: orörda
+Produktion, previewdatabas och produktionsdata: orörda
 
 ## Verifierat beteende
 
@@ -14,6 +14,16 @@ Produktion och produktionsdata: orörda
   brytpunkt.
 - Mallbyte är fail-closed. Tenant och partner får ingen mallväljare; endast
   root kan öppna den. Väljaren göms när sidstudion är dirty eller har utkast.
+- `ThemePicker` låser nu parent-editorn synkront redan vid submit och före
+  server-await. Returnerat fel, throw och avmontering släpper direkt; success
+  håller låset genom refresh tills måltemat observeras eller den theme-nycklade
+  studion monteras om. Immediate ref blockerar samma-tick snapshot-,
+  revisions-, navigation- och pick-race.
+- Den lokala append-only migrationen
+  `20260728021500_goal88_atomic_theme_switch.sql` delar tenant-radlås mellan
+  mallbyte, draft-save och restore. Draftgrinden sker före text-vertical-CAS;
+  settings-CAS, missing-row-låsning och kanonisk theme-jämförelse på både live-
+  och snapshotsidan hindrar båda cross-session-låsordningarna.
 - Mallens preview skickar samma `copy=keep|template` som publiceringen.
   Mallinnehåll replayas inte över en template-preview.
 - Stale revisioner, samtidiga revisionsactions, bilduppladdning och
@@ -35,9 +45,18 @@ Produktion och produktionsdata: orörda
   — **8 filer / 44 tester gröna**. Lifecycle-testet kör samma snapshot,
   utkast och historik i fristående och inbäddad yta, jämför deras synliga
   revisionsstatus och verifierar att mallväljaren är fail-closed.
-- Full webbsvit:
+- Full webbsvit på baslinjen före den atomiska mallfixen:
   `node node_modules/vitest/vitest.mjs run`
-  — **373 filer / 2 892 tester gröna** på slutcommiten.
+  — **373 filer / 2 892 tester gröna**. Final-head-fullsviten har inte räknats
+  om i denna fixrunda.
+- Atomisk mallfix på final-head:
+  `node node_modules/vitest/vitest.mjs run
+  components/platform/ThemePicker.test.tsx
+  components/platform/SidaStudioV2.pick-lifecycle.test.tsx
+  lib/platform/actions/theme.test.ts
+  lib/platform/actions/site-revisions.test.ts
+  lib/platform/theme-switch-atomic.contract.test.ts`
+  — **5 filer / 44 tester gröna**.
 - Redigera-sidan-kontrakt:
   `corepack pnpm exec playwright test
   e2e/acceptans/03-redigera-sidan-v2/03-redigera-sidan-v2.accept.spec.ts
@@ -54,7 +73,7 @@ Produktion och produktionsdata: orörda
   både `Mall` och `Mallkategori`.
 - Typkontroll:
   `node node_modules/typescript/bin/tsc --noEmit`
-  — **grön**.
+  — **grön på final-head**.
 - ESLint:
   `node node_modules/eslint/bin/eslint.js .`
   — **0 fel / 7 befintliga varningar**. Den enda nya Goal 88-varningen i
@@ -63,6 +82,18 @@ Produktion och produktionsdata: orörda
   `node node_modules/next/dist/bin/next build`
   — **grön**, inklusive typkontroll och 11 statiska sidor.
 - `git diff --check` — **grön**.
+
+## Lokal migration — ej applicerad
+
+- **1 ny append-only migration:**
+  `20260728021500_goal88_atomic_theme_switch.sql`.
+- `supabase/tests/goal88_atomic_theme_switch_test.sql` bevisar root-only/grants,
+  lockordning, befintligt draft före text-vertical-CAS, saknad settings-rad,
+  settings-CAS, okänd raw theme-fallback på båda jämförelsesidor samt
+  switch-first-reject för både save och restore.
+- SQL-runtimefilen är skriven för att köras inom `BEGIN … ROLLBACK`, men har
+  **inte körts i denna uppgift**, eftersom migrationen inte får appliceras på
+  preview eller produktion här. Den är en uttrycklig releasekontroll.
 
 ## Känd lokal verktygsnotering
 
