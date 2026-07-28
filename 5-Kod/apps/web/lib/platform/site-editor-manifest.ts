@@ -382,4 +382,3 @@ export function buildSiteEditorManifest(kind: EditorManifestKind, defaults: Reso
   }
   return manifest
 }
-
