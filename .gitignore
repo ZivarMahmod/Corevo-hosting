@@ -4,6 +4,20 @@
 # Playwright MCP runtime output
 .playwright-mcp/
 
+# Lokal Graphify-kodgraf för Codex (genererad, stor och worktree-specifik)
+5-Kod/graphify-out/
+5-Kod/graphify-references/
+5-Kod/apps/zivar-graph-studio/dist/
+5-Kod/apps/zivar-graph-studio/test-results/
+5-Kod/tools/zivar-node-lab.html
+
+# Open Design är en lokal, orörd referensklon och versionshanteras separat.
+4-Dokument-Underlag/08-externa-verktyg/open-design/
+
+# Pythonverktyg
+__pycache__/
+*.py[cod]
+
 # Write-permission test artifacts
 .write_test_*
 
