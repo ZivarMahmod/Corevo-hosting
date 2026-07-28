@@ -17,6 +17,11 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
+- Lokal Git-topologi konsoliderades 2026-07-28: lokal `main` är exakt
+  `origin/main` (`9a4ccdc`) och allt ännu ej produktionssatt arbete ligger samlat
+  på `codex/launch-inventory-customer-design`, som även innehåller aktuell
+  `main`. Endast dessa två lokala brancher/worktrees återstår. Ingen push,
+  produktionsmerge, deploy eller databasskrivning gjordes vid konsolideringen.
 - Den samlade kodacceptansen genom Goal 88 är körd på final-head:
   `376` testfiler och `2 909` tester passerar tillsammans. Atomfixens
   fokussvit är separat grön med `5` testfiler/`44` tester. Goal 74–84 och
