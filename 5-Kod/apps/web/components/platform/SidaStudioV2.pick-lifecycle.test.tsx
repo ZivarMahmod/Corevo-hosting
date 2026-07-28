@@ -452,6 +452,98 @@ describe('SidaStudioV2 revision safety', () => {
     }
   })
 
+  it('restores the clean upload sentinel on Back and keeps the guard for successful uploaded work', async () => {
+    const pendingUpload = deferred<{ url?: string; error?: string }>()
+    const pushState = vi.spyOn(window.history, 'pushState').mockImplementation(() => undefined)
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => undefined)
+    mocks.uploadSiteDraftImage.mockReturnValueOnce(pendingUpload.promise)
+    await chooseImage(new File(['image'], 'salong.png', { type: 'image/png' }))
+
+    act(() => button('Beskär och använd').click())
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(pushState).toHaveBeenCalledTimes(1)
+
+    try {
+      await act(async () => {
+        window.history.back()
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      })
+
+      expect(pushState).toHaveBeenCalledTimes(2)
+      expect(container.querySelector('[role="status"]')?.textContent)
+        .toBe('Bilden laddas upp. Vänta innan du lämnar sidan.')
+      expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+      pendingUpload.resolve({ url: 'https://example.test/uploaded.webp' })
+      await act(async () => {
+        await pendingUpload.promise
+        await Promise.resolve()
+      })
+
+      expect(back).toHaveBeenCalledTimes(1)
+      expect(container.querySelector('img[src="https://example.test/uploaded.webp"]')).not.toBeNull()
+      expect(container.textContent).not.toContain('Bilden laddas upp. Vänta innan du lämnar sidan.')
+
+      await act(async () => window.dispatchEvent(new PopStateEvent('popstate')))
+      expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Lämna redigeraren?')
+      expect(mocks.push).not.toHaveBeenCalled()
+    } finally {
+      pendingUpload.resolve({ url: 'https://example.test/uploaded.webp' })
+      await act(async () => { await Promise.resolve() })
+    }
+  })
+
+  it('removes only the restored sentinel when a clean upload fails', async () => {
+    const pendingUpload = deferred<{ url?: string; error?: string }>()
+    const pushState = vi.spyOn(window.history, 'pushState').mockImplementation(() => undefined)
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => undefined)
+    const go = vi.spyOn(window.history, 'go').mockImplementation(() => undefined)
+    mocks.uploadSiteDraftImage.mockReturnValueOnce(pendingUpload.promise)
+    await chooseImage(new File(['image'], 'salong.png', { type: 'image/png' }))
+
+    act(() => button('Beskär och använd').click())
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(pushState).toHaveBeenCalledTimes(1)
+
+    try {
+      await act(async () => {
+        window.history.back()
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      })
+      expect(pushState).toHaveBeenCalledTimes(2)
+      expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+      pendingUpload.resolve({ error: 'Uppladdningen misslyckades.' })
+      await act(async () => {
+        await pendingUpload.promise
+        await Promise.resolve()
+      })
+
+      expect(back).toHaveBeenCalledTimes(2)
+      expect(container.querySelector('[role="alert"]')?.textContent).toContain('Uppladdningen misslyckades.')
+      expect(container.textContent).not.toContain('Bilden laddas upp. Vänta innan du lämnar sidan.')
+      const pushesAfterCleanup = pushState.mock.calls.length
+
+      await act(async () => window.dispatchEvent(new PopStateEvent('popstate')))
+      expect(pushState).toHaveBeenCalledTimes(pushesAfterCleanup)
+      expect(back).toHaveBeenCalledTimes(2)
+      expect(go).not.toHaveBeenCalled()
+      expect(document.querySelector('[role="dialog"]')).toBeNull()
+      expect(mocks.push).not.toHaveBeenCalled()
+    } finally {
+      pendingUpload.resolve({ error: 'Uppladdningen misslyckades.' })
+      await act(async () => { await Promise.resolve() })
+    }
+  })
+
   it.each([
     {
       label: 'returned error',

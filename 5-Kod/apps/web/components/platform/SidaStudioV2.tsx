@@ -30,6 +30,7 @@ export type { SiteEditorCard, SiteEditorField, SiteEditorManifest, SiteEditorTab
 
 const MESSAGE_SOURCE = 'corevo-sida'
 const HISTORY_BACK_TARGET = '__corevo_history_back__'
+const UPLOAD_PENDING_LEAVE_NOTICE = 'Bilden laddas upp. Vänta innan du lämnar sidan.'
 const COLOR_LABELS = {
   color_primary: 'Primärfärg',
   color_accent: 'Knappfärg',
@@ -496,13 +497,17 @@ export function SidaStudioV2({
         historyGuardRef.current = false
         return
       }
-      if (!dirty || !historyGuardRef.current) return
+      if ((!dirty && !uploadPendingRef.current) || !historyGuardRef.current) return
       window.history.pushState(
         { ...window.history.state, corevoSidaDirtyGuard: true },
         '',
         `${window.location.pathname}${window.location.search}${window.location.hash}`,
       )
-      if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
+      if (uploadPendingRef.current) {
+        setNotice(UPLOAD_PENDING_LEAVE_NOTICE)
+        return
+      }
+      if (revisionActionRef.current || conflictRef.current) return
       leaveHrefRef.current = HISTORY_BACK_TARGET
       setLeaveHref(HISTORY_BACK_TARGET)
     }
@@ -708,6 +713,7 @@ export function SidaStudioV2({
     uploadPendingRef.current = pending
     setUploadPending(pending)
     if (pending) setPickMode(false)
+    else setNotice((current) => current === UPLOAD_PENDING_LEAVE_NOTICE ? '' : current)
   }
 
   const showField = (field: string, value: string) => {
