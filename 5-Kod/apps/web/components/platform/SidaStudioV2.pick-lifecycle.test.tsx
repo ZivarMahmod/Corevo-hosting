@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   publishSiteDraft: vi.fn(),
   restoreSiteRevision: vi.fn(),
   saveSiteDraft: vi.fn(),
+  uploadSiteDraftImage: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -28,7 +29,7 @@ vi.mock('@/lib/platform/actions/site-revisions', () => ({
   publishSiteDraft: mocks.publishSiteDraft,
   restoreSiteRevision: mocks.restoreSiteRevision,
   saveSiteDraft: mocks.saveSiteDraft,
-  uploadSiteDraftImage: vi.fn(),
+  uploadSiteDraftImage: mocks.uploadSiteDraftImage,
 }))
 vi.mock('./ThemePicker', () => ({ ThemePicker: () => null }))
 
@@ -57,6 +58,8 @@ const manifest: SiteEditorManifest = {
         id: 'hero',
         title: 'Hero',
         fields: [{ key: 'heroTitle', label: 'Rubrik', defaultValue: 'Hemrubrik' }],
+        imageSlot: 'about_image',
+        imageDefaults: ['https://example.test/default.webp'],
       }],
     },
   ],
@@ -140,6 +143,14 @@ async function editField(key: string, value: string) {
   })
 }
 
+async function chooseImage(file: File) {
+  await act(async () => button('Byt bild').click())
+  const input = container.querySelector('input[type="file"]')
+  if (!(input instanceof HTMLInputElement)) throw new Error('Image input missing')
+  Object.defineProperty(input, 'files', { configurable: true, value: [file] })
+  await act(async () => input.dispatchEvent(new Event('change', { bubbles: true })))
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((done) => { resolve = done })
@@ -181,10 +192,25 @@ beforeEach(async () => {
   mocks.publishSiteDraft.mockReset()
   mocks.restoreSiteRevision.mockReset()
   mocks.saveSiteDraft.mockReset()
+  mocks.uploadSiteDraftImage.mockReset()
   mocks.discardSiteDraft.mockResolvedValue({ success: 'Utkastet har kastats.' })
   mocks.publishSiteDraft.mockResolvedValue({ success: 'Sidan är publicerad.', snapshot })
   mocks.restoreSiteRevision.mockResolvedValue({ success: 'Versionen har återställts.', lockVersion: 4 })
   mocks.saveSiteDraft.mockResolvedValue({ success: 'Utkastet är sparat.', lockVersion: 1 })
+  mocks.uploadSiteDraftImage.mockResolvedValue({ url: 'https://example.test/uploaded.webp' })
+  vi.stubGlobal('createImageBitmap', vi.fn(async () => ({
+    width: 400,
+    height: 300,
+    close: vi.fn(),
+  } as unknown as ImageBitmap)))
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    drawImage: vi.fn(),
+  } as unknown as CanvasRenderingContext2D)
+  vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+    callback(new Blob(['crop'], { type: 'image/webp' }))
+  })
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:crop')
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
   frameCallbacks = []
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
     frameCallbacks.push(callback)
@@ -229,6 +255,7 @@ afterEach(async () => {
   await act(async () => root.unmount())
   container.remove()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   if (originalScrollIntoView) {
     Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScrollIntoView)
   } else {
@@ -340,7 +367,7 @@ describe('SidaStudioV2 revision safety', () => {
     expect(field('heroTitle').value).toBe('Behåll min lokala rubrik')
   })
 
-  it('keeps one outer publish lock while saving first and preserves dirty state on publish conflict', async () => {
+  it('commits the successful internal save before a publish conflict', async () => {
     await editField('heroTitle', 'Lokalt före publicering')
     mocks.saveSiteDraft.mockResolvedValueOnce({ success: 'Utkastet är sparat.', lockVersion: 8 })
     mocks.publishSiteDraft.mockResolvedValueOnce({
@@ -353,8 +380,155 @@ describe('SidaStudioV2 revision safety', () => {
     expect(mocks.saveSiteDraft).toHaveBeenCalledTimes(1)
     expect(mocks.publishSiteDraft).toHaveBeenCalledWith({ tenantId: 'tenant-1', expectedLockVersion: 8 })
     expect(field('heroTitle').value).toBe('Lokalt före publicering')
-    expect(container.textContent).toContain('Osparat')
+    expect(container.textContent).toContain('Utkast')
+    expect(container.textContent).not.toContain('Osparat')
+    expect(container.querySelector('[data-accept="draft-banner"]')).not.toBeNull()
     expect(container.querySelector('fieldset')?.hasAttribute('disabled')).toBe(true)
+  })
+
+  it('blocks revision and navigation actions while an image upload is pending, then saves the uploaded URL', async () => {
+    await editField('heroTitle', 'Lokalt arbete')
+    const pendingUpload = deferred<{ url: string }>()
+    const pendingSave = deferred<{ success: string; lockVersion: number }>()
+    mocks.uploadSiteDraftImage.mockReturnValueOnce(pendingUpload.promise)
+    mocks.saveSiteDraft.mockReturnValueOnce(pendingSave.promise)
+    await chooseImage(new File(['image'], 'salong.png', { type: 'image/png' }))
+
+    act(() => button('Beskär och använd').click())
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(mocks.uploadSiteDraftImage).toHaveBeenCalledTimes(1)
+
+    const disabledDuringUpload = {
+      save: button('Spara utkast').disabled,
+      publish: button('Publicera').disabled,
+      tab: button('Allmänt').disabled,
+      pick: button('Välj på sidan').disabled,
+    }
+    const trigger = document.createElement('a')
+    trigger.href = '/annan-sida'
+    trigger.textContent = 'Gå vidare'
+    document.body.append(trigger)
+    let leaveDialogOpened = false
+    try {
+      await act(async () => trigger.click())
+      leaveDialogOpened = document.querySelector('[role="dialog"]') !== null
+      if (leaveDialogOpened) {
+        await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })))
+        act(() => vi.advanceTimersByTime(180))
+      }
+
+      act(() => {
+        button('Spara utkast').click()
+        button('Publicera').click()
+      })
+      await act(async () => { await Promise.resolve() })
+
+      pendingUpload.resolve({ url: 'https://example.test/uploaded.webp' })
+      await act(async () => {
+        await pendingUpload.promise
+        await Promise.resolve()
+      })
+
+      expect(container.querySelector('img[src="https://example.test/uploaded.webp"]')).not.toBeNull()
+      expect(disabledDuringUpload).toEqual({ save: true, publish: true, tab: true, pick: true })
+      expect(leaveDialogOpened).toBe(false)
+      expect(mocks.saveSiteDraft).not.toHaveBeenCalled()
+      expect(mocks.publishSiteDraft).not.toHaveBeenCalled()
+
+      await act(async () => button('Spara utkast').click())
+      expect(mocks.saveSiteDraft).toHaveBeenCalledWith(expect.objectContaining({
+        snapshot: expect.objectContaining({
+          branding: expect.objectContaining({ about_image: 'https://example.test/uploaded.webp' }),
+        }),
+      }))
+    } finally {
+      trigger.remove()
+      pendingSave.resolve({ success: 'Utkastet är sparat.', lockVersion: 9 })
+      await act(async () => { await Promise.resolve() })
+    }
+  })
+
+  it.each([
+    {
+      label: 'returned error',
+      result: { error: 'Utkastet kunde inte sparas.' },
+      role: 'status',
+      message: 'Utkastet kunde inte sparas.',
+    },
+    {
+      label: 'conflict',
+      result: { error: 'Utkastet har ändrats i en annan session.', conflict: true },
+      role: 'alert',
+      message: 'Utkastet har ändrats i en annan session.',
+    },
+  ])('closes the leave Modal and focuses the visible $label', async ({ result, role, message }) => {
+    await editField('heroTitle', 'Osparat')
+    mocks.saveSiteDraft.mockResolvedValueOnce(result)
+    const trigger = document.createElement('a')
+    trigger.href = '/annan-sida'
+    trigger.textContent = 'Gå vidare'
+    document.body.append(trigger)
+    try {
+      await act(async () => trigger.click())
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+
+      await act(async () => button('Spara utkast och lämna').click())
+      await flushFrames()
+
+      const notice = container.querySelector<HTMLElement>(`[role="${role}"]`)
+      expect(document.querySelector('[role="dialog"]')).toBeNull()
+      expect(notice?.textContent).toContain(message)
+      expect(document.activeElement).toBe(notice)
+      expect(mocks.push).not.toHaveBeenCalled()
+    } finally {
+      trigger.remove()
+    }
+  })
+
+  it('closes the leave Modal and focuses the visible error when save throws', async () => {
+    await editField('heroTitle', 'Osparat')
+    mocks.saveSiteDraft.mockRejectedValueOnce(new Error('network'))
+    const trigger = document.createElement('a')
+    trigger.href = '/annan-sida'
+    trigger.textContent = 'Gå vidare'
+    document.body.append(trigger)
+    try {
+      await act(async () => trigger.click())
+      await act(async () => button('Spara utkast och lämna').click())
+      await flushFrames()
+
+      const notice = container.querySelector<HTMLElement>('[role="status"]')
+      expect(document.querySelector('[role="dialog"]')).toBeNull()
+      expect(notice?.textContent).toContain('Utkastet kunde inte sparas.')
+      expect(document.activeElement).toBe(notice)
+      expect(mocks.push).not.toHaveBeenCalled()
+    } finally {
+      trigger.remove()
+    }
+  })
+
+  it('retains a successful internal save and lock version when publish throws', async () => {
+    await editField('heroTitle', 'Lokalt före nätfel')
+    mocks.saveSiteDraft.mockResolvedValueOnce({ success: 'Utkastet är sparat.', lockVersion: 8 })
+    mocks.publishSiteDraft.mockRejectedValueOnce(new Error('network'))
+
+    await act(async () => button('Publicera').click())
+
+    expect(field('heroTitle').value).toBe('Lokalt före nätfel')
+    expect(container.textContent).toContain('Utkast')
+    expect(container.textContent).not.toContain('Osparat')
+    expect(container.textContent).toContain('Utkast sparat')
+    expect(container.textContent).toContain('Sidan kunde inte publiceras.')
+
+    await act(async () => button('Kasta utkast').click())
+    expect(mocks.discardSiteDraft).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      expectedLockVersion: 8,
+    })
   })
 
   it('releases the mutex after an exception and keeps a later save usable', async () => {

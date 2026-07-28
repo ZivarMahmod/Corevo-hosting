@@ -183,7 +183,9 @@ export function SidaStudioV2({
   const committedLeaveRef = useRef(false)
   const leaveHrefRef = useRef<string | null>(null)
   const revisionActionRef = useRef<RevisionAction | null>(null)
+  const uploadPendingRef = useRef(false)
   const conflictRef = useRef(false)
+  const noticeRef = useRef<HTMLDivElement>(null)
   const [working, setWorking] = useState<SiteSnapshot>(effectiveSnapshot)
   const [savedBaseline, setSavedBaseline] = useState<SiteSnapshot>(effectiveSnapshot)
   const [published, setPublished] = useState<SiteSnapshot>(publishedSnapshot)
@@ -200,6 +202,7 @@ export function SidaStudioV2({
   const [previewStageWidth, setPreviewStageWidth] = useState(0)
   const [pickMode, setPickMode] = useState(false)
   const [revisionAction, setRevisionAction] = useState<RevisionAction | null>(null)
+  const [uploadPending, setUploadPending] = useState(false)
   const [conflict, setConflict] = useState(false)
   const [restoreRequest, setRestoreRequest] = useState<RestoreRequest | null>(null)
   const [confirmReload, setConfirmReload] = useState(false)
@@ -218,7 +221,7 @@ export function SidaStudioV2({
   const pickFields = useMemo(() => fieldTargets.map((target) => target.field), [fieldTargets])
   const dirty = !sameSnapshot(working, savedBaseline)
   const status = dirty ? 'Osparat' : hasDraft ? 'Utkast' : 'Live'
-  const editorLocked = revisionAction !== null || conflict
+  const editorLocked = revisionAction !== null || uploadPending || conflict
   const activeFields = useMemo(
     () => activeTab?.cards.flatMap((card) => card.fields ?? []) ?? [],
     [activeTab],
@@ -288,7 +291,7 @@ export function SidaStudioV2({
       }
     : undefined
   const selectTab = useCallback((nextTabId: string) => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     setVisibleCopyFields(null)
     if (pickMode) setNotice('')
     setPickMode(false)
@@ -299,11 +302,11 @@ export function SidaStudioV2({
   }, [pathname, pickMode, requestedTabId, router, searchParams])
 
   useEffect(() => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     setPickMode(false)
     setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))
     setMobileSurface('panel')
-  }, [initialTabId, requestedTabId, tabs])
+  }, [initialTabId, requestedTabId, tabs, uploadPending])
 
   const postSnapshot = useCallback(() => {
     if (previewingTemplateDefaults) return
@@ -347,7 +350,7 @@ export function SidaStudioV2({
     iframeRef.current?.contentWindow?.postMessage({
       source: MESSAGE_SOURCE,
       type: 'editor-pick-mode',
-      enabled: enabled && !revisionActionRef.current && !conflictRef.current,
+      enabled: enabled && !revisionActionRef.current && !uploadPendingRef.current && !conflictRef.current,
       fields: pickFields,
     }, window.location.origin)
   }, [pickFields])
@@ -377,7 +380,7 @@ export function SidaStudioV2({
         enabled?: boolean
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'editor-pick-mode' && data.enabled === false) {
-        if (revisionActionRef.current || conflictRef.current) return
+        if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
         setPickMode(false)
         setNotice('Väljläget avslutades.')
         return
@@ -390,7 +393,7 @@ export function SidaStudioV2({
         tabId,
       )
       if (picked) {
-        if (revisionActionRef.current || conflictRef.current) return
+        if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
         setPickMode(false)
         setNotice('')
         setMobileSurface('panel')
@@ -403,7 +406,7 @@ export function SidaStudioV2({
         return
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'preview-route' && typeof data.path === 'string') {
-        if (revisionActionRef.current || conflictRef.current) return
+        if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
         const target = tabs.find((tab) => tab.path.split('?')[0] === data.path)
         if (target) {
           selectTab(target.id)
@@ -457,31 +460,32 @@ export function SidaStudioV2({
     setPreviewCopyMode('keep')
   }, [dirty, hasDraft])
   useEffect(() => {
-    if (dirty && !historyGuardRef.current) {
+    const guarded = dirty || uploadPending
+    if (guarded && !historyGuardRef.current) {
       window.history.pushState(
         { ...window.history.state, corevoSidaDirtyGuard: true },
         '',
         `${window.location.pathname}${window.location.search}${window.location.hash}`,
       )
       historyGuardRef.current = true
-    } else if (!dirty && historyGuardRef.current && !committedLeaveRef.current) {
+    } else if (!guarded && historyGuardRef.current && !committedLeaveRef.current) {
       historyGuardRef.current = false
       window.history.back()
     }
 
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirty) return
+      if (!dirty && !uploadPendingRef.current) return
       event.preventDefault()
       event.returnValue = ''
     }
     const click = (event: MouseEvent) => {
-      if (!dirty || event.defaultPrevented || event.button !== 0) return
+      if ((!dirty && !uploadPendingRef.current) || event.defaultPrevented || event.button !== 0) return
       const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]')
       if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return
       const url = new URL(anchor.href, window.location.href)
       if (url.origin !== window.location.origin || url.href === window.location.href) return
       event.preventDefault()
-      if (revisionActionRef.current || conflictRef.current) return
+      if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
       const href = `${url.pathname}${url.search}${url.hash}`
       leaveHrefRef.current = href
       setLeaveHref(href)
@@ -498,7 +502,7 @@ export function SidaStudioV2({
         '',
         `${window.location.pathname}${window.location.search}${window.location.hash}`,
       )
-      if (revisionActionRef.current || conflictRef.current) return
+      if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
       leaveHrefRef.current = HISTORY_BACK_TARGET
       setLeaveHref(HISTORY_BACK_TARGET)
     }
@@ -510,7 +514,7 @@ export function SidaStudioV2({
       window.removeEventListener('popstate', popstate)
       document.removeEventListener('click', click, true)
     }
-  }, [dirty])
+  }, [dirty, uploadPending])
 
   const update = (recipe: (snapshot: SiteSnapshot) => void) => {
     if (revisionActionRef.current || conflictRef.current) return
@@ -530,7 +534,7 @@ export function SidaStudioV2({
     setNotice(result.error ?? fallback)
   }
   const runRevisionAction = (action: RevisionAction, task: () => Promise<void>) => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     revisionActionRef.current = action
     setRevisionAction(action)
     setPickMode(false)
@@ -540,6 +544,13 @@ export function SidaStudioV2({
         revisionActionRef.current = null
         setRevisionAction(null)
       })
+  }
+  const commitSavedDraft = (saved: { version: number; snapshot: SiteSnapshot }) => {
+    setLockVersion(saved.version)
+    setHasDraft(true)
+    setDraftAt(new Date().toISOString())
+    setWorking(saved.snapshot)
+    setSavedBaseline(saved.snapshot)
   }
   const save = async (commit: boolean): Promise<{ version: number; snapshot: SiteSnapshot } | null> => {
     const result = await saveSiteDraft({
@@ -553,11 +564,7 @@ export function SidaStudioV2({
     }
     const resolved = copySnapshot(result.snapshot ?? working)
     if (commit) {
-      setLockVersion(result.lockVersion)
-      setHasDraft(true)
-      setDraftAt(new Date().toISOString())
-      setWorking(resolved)
-      setSavedBaseline(resolved)
+      commitSavedDraft({ version: result.lockVersion, snapshot: resolved })
       setNotice(result.success ?? 'Utkastet är sparat.')
     }
     return { version: result.lockVersion, snapshot: resolved }
@@ -568,18 +575,13 @@ export function SidaStudioV2({
     let saved: Awaited<ReturnType<typeof save>> = null
     if (dirty) {
       saved = await save(false)
-      version = saved?.version ?? null
+      if (!saved) return
+      commitSavedDraft(saved)
+      version = saved.version
     }
     if (version == null) return
     const result = await publishSiteDraft({ tenantId, expectedLockVersion: version })
     if (result.error) {
-      if (!result.conflict && saved) {
-        setWorking(saved.snapshot)
-        setSavedBaseline(saved.snapshot)
-        setLockVersion(saved.version)
-        setHasDraft(true)
-        setDraftAt(new Date().toISOString())
-      }
       failRevision(result, REVISION_ACTION_ERROR.publish)
       return
     }
@@ -628,7 +630,7 @@ export function SidaStudioV2({
     setNotice(result.success ?? 'Versionen har återställts som utkast.')
   })
   const requestRestore = (revision: SiteRevision) => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     if (dirty) {
       setRestoreRequest({ kind: 'history', revision })
       return
@@ -636,12 +638,12 @@ export function SidaStudioV2({
     runRestore(revision)
   }
   const restorePublished = () => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     setWorking(copySnapshot(published))
     setNotice('')
   }
   const requestPublishedRestore = () => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     if (dirty) {
       setRestoreRequest({ kind: 'published' })
       return
@@ -649,7 +651,7 @@ export function SidaStudioV2({
     restorePublished()
   }
   const confirmRestore = () => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     const request = restoreRequest
     setRestoreRequest(null)
     if (request?.kind === 'published') restorePublished()
@@ -660,6 +662,10 @@ export function SidaStudioV2({
     committedLeaveRef.current = false
     setLeaveHref(null)
   }
+  const revealRevisionFailure = () => {
+    closeLeaveDialog()
+    window.requestAnimationFrame(() => noticeRef.current?.focus())
+  }
   const saveAndLeave = () => runRevisionAction('save', async () => {
     const href = leaveHrefRef.current
     committedLeaveRef.current = Boolean(href)
@@ -668,11 +674,13 @@ export function SidaStudioV2({
       saved = await save(true)
     } catch (error) {
       committedLeaveRef.current = false
+      revealRevisionFailure()
       throw error
     }
     const target = leaveHrefRef.current
     if (!saved || !target) {
       committedLeaveRef.current = false
+      if (!saved) revealRevisionFailure()
       return
     }
     if (target === HISTORY_BACK_TARGET) {
@@ -683,7 +691,7 @@ export function SidaStudioV2({
     router.push(target)
   })
   const discardAndLeave = () => {
-    if (revisionActionRef.current || conflictRef.current) return
+    if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
     const href = leaveHrefRef.current
     committedLeaveRef.current = Boolean(href)
     setWorking(copySnapshot(savedBaseline))
@@ -695,6 +703,11 @@ export function SidaStudioV2({
       return
     }
     if (href) router.push(href)
+  }
+  const handleImageUploadPending = (pending: boolean) => {
+    uploadPendingRef.current = pending
+    setUploadPending(pending)
+    if (pending) setPickMode(false)
   }
 
   const showField = (field: string, value: string) => {
@@ -718,7 +731,7 @@ export function SidaStudioV2({
     <section
       className={`sida-studio-host ${styles.shell}${surface === 'embedded' ? ` ${styles.embedded}` : ''}`}
       data-accept="editor-shell"
-      aria-busy={revisionAction !== null}
+      aria-busy={revisionAction !== null || uploadPending}
     >
       <header className={styles.toolbar} data-accept="editor-toolbar">
         <div className={styles.identity}>
@@ -743,7 +756,7 @@ export function SidaStudioV2({
             <button type="button" aria-pressed={device === 'mobile'} onClick={() => setDevice('mobile')}>Mobil</button>
           </div>
           <button type="button" className={styles.pickButton} aria-pressed={pickMode} disabled={editorLocked} onClick={() => {
-            if (revisionActionRef.current || conflictRef.current) return
+            if (revisionActionRef.current || uploadPendingRef.current || conflictRef.current) return
             const enabled = !pickMode
             setPickMode(enabled)
             setNotice(enabled ? 'Klicka på den del i förhandsvisningen som du vill redigera.' : '')
@@ -762,11 +775,13 @@ export function SidaStudioV2({
           <button type="button" onClick={runDiscard} disabled={editorLocked}>Kasta utkast</button>
         </div>
       ) : null}
-      {conflict ? <div className={styles.notice} role="alert">
+      {conflict ? <div ref={noticeRef} className={styles.notice} role="alert" tabIndex={-1}>
         <span>{notice}</span>
         <button type="button" className={styles.textButton} onClick={() => setConfirmReload(true)}>Ladda om senaste</button>
       </div> : revisionAction || notice ? (
-        <div className={styles.notice} role="status">{revisionAction ? REVISION_ACTION_STATUS[revisionAction] : notice}</div>
+        <div ref={noticeRef} className={styles.notice} role="status" tabIndex={-1}>
+          {revisionAction ? REVISION_ACTION_STATUS[revisionAction] : notice}
+        </div>
       ) : null}
 
       <div className={styles.mobileSwitch} aria-label="Redigeringsvy">
@@ -856,7 +871,8 @@ export function SidaStudioV2({
                   else next.settings.copy[field.key] = value
                 })} onShow={showField} />)}
               {card.imageSlot ? <ImageField tenantId={tenantId} slot={card.imageSlot} snapshot={working}
-                defaults={card.imageDefaults ?? []} limit={card.imageLimit ?? 1} onChange={update} onShow={showField} onPreview={previewImage} /> : null}
+                defaults={card.imageDefaults ?? []} limit={card.imageLimit ?? 1} onChange={update}
+                onUploadingChange={handleImageUploadPending} onShow={showField} onPreview={previewImage} /> : null}
               {card.statsDefaults ? <StatsFields snapshot={working} defaults={card.statsDefaults} update={update} onShow={showField} /> : null}
               {card.info ? <div className={styles.info}><span aria-hidden="true">ⓘ</span><p>{card.info.text}</p>
                 <a href={card.info.href}>{card.info.label} →</a></div> : null}
@@ -975,9 +991,10 @@ function ColorField({ name, value, options, onChange, onShow }: {
   </div>
 }
 
-function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onShow, onPreview }: {
+function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onUploadingChange, onShow, onPreview }: {
   tenantId: string; slot: ImageSlot; snapshot: SiteSnapshot; defaults: string[]; limit: number
   onChange: (recipe: (snapshot: SiteSnapshot) => void) => void
+  onUploadingChange: (pending: boolean) => void
   onShow: (field: string, value: string) => void
   onPreview: (currentUrl: string, url: string) => void
 }) {
@@ -1030,6 +1047,7 @@ function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onSho
   }
   const upload = async () => {
     if (!crop) return
+    onUploadingChange(true)
     setUploading(true)
     setError('')
     try {
@@ -1049,6 +1067,7 @@ function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onSho
     } catch {
       setError('Bilden kunde inte beskäras. Välj en annan bild.')
     } finally {
+      onUploadingChange(false)
       setUploading(false)
     }
   }
