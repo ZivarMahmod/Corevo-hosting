@@ -76,6 +76,7 @@ export function Modal({
   }
 
   useEffect(() => {
+    const returnFocus = returnFocusRef.current
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         close()
@@ -142,7 +143,7 @@ export function Modal({
         viewport.removeEventListener('scroll', syncVisualViewport)
       }
       document.body.style.overflow = prevOverflow
-      if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
+      if (returnFocus?.isConnected) returnFocus.focus()
     }
     // mount/unmount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
