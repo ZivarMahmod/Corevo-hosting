@@ -31,7 +31,24 @@ vi.mock('@/lib/platform/actions/site-revisions', () => ({
   saveSiteDraft: mocks.saveSiteDraft,
   uploadSiteDraftImage: mocks.uploadSiteDraftImage,
 }))
-vi.mock('./ThemePicker', () => ({ ThemePicker: () => null }))
+vi.mock('./ThemePicker', () => ({
+  ThemePicker: ({
+    tenantId,
+    current,
+    onPreview,
+    onPublished,
+  }: {
+    tenantId: string
+    current: string
+    onPreview?: (theme: string, copyMode: 'keep' | 'template') => void
+    onPublished?: () => void
+  }) => (
+    <div role="group" aria-label="Mallväljare" data-tenant-id={tenantId} data-current={current}>
+      <button type="button" onClick={() => onPreview?.('kalla', 'keep')}>Förhandsvisa mall</button>
+      <button type="button" onClick={onPublished}>Bekräfta publicering</button>
+    </div>
+  ),
+}))
 
 import { SidaStudioV2, type SidaStudioV2Props } from './SidaStudioV2'
 
@@ -107,6 +124,13 @@ const historyRevision = {
   published_at: '2026-07-27T10:00:00.000Z',
   published_by: null,
   source_revision_id: null,
+} as SiteRevision
+const draftRevision = {
+  ...historyRevision,
+  id: 'revision-draft',
+  status: 'draft',
+  lock_version: 4,
+  published_at: null,
 } as SiteRevision
 
 let container: HTMLDivElement
@@ -298,23 +322,55 @@ describe('SidaStudioV2 cross-tab pick lifecycle', () => {
 })
 
 describe('SidaStudioV2 template role gate', () => {
+  it('shows the same saved draft and history on standalone and embedded surfaces', async () => {
+    const readRevisionState = () => ({
+      status: container.querySelector('[data-accept="editor-status"]')?.textContent,
+      banner: container.querySelector('[data-accept="draft-banner"]')?.textContent,
+      historyActions: [...container.querySelectorAll('button')]
+        .filter((node) => node.textContent === 'Återställ').length,
+    })
+    const props: Partial<SidaStudioV2Props> = {
+      effectiveSnapshot: historicSnapshot,
+      draft: draftRevision,
+      history: [historyRevision],
+      initialTabId: 'allmant',
+    }
+
+    await act(async () => renderStudio({ ...props, surface: 'standalone' }, 'standalone'))
+    const standalone = readRevisionState()
+    await act(async () => renderStudio({ ...props, surface: 'embedded' }, 'embedded'))
+    const embedded = readRevisionState()
+
+    expect(standalone).toEqual(embedded)
+    expect(embedded.status).toContain('Utkast')
+    expect(embedded.banner).toContain('Utkast sparat')
+    expect(embedded.historyActions).toBe(1)
+  })
+
   it('fails closed, admits root, and hides switching behind dirty or draft state', async () => {
     await act(async () => button('Allmänt').click())
-    expect(container.textContent).not.toContain('Förhandsvisa en annan mall.')
+    expect(container.querySelector('[aria-label="Mallväljare"]')).toBeNull()
 
-    await act(async () => renderStudio({ canChangeTemplate: true }))
+    await act(async () => renderStudio({ surface: 'embedded' }, 'embedded-partner'))
     await act(async () => button('Allmänt').click())
-    expect(container.textContent).toContain('Förhandsvisa en annan mall.')
+    expect(container.querySelector('[aria-label="Mallväljare"]')).toBeNull()
+
+    await act(async () => renderStudio({ surface: 'embedded', canChangeTemplate: true }, 'embedded-root'))
+    await act(async () => button('Allmänt').click())
+    expect(container.querySelector('[aria-label="Mallväljare"]')).not.toBeNull()
 
     await editField('name', 'Ändrad kund')
+    expect(container.querySelector('[aria-label="Mallväljare"]')).toBeNull()
     expect(container.textContent).toContain('Publicera eller kasta sidans ändringar innan du byter mall.')
 
     await act(async () => renderStudio({
+      surface: 'embedded',
       canChangeTemplate: true,
-      draft: historyRevision,
+      draft: draftRevision,
       effectiveSnapshot: historicSnapshot,
       initialTabId: 'allmant',
     }, 'draft'))
+    expect(container.querySelector('[aria-label="Mallväljare"]')).toBeNull()
     expect(container.textContent).toContain('Publicera eller kasta sidans ändringar innan du byter mall.')
   })
 })

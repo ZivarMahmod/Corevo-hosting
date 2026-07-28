@@ -29,6 +29,12 @@ Produktion och produktionsdata: orörda
 - Fokuserad route/layout/bridge/revision/role/editor-svit:
   `node node_modules/vitest/vitest.mjs run ...`
   — **19 filer / 136 tester gröna**.
+- Fixrundans runtime-paritet för delad studio, rollgrind och närliggande
+  kontrakt:
+  `node node_modules/vitest/vitest.mjs run ...`
+  — **8 filer / 44 tester gröna**. Lifecycle-testet kör samma snapshot,
+  utkast och historik i fristående och inbäddad yta, jämför deras synliga
+  revisionsstatus och verifierar att mallväljaren är fail-closed.
 - Full webbsvit:
   `node node_modules/vitest/vitest.mjs run`
   — **373 filer / 2 890 tester gröna**.
@@ -37,6 +43,15 @@ Produktion och produktionsdata: orörda
   e2e/acceptans/03-redigera-sidan-v2/03-redigera-sidan-v2.accept.spec.ts
   --grep='@contract'`
   — **5/5 gröna**.
+- Isolerad autentiserad browserparitet på en egen unik lokal port och mot
+  exakt preview-ref `cwnhpesrgolflkmyjbrm`:
+  `corepack pnpm exec playwright test
+  e2e/acceptans/03-redigera-sidan-v2/03-redigera-sidan-v2.accept.spec.ts
+  --grep='03-B02'`
+  — **1/1 grön**. Tenant-admin och root kördes i separata browser-contexts mot
+  samma syntetiska demo-tenant. De visade samma revisionsstatus, tomma historik
+  och restore-actions; tenant saknade `Mall`, medan en ren root-yta visade
+  både `Mall` och `Mallkategori`.
 - Typkontroll:
   `node node_modules/typescript/bin/tsc --noEmit`
   — **grön**.
@@ -54,14 +69,3 @@ Produktion och produktionsdata: orörda
 - Direkt ESLint startar inte eftersom den befintliga workspace-länken till
   `@next/eslint-plugin-next` saknas (`ERR_MODULE_NOT_FOUND`). Inga paket,
   lockfiler eller build approvals ändrades för att dölja miljöfelet.
-
-## Manuell browserkontroll som återstår
-
-Autentiserade `ACCEPT_*`-värden och en uttryckligt säker browsermiljö saknades,
-så ingen okänd lokal `:3000` eller produktion öppnades.
-
-1. Öppna samma syntetiska tenant i `/admin/sida` och i kundkortets Sida-flik.
-   Kontrollera att samma utkast och historik visas på båda ytorna.
-2. Kontrollera att root ser mallväljaren, medan partner och tenant inte gör det.
-3. Förhandsvisa en annan mall, prova både behåll/använd mallinnehåll, avbryt och
-   kontrollera att inget publiceras före ett uttryckligt publiceringsval.
