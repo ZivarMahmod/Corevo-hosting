@@ -1,6 +1,6 @@
 # Goal 88 — gemensam kundarbetsyta och sidmotor
 
-Status: **Task 5 lokalt verifierad 2026-07-28**
+Status: **Goal 88 lokalt verifierad 2026-07-28**
 
 Gren: `codex/launch-inventory-customer-design`
 Produktion och produktionsdata: orörda
@@ -37,7 +37,7 @@ Produktion och produktionsdata: orörda
   revisionsstatus och verifierar att mallväljaren är fail-closed.
 - Full webbsvit:
   `node node_modules/vitest/vitest.mjs run`
-  — **373 filer / 2 890 tester gröna**.
+  — **373 filer / 2 892 tester gröna** på slutcommiten.
 - Redigera-sidan-kontrakt:
   `corepack pnpm exec playwright test
   e2e/acceptans/03-redigera-sidan-v2/03-redigera-sidan-v2.accept.spec.ts
@@ -55,17 +55,22 @@ Produktion och produktionsdata: orörda
 - Typkontroll:
   `node node_modules/typescript/bin/tsc --noEmit`
   — **grön**.
+- ESLint:
+  `node node_modules/eslint/bin/eslint.js .`
+  — **0 fel / 7 befintliga varningar**. Den enda nya Goal 88-varningen i
+  Modalens fokusretur rättades och låstes med ett explicit unmount-test.
 - Lokal produktionsbuild:
   `node node_modules/next/dist/bin/next build`
   — **grön**, inklusive typkontroll och 11 statiska sidor.
 - `git diff --check` — **grön**.
 
-## Kända lokala verktygsblockerare
+## Känd lokal verktygsnotering
 
 - `corepack pnpm test` stoppas före testerna när Turbo-paketjobben återgår till
   global pnpm 11 och försöker rensa `node_modules` utan TTY
   (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`). Webbscope kördes därför
   direkt och är helt grönt.
-- Direkt ESLint startar inte eftersom den befintliga workspace-länken till
-  `@next/eslint-plugin-next` saknas (`ERR_MODULE_NOT_FOUND`). Inga paket,
-  lockfiler eller build approvals ändrades för att dölja miljöfelet.
+- Workspace-länkarna till de redan låsta ESLint-pluginpaketen saknades lokalt.
+  Fem tillfälliga junctions till befintligt `.pnpm`-innehåll användes endast
+  för verifieringen och togs bort efteråt. Inga paket, lockfiler eller build
+  approvals ändrades.

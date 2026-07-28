@@ -17,13 +17,25 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
-- Den samlade kodacceptansen genom Goal 87 är körd:
-  `366` testfiler och `2 857` tester passerar tillsammans. Goal 74–84 och 87 är
+- Den samlade kodacceptansen genom Goal 88 är körd:
+  `373` testfiler och `2 892` tester passerar tillsammans. Goal 74–84 och 87–88 är
   lokalt låsta i samma arbetsyta. Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
   tillsammans med Zivar. Protokoll finns i
   `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81–84:s
-  och Goal 87:s testlistor i `6-Testing/`. Produktion är orörd.
+  och Goal 87–88:s testlistor i `6-Testing/`. Produktion är orörd.
+- Goal 88 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Kundadmin och superadmin monterar
+  samma revisionsägda `SidaStudioV2`, manifest, utkast och historik; root-only
+  mallbyte är fail-closed och embedded-ytan behåller Goal 80:s exakta geometri.
+  Semantiskt “Välj på sidan”, revisionsmutex, konfliktläge, säkra
+  restore/leave-flöden och browser-back under bilduppladdning är låsta. De två
+  gamla routade assembly-filerna är pensionerade medan verkliga leaf-callers
+  och delad boknings-CSS är kvar. Autentiserad read-only browserparitet,
+  373/2 892 tester, typecheck, lint med 0 fel/7 befintliga varningar,
+  produktionsbuild och oberoende uppgiftsreview är gröna. Ingen migration,
+  deploy eller produktionsdata ändrades. Protokoll:
+  `6-Testing/goal-88-gemensam-kundarbetsyta-sidmotor-testlista.md`.
 - Goal 87 är verifierat klart lokalt på
   `codex/launch-inventory-customer-design`. Alla nio moduler använder nu samma
   DB-ägda stateflöde `off → draft → live ↔ paused`, med laglig avstängning,
@@ -229,9 +241,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-74–84 och Goal 87 är lokalt låsta och den samlade kodacceptansen är grön.
-Goal 87 låste modulernas gemensamma state-, readiness- och DB-säkerhetsgrund.
-Nästa byggdel enligt roadmap är Goal 88: en kundarbetsyta och en sidmotor.
+Goal-74–84 och Goal 87–88 är lokalt låsta och den samlade kodacceptansen är grön.
+Goal 88 låste en gemensam revisionsägd kundarbetsyta och sidmotor för
+kundadmin och superadmin. Nästa byggdel enligt roadmap är Goal 89:
+gemensam storefront, preview och mallslots.
 Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.

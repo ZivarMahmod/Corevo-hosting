@@ -1,6 +1,7 @@
 # Goal 88 — gemensam kundarbetsyta och sidmotor
 
-Status: **PÅGÅR** på `codex/launch-inventory-customer-design`.
+Status: **KLAR — lokalt verifierad 2026-07-28** på
+`codex/launch-inventory-customer-design`.
 
 ## Mål
 
@@ -116,6 +117,23 @@ generell HTML/CSS-editor.
    `pnpm build` och `git diff --check`.
 5. Kör oberoende spec-/kodreview, uppdatera Graphify och skriv utfört
    testprotokoll i `6-Testing/`.
+
+## Verifiering
+
+- Samma revisionsägda `SidaStudioV2`, manifest, snapshot, utkast och historik
+  är runtime- och browserverifierade i kundadmin och superadmin.
+- Root-only mallbyte är fail-closed för tenant och partner samt dolt vid dirty
+  state eller befintligt utkast.
+- Semantiskt fältval, bilduppladdning, konfliktläge, restore, leave och
+  browser-back har deterministiska livscykeltester.
+- De två äldre routade assembly-filerna är borttagna; delad CSS och verkliga
+  leaf-callers är kvar.
+- Slutbevis: 373 testfiler/2 892 tester, autentiserad read-only browserparitet,
+  typecheck, ESLint 0 fel/7 befintliga varningar, produktionsbuild och
+  oberoende uppgiftsreview är gröna.
+- Produktion, produktionsdata, deploy, migrationer, paket och lockfiler är
+  orörda. Fullt protokoll:
+  `6-Testing/goal-88-gemensam-kundarbetsyta-sidmotor-testlista.md`.
 
 ## Utanför målet
 
