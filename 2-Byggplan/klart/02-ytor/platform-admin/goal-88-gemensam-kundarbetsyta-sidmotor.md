@@ -1,6 +1,6 @@
 # Goal 88 — gemensam kundarbetsyta och sidmotor
 
-Status: **KODKLAR — final-head fokuserat verifierad 2026-07-28** på
+Status: **KODKLAR — final-head lokalt verifierad 2026-07-28** på
 `codex/launch-inventory-customer-design`. Den append-only lokala migrationen
 `20260728021500_goal88_atomic_theme_switch.sql` är inte applicerad; isolerad
 rollbackad SQL-runtime återstår före release.
@@ -157,16 +157,22 @@ generell HTML/CSS-editor.
   browser-back har deterministiska livscykeltester.
 - De två äldre routade assembly-filerna är borttagna; delad CSS och verkliga
   leaf-callers är kvar.
-- Baslinjebevis före den atomiska fixen: 373 testfiler/2 892 tester,
-  autentiserad read-only browserparitet, typecheck, ESLint 0 fel/7 befintliga
-  varningar och produktionsbuild.
-- Final-head-bevis för den atomiska fixen: 5 fokuserade testfiler/44 tester och
-  direkt typecheck är gröna. Full webbsvit/build har inte räknats om i denna
-  fixrunda.
+- Slutbevis på final-head: 376 testfiler/2 909 tester, 5 fokuserade
+  testfiler/44 tester, source-kontrakt 5/5, autentiserad read-only
+  browserparitet 1/1, typecheck, ESLint 0 fel/7 befintliga varningar,
+  produktionsbuild och två oberoende slutreviews är gröna.
 - Produktion, produktionsdata, previewdatabas, deploy, paket och lockfiler är
   orörda. En lokal append-only migration och en rollbackad SQL-testfil har
   lagts till men inte applicerats. Fullt protokoll:
   `6-Testing/goal-88-gemensam-kundarbetsyta-sidmotor-testlista.md`.
+
+## Icke-blockerande reviewefterlista
+
+- Ge B02-paritetsprovet ett distinkt publicerat värde och en icke-tom
+  revisionsfixture så två felaktigt tomma states inte kan matcha.
+- Neka icke-objekt i `SidaPreviewBridge` innan `event.data.source` läses.
+- Lägg semantiska fokusmarkörer på empty-image-kontroller och lås dem i ett
+  lifecycle-test.
 
 ## Utanför målet
 

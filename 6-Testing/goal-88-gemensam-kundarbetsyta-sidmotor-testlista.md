@@ -1,6 +1,6 @@
 # Goal 88 — gemensam kundarbetsyta och sidmotor
 
-Status: **Goal 88 kodklar; final-head fokuserat verifierad 2026-07-28**
+Status: **Goal 88 kodklar; final-head lokalt verifierad 2026-07-28**
 
 Gren: `codex/launch-inventory-customer-design`
 Produktion, previewdatabas och produktionsdata: orörda
@@ -45,10 +45,9 @@ Produktion, previewdatabas och produktionsdata: orörda
   — **8 filer / 44 tester gröna**. Lifecycle-testet kör samma snapshot,
   utkast och historik i fristående och inbäddad yta, jämför deras synliga
   revisionsstatus och verifierar att mallväljaren är fail-closed.
-- Full webbsvit på baslinjen före den atomiska mallfixen:
+- Full webbsvit på final-head efter den atomiska mallfixen:
   `node node_modules/vitest/vitest.mjs run`
-  — **373 filer / 2 892 tester gröna**. Final-head-fullsviten har inte räknats
-  om i denna fixrunda.
+  — **376 filer / 2 909 tester gröna**.
 - Atomisk mallfix på final-head:
   `node node_modules/vitest/vitest.mjs run
   components/platform/ThemePicker.test.tsx
@@ -76,11 +75,11 @@ Produktion, previewdatabas och produktionsdata: orörda
   — **grön på final-head**.
 - ESLint:
   `node node_modules/eslint/bin/eslint.js .`
-  — **0 fel / 7 befintliga varningar**. Den enda nya Goal 88-varningen i
+  — **0 fel / 7 befintliga varningar på final-head**. Den enda nya Goal 88-varningen i
   Modalens fokusretur rättades och låstes med ett explicit unmount-test.
 - Lokal produktionsbuild:
   `node node_modules/next/dist/bin/next build`
-  — **grön**, inklusive typkontroll och 11 statiska sidor.
+  — **grön på final-head**, inklusive typkontroll och 11 statiska sidor.
 - `git diff --check` — **grön**.
 
 ## Lokal migration — ej applicerad

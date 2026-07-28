@@ -17,10 +17,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
-- Den samlade kodacceptansen genom Goal 88 före slutreviewns atomiska mallfix är
-  körd: `373` testfiler och `2 892` tester passerar tillsammans. Fixens
-  final-head-svit är separat grön med `5` testfiler/`44` tester och direkt
-  typecheck. Goal 74–84 och 87–88 är lokalt låsta i samma arbetsyta.
+- Den samlade kodacceptansen genom Goal 88 är körd på final-head:
+  `376` testfiler och `2 909` tester passerar tillsammans. Atomfixens
+  fokussvit är separat grön med `5` testfiler/`44` tester. Goal 74–84 och
+  87–88 är lokalt låsta i samma arbetsyta.
   Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
   tillsammans med Zivar. Protokoll finns i
@@ -33,9 +33,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
   Semantiskt “Välj på sidan”, revisionsmutex, konfliktläge, säkra
   restore/leave-flöden och browser-back under bilduppladdning är låsta. De två
   gamla routade assembly-filerna är pensionerade medan verkliga leaf-callers
-  och delad boknings-CSS är kvar. Autentiserad read-only browserparitet,
-  373/2 892 tester, typecheck, lint med 0 fel/7 befintliga varningar,
-  produktionsbuild och oberoende uppgiftsreview var gröna på baslinjen.
+  och delad boknings-CSS är kvar. Autentiserad read-only browserparitet 1/1,
+  source-kontrakt 5/5, 376/2 909 tester, typecheck, lint med 0 fel/7 befintliga
+  varningar, produktionsbuild och två oberoende slutreviews är gröna på
+  final-head.
   Slutreviewn hittade därefter theme/draft-racet och krävde **1 ny append-only
   lokal migration**, `20260728021500_goal88_atomic_theme_switch.sql`.
   Klient-, action- och SQL-kontrakten är fokuserat gröna. Mallpublicering
