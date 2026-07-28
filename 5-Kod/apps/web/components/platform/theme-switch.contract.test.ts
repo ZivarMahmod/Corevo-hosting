@@ -8,7 +8,7 @@ const read = (relative: string) => fs.readFileSync(path.join(WEB_ROOT, relative)
 describe('safe storefront template switch', () => {
   it('requires one of two copy choices and keeps preview equal to publish', () => {
     const picker = read('components/platform/ThemePicker.tsx')
-    const studio = read('components/platform/SidaStudio.tsx')
+    const studio = read('components/platform/SidaStudioV2.tsx')
     const action = read('lib/platform/actions/theme.ts')
 
     expect(picker).toContain('name="copyMode"')
@@ -16,7 +16,11 @@ describe('safe storefront template switch', () => {
     expect(picker).toContain('value="template"')
     expect(picker).toContain('useState<ThemeCopyMode | null>(null)')
     expect(picker).toContain('disabled={pending || copyMode === null}')
+    expect(picker).toContain("onPreview?.(key, 'keep')")
+    expect(picker).toContain('onClick={() => pick(current)}')
     expect(studio).toContain("q.set('copy', previewCopyMode)")
+    expect(studio).toContain("previewCopyMode === 'template'")
+    expect(studio).toContain('if (previewingTemplateDefaults) return')
     expect(action).toContain("fd.get('copyMode')")
     expect(action).toContain('materializeThemeCopy')
 

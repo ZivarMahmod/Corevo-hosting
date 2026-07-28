@@ -33,7 +33,7 @@ vi.mock('@/lib/platform/actions/site-revisions', () => ({
 }))
 vi.mock('./ThemePicker', () => ({ ThemePicker: () => null }))
 
-import { SidaStudioV2 } from './SidaStudioV2'
+import { SidaStudioV2, type SidaStudioV2Props } from './SidaStudioV2'
 
 const manifest: SiteEditorManifest = {
   swatches: {},
@@ -182,6 +182,29 @@ async function flushFrames() {
   })
 }
 
+function renderStudio(props: Partial<SidaStudioV2Props> = {}, key = 'studio') {
+  root.render(
+    <SidaStudioV2
+      key={key}
+      surface="standalone"
+      tenantId="tenant-1"
+      effectiveSnapshot={snapshot}
+      publishedSnapshot={snapshot}
+      draft={null}
+      history={[historyRevision]}
+      previewPath="about:blank"
+      storefrontHost="test.corevo.se"
+      storefrontUrl="https://test.corevo.se"
+      isActive
+      initialTabId="hem"
+      manifestData={manifest}
+      liveModules={[]}
+      scheduleHours={null}
+      {...props}
+    />,
+  )
+}
+
 beforeEach(async () => {
   vi.useFakeTimers()
   ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -231,24 +254,7 @@ beforeEach(async () => {
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)
-  await act(async () => root.render(
-    <SidaStudioV2
-      surface="standalone"
-      tenantId="tenant-1"
-      effectiveSnapshot={snapshot}
-      publishedSnapshot={snapshot}
-      draft={null}
-      history={[historyRevision]}
-      previewPath="about:blank"
-      storefrontHost="test.corevo.se"
-      storefrontUrl="https://test.corevo.se"
-      isActive
-      initialTabId="hem"
-      manifestData={manifest}
-      liveModules={[]}
-      scheduleHours={null}
-    />,
-  ))
+  await act(async () => renderStudio())
 })
 
 afterEach(async () => {
@@ -288,6 +294,28 @@ describe('SidaStudioV2 cross-tab pick lifecycle', () => {
     await act(async () => button('Allmänt').click())
 
     expect(container.textContent).not.toContain('Klicka på den del i förhandsvisningen som du vill redigera.')
+  })
+})
+
+describe('SidaStudioV2 template role gate', () => {
+  it('fails closed, admits root, and hides switching behind dirty or draft state', async () => {
+    await act(async () => button('Allmänt').click())
+    expect(container.textContent).not.toContain('Förhandsvisa en annan mall.')
+
+    await act(async () => renderStudio({ canChangeTemplate: true }))
+    await act(async () => button('Allmänt').click())
+    expect(container.textContent).toContain('Förhandsvisa en annan mall.')
+
+    await editField('name', 'Ändrad kund')
+    expect(container.textContent).toContain('Publicera eller kasta sidans ändringar innan du byter mall.')
+
+    await act(async () => renderStudio({
+      canChangeTemplate: true,
+      draft: historyRevision,
+      effectiveSnapshot: historicSnapshot,
+      initialTabId: 'allmant',
+    }, 'draft'))
+    expect(container.textContent).toContain('Publicera eller kasta sidans ändringar innan du byter mall.')
   })
 })
 
