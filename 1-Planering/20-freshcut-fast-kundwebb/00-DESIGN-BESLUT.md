@@ -82,4 +82,3 @@ annan mall.
 - Alla sju previewtjänster visar verkligt namn, tid och pris.
 - `freshcut` syns inte i den generella mallväljaren.
 - Riktade tester, typecheck, lint och lokal browseracceptans är gröna.
-

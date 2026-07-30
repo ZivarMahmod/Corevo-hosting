@@ -2,9 +2,9 @@
 
 Status: **100 % lokalt låst 2026-07-25**
 
-Gren: `codex/launch-inventory-customer-design`  
+Gren: `codex/launch-inventory-customer-design`
 Databas: Supabase-preview `localhost-acceptance`
-(`cwnhpesrgolflkmyjbrm`)  
+(`cwnhpesrgolflkmyjbrm`)
 Produktion: orörd
 
 ## Färskt browserbevis
