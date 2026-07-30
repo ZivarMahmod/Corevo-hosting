@@ -256,8 +256,9 @@ export function SiluettGalleri({ items, content }: ThemeGalleriViewProps) {
               {g.imageUrl ? (
                 <div
                   className={styles.siGalImg}
-                  role="img"
-                  aria-label={g.imageAlt ?? g.caption ?? ''}
+                  role={g.decorative ? undefined : 'img'}
+                  aria-label={g.decorative ? undefined : (g.imageAlt ?? '')}
+                  aria-hidden={g.decorative || undefined}
                   style={{
                     backgroundImage: `url(${g.imageUrl})`,
                     aspectRatio: g.aspectRatio ?? '3/4',

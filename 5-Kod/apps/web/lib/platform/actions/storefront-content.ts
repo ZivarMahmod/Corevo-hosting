@@ -3,13 +3,16 @@
 import { revalidatePath } from 'next/cache'
 import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
-import { uploadImage, deleteByPublicUrl } from '@/lib/r2/upload'
+import {
+  managedUploadErrorMessage,
+  retireManagedImages,
+  uploadManagedImage,
+} from '@/lib/media/lifecycle'
 import { mergeBranding } from '@/lib/branding/merge'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import type { TenantBranding } from '@corevo/ui'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
-import { recordMediaAsset } from './media-record'
 
 // ── Super-admin storefront CONTENT (editorial copy + hero/gallery photos) ─────────
 // The platform operator manages a CHOSEN tenant's public storefront from
@@ -112,21 +115,6 @@ function slotKey(slot: Slot): 'hero_images' | 'gallery_images' {
 function isSlot(v: string): v is Slot {
   return v === 'hero' || v === 'gallery'
 }
-/** Human-readable Swedish message for a non-ok upload (storefront-photo wording). */
-function photoUploadError(reason: string): string {
-  switch (reason) {
-    case 'bad_type':
-      return 'Bilden måste vara PNG, JPG, WEBP eller GIF.'
-    case 'too_large':
-      return 'Bilden är för stor (max 8 MB).'
-    case 'no_public_base':
-    case 'no_binding':
-      return 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2 + R2_PUBLIC_BASE_URL).'
-    default:
-      return 'Uppladdningen misslyckades. Försök igen.'
-  }
-}
-
 /**
  * Upload one storefront photo and APPEND its public url to `branding.hero_images`
  * (slot='hero') or `branding.gallery_images` (slot='gallery'). MERGE-preserves every
@@ -146,8 +134,13 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd kund.' }
 
-  const res = await uploadImage(image, `tenants/${tenantId}/storefront`)
-  if (!res.ok) return { error: photoUploadError(res.reason) }
+  const res = await uploadManagedImage(
+    supabase,
+    tenantId,
+    image,
+    'sajtbyggare',
+  )
+  if (!res.ok) return { error: managedUploadErrorMessage(res.reason) }
 
   const { data: existing } = await supabase
     .from('tenant_settings')
@@ -167,12 +160,10 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, branding }, { onConflict: 'tenant_id' })
   if (error) {
+    if (!res.duplicate) await retireManagedImages(supabase, tenantId, [res.url])
     await reportActionError('uploadTenantStorefrontImage.upsert', error, { tenantId })
     return { error: GENERIC }
   }
-
-  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
-  await recordMediaAsset(supabase, tenantId, image, res, 'sajtbyggare')
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/kunder/${tenantId}`)
@@ -232,8 +223,7 @@ export async function removeTenantStorefrontImage(_p: ActionState, fd: FormData)
     return { error: GENERIC }
   }
 
-  // Best-effort R2 cleanup AFTER the commit (never blocks / never throws).
-  await deleteByPublicUrl(url)
+  await retireManagedImages(supabase, tenantId, [url])
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/kunder/${tenantId}`)

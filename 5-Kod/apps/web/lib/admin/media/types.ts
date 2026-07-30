@@ -10,7 +10,7 @@
 /** One image in a tenant's library — camelCase view of a media_assets row. */
 export type MediaAssetRow = {
   id: string
-  url: string
+  url: string | null
   r2Key: string
   type: string
   alt: string | null
@@ -18,6 +18,8 @@ export type MediaAssetRow = {
   width: number | null
   height: number | null
   source: string
+  status: 'pending' | 'ready' | 'deleting' | 'delete_failed'
+  lastError: string | null
   createdAt: string
 }
 

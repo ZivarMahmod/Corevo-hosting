@@ -302,19 +302,19 @@ with checks(version, check_name, passed, evidence) as (
       '0086',
       'atomic onsite event registration',
       to_regprocedure(
-        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text)'
+        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text,uuid)'
       ) is not null
       and pg_get_functiondef(to_regprocedure(
-        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text)'
+        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text,uuid)'
       )) ilike '%for update%event_capacity_exceeded%'
       and not has_function_privilege(
         'anon',
-        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text)',
+        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text,uuid)',
         'EXECUTE'
       )
       and has_function_privilege(
         'service_role',
-        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text)',
+        'public.create_onsite_event_registration(uuid,uuid,text,text,text,integer,text,uuid)',
         'EXECUTE'
       ),
       'locked capacity check and service-only RPC'

@@ -2,6 +2,12 @@
 begin;
 select set_config('request.jwt.claim.role', 'service_role', true);
 
+-- Later launch/readiness fences require fixtures outside this 0121 contract.
+-- Keep the refund-restoration trigger enabled; only bypass fixture prerequisites.
+alter table public.tenants disable trigger trg_tenant_launch_readiness;
+alter table public.staff disable trigger trg_staff_activation_readiness;
+alter table public.bookings disable trigger trg_booking_resource_fence;
+
 do $security$
 declare v_name text; v_proc regprocedure; v_definition text;
 begin
@@ -211,6 +217,7 @@ declare
   v_customer uuid := gen_random_uuid(); v_other_customer uuid := gen_random_uuid();
   v_location uuid := gen_random_uuid(); v_staff uuid := gen_random_uuid();
   v_service uuid := gen_random_uuid(); v_session uuid := gen_random_uuid();
+  v_secret_digest text := encode(digest(v_session::text, 'sha256'), 'hex');
   v_preflight uuid := gen_random_uuid(); v_pending uuid := gen_random_uuid();
   v_failed uuid := gen_random_uuid(); v_pi_conflict uuid := gen_random_uuid();
   v_account_conflict uuid := gen_random_uuid(); v_prepare uuid := gen_random_uuid();
@@ -251,10 +258,10 @@ begin
     id, tenant_id, location_id, name, duration_min, price_cents, active
   ) values (v_service, v_tenant, v_location, 'Extended', 30, 10000, true);
   insert into public.shop_orders (
-    id,tenant_id,total_cents,currency,status,payment_status
+    id,tenant_id,subtotal_cents,total_cents,currency,status,payment_status
   ) values
-    (v_shop_legacy,v_tenant,10000,'SEK','awaiting_payment','unpaid'),
-    (v_shop_new,v_tenant,10000,'SEK','awaiting_payment','unpaid');
+    (v_shop_legacy,v_tenant,10000,10000,'SEK','awaiting_payment','unpaid'),
+    (v_shop_new,v_tenant,10000,10000,'SEK','awaiting_payment','unpaid');
 
   insert into public.bookings (
     id, tenant_id, location_id, staff_id, service_id, customer_profile_id,
@@ -293,8 +300,8 @@ begin
     id,tenant_id,order_id,amount_cents,currency,status,
     stripe_payment_intent_id,stripe_connected_account_id
   ) values
-    (gen_random_uuid(),v_tenant,v_shop_legacy,10000,'sek','succeeded','pi_shop_legacy_null',null),
-    (gen_random_uuid(),v_tenant,v_shop_new,10000,'sek','pending',null,null);
+    (gen_random_uuid(),v_tenant,v_shop_legacy,10000,'SEK','succeeded','pi_shop_legacy_null',null),
+    (gen_random_uuid(),v_tenant,v_shop_new,10000,'SEK','pending',null,null);
 
   v_failed_as_expected := false;
   begin
@@ -410,10 +417,10 @@ begin
   insert into private.customer_portal_sessions (
     public_id, tenant_id, customer_id, secret_digest, key_version,
     idle_expires_at, absolute_expires_at
-  ) values (v_session,v_tenant,v_customer,repeat('e',64),1,
+  ) values (v_session,v_tenant,v_customer,v_secret_digest,1,
     statement_timestamp()+interval '1 day',statement_timestamp()+interval '7 days');
   select to_jsonb(x) into v_json from public.customer_portal_cancel_booking(
-    v_session,repeat('e',64),v_policy,12,repeat('k',32)
+    v_session,v_secret_digest,v_policy,12,repeat('k',32)
   ) x;
   if v_json->>'outcome' <> 'policy_changed' then raise exception 'refund_policy_changed_invalid'; end if;
 
@@ -499,6 +506,7 @@ declare
   v_lease_a uuid := gen_random_uuid(); v_lease_b uuid := gen_random_uuid();
   v_lease_c uuid := gen_random_uuid(); v_lease_d uuid := gen_random_uuid();
   v_claim record; v_text text; v_json jsonb; v_health jsonb;
+  v_result boolean;
 begin
   select j.id into strict v_paid_job from private.payment_refund_jobs j
   where j.provider_payment_intent_id = 'pi_refund_paid';
@@ -508,13 +516,20 @@ begin
   if v_claim.id is distinct from v_paid_job or v_claim.lease_token is distinct from v_lease_a then
     raise exception 'refund_claim_by_id_invalid';
   end if;
-  if public.begin_payment_refund_delivery(v_paid_job,gen_random_uuid())
-     or not public.begin_payment_refund_delivery(v_paid_job,v_lease_a)
+  if public.begin_payment_refund_delivery(v_paid_job,gen_random_uuid()) then
+    raise exception 'refund_lease_cas_invalid';
+  end if;
+  v_result := public.begin_payment_refund_delivery(v_paid_job,v_lease_a);
+  if v_result is distinct from true
      or public.complete_payment_refund_job(v_paid_job,gen_random_uuid(),'re_wrong') then
     raise exception 'refund_lease_cas_invalid';
   end if;
-  if not public.complete_payment_refund_job(v_paid_job,v_lease_a,'re_paid_0121')
-     or not public.complete_payment_refund_job(v_paid_job,v_lease_a,'re_paid_0121')
+  v_result := public.complete_payment_refund_job(v_paid_job,v_lease_a,'re_paid_0121');
+  if v_result is distinct from true then
+    raise exception 'refund_complete_repeat_invalid';
+  end if;
+  v_result := public.complete_payment_refund_job(v_paid_job,v_lease_a,'re_paid_0121');
+  if v_result is distinct from true
      or (select status from private.payment_refund_jobs where id=v_paid_job) <> 'completed'
      or (select status from public.payments where stripe_payment_intent_id='pi_refund_paid') <> 'refunded' then
     raise exception 'refund_complete_repeat_invalid';
@@ -557,8 +572,11 @@ begin
   select * into v_claim from public.claim_payment_refund_job_by_id(
     v_review_job,v_lease_d,statement_timestamp(),120
   );
-  if public.review_payment_refund_job(v_review_job,gen_random_uuid(),'provider_rejected')
-     or not public.review_payment_refund_job(v_review_job,v_lease_d,'provider_rejected')
+  if public.review_payment_refund_job(v_review_job,gen_random_uuid(),'provider_rejected') then
+    raise exception 'refund_manual_review_invalid';
+  end if;
+  v_result := public.review_payment_refund_job(v_review_job,v_lease_d,'provider_rejected');
+  if v_result is distinct from true
      or (select status from private.payment_refund_jobs where id=v_review_job) <> 'review_required' then
     raise exception 'refund_manual_review_invalid';
   end if;
@@ -585,9 +603,12 @@ begin
   select public.record_payment_refund_webhook(
     v_tenant,'pi_legacy_pending','ch_webhook_first','acct_refund_extended'
   ) into v_json;
+  v_result := public.complete_payment_refund_job(
+    v_webhook_job,v_lease_d,'ch_webhook_first'
+  );
   if v_json->>'outcome' <> 'recorded'
      or (select status from private.payment_refund_jobs where id=v_webhook_job) <> 'completed'
-     or not public.complete_payment_refund_job(v_webhook_job,v_lease_d,'ch_webhook_first') then
+     or v_result is distinct from true then
     raise exception 'refund_webhook_before_complete_invalid';
   end if;
 
@@ -601,5 +622,9 @@ begin
   end if;
 end
 $refund_state_machine$;
+
+alter table public.bookings enable trigger trg_booking_resource_fence;
+alter table public.staff enable trigger trg_staff_activation_readiness;
+alter table public.tenants enable trigger trg_tenant_launch_readiness;
 
 rollback;

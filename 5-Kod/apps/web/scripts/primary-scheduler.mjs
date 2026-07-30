@@ -3,6 +3,7 @@ const ROUTE_URLS = [
   'https://booking.corevo.se/api/cron/pending-expiry',
   'https://booking.corevo.se/api/cron/reminders',
   'https://booking.corevo.se/api/cron/payment-refunds',
+  'https://booking.corevo.se/api/cron/media-cleanup',
 ]
 
 function required(value) {

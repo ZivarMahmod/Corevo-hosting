@@ -43,14 +43,14 @@ export const ateljevinter: FloristTheme = {
   key: 'ateljevinter',
   name: 'Ateljé Vinter',
   desc: 'Galleri-minimal · blommor som objekt',
-  // Manifestets `palette`, alla 8 nycklar, oförändrade.
+  // Manifestets `palette`, alla 8 nycklar.
   palette: {
-    primary: '#6C796B',
+    primary: '#6A7869',
     primaryD: '#5A6659',
     bg: '#FBFBF9',
     surface: '#F3F3EE',
     fg: '#161616',
-    fg2: '#8B8B85',
+    fg2: '#73736D',
     line: '#E4E4DE',
     accentSoft: '#B9B9B2',
   },

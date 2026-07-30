@@ -9,6 +9,15 @@ import { BLOG_STATUSES, slugify } from './types'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
+const SLUG_TAKEN = 'Sluggen används redan av ett annat inlägg.'
+const PUBLISHED_DELETE = 'Publicerade inlägg bevaras. Arkivera inlägget i stället.'
+
+function blogWriteError(error: { code?: string; message?: string } | null): string {
+  if (error?.code === '23505') return SLUG_TAKEN
+  if (error?.message?.includes('published_blog_post_delete_forbidden'))
+    return PUBLISHED_DELETE
+  return GENERIC
+}
 
 /**
  * Resolve a submitted media asset id to a value safe to persist.
@@ -27,6 +36,7 @@ async function resolveTenantAssetId(
     .select('id')
     .eq('id', id)
     .eq('tenant_id', tenantId)
+    .eq('status', 'ready')
     .maybeSingle()
   return data ? id : null
 }
@@ -41,21 +51,14 @@ export async function createBlogPost(_p: ActionState, fd: FormData): Promise<Act
   if (!title) return { error: 'Ange en rubrik.' }
 
   const slugRaw = String(fd.get('slug') ?? '').trim()
-  const slug = slugRaw || slugify(title)
+  const slug = slugify(slugRaw || title)
+  if (!slug) return { error: 'Ange en giltig slug.' }
 
   const excerpt = String(fd.get('excerpt') ?? '').trim() || null
   const body = String(fd.get('body') ?? '').trim() || null
 
-  const statusRaw = String(fd.get('status') ?? '')
-  const status = (BLOG_STATUSES as readonly string[]).includes(statusRaw)
-    ? (statusRaw as (typeof BLOG_STATUSES)[number])
-    : 'draft'
-
   const sortOrderRaw = String(fd.get('sort_order') ?? '').trim()
   const sort_order = sortOrderRaw !== '' ? parseInt(sortOrderRaw, 10) : 0
-
-  // published_at is set to now only when publishing for the first time.
-  const published_at = status === 'published' ? new Date().toISOString() : null
 
   const supabase = await createClient()
   const cover_asset_id = await resolveTenantAssetId(
@@ -71,12 +74,11 @@ export async function createBlogPost(_p: ActionState, fd: FormData): Promise<Act
     body,
     // goal-64 (0057): etiketten mallarna ritar över rubriken. Tom → null → ingen etikett.
     tag: String(fd.get('tag') ?? '').trim() || null,
-    status,
+    status: 'draft',
     sort_order: Number.isInteger(sort_order) ? sort_order : 0,
-    published_at,
     cover_asset_id,
   })
-  if (error) return { error: GENERIC }
+  if (error) return { error: blogWriteError(error) }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/blogg')
@@ -94,39 +96,16 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
   if (!title) return { error: 'Ange en rubrik.' }
 
   const slugRaw = String(fd.get('slug') ?? '').trim()
-  const slug = slugRaw || slugify(title)
+  const slug = slugify(slugRaw || title)
+  if (!slug) return { error: 'Ange en giltig slug.' }
 
   const excerpt = String(fd.get('excerpt') ?? '').trim() || null
   const body = String(fd.get('body') ?? '').trim() || null
-
-  const statusRaw = String(fd.get('status') ?? '')
-  const status = (BLOG_STATUSES as readonly string[]).includes(statusRaw)
-    ? (statusRaw as (typeof BLOG_STATUSES)[number])
-    : 'draft'
 
   const sortOrderRaw = String(fd.get('sort_order') ?? '').trim()
   const sort_order = sortOrderRaw !== '' ? parseInt(sortOrderRaw, 10) : 0
 
   const supabase = await createClient()
-
-  // Read the current row to decide published_at behaviour:
-  // - If new status is 'published' AND published_at is currently null → set it to now
-  //   (first-time publish; we do NOT reset it on re-publish so the original date is kept)
-  // - If new status is NOT 'published' → keep published_at as-is (do not null it;
-  //   re-publishing later still reflects the original first-publish date)
-  const { data: current } = await supabase
-    .from('blog_posts')
-    .select('status, published_at')
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-
-  if (!current) return { error: 'Okänt inlägg.' }
-
-  const published_at =
-    status === 'published' && current.published_at == null
-      ? new Date().toISOString()
-      : current.published_at
 
   const cover_asset_id = await resolveTenantAssetId(
     supabase,
@@ -143,14 +122,12 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
       body,
       // goal-64 (0057): måste gå att ÄNDRA och TA BORT, inte bara sättas en gång.
       tag: String(fd.get('tag') ?? '').trim() || null,
-      status,
       sort_order: Number.isInteger(sort_order) ? sort_order : 0,
-      published_at,
       cover_asset_id,
     })
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
-  if (error) return { error: GENERIC }
+  if (error) return { error: blogWriteError(error) }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/blogg')
@@ -158,9 +135,8 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
 }
 
 /**
- * Quick publish/unpublish toggle (used by the status button in the list).
- * published_at semantics: first publish → set to now; subsequent publishes
- * after archive/draft → keep the original published_at (do not reset).
+ * Publish/archive via one locked DB command. First published_at and audit are
+ * database-owned so retries and concurrent clicks cannot create false history.
  */
 export async function setBlogPostStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await moduleCtx(fd, 'blogg')
@@ -175,28 +151,12 @@ export async function setBlogPostStatus(_p: ActionState, fd: FormData): Promise<
   const status = statusRaw as (typeof BLOG_STATUSES)[number]
 
   const supabase = await createClient()
-
-  // Read current published_at to preserve it on re-publish.
-  const { data: current } = await supabase
-    .from('blog_posts')
-    .select('published_at')
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-
-  if (!current) return { error: 'Okänt inlägg.' }
-
-  const published_at =
-    status === 'published' && current.published_at == null
-      ? new Date().toISOString()
-      : current.published_at
-
-  const { error } = await supabase
-    .from('blog_posts')
-    .update({ status, published_at })
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-  if (error) return { error: GENERIC }
+  const { error } = await supabase.rpc('set_blog_post_status', {
+    p_tenant: ctx.tenant.id,
+    p_post: id,
+    p_status: status,
+  })
+  if (error) return { error: blogWriteError(error) }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/blogg')
@@ -216,7 +176,7 @@ export async function deleteBlogPost(_p: ActionState, fd: FormData): Promise<Act
     .delete()
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
-  if (error) return { error: GENERIC }
+  if (error) return { error: blogWriteError(error) }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/blogg')

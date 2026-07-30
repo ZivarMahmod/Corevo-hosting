@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { requestOrigin } from '@/lib/url'
+import { loadPublishedBlogSitemapRows } from '@/lib/storefront/blogg/load-blogg'
 
 // Host-resolved, per-tenant sitemap. MUST be dynamic: it serves on every host
 // (incl. booking.corevo.se and unknown subdomains). A static evaluation would
@@ -37,10 +38,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...PUBLIC_PATHS,
     ...MODULE_PATHS.filter((m) => isModuleLive(states, m.module)).map((m) => m.path),
   ]
-  return paths.map((path) => ({
+  const pages: MetadataRoute.Sitemap = paths.map((path) => ({
     url: `${origin}${path || '/'}`,
     lastModified,
     changeFrequency: path === '' ? 'weekly' : 'monthly',
     priority: path === '' ? 1 : 0.7,
   }))
+  if (!isModuleLive(states, 'blogg')) return pages
+
+  const posts = await loadPublishedBlogSitemapRows(bundle.tenant.id, bundle.tenant.slug)
+  return [
+    ...pages,
+    ...posts.map((post) => ({
+      url: `${origin}/blogg/${encodeURIComponent(post.slug)}`,
+      lastModified: post.publishedAt ?? lastModified,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+  ]
 }

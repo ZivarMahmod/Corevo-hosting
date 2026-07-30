@@ -202,6 +202,7 @@ export function SidaStudioV2({
   const [visibleCopyFields, setVisibleCopyFields] = useState<Set<string> | null>(null)
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
   const [previewCopyMode, setPreviewCopyMode] = useState<ThemeCopyMode>('keep')
+  const [previewRoute, setPreviewRoute] = useState<string | null>(null)
   const [previewStageWidth, setPreviewStageWidth] = useState(0)
   const [pickMode, setPickMode] = useState(false)
   const [revisionAction, setRevisionAction] = useState<RevisionAction | null>(null)
@@ -283,18 +284,19 @@ export function SidaStudioV2({
     [activeTab, published, scheduleHours],
   )
   const previewingTemplateDefaults = Boolean(previewTheme && previewCopyMode === 'template')
+  const activePreviewPath = previewRoute ?? activeTab?.path ?? ''
   const previewSrc = useMemo(() => {
-    const activePath = activeTab?.path ?? ''
+    const activePath = activePreviewPath
     const [routePath, routeSearch = ''] = activePath.split('?')
     const q = new URLSearchParams(routeSearch)
     if (previewTheme) q.set('theme', previewTheme)
     if (previewTheme) q.set('copy', previewCopyMode)
     const query = q.toString()
     return `${previewPath}${routePath}${query ? `?${query}` : ''}`
-  }, [activeTab?.path, previewCopyMode, previewPath, previewTheme])
-  const displayPath = activeTab?.path.startsWith('?')
-    ? `/${activeTab.path}`
-    : activeTab?.path || '/'
+  }, [activePreviewPath, previewCopyMode, previewPath, previewTheme])
+  const displayPath = activePreviewPath.startsWith('?')
+    ? `/${activePreviewPath}`
+    : activePreviewPath || '/'
   const previewWidth = device === 'desktop' ? 1360 : 390
   const previewScale = surface === 'embedded' && previewStageWidth > 0
     ? Math.min(1, Math.max(0.1, (previewStageWidth - 2) / previewWidth))
@@ -313,6 +315,7 @@ export function SidaStudioV2({
     : undefined
   const selectTab = useCallback((nextTabId: string) => {
     if (editorMutationLocked()) return
+    setPreviewRoute(null)
     setVisibleCopyFields(null)
     if (pickMode) setNotice('')
     setPickMode(false)
@@ -428,9 +431,14 @@ export function SidaStudioV2({
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'preview-route' && typeof data.path === 'string') {
         if (editorMutationLocked()) return
-        const target = tabs.find((tab) => tab.path.split('?')[0] === data.path)
+        const routePath = data.path.split('?')[0] ?? ''
+        const target = tabs.find((tab) => {
+          const tabPath = tab.path.split('?')[0] ?? ''
+          return tabPath === routePath || Boolean(tabPath && routePath.startsWith(`${tabPath}/`))
+        })
         if (target) {
           selectTab(target.id)
+          if (data.path !== target.path.split('?')[0]) setPreviewRoute(data.path)
         }
         return
       }

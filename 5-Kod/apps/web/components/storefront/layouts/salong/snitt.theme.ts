@@ -54,7 +54,7 @@ export const snitt: SalongTheme = {
     fg: '#EFEDE6',
     fg2: '#A39F93',
     line: '#2C2C27',
-    accentSoft: '#6E6B61',
+    accentSoft: '#88867D',
   },
   // Manifestets `fonts`: Anton i displayen (poster-versaler), Work Sans i brödtexten.
   // Båda laddas via next/font i app/layout.tsx (--font-anton / --font-worksans).

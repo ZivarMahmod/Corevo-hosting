@@ -36,7 +36,7 @@ export function JoinClubForm({
   if (state.phase === 'done') {
     return (
       <p role="status" className={s.joined}>
-        Välkommen in. Vi hör av oss till din e-post.
+        {state.message ?? 'Välkommen in. Vi hör av oss till din e-post.'}
       </p>
     )
   }

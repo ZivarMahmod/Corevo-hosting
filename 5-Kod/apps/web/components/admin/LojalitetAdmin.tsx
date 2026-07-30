@@ -1,11 +1,23 @@
-// SERVER component — no 'use client', no hooks. Read-only loyalty dashboard: it VIEWS
-// the program (config + earned points) and never edits anything (config is super-admin
-// locked; loyalty_ledger is appended only by the booking flow). Presentational: takes
-// fully-resolved props, imports only react types + server-safe UI primitives + the pure
-// loyalty types. No data/action imports → no client/server boundary risk.
+'use client'
 
-import type { ReactNode } from 'react'
-import { PageHead, Card, Stat, Table, Badge, Callout, type BadgeTone } from '@/components/portal/ui'
+import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  PageHead,
+  Card,
+  Stat,
+  Table,
+  Badge,
+  Button,
+  Callout,
+  useToast,
+  type BadgeTone,
+} from '@/components/portal/ui'
+import type { ActionState } from '@/lib/admin/actions'
+import {
+  reverseLoyaltySpend,
+  spendLoyaltyPoints,
+} from '@/lib/admin/lojalitet/actions'
 import type {
   LoyaltyConfig,
   LoyaltyMemberRow,
@@ -15,6 +27,15 @@ import { reasonLabel, pointsToStamps } from '@/lib/admin/lojalitet/types'
 
 // ── Formatters ───────────────────────────────────────────────────────────────
 const NUM = new Intl.NumberFormat('sv-SE')
+const inputStyle: CSSProperties = {
+  padding: '9px 12px',
+  borderRadius: 10,
+  border: '1px solid var(--c-line)',
+  background: 'var(--c-paper)',
+  color: 'var(--c-ink)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 14,
+}
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('sv-SE', {
@@ -94,10 +115,12 @@ export function LojalitetAdmin({
           )}
         </div>
         <Callout tone="info" icon="info">
-          Programmet ställs in av plattformsadmin. Poäng tjänas automatiskt vid avslutade
-          bokningar.
+          Poäng tjänas automatiskt vid avslutade bokningar. Inlösen och återställning
+          bokförs som nya ledgerposter; historik skrivs aldrig över.
         </Callout>
       </Card>
+
+      <LoyaltySpendCard members={members} />
 
       {/* Members */}
       <Card pad={0} style={{ marginBottom: 16 }}>
@@ -165,7 +188,7 @@ export function LojalitetAdmin({
           </div>
         ) : (
           <Table
-            cols={['Kund', 'Poäng', 'Typ', 'När']}
+            cols={['Kund', 'Poäng', 'Typ', 'När', '']}
             rows={activity.map((a) => {
               const tone: BadgeTone = a.pointsDelta > 0 ? 'success' : 'neutral'
               const sign = a.pointsDelta > 0 ? '+' : ''
@@ -186,11 +209,135 @@ export function LojalitetAdmin({
                 >
                   {formatDate(a.createdAt)}
                 </span>,
+                a.reason === 'redeem' ? (
+                  <ReverseSpendCell key="reverse" activity={a} />
+                ) : (
+                  <span key="reverse" aria-hidden="true" />
+                ),
               ]
             })}
           />
         )}
       </Card>
     </>
+  )
+}
+
+function LoyaltySpendCard({ members }: { members: LoyaltyMemberRow[] }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [requestId, setRequestId] = useState('')
+  const [state, action, pending] = useActionState<ActionState, FormData>(
+    spendLoyaltyPoints,
+    {},
+  )
+  const eligible = members.filter((member) => member.pointsBalance > 0)
+
+  useEffect(() => setRequestId(crypto.randomUUID()), [])
+  useEffect(() => {
+    if (state.success) {
+      notify(state.success, 'success')
+      setRequestId(crypto.randomUUID())
+      router.refresh()
+    }
+    if (state.error) notify(state.error, 'warning')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success, state.error])
+
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <span className="eyebrow">Använd poäng</span>
+      {eligible.length === 0 ? (
+        <p style={{ margin: '10px 0 0', color: 'var(--c-ink-2)', fontSize: 14 }}>
+          Ingen kund har ett positivt poängsaldo.
+        </p>
+      ) : (
+        <form
+          action={action}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(180px, 1fr) minmax(120px, 180px) minmax(180px, 1fr) auto',
+            gap: 10,
+            alignItems: 'end',
+            marginTop: 12,
+          }}
+        >
+          <input type="hidden" name="requestId" value={requestId} />
+          <label style={{ display: 'grid', gap: 5 }}>
+            <span className="eyebrow">Kund</span>
+            <select name="customerId" required defaultValue="" style={inputStyle}>
+              <option value="" disabled>
+                Välj kund
+              </option>
+              {eligible.map((member) => (
+                <option key={member.customerId} value={member.customerId}>
+                  {member.customerName ?? 'Okänd kund'} · {NUM.format(member.pointsBalance)} p
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: 'grid', gap: 5 }}>
+            <span className="eyebrow">Poäng</span>
+            <input name="points" type="number" min="1" step="1" required style={inputStyle} />
+          </label>
+          <label style={{ display: 'grid', gap: 5 }}>
+            <span className="eyebrow">Notering</span>
+            <input name="note" maxLength={500} placeholder="Valfritt" style={inputStyle} />
+          </label>
+          <Button variant="primary" type="submit" disabled={pending || !requestId}>
+            {pending ? 'Sparar…' : 'Använd'}
+          </Button>
+        </form>
+      )}
+    </Card>
+  )
+}
+
+function ReverseSpendCell({ activity }: { activity: LoyaltyActivityRow }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [requestId, setRequestId] = useState('')
+  const [armed, setArmed] = useState(false)
+  const [state, action, pending] = useActionState<ActionState, FormData>(
+    reverseLoyaltySpend,
+    {},
+  )
+
+  useEffect(() => setRequestId(crypto.randomUUID()), [])
+  useEffect(() => {
+    if (state.success) {
+      notify(state.success, 'success')
+      router.refresh()
+    }
+    if (state.error) notify(state.error, 'warning')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success, state.error])
+
+  if (!armed) {
+    return (
+      <Button variant="ghost" size="sm" type="button" onClick={() => setArmed(true)}>
+        Återställ
+      </Button>
+    )
+  }
+
+  return (
+    <form action={action} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <input type="hidden" name="entryId" value={activity.id} />
+      <input type="hidden" name="requestId" value={requestId} />
+      <input
+        name="reason"
+        required
+        maxLength={500}
+        placeholder="Orsak"
+        style={{ ...inputStyle, width: 150 }}
+      />
+      <Button variant="ghost" size="sm" type="submit" disabled={pending || !requestId}>
+        {pending ? '…' : 'Bekräfta'}
+      </Button>
+      <Button variant="ghost" size="sm" type="button" onClick={() => setArmed(false)}>
+        Ångra
+      </Button>
+    </form>
   )
 }

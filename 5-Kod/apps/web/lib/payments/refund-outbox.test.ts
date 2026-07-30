@@ -3,9 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   createServiceClient: vi.fn(),
   getStripe: vi.fn(),
+  paypalReady: vi.fn(),
+  refundPaypalCaptureForJob: vi.fn(),
 }))
 vi.mock('@/lib/platform/service', () => ({ createServiceClient: mocks.createServiceClient }))
 vi.mock('@/lib/stripe/client', () => ({ getStripe: mocks.getStripe }))
+vi.mock('@/lib/payments/paypal', () => ({
+  paypalReady: mocks.paypalReady,
+  refundPaypalCaptureForJob: mocks.refundPaypalCaptureForJob,
+}))
 
 import { dispatchPaymentRefundJobById, dispatchPaymentRefundJobs } from './refund-outbox'
 
@@ -16,6 +22,10 @@ const job = {
   tenant_id: '323e4567-e89b-42d3-a456-426614174000',
   payment_id: '423e4567-e89b-42d3-a456-426614174000',
   booking_id: '523e4567-e89b-42d3-a456-426614174000',
+  order_id: null,
+  provider: 'stripe',
+  provider_payment_id: 'pi_safe_1',
+  provider_account_scope: 'acct_safe_1',
   payment_intent_id: 'pi_safe_1',
   connected_account_id: 'acct_safe_1',
   provider_idempotency_key: 'refund_523e4567-e89b-42d3-a456-426614174000',
@@ -31,6 +41,11 @@ describe('payment refund outbox worker', () => {
     vi.clearAllMocks()
     mocks.createServiceClient.mockReturnValue({ rpc })
     mocks.getStripe.mockReturnValue({ refunds: { create: createRefund } })
+    mocks.paypalReady.mockReturnValue(true)
+    mocks.refundPaypalCaptureForJob.mockResolvedValue({
+      outcome: 'succeeded',
+      providerRef: 'REFUND-SAFE-1',
+    })
   })
 
   it('claims one exact job, begins by CAS, calls the connected account and completes atomically', async () => {
@@ -133,5 +148,90 @@ describe('payment refund outbox worker', () => {
     createRefund.mockResolvedValue({ id: 're_second' })
 
     await expect(dispatchPaymentRefundJobs(2)).resolves.toMatchObject({ claimed: 2, failed: 1, completed: 1 })
+  })
+
+  it('routes an order claim to PayPal and completes through the same CAS rail', async () => {
+    const paypalJob = {
+      ...job,
+      booking_id: null,
+      order_id: '723e4567-e89b-42d3-a456-426614174000',
+      provider: 'paypal',
+      provider_payment_id: 'CAPTURE-SAFE-1',
+      provider_account_scope: 'paypal:platform',
+      payment_intent_id: null,
+      connected_account_id: null,
+    }
+    rpc
+      .mockResolvedValueOnce({ data: [paypalJob], error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+
+    await expect(dispatchPaymentRefundJobById(jobId)).resolves.toMatchObject({ completed: 1 })
+    expect(createRefund).not.toHaveBeenCalled()
+    expect(mocks.refundPaypalCaptureForJob).toHaveBeenCalledWith(
+      'CAPTURE-SAFE-1',
+      '523e4567-e89b-42d3-a456-426614174000',
+    )
+    expect(rpc).toHaveBeenLastCalledWith('complete_payment_refund_job', {
+      p_id: jobId,
+      p_lease_token: leaseToken,
+      p_provider_ref: 'REFUND-SAFE-1',
+    })
+  })
+
+  it('retries PayPal before provider start when credentials are unavailable', async () => {
+    mocks.paypalReady.mockReturnValue(false)
+    rpc
+      .mockResolvedValueOnce({
+        data: [{
+          ...job,
+          booking_id: null,
+          order_id: '723e4567-e89b-42d3-a456-426614174000',
+          provider: 'paypal',
+          provider_payment_id: 'CAPTURE-SAFE-1',
+          provider_account_scope: 'paypal:platform',
+          payment_intent_id: null,
+          connected_account_id: null,
+        }],
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: 'queued', error: null })
+
+    await expect(dispatchPaymentRefundJobById(jobId)).resolves.toMatchObject({ retried: 1 })
+    expect(rpc.mock.calls.some(([name]) => name === 'begin_payment_refund_delivery')).toBe(false)
+    expect(mocks.refundPaypalCaptureForJob).not.toHaveBeenCalled()
+  })
+
+  it('moves a rejected PayPal refund to review without reporting completion', async () => {
+    mocks.refundPaypalCaptureForJob.mockResolvedValue({
+      outcome: 'rejected',
+      providerRef: null,
+    })
+    rpc
+      .mockResolvedValueOnce({
+        data: [{
+          ...job,
+          booking_id: null,
+          order_id: '723e4567-e89b-42d3-a456-426614174000',
+          provider: 'paypal',
+          provider_payment_id: 'CAPTURE-SAFE-1',
+          provider_account_scope: 'paypal:platform',
+          payment_intent_id: null,
+          connected_account_id: null,
+        }],
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+
+    await expect(dispatchPaymentRefundJobById(jobId)).resolves.toMatchObject({
+      completed: 0,
+      reviewRequired: 1,
+    })
+    expect(rpc).toHaveBeenLastCalledWith('review_payment_refund_job', {
+      p_id: jobId,
+      p_lease_token: leaseToken,
+      p_reason: 'provider_rejected',
+    })
   })
 })

@@ -2,12 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { revalidateTenantById } from '@/lib/admin/tenant'
-import { uploadImage, uploadErrorMessage } from '@/lib/r2/upload'
+import {
+  managedUploadErrorMessage,
+  uploadManagedImage,
+} from '@/lib/media/lifecycle'
 import { siteRevisionCtx } from '../guard'
 import { logPlatformAction, type PlatformAuditAction } from '../audit'
 import { readSiteMap, sanitizeSiteSnapshot, siteSnapshotAsJson, type SiteSnapshot } from '../site-revisions'
 import { reportActionError } from './observe'
-import { recordMediaAsset } from './media-record'
 import { GENERIC } from './shared'
 import { geocodeAddress } from './geocode'
 import { verifiedMapForAddress } from '@/lib/storefront/address-map'
@@ -33,10 +35,14 @@ export async function uploadSiteDraftImage(fd: FormData): Promise<SiteRevisionAc
   const image = fd.get('image')
   if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
 
-  const uploaded = await uploadImage(image, `tenants/${tenantId}/storefront-drafts`)
-  if (!uploaded.ok) return { error: uploadErrorMessage(uploaded.reason) }
+  const uploaded = await uploadManagedImage(
+    supabase,
+    tenantId,
+    image,
+    'sajtbyggare',
+  )
+  if (!uploaded.ok) return { error: managedUploadErrorMessage(uploaded.reason) }
 
-  await recordMediaAsset(supabase, tenantId, image, uploaded, 'sajtbyggare')
   await logPlatformAction(supabase, {
     action: 'tenant.site_draft_image_upload',
     tenantId,

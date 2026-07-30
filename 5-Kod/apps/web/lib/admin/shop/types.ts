@@ -50,6 +50,8 @@ export type ShopOrderItemRow = {
   unit_price_cents: number
 }
 
+export type ShopRefundStatus = 'pending' | 'succeeded' | 'failed'
+
 export type ShopOrderRow = {
   id: string
   customer_name: string | null
@@ -66,6 +68,7 @@ export type ShopOrderRow = {
   carrier: string | null
   shipped_at: string | null
   created_at: string
+  refund_status: ShopRefundStatus | null
   items: ShopOrderItemRow[]
 }
 

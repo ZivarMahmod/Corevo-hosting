@@ -22,6 +22,9 @@ import { deliverIssuedGiftCards } from '@/lib/notifications/gift'
 export type SettleResult = {
   ok: boolean
   reason?: string
+  eventId?: string
+  tenantId?: string
+  orderId?: string
   /** Betalningen är durabel men presentkortsleveransen behöver en webhook-retry. */
   giftDeliveryPending?: boolean
 }
@@ -48,127 +51,149 @@ async function deliverGiftCardsAfterSettlement(
   }
 }
 
-/**
- * Markera en shop-order som betald. Tenant-fenced (ordern MÅSTE tillhöra tenanten),
- * beloppsverifierad, idempotent.
- *
- * @param providerRef Betalningens id hos leverantören, endast för spårbar
- *                    felrapportering tills payments har en provider-neutral kolumn.
- */
-export async function settleShopOrderPaid(args: {
-  orderId: string
+export type ShopPaymentEventType =
+  | 'payment_succeeded'
+  | 'payment_failed'
+  | 'checkout_expired'
+  | 'refund_succeeded'
+
+export type ShopPaymentEventInput = {
+  provider: 'stripe' | 'paypal'
+  accountScope: string
+  providerEventId: string
+  eventType: ShopPaymentEventType
+  orderId: string | null
+  tenantId?: string | null
   amountCents: number | null
-  /** Capture-valutan (t.ex. 'SEK'). null = okänd → behandlas som mismatch. */
   currency?: string | null
   providerRef: string
-}): Promise<SettleResult> {
+  source: 'webhook' | 'return'
+}
+
+/** Register after signature verification, then settle through one DB-owned boundary. */
+export async function settleShopPaymentEvent(
+  args: ShopPaymentEventInput,
+): Promise<SettleResult> {
   const admin = createServiceClient()
   if (!admin) return { ok: false, reason: 'no_service_client' }
 
-  const { data: order, error: orderError } = await admin
-    .from('shop_orders')
-    .select('id, tenant_id, total_cents, currency, payment_status, status')
-    .eq('id', args.orderId)
-    .maybeSingle()
-  if (orderError) {
-    await captureException(orderError, {
-      where: 'payments.settle.order_lookup',
+  const { data: registered, error: registerError } = await admin.rpc(
+    'register_shop_payment_event',
+    {
+      p_provider: args.provider,
+      p_account_scope: args.accountScope,
+      p_provider_event_id: args.providerEventId,
+      p_event_type: args.eventType,
+      p_tenant: args.tenantId ?? null,
+      p_order: args.orderId,
+      p_provider_reference_id: args.providerRef,
+      p_amount_cents: args.amountCents,
+      p_currency: args.currency ?? null,
+      p_payload: { source: args.source },
+    },
+  )
+  const eventId = (registered as { event_id?: string } | null)?.event_id
+  if (registerError || !eventId) {
+    await captureException(registerError ?? new Error('payment event id missing'), {
+      where: 'payments.settle.event_register',
       orderId: args.orderId,
+      provider: args.provider,
+      providerEventId: args.providerEventId,
     })
-    return { ok: false, reason: 'order_lookup_failed' }
-  }
-  if (!order) return { ok: false, reason: 'unknown_order' }
-
-  // En capture som hinner fram efter att holdet släppts får aldrig återuppliva
-  // ordern eller utfärda värde. PayPal-routen återbetalar capture:n direkt.
-  if (order.status === 'cancelled' || order.status === 'expired') {
-    await captureException(new Error('payment captured for terminal order'), {
-      where: 'payments.settle.terminal_order',
-      orderId: args.orderId,
-      providerRef: args.providerRef,
-      status: order.status,
-    })
-    return { ok: false, reason: 'terminal_order' }
-  }
-
-  // Redan betald → betal-/lagerdelen är no-op, men leveransen kan saknas efter en
-  // äldre callback eller ett tidigare mejlfel. Leveransfunktionen claimar villkorat
-  // och är därför säker att försöka igen på varje PayPal-retry.
-  if (order.payment_status === 'paid') {
-    const delivered = await deliverGiftCardsAfterSettlement(admin, order.tenant_id, args.orderId)
-    return delivered ? { ok: true } : { ok: true, giftDeliveryPending: true }
+    return { ok: false, reason: 'event_register_failed' }
   }
 
-  // BELOPPSGRIND (skärpt, CodeRabbit-fynd): en capture som inte täcker orderns total
-  // får aldrig markera den betald — och ett SAKNAT belopp i provider-svaret är en
-  // mismatch, inte ett frikort (tidigare hoppade null-belopp över hela grinden).
-  if (args.amountCents == null || args.amountCents < (order.total_cents ?? 0)) {
-    await captureException(new Error('paypal capture amount mismatch'), {
-      where: 'payments.settle',
-      orderId: args.orderId,
-      captured: args.amountCents,
-      expected: order.total_cents,
+  const { data: settled, error: settleError } = await admin.rpc(
+    'settle_shop_payment_event',
+    { p_event: eventId },
+  )
+  if (settleError) {
+    // Registration already committed in the preceding RPC. Record the failed
+    // processing attempt when the database is reachable; provider 5xx still
+    // remains the authoritative retry trigger if this best-effort write fails.
+    await admin.rpc('complete_shop_payment_event', {
+      p_event: eventId,
+      p_outcome: 'retryable',
+      p_error_code: 'settlement_rpc_failed',
     })
-    return { ok: false, reason: 'amount_mismatch' }
+    await captureException(settleError, {
+      where: 'payments.settle.event_process',
+      orderId: args.orderId,
+      provider: args.provider,
+      eventId,
+    })
+    return { ok: false, reason: 'event_settle_failed', eventId }
   }
 
-  // VALUTAGRIND (CodeRabbit-fynd): 189 USD passerade tidigare för en 189 SEK-order.
-  // Capture-valutan MÅSTE matcha orderns; okänd valuta behandlas som mismatch.
-  const orderCurrency = (order.currency ?? '').toUpperCase()
-  const capturedCurrency = (args.currency ?? '').toUpperCase()
-  if (!capturedCurrency || (orderCurrency && capturedCurrency !== orderCurrency)) {
-    await captureException(new Error('paypal capture currency mismatch'), {
-      where: 'payments.settle',
-      orderId: args.orderId,
-      captured: capturedCurrency || null,
-      expected: orderCurrency || null,
-    })
-    return { ok: false, reason: 'amount_mismatch' }
+  const row = settled as {
+    outcome?: string
+    tenant_id?: string
+    order_id?: string
+  } | null
+  const outcome = row?.outcome ?? 'unknown'
+  const tenantId = row?.tenant_id
+  const orderId = row?.order_id ?? args.orderId ?? undefined
+  const ok = [
+    'succeeded',
+    'already_succeeded',
+    'failed',
+    'expired',
+    'refunded',
+  ].includes(outcome)
+
+  if (
+    args.eventType === 'payment_succeeded'
+    && ok
+    && outcome !== 'refunded'
+    && tenantId
+    && orderId
+  ) {
+    const delivered = await deliverGiftCardsAfterSettlement(admin, tenantId, orderId)
+    return {
+      ok: true,
+      eventId,
+      tenantId,
+      orderId,
+      ...(delivered ? {} : { giftDeliveryPending: true }),
+    }
   }
 
-  // OBS: PayPal-referensen skrivs MEDVETET inte in i payments.stripe_payment_intent_id.
-  // Den kolumnen är Stripes, och refund-vägen (charge.refunded + refundShopOrder) slår
-  // upp betalningar på just den — en PayPal-id där hade fått Stripe-refunden att peka på
-  // ett PI som inte finns. Referensen loggas i stället; en egen provider-kolumn är rätt
-  // hem för den, och den byggs när PayPal-kontot faktiskt finns.
-  const { data: updatedPayment, error: paymentError } = await admin
-    .from('payments')
-    .update({ status: 'succeeded' })
-    .eq('order_id', args.orderId)
-    .eq('tenant_id', order.tenant_id)
-    .neq('status', 'refunded') // en sen re-leverans får ALDRIG återuppliva en refund
-    .select('id')
-    .maybeSingle()
-  if (paymentError) {
-    await captureException(paymentError, {
-      where: 'payments.settle.payment_update',
-      orderId: args.orderId,
-    })
-    return { ok: false, reason: 'payment_update_failed' }
+  return {
+    ok,
+    ...(ok ? {} : { reason: outcome }),
+    eventId,
+    ...(tenantId ? { tenantId } : {}),
+    ...(orderId ? { orderId } : {}),
   }
-  if (!updatedPayment) {
-    await captureException(new Error('payment row missing or terminal'), {
-      where: 'payments.settle.payment_not_updated',
-      orderId: args.orderId,
-    })
-    return { ok: false, reason: 'payment_not_updated' }
-  }
+}
 
-  // Committar lagret (stock_committed-latch → exakt en gång) + status pending/paid.
-  const { error: commitError } = await admin.rpc('mark_shop_order_paid', {
-    p_order_id: args.orderId,
+export async function settleShopOrderPaid(
+  args: Omit<ShopPaymentEventInput, 'eventType' | 'orderId'> & { orderId: string },
+): Promise<SettleResult> {
+  return settleShopPaymentEvent({ ...args, eventType: 'payment_succeeded' })
+}
+
+export async function completeShopPaymentEvent(
+  eventId: string,
+  outcome: 'refunded' | 'retryable' | 'ignored',
+  errorCode?: string,
+): Promise<boolean> {
+  const admin = createServiceClient()
+  if (!admin) return false
+  const { error } = await admin.rpc('complete_shop_payment_event', {
+    p_event: eventId,
+    p_outcome: outcome,
+    p_error_code: errorCode,
   })
-  if (commitError) {
-    await captureException(commitError, {
-      where: 'payments.settle.order_commit',
-      orderId: args.orderId,
+  if (error) {
+    await captureException(error, {
+      where: 'payments.settle.event_complete',
+      eventId,
+      outcome,
     })
-    return { ok: false, reason: 'order_commit_failed' }
+    return false
   }
-
-  // RPC:n utfärdar presentkortet; först därefter finns en kod att leverera.
-  const delivered = await deliverGiftCardsAfterSettlement(admin, order.tenant_id, args.orderId)
-  return delivered ? { ok: true } : { ok: true, giftDeliveryPending: true }
+  return true
 }
 
 /** Spegla en redan genomförd extern refund atomiskt i payment + order. */

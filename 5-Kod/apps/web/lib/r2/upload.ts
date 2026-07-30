@@ -60,14 +60,33 @@ async function getBucket(): Promise<R2BucketLike | null> {
 export async function uploadImage(file: File, keyPrefix: string): Promise<UploadResult> {
   const ext = EXT[file.type]
   if (!ext) return { ok: false, reason: 'bad_type' }
+  const key = `${keyPrefix.replace(/^\/+|\/+$/g, '')}/${crypto.randomUUID()}.${ext}`
+  return uploadImageAtKey(file, key)
+}
+
+/**
+ * Upload to the exact object key already reserved by Postgres. This is the
+ * lifecycle-safe primitive: callers reserve quota/key first, then perform R2 I/O.
+ */
+export async function uploadImageAtKey(file: File, key: string): Promise<UploadResult> {
+  if (!EXT[file.type]) return { ok: false, reason: 'bad_type' }
   if (file.size > MAX_BYTES) return { ok: false, reason: 'too_large' }
+  const keyParts = key.split('/')
+  if (
+    !key
+    || key.startsWith('/')
+    || key.endsWith('/')
+    || key.includes('\\')
+    || keyParts.some((part) => !part || part === '.' || part === '..')
+  ) {
+    return { ok: false, reason: 'failed' }
+  }
   const base = publicBase()
   if (!base) return { ok: false, reason: 'no_public_base' }
 
   const bucket = await getBucket()
   if (!bucket) return { ok: false, reason: 'no_binding' }
 
-  const key = `${keyPrefix.replace(/^\/+|\/+$/g, '')}/${crypto.randomUUID()}.${ext}`
   try {
     const buf = await file.arrayBuffer()
     await bucket.put(key, buf, { httpMetadata: { contentType: file.type } })
@@ -123,19 +142,30 @@ export function removedImageKeys(
   return keys
 }
 
-/** Best-effort delete of R2 objects by key. Never throws — a delete failure (or a
- *  missing binding in dev) logs and is swallowed. */
-async function deleteKeys(keys: string[]): Promise<void> {
-  if (keys.length === 0) return
+/**
+ * Delete R2 objects by exact key and report whether every delete succeeded.
+ * R2 delete is idempotent, so durable workers can safely retry a false result.
+ */
+export async function deleteR2Keys(keys: string[]): Promise<boolean> {
+  const uniqueKeys = [...new Set(keys.filter(Boolean))]
+  if (uniqueKeys.length === 0) return true
   const bucket = await getBucket()
-  if (!bucket) return
-  for (const key of keys) {
+  if (!bucket) return false
+  let succeeded = true
+  for (const key of uniqueKeys) {
     try {
       await bucket.delete(key)
     } catch (err) {
+      succeeded = false
       logger.warn('r2.delete_failed', { key, error: err instanceof Error ? err.message : String(err) })
     }
   }
+  return succeeded
+}
+
+/** Best-effort wrapper used by pre-lifecycle replace/remove call sites. */
+async function deleteKeys(keys: string[]): Promise<void> {
+  await deleteR2Keys(keys)
 }
 
 /** Best-effort delete of a single stored image by its public URL. */

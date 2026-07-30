@@ -11,6 +11,10 @@ export type EventRow = {
   capacity: number
   price_cents: number
   status: string
+  cancelled_at: string | null
+  cancelled_by: string | null
+  cancellation_reason: string | null
+  lifecycle_version: number
   /** Summa party_size för alla CONFIRMED anmälningar — beräknas i data-lagret. */
   taken: number
 }
@@ -25,6 +29,11 @@ export type RegistrationRow = {
   party_size: number
   message: string | null
   status: string
+  order_item_id: string | null
+  cancelled_at: string | null
+  cancelled_by: string | null
+  cancellation_reason: string | null
+  lifecycle_version: number
 }
 
 export const EVENT_STATUSES = ['open', 'cancelled', 'done'] as const

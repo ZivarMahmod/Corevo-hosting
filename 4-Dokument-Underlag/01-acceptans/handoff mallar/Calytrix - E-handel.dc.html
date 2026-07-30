@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="sv">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,7 +27,9 @@
       [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
       h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
       h2 { font-size: clamp(24px, 7vw, 34px) !important; }
-      a[style*="cursor:pointer"], button { min-height: 44px; }
+      a[style*="cursor"] { min-width: 44px !important; min-height: 44px !important; }
+      a[style*="cursor"]:not([style*="display"]) { display: inline-flex; align-items: center; }
+      button { min-width: 44px; min-height: 44px; }
       nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
       section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
     }
@@ -57,7 +59,7 @@
   </header>
 
   <!-- RAD 3: CHIP-RAD -->
-  <div style="background:#fff; border-bottom:1px solid #e8d9de; overflow-x:auto">
+  <div role="region" aria-label="Produktkategorier" tabindex="0" style="background:#fff; border-bottom:1px solid #e8d9de; overflow-x:auto">
     <div style="max-width:1280px; margin:0 auto; padding:12px 28px; display:flex; white-space:nowrap">
       <div style="display:inline-flex; border:1px solid #241019; background:#fff">
         <sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
@@ -585,7 +587,7 @@
                     <span style="display:block; font-weight:700; font-size:15px; color:#241019">{{ m.name }}</span>
                     <span style="display:block; color:#6e4f5c; font-size:13.5px; margin-top:2px">{{ m.desc }}</span>
                   </span>
-                  <span style="font-family:'Instrument Serif'; font-style:italic; font-size:15px; color:#a98d97">{{ m.mark }}</span>
+                  <span style="font-family:'Instrument Serif'; font-style:italic; font-size:15px; color:#6e4f5c">{{ m.mark }}</span>
                 </button>
               </sc-for>
             </div>
@@ -680,7 +682,7 @@
         </div>
       </div>
     </div>
-    <p style="max-width:1280px; margin:28px auto 0; color:rgba(255,255,255,0.45); font-size:13px">© 2026 Calytrix · Byggd med Corevo</p>
+    <p style="max-width:1280px; margin:28px auto 0; color:rgba(255,255,255,0.46); font-size:13px">© 2026 Calytrix · Byggd med Corevo</p>
   </footer>
 </div>
 </x-dc>

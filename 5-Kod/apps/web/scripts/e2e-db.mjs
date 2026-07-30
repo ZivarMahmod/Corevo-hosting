@@ -6,14 +6,13 @@
  *   node apps/web/scripts/e2e-db.mjs teardown  # riv fixturen + allt sviten skapade
  *   node apps/web/scripts/e2e-db.mjs verify    # bevisa att inget e2e-skräp finns kvar
  *
- * Sviten kör mot PRODUKTIONSDATABASEN (Zivars beslut 2026-07-14 — inga slutkunder
- * ännu, och Free-planen har ingen branching). Det gör städningen till ett villkor,
- * inte en artighet. Därför:
+ * Sviten kör endast mot det uttryckligt guardade previewprojektet. Städningen är
+ * ändå ett villkor, inte en artighet. Därför:
  *
  *   · `seed` skriver ALDRIG ett lösenord till disk. E2E_PASSWORD läses ur miljön;
  *     saknas den genereras ett slumpat engångslösenord som bara lever i den här
  *     processen och skickas vidare till Playwright. Fixturen innehåller en
- *     super_admin — ett känt lösenord på den i produktionen vore oförsvarligt.
+ *     super_admin — ett känt lösenord på den vore oförsvarligt.
  *   · `verify` är det som avgör om körningen var ren. Kör den ALLTID efter teardown.
  *
  * Kör mot den länkade Supabase-instansen via CLI:n (`supabase db query --linked`) —
@@ -28,6 +27,17 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..') // → 5-Kod
 const SEEDS = path.join(ROOT, 'supabase', 'seeds')
+const PREVIEW_REF = 'cwnhpesrgolflkmyjbrm'
+
+function assertPreviewTarget() {
+  const linkedRef = readFileSync(
+    path.join(ROOT, 'supabase', '.temp', 'project-ref'),
+    'utf8',
+  ).trim()
+  if (linkedRef !== PREVIEW_REF) {
+    throw new Error(`e2e-db vägrar skriva mot projekt ${linkedRef || '<saknas>'}`)
+  }
+}
 
 /** Kör SQL mot den länkade DB:n. Returnerar rå stdout.
  *
@@ -39,18 +49,23 @@ const SEEDS = path.join(ROOT, 'supabase', 'seeds')
  *  "$(cat …)". Filen ligger i os.tmpdir() och raderas alltid (finally) — den bär ett
  *  engångslösenord i klartext och får inte överleva processen. */
 function sql(query) {
+  assertPreviewTarget()
   const tmp = path.join(tmpdir(), `corevo-e2e-${randomBytes(6).toString('hex')}.sql`)
   writeFileSync(tmp, query, 'utf8')
   try {
     // `-f <fil>` och INTE SQL:en som argument: seed-filen är ~7 kB och Windows svarar
     // "The command line is too long" långt innan dess. Filen ligger i os.tmpdir() och
     // raderas alltid (finally) — den bär ett engångslösenord i klartext.
-    return execFileSync('bash', ['-lc', `npx supabase db query --linked -f '${tmp}'`], {
+    return execFileSync(
+      'bash',
+      ['-lc', `npx --yes supabase@2.110.0 db query --linked -f '${tmp}'`],
+      {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       maxBuffer: 10 * 1024 * 1024,
-    })
+      },
+    )
   } finally {
     rmSync(tmp, { force: true })
   }
@@ -87,24 +102,34 @@ function teardown() {
 
 /** Beviset. Hittar den NÅGOT kvar → exit 1, och körningen underkänns. */
 function verify() {
-  const checks = [
-    ['tenants', "select slug from public.tenants where slug = 'frisor1' or slug like 'e2e%'"],
-    ['auth.users', "select email from auth.users where id::text like 'e2e00000%'"],
-    ['roles', "select id::text as id from public.roles where id::text like 'e2e00000%'"],
-    // Bokningar utan tenant vore föräldralösa rader — ska aldrig kunna finnas.
-    [
-      'föräldralösa bokningar',
-      'select b.id::text as id from public.bookings b left join public.tenants t on t.id = b.tenant_id where t.id is null',
-    ],
-  ]
+  const checks = rows(sql(`
+select 'tenants' as label, count(*)::integer as dirty
+from public.tenants where slug = 'frisor1' or slug like 'e2e%'
+union all
+select 'auth.users', count(*)::integer
+from auth.users where id::text like 'e2e00000%'
+union all
+select 'public.users', count(*)::integer
+from public.users
+where id::text like 'e2e00000%'
+   or email in ('e2e-admin@frisor1.test','e2e-staff@frisor1.test','e2e-platform@corevo.se')
+union all
+select 'roles', count(*)::integer
+from public.roles where id::text like 'e2e00000%'
+union all
+select 'föräldralösa bokningar', count(*)::integer
+from public.bookings b
+left join public.tenants t on t.id = b.tenant_id
+where t.id is null;
+`))
   let dirty = 0
-  for (const [label, q] of checks) {
-    const found = rows(sql(q))
-    if (found.length) {
-      dirty += found.length
-      console.error(`✗ ${label}: ${found.length} rad(er) kvar → ${JSON.stringify(found)}`)
+  for (const check of checks) {
+    const count = Number(check.dirty)
+    dirty += count
+    if (count) {
+      console.error(`✗ ${check.label}: ${count} rad(er) kvar`)
     } else {
-      console.log(`✓ ${label}: rent`)
+      console.log(`✓ ${check.label}: rent`)
     }
   }
   if (dirty) {

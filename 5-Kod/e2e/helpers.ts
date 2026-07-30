@@ -4,9 +4,9 @@ import { expect, type Page } from '@playwright/test'
 // upp och rivs av apps/web/scripts/e2e-db.mjs (seed → kör → teardown → verify).
 //
 // LÖSENORDET ÄR ALDRIG HÅRDKODAT. Fixturen innehåller en super_admin, och sviten kör
-// mot produktionsdatabasen (Zivars beslut 2026-07-14 — inga slutkunder, Free-planen
-// saknar branching). Ett känt lösenord på ett super_admin-konto i prod vore
-// oförsvarligt, även i tio minuter. `e2e-db.mjs seed` slumpar ett engångslösenord och
+// endast mot det guardade previewprojektet. Ett känt lösenord på ett
+// super_admin-konto vore ändå oförsvarligt, även i tio minuter.
+// `e2e-db.mjs seed` slumpar ett engångslösenord och
 // skickar det vidare via E2E_PASSWORD. Saknas variabeln finns ingen fixtur att logga
 // in på — då ska sviten falla direkt, inte gissa.
 const password = process.env.E2E_PASSWORD
@@ -19,8 +19,8 @@ if (!password) {
 export const SEED = {
   tenant: { slug: 'frisor1', name: 'Frisör Ett' },
   password,
-  salonAdmin: 'admin@frisor1.se',
-  staff: 'klippare@frisor1.se',
+  salonAdmin: 'e2e-admin@frisor1.test',
+  staff: 'e2e-staff@frisor1.test',
   // e2e-platform, INTE platform@corevo.se: en super_admin med ett engångslösenord får
   // aldrig kunna förväxlas med ett riktigt plattformskonto.
   platformAdmin: 'e2e-platform@corevo.se',
@@ -39,9 +39,9 @@ export async function gotoTenant(page: Page, path: string, slug = SEED.tenant.sl
 
 async function submitLogin(page: Page, email: string) {
   await page.getByLabel('E-post').fill(email)
-  await page.getByLabel('Lösenord').fill(SEED.password)
+  await page.locator('input[name="password"]').fill(SEED.password)
   await page.getByRole('button', { name: 'Logga in' }).click()
-  await expect(page).not.toHaveURL(/\/login/)
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 })
 }
 
 /**

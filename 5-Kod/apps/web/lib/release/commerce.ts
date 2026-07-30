@@ -9,6 +9,7 @@ type ReleaseEnvironment = Record<string, string | undefined>
 
 const SETTLEMENT_ACCEPTED = 'settlement-v1-verified'
 const PAYPAL_ACCEPTED = 'partner-v1-reviewed'
+const GIFT_CARD_VALUE_ACCEPTED = 'gift-value-v1-verified'
 
 function tenantIsAllowlisted(raw: string | undefined, tenantId: string): boolean {
   const wanted = tenantId.trim().toLowerCase()
@@ -40,10 +41,14 @@ export function commerceReleaseGate(
     commerce &&
     env.COREVO_PAYPAL_RELEASE === PAYPAL_ACCEPTED &&
     tenantIsAllowlisted(env.COREVO_PAYPAL_TENANT_IDS, tenantId)
+  const giftCardValue =
+    commerce &&
+    env.COREVO_GIFT_CARD_VALUE_RELEASE === GIFT_CARD_VALUE_ACCEPTED &&
+    tenantIsAllowlisted(env.COREVO_GIFT_CARD_TENANT_IDS, tenantId)
 
   return {
     shop: commerce,
-    presentkort: commerce,
+    presentkort: giftCardValue,
     paypal,
     bookingPayment,
   }

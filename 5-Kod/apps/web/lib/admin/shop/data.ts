@@ -44,7 +44,7 @@ export async function listShopProducts(tenantId: string): Promise<ShopProductRow
  */
 export async function listShopOrders(tenantId: string): Promise<ShopOrderRow[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const ordersRequest = supabase
     .from('shop_orders')
     .select(
       'id,customer_name,customer_email,customer_phone,fulfilment,status,payment_status,' +
@@ -56,7 +56,40 @@ export async function listShopOrders(tenantId: string): Promise<ShopOrderRow[]> 
     .not('status', 'in', '("reserved","awaiting_payment","expired")')
     .order('created_at', { ascending: false })
     .limit(100)
-  type Joined = Omit<ShopOrderRow, 'items'> & { shop_order_items: ShopOrderRow['items'] | null }
+  const refundRequest = (
+    supabase as unknown as {
+      rpc: (
+        name: string,
+        args: Record<string, unknown>,
+      ) => PromiseLike<{ data: unknown; error: unknown }>
+    }
+  ).rpc('shop_order_refund_statuses', { p_tenant: tenantId })
+  const [{ data }, refundResult] = await Promise.all([ordersRequest, refundRequest])
+
+  type Joined = Omit<ShopOrderRow, 'items' | 'refund_status'> & {
+    shop_order_items: ShopOrderRow['items'] | null
+  }
+  const statuses = new Map<string, ShopOrderRow['refund_status']>()
+  if (Array.isArray(refundResult.data)) {
+    for (const row of refundResult.data) {
+      if (
+        row
+        && typeof row === 'object'
+        && typeof row.order_id === 'string'
+        && ['pending', 'succeeded', 'failed'].includes(String(row.refund_status))
+      ) {
+        statuses.set(
+          row.order_id,
+          row.refund_status as ShopOrderRow['refund_status'],
+        )
+      }
+    }
+  }
+
   const rows = (data ?? []) as unknown as Joined[]
-  return rows.map(({ shop_order_items, ...rest }) => ({ ...rest, items: shop_order_items ?? [] }))
+  return rows.map(({ shop_order_items, ...rest }) => ({
+    ...rest,
+    refund_status: statuses.get(rest.id) ?? null,
+    items: shop_order_items ?? [],
+  }))
 }

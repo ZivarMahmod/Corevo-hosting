@@ -13,8 +13,9 @@ export async function listMediaAssets(tenantId: string): Promise<MediaAssetRow[]
   const supabase = await createClient()
   const { data } = await supabase
     .from('media_assets')
-    .select('id,url,r2_key,type,alt,size_bytes,width,height,source,created_at')
+    .select('id,url,r2_key,type,alt,size_bytes,width,height,source,status,last_error,created_at')
     .eq('tenant_id', tenantId)
+    .neq('status', 'deleted')
     .order('created_at', { ascending: false })
     // ponytail: cap (goal-56 A5) — 1000 newest images; paginate if a library outgrows it.
     .limit(1000)
@@ -31,6 +32,8 @@ export async function listMediaAssets(tenantId: string): Promise<MediaAssetRow[]
     width: r.width,
     height: r.height,
     source: r.source,
+    status: r.status as MediaAssetRow['status'],
+    lastError: r.last_error,
     createdAt: r.created_at,
   }))
 }
@@ -47,6 +50,7 @@ export async function getStorageUsage(tenantId: string, quotaBytes: number): Pro
     .from('media_assets')
     .select('size_bytes')
     .eq('tenant_id', tenantId)
+    .in('status', ['pending', 'ready'])
     // ponytail: cap (goal-56 A5) — matches listMediaAssets' ceiling; upgrade = 0054
     // tenant_storage_usage() RPC (DB-side SUM) once the migration is applied.
     .limit(1000)

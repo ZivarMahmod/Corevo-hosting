@@ -1577,5 +1577,5 @@
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.55;
-  color: color-mix(in srgb, var(--color-fg, #232520) 78%, transparent);
+  color: var(--color-primary-ink, var(--color-primary, var(--color-fg, #232520)));
 }

@@ -1,10 +1,13 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/platform/service'
+import { paypalReady, refundPaypalCaptureForJob } from '@/lib/payments/paypal'
 import { getStripe } from '@/lib/stripe/client'
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
-const PROVIDER_ID = /^(?:pi|acct)_[A-Za-z0-9_]{1,196}$/
+const STRIPE_PAYMENT_ID = /^pi_[A-Za-z0-9_]{1,196}$/
+const STRIPE_ACCOUNT = /^acct_[A-Za-z0-9_]{1,196}$/
+const PROVIDER_VALUE = /^[A-Za-z0-9._:-]{1,200}$/
 const IDEMPOTENCY_KEY = /^refund_[0-9a-f-]{36}$/
 
 type RpcClient = {
@@ -15,9 +18,11 @@ type ClaimedRefund = {
   id: string
   tenantId: string
   paymentId: string
-  bookingId: string
-  paymentIntentId: string
-  connectedAccountId: string
+  bookingId: string | null
+  orderId: string | null
+  provider: 'stripe' | 'paypal'
+  providerPaymentId: string
+  providerAccountScope: string
   idempotencyKey: string
   attemptCount: number
   leaseToken: string
@@ -51,24 +56,69 @@ function record(value: unknown): value is Record<string, unknown> {
 
 function parseClaim(value: unknown): ClaimedRefund | null {
   if (!record(value)) return null
-  const fields = [value.id, value.tenant_id, value.payment_id, value.booking_id, value.lease_token]
+  const fields = [value.id, value.tenant_id, value.payment_id, value.lease_token]
   if (!fields.every((field) => typeof field === 'string' && UUID.test(field))) return null
+  const bookingId = value.booking_id === null
+    ? null
+    : typeof value.booking_id === 'string' && UUID.test(value.booking_id)
+      ? value.booking_id
+      : undefined
+  const orderId = value.order_id === null
+    ? null
+    : typeof value.order_id === 'string' && UUID.test(value.order_id)
+      ? value.order_id
+      : undefined
   if (
-    typeof value.payment_intent_id !== 'string' || !PROVIDER_ID.test(value.payment_intent_id)
-    || typeof value.connected_account_id !== 'string' || !PROVIDER_ID.test(value.connected_account_id)
+    bookingId === undefined
+    || orderId === undefined
+    || (bookingId === null) === (orderId === null)
+    || (value.provider !== 'stripe' && value.provider !== 'paypal')
     || typeof value.provider_idempotency_key !== 'string'
     || !IDEMPOTENCY_KEY.test(value.provider_idempotency_key)
     || typeof value.attempt_count !== 'number'
     || !Number.isSafeInteger(value.attempt_count)
     || value.attempt_count < 1
   ) return null
+
+  let providerPaymentId: string
+  let providerAccountScope: string
+  if (bookingId !== null) {
+    if (
+      value.provider !== 'stripe'
+      || typeof value.payment_intent_id !== 'string'
+      || !STRIPE_PAYMENT_ID.test(value.payment_intent_id)
+      || typeof value.connected_account_id !== 'string'
+      || !STRIPE_ACCOUNT.test(value.connected_account_id)
+    ) return null
+    providerPaymentId = value.payment_intent_id
+    providerAccountScope = value.connected_account_id
+  } else {
+    if (
+      typeof value.provider_payment_id !== 'string'
+      || typeof value.provider_account_scope !== 'string'
+    ) return null
+    if (value.provider === 'stripe') {
+      if (
+        !STRIPE_PAYMENT_ID.test(value.provider_payment_id)
+        || !STRIPE_ACCOUNT.test(value.provider_account_scope)
+      ) return null
+    } else if (
+      !PROVIDER_VALUE.test(value.provider_payment_id)
+      || !PROVIDER_VALUE.test(value.provider_account_scope)
+    ) return null
+    providerPaymentId = value.provider_payment_id
+    providerAccountScope = value.provider_account_scope
+  }
+
   return {
     id: value.id as string,
     tenantId: value.tenant_id as string,
     paymentId: value.payment_id as string,
-    bookingId: value.booking_id as string,
-    paymentIntentId: value.payment_intent_id,
-    connectedAccountId: value.connected_account_id,
+    bookingId,
+    orderId,
+    provider: value.provider,
+    providerPaymentId,
+    providerAccountScope,
     idempotencyKey: value.provider_idempotency_key,
     attemptCount: value.attempt_count,
     leaseToken: value.lease_token as string,
@@ -96,6 +146,50 @@ async function markReview(client: RpcClient, job: ClaimedRefund, reason: string)
 }
 
 async function processClaim(client: RpcClient, job: ClaimedRefund): Promise<keyof RefundDispatchRun> {
+  if (job.provider === 'paypal') {
+    if (!paypalReady()) {
+      const retry = await client.rpc('retry_payment_refund_job', {
+        p_id: job.id,
+        p_lease_token: job.leaseToken,
+        p_reason: 'provider_unavailable_before_request',
+        p_retry_at: retryAt(job.attemptCount),
+      })
+      return !retry.error && retry.data === 'queued' ? 'retried'
+        : !retry.error && retry.data === 'review_required' ? 'reviewRequired'
+          : 'stale'
+    }
+
+    const begun = await client.rpc('begin_payment_refund_delivery', {
+      p_id: job.id,
+      p_lease_token: job.leaseToken,
+    })
+    if (begun.error || begun.data !== true) return 'stale'
+
+    let refund: Awaited<ReturnType<typeof refundPaypalCaptureForJob>>
+    try {
+      refund = await refundPaypalCaptureForJob(
+        job.providerPaymentId,
+        job.idempotencyKey.slice('refund_'.length),
+      )
+    } catch {
+      refund = { outcome: 'unknown', providerRef: null }
+    }
+    if (refund.outcome !== 'succeeded') {
+      return await markReview(
+        client,
+        job,
+        refund.outcome === 'rejected' ? 'provider_rejected' : 'provider_outcome_unknown',
+      ) ? 'reviewRequired' : 'failed'
+    }
+
+    const completed = await client.rpc('complete_payment_refund_job', {
+      p_id: job.id,
+      p_lease_token: job.leaseToken,
+      p_provider_ref: refund.providerRef,
+    })
+    return !completed.error && completed.data === true ? 'completed' : 'failed'
+  }
+
   const stripe = getStripe()
   if (!stripe) {
     const retry = await client.rpc('retry_payment_refund_job', {
@@ -118,8 +212,8 @@ async function processClaim(client: RpcClient, job: ClaimedRefund): Promise<keyo
   let providerRef: string
   try {
     const refund = await stripe.refunds.create(
-      { payment_intent: job.paymentIntentId },
-      { stripeAccount: job.connectedAccountId, idempotencyKey: job.idempotencyKey },
+      { payment_intent: job.providerPaymentId },
+      { stripeAccount: job.providerAccountScope, idempotencyKey: job.idempotencyKey },
     )
     providerRef = refund.id
   } catch (error) {

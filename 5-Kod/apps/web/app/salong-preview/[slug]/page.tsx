@@ -3,6 +3,7 @@ import { getServices } from '@/lib/tenant-data'
 import {
   STOREFRONT_LAYOUTS,
   THEME_LOADS_LAYOUT_MODULES,
+  THEME_OWNS_MODULES,
 } from '@/components/storefront/layouts'
 import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
@@ -39,6 +40,7 @@ export default async function SalongPreviewPage({
   const { tenant, settings, location } = bundle
 
   const Layout = STOREFRONT_LAYOUTS[theme]
+  const ownsModules = THEME_OWNS_MODULES.has(theme)
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
   const content = resolveThemeContent(theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
@@ -58,7 +60,7 @@ export default async function SalongPreviewPage({
         social={settings.social}
         modules={modules}
       />
-      <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} />
+      {ownsModules ? null : <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} variant="teaser" />}
     </PreviewShell>
   )
 }

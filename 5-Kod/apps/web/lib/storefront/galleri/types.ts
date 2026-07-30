@@ -19,6 +19,7 @@ export type GalleryItem = {
   /** Löst ur den joinade media_assets-raden. null = raden har ingen bild (rendera inget). */
   imageUrl: string | null
   imageAlt: string | null
+  decorative: boolean
   /** "samling nr 13 — ranunkel, sju stjälkar" */
   caption: string | null
   /** siluett/snitt: "Klipp" · onyx: "FIG. 01 — MAGNOLIA NOIR" */

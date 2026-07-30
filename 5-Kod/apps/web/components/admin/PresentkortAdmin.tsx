@@ -2,14 +2,20 @@
 
 import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import type { GiftCardRow } from '@/lib/admin/presentkort/types'
+import type { GiftCardEntryRow, GiftCardRow } from '@/lib/admin/presentkort/types'
 import {
   formatGiftAmount,
   giftCardVoidable,
+  giftEntryLabel,
   giftStatusTone,
   giftStatusLabel,
 } from '@/lib/admin/presentkort/types'
-import { issueGiftCard, voidGiftCard } from '@/lib/admin/presentkort/actions'
+import {
+  issueGiftCard,
+  redeemGiftCard,
+  voidGiftCard,
+  type GiftCardActionState,
+} from '@/lib/admin/presentkort/actions'
 import type { ActionState } from '@/lib/admin/actions'
 import {
   Badge,
@@ -48,20 +54,24 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 // These thin adapters bridge the two without changing the action exports.
 const issueAction = (_prev: ActionState, fd: FormData) => issueGiftCard(fd)
 const voidAction = (_prev: ActionState, fd: FormData) => voidGiftCard(fd)
+const redeemAction = (_prev: ActionState, fd: FormData) => redeemGiftCard(fd)
 
 // ── Root component ──────────────────────────────────────────────────────────
 export function PresentkortAdmin({
   cards,
+  entries,
   currency,
   fulfilment,
   tenantName,
 }: {
   cards: GiftCardRow[]
+  entries: GiftCardEntryRow[]
   currency: string
   fulfilment: string
   tenantName: string
 }) {
   const [creating, setCreating] = useState(false)
+  const [redeeming, setRedeeming] = useState(false)
   // fulfilment is part of the module config contract (mirrors ShopAdmin's prop set);
   // gift cards are digital so it isn't surfaced in the UI, but it's kept on the
   // signature so the page→component contract matches the shop pattern.
@@ -73,11 +83,14 @@ export function PresentkortAdmin({
         <Button variant="primary" icon="gift" onClick={() => setCreating(true)}>
           Registrera presentkort
         </Button>
+        <Button variant="ghost" onClick={() => setRedeeming(true)}>
+          Lös in kod
+        </Button>
       </PageHead>
 
       <Callout tone="info" icon="info">
-        Registrera presentkort du sålt eller gett ut. Online-köp och inlösen aktiveras när
-        betalning slås på.
+        Utfärdande och inlösen bokförs atomiskt. Online-köp förblir stängt tills
+        betalnings- och refundflödet är verifierat.
       </Callout>
 
       {/* ── Presentkort ── */}
@@ -105,7 +118,7 @@ export function PresentkortAdmin({
                   className="num"
                   style={{ fontWeight: 600, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}
                 >
-                  {card.code}
+                  {card.maskedCode}
                 </span>,
                 <span key="belopp" className="num" style={{ fontWeight: 600 }}>
                   {formatGiftAmount(card.initialAmountCents, card.currency || currency)}
@@ -130,7 +143,10 @@ export function PresentkortAdmin({
         </Card>
       </div>
 
+      <GiftCardHistory entries={entries} cards={cards} currency={currency} />
+
       {creating && <CreateDrawer onClose={() => setCreating(false)} />}
+      {redeeming && <RedeemDrawer currency={currency} onClose={() => setRedeeming(false)} />}
     </div>
   )
 }
@@ -160,8 +176,10 @@ function VoidCell({ card }: { card: GiftCardRow }) {
   // armar, klick 2 utför. Ersätter det gamla window.confirm() (röd tråd: samma
   // bekräftelse-gest i hela adminen, ingen webbläsar-dialog på ett ställe).
   const [armed, setArmed] = useState(false)
+  const [requestId, setRequestId] = useState('')
   const [state, formAction, pending] = useActionState<ActionState, FormData>(voidAction, {})
 
+  useEffect(() => setRequestId(crypto.randomUUID()), [])
   useEffect(() => {
     if (state.success) {
       notify('Presentkort makulerat.', 'success')
@@ -183,18 +201,22 @@ function VoidCell({ card }: { card: GiftCardRow }) {
   return (
     <form action={formAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
       <input type="hidden" name="id" value={card.id} />
+      <input type="hidden" name="requestId" value={requestId} />
       {armed ? (
         <>
-          {/* Ingen aria-label här: Button (components/portal/ui/Button.tsx) tar en
-              EXPLICIT prop-lista utan rest-spread, så ett aria-label hade tyst
-              slängts bort. Radens första kolumn bär koden och ger kontexten.
-              Samma utformning som ServicesManager/StaffRoster. */}
+          <input
+            name="reason"
+            required
+            maxLength={500}
+            placeholder="Orsak"
+            style={{ ...inputStyle, width: 170 }}
+          />
           <Button
             variant="ghost"
             type="submit"
             icon="trash"
             size="sm"
-            disabled={pending}
+            disabled={pending || !requestId}
             style={{ color: 'var(--c-danger)' }}
           >
             {pending ? '…' : 'Säker? Makulera permanent'}
@@ -217,13 +239,17 @@ function VoidCell({ card }: { card: GiftCardRow }) {
 function CreateDrawer({ onClose }: { onClose: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(issueAction, {})
+  const [requestId, setRequestId] = useState('')
+  const [state, formAction, pending] = useActionState<GiftCardActionState, FormData>(
+    issueAction,
+    {},
+  )
 
+  useEffect(() => setRequestId(crypto.randomUUID()), [])
   useEffect(() => {
     if (state.success) {
-      notify('Presentkort skapat.', 'success')
+      notify('Presentkort utfärdat.', 'success')
       router.refresh()
-      onClose()
     }
     if (state.error) {
       notify(state.error, 'warning')
@@ -240,21 +266,41 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
       onClose={onClose}
       ariaLabel="Registrera presentkort"
       footer={
-        <form
-          action={formAction}
-          id={formId}
-          style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
-        >
-          <Button variant="ghost" type="button" onClick={onClose}>
-            Avbryt
+        state.issuedCode ? (
+          <Button variant="primary" type="button" onClick={onClose}>
+            Klar
           </Button>
-          <Button variant="primary" type="submit" icon="check" disabled={pending}>
-            {pending ? 'Sparar…' : 'Skapa presentkort'}
-          </Button>
-        </form>
+        ) : (
+          <form
+            action={formAction}
+            id={formId}
+            style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
+          >
+            <input type="hidden" name="requestId" value={requestId} />
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Avbryt
+            </Button>
+            <Button variant="primary" type="submit" icon="check" disabled={pending || !requestId}>
+              {pending ? 'Sparar…' : 'Skapa presentkort'}
+            </Button>
+          </form>
+        )
       }
     >
-      <div style={{ display: 'grid', gap: 14 }}>
+      {state.issuedCode ? (
+        <Callout tone="success" icon="check">
+          <div>
+            <strong>Kopiera koden nu. Den visas inte i listan igen.</strong>
+            <div
+              className="num"
+              style={{ marginTop: 10, fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' }}
+            >
+              {state.issuedCode}
+            </div>
+          </div>
+        </Callout>
+      ) : (
+        <div style={{ display: 'grid', gap: 14 }}>
         <Field label="Belopp (kr)">
           <input
             form={formId}
@@ -302,7 +348,128 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
             {state.error}
           </p>
         )}
+        </div>
+      )}
+    </Drawer>
+  )
+}
+
+function RedeemDrawer({ currency, onClose }: { currency: string; onClose: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [requestId, setRequestId] = useState('')
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(redeemAction, {})
+
+  useEffect(() => setRequestId(crypto.randomUUID()), [])
+  useEffect(() => {
+    if (state.success) {
+      notify(state.success, 'success')
+      router.refresh()
+      onClose()
+    }
+    if (state.error) notify(state.error, 'warning')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success, state.error])
+
+  const formId = 'redeem-gift-card'
+  return (
+    <Drawer
+      title="Lös in presentkort"
+      sub="Koden kontrolleras utan att lagras i klartext."
+      onClose={onClose}
+      ariaLabel="Lös in presentkort"
+      footer={
+        <form
+          id={formId}
+          action={formAction}
+          style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
+        >
+          <input type="hidden" name="requestId" value={requestId} />
+          <input type="hidden" name="currency" value={currency} />
+          <Button variant="ghost" type="button" onClick={onClose}>
+            Avbryt
+          </Button>
+          <Button variant="primary" type="submit" disabled={pending || !requestId}>
+            {pending ? 'Löser in…' : 'Lös in'}
+          </Button>
+        </form>
+      }
+    >
+      <div style={{ display: 'grid', gap: 14 }}>
+        <Field label="Presentkortskod">
+          <input
+            form={formId}
+            name="code"
+            required
+            autoComplete="off"
+            spellCheck={false}
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Belopp (kr)">
+          <input
+            form={formId}
+            name="amountKr"
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            style={inputStyle}
+          />
+        </Field>
+        {state.error ? (
+          <p className="auth-error" role="alert" style={{ margin: 0 }}>
+            {state.error}
+          </p>
+        ) : null}
       </div>
     </Drawer>
+  )
+}
+
+function GiftCardHistory({
+  entries,
+  cards,
+  currency,
+}: {
+  entries: GiftCardEntryRow[]
+  cards: GiftCardRow[]
+  currency: string
+}) {
+  const cardLabels = new Map(cards.map((card) => [card.id, card.maskedCode]))
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h2 className="h2" style={{ marginBottom: 12 }}>
+        Senaste värdehändelser
+      </h2>
+      <Card pad={0}>
+        {entries.length === 0 ? (
+          <div style={{ padding: 22, color: 'var(--c-ink-2)' }}>Ingen värdehistorik än.</div>
+        ) : (
+          <Table
+            cols={['Kort', 'Händelse', 'Förändring', 'Saldo efter', 'Orsak', 'När']}
+            rows={entries.map((entry) => [
+              <span key="card" className="num">
+                {cardLabels.get(entry.giftCardId) ?? '••••'}
+              </span>,
+              <span key="type">{giftEntryLabel(entry.entryType)}</span>,
+              <Badge key="amount" tone={entry.amountCents < 0 ? 'warning' : 'success'}>
+                {entry.amountCents > 0 ? '+' : ''}
+                {formatGiftAmount(entry.amountCents, entry.currency || currency)}
+              </Badge>,
+              <span key="balance" className="num">
+                {formatGiftAmount(entry.balanceAfterCents, entry.currency || currency)}
+              </span>,
+              <span key="reason" style={{ color: 'var(--c-ink-2)' }}>
+                {entry.reason ?? '—'}
+              </span>,
+              <span key="date" style={{ color: 'var(--c-ink-3)', whiteSpace: 'nowrap' }}>
+                {new Date(entry.createdAt).toLocaleDateString('sv-SE')}
+              </span>,
+            ])}
+          />
+        )}
+      </Card>
+    </div>
   )
 }

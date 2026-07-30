@@ -33,11 +33,13 @@ export type LoyaltyMemberRow = {
 /** One recent loyalty ledger entry, joined to a shown customer name. */
 export type LoyaltyActivityRow = {
   id: string
+  customerId: string | null
   customerName: string | null
   /** Signed delta: positive = earned, negative = redeemed/adjusted down. */
   pointsDelta: number
   reason: string
   note: string | null
+  reversalOf: string | null
   createdAt: string
 }
 

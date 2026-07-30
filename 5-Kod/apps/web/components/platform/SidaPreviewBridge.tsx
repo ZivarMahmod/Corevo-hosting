@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { verifiedMapForAddress } from '@/lib/storefront/address-map'
+import { directPreviewHref } from './SidaPreviewBridge.route'
 import { normalizeEditorFieldKey } from './SidaStudioV2.pick'
 
 // Runs INSIDE the /salong-preview iframe. Listens for live brand-token patches posted
@@ -18,7 +19,7 @@ const TEXT_SELECTOR = 'h1,h2,h3,h4,h5,h6,p,span,em,i,a,button,li,div,blockquote,
 // a key PRESENT in the patch → setProperty; a key ABSENT (e.g. font_body blanked, so
 // injectTenantTokens omits --font-body) → removeProperty, so the SSR value takes over
 // again instead of the old override lingering until reload.
-const TOKEN_KEYS = ['--color-primary', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body', '--font-display']
+const TOKEN_KEYS = ['--color-primary', '--color-primary-fg', '--tenant-primary-fg', '--tenant-primary-ink', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body', '--font-display']
 type PreviewImageSlot = 'logo_url' | 'about_image' | 'closing_image' | 'hero_images' | 'gallery_images'
 
 type SiteSnapshotPreview = {
@@ -156,10 +157,16 @@ export function SidaPreviewBridge() {
       const m = /^\/salong-preview\/([a-z0-9-]+)/.exec(window.location.pathname)
       const slug = m?.[1]
       if (!slug) return
-      const target = href.split(/[?#]/)[0]?.replace(/^\/+|\/+$/g, '') ?? ''
-      if (!PREVIEW_PATHS.has(target)) return // ingen preview-tvilling → blockerad
+      const url = new URL(href, window.location.origin)
+      const target = url.pathname.replace(/^\/+|\/+$/g, '')
+      if (!PREVIEW_PATHS.has(target) && !target.startsWith('blogg/')) return
+      const path = target ? `/${target}` : ''
+      if (window.parent === window) {
+        window.location.assign(directPreviewHref(slug, path, url.search, window.location.search))
+        return
+      }
       window.parent.postMessage(
-        { source: MSG_SOURCE, type: 'preview-route', path: target ? `/${target}` : '' },
+        { source: MSG_SOURCE, type: 'preview-route', path: `${path}${url.search}` },
         window.location.origin,
       )
     }

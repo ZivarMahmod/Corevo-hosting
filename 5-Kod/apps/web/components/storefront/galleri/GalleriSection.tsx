@@ -34,7 +34,7 @@ function GalleryCard({ item }: { item: GalleryItem }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.imageUrl}
-            alt={item.imageAlt ?? item.caption ?? ''}
+            alt={item.decorative ? '' : item.imageAlt ?? ''}
             loading="lazy"
             className={s.img}
           />

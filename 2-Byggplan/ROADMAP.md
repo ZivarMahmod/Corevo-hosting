@@ -29,24 +29,34 @@ arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Go
 13. **Goal 88 — en kundarbetsyta och en sidmotor**
     Samla superadmin och kundadmin på SidaStudioV2/revisioner och gör varje
     verklig modul nåbar från rätt yta.
-14. **Goal 89 — storefront, preview och mallslots**
-    Låt preview och publikt använda samma modulägda loaders i mallägda fasta
-    slots, med säkert mallbyte.
-15. **Goal 90 — innehållsmoduler**
-    Lås blogg, kurser och galleri end-to-end.
-16. **Goal 91 — presentkort och lojalitet**
-    Lås atomisk inlösen, audit och capability-grindar.
-17. **Goal 92 — media, offert och webshop**
-    Verkställ mediakvot och lås dagens offert- och commerceflöden.
-18. **Goal 93 — katalog och mekanisk mallacceptans**
-    Synka modul-/vertikalkatalogen och mekaniskt verifiera de tolv
-    Corevo-mallarna.
-19. **Goal 85 — fail-closed lokal releaseövning**
+14. **Goal 89 — storefront, preview och mallslots — KODKLAR**
+    Preview och publik yta använder samma modulägda loaders, navigation,
+    CTA-gating och fasta mallslots. Full lokal teknisk verifiering är grön.
+    Samlad användaracceptans återstår i Goal 86.
+15. **Goal 90 — blogg, kurser och galleri — KODKLAR**
+    Lås innehållslivscykel, eventintegritet och galleri/media från kundadmin
+    genom preview till storefront. Full teknisk verifiering, previewacceptans
+    och oberoende omgranskning är gröna. Samlad användaracceptans återstår i
+    Goal 86.
+16. **Goal 91 — presentkort och lojalitet — KODKLAR I PREVIEW**
+    Manuella presentkorts- och lojalitetsvärden är tenantbundna, append-only,
+    idempotenta och samtidighetsverifierade. Betald issuance, leverans och
+    refund förblir fail-closed till Goal 92; samlad browseracceptans sker i
+    Goal 86.
+17. **Goal 92 — media, offert och webshop — INTERNT TEKNISKT GRÖN**
+    SQL, concurrency, interna providergränser, browser och full kodkvalitet är
+    gröna. Fyra verkliga externa sandbox-/runtimeprov är tydligt blockerade och
+    Goal 92 ligger därför kvar öppet.
+18. **Goal 93 — katalog och mekanisk mallacceptans — TEKNISKT GRÖN**
+    12 teman, 174 rutter, 376/376 matrisfall och 12/12 verkliga previewteman är
+    gröna. Samlad användaracceptans återstår i Goal 86.
+19. **Goal 86 — en gemensam localhostacceptans — NÄSTA**
+    Testa hela den byggda lokala produkten, inklusive Goal 74–93. Zivar testar
+    en gång; godkända delar fryses och inga nya funktioner läggs till före
+    samlad release.
+20. **Goal 85 — fail-closed lokal releaseövning**
     Lås migrations-, säkerhets-, host-, scheduler-, rollback- och
-    deploykontrakt utan att deploya produktion.
-20. **Goal 86 — en gemensam localhostacceptans**
-    En kort användarmatris för Goal 74–85. Zivar testar en gång; godkända delar
-    fryses och inga nya funktioner läggs till före samlad release.
+    deploykontrakt utan att deploya produktion, före den samlade releasen.
 
 Full exekveringsplan finns i
 `1-Planering/22-modulprogram/01-lokal-fardigstallandeplan.md`.

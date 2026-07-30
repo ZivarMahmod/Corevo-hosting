@@ -93,6 +93,15 @@ vi.mock('@/lib/r2/upload', () => ({
   uploadErrorMessage: () => '',
   pruneRemovedImages: vi.fn(async () => {}),
 }))
+const managedMediaMocks = vi.hoisted(() => ({
+  uploadManagedImage: vi.fn(),
+  retireManagedImages: vi.fn(),
+}))
+vi.mock('@/lib/media/lifecycle', () => ({
+  uploadManagedImage: managedMediaMocks.uploadManagedImage,
+  retireManagedImages: managedMediaMocks.retireManagedImages,
+  managedUploadErrorMessage: () => '',
+}))
 
 import {
   createTenant,
@@ -103,6 +112,7 @@ import {
   removeCustomDomain,
   setTenantStatus,
   setServiceStaff,
+  uploadServiceImage,
 } from './actions'
 import { resolveOwnerRole } from './owner-role'
 
@@ -177,6 +187,41 @@ describe('setServiceStaff', () => {
     await expect(setServiceStaff({}, formData)).resolves.toEqual({
       success: 'Ingen personal är kopplad till tjänsten.',
     })
+  })
+})
+
+describe('uploadServiceImage', () => {
+  it('reads and retires the previously stored image_url after the replacement commits', async () => {
+    const previousUrl = 'https://cdn.example.test/media/tenant-1/old'
+    const nextUrl = 'https://cdn.example.test/media/tenant-1/new'
+    const { client, captured } = makeSupabase({
+      services: {
+        data: { id: 'service-1', image_url: previousUrl },
+        error: null,
+      },
+    })
+    platformCtxMock.mockResolvedValue({ user: { id: 'admin-1' }, supabase: client })
+    managedMediaMocks.uploadManagedImage.mockResolvedValue({
+      ok: true,
+      assetId: 'asset-new',
+      key: 'media/tenant-1/asset-new',
+      url: nextUrl,
+      duplicate: false,
+    })
+    const formData = fd({ tenantId: 'tenant-1', serviceId: 'service-1' })
+    formData.set('image', new File(['image'], 'service.webp', { type: 'image/webp' }))
+
+    await expect(uploadServiceImage({}, formData)).resolves.toEqual({
+      success: 'Bild uppladdad. Syns på tjänsten.',
+    })
+
+    expect(captured['services.select']).toContain('id, image_url')
+    expect(managedMediaMocks.retireManagedImages).toHaveBeenCalledWith(
+      client,
+      'tenant-1',
+      [previousUrl],
+      [nextUrl],
+    )
   })
 })
 

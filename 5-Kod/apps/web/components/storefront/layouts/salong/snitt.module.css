@@ -50,7 +50,7 @@
 }
 
 .snDash {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Heroens spärrade kind-rad (0.26em — bredare än sektionernas 0.2em). */
@@ -65,7 +65,7 @@
 
 /* Limens punkt efter ordmärket ("Snitt."). */
 .snDot {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ───────────────────────────────── knappar ────────────────────────────────── */
@@ -78,7 +78,7 @@
   font-size: 12.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   border: none;
   border-radius: 0;
@@ -110,7 +110,7 @@
 }
 
 .snBtnGhost:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Textlänken i lime ("Hela prislistan →", "Boka") — mörknar aldrig, den bleknar till fg. */
@@ -123,7 +123,7 @@
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   cursor: pointer;
   transition: color 0.2s;
 }
@@ -147,7 +147,7 @@
   font-size: 11.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 .snNav {
@@ -188,7 +188,7 @@
 }
 
 .snNavLinks a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snNavCluster {
@@ -214,7 +214,7 @@
 }
 
 .snNavCart:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Huvudets "Boka nu" — lime yta, svart text. */
@@ -224,7 +224,7 @@
   font-size: 11.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   border: none;
   border-radius: 0;
@@ -257,7 +257,7 @@
 
 /* Andra raden i H1 är lime (filens <span style="color:#D6F344">kant.</span>). */
 .snHeroAccent {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snHeroFoot {
@@ -331,7 +331,7 @@
 
 /* Sektionsrubrikernas lime-hälft ("Hantverket, presenterat."). */
 .snSecAccent {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snSecLede {
@@ -363,7 +363,7 @@
   font-size: 11.5px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   border-bottom: 1px solid var(--color-line);
   padding-bottom: 10px;
 }
@@ -434,7 +434,7 @@
   font-size: 11.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snRow:hover .snRowBook {
@@ -475,7 +475,7 @@
   font-size: 12.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: var(--color-bg);
   border: none;
   border-radius: 0;
@@ -543,7 +543,7 @@
 }
 
 .snStatFirst {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snStatLabel {
@@ -597,7 +597,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snCardBook {
@@ -606,7 +606,7 @@
   font-size: 11.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: transparent;
   border: none;
   padding: 0;
@@ -638,7 +638,7 @@
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snFactValue {
@@ -653,7 +653,7 @@
 }
 
 .snFactValue a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snFactMuted {
@@ -817,7 +817,7 @@
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snPanelValue {
@@ -836,7 +836,7 @@
 }
 
 .snPanelValue a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snProse {
@@ -879,12 +879,12 @@
   transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 .snFilter:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 .snFilter[data-active='true'] {
   background: var(--color-primary);
   color: var(--color-primary-fg);
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 .snShopGrid {
   display: grid;
@@ -922,7 +922,7 @@
 }
 
 .snShopName a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Priset i lime — på MÖRK yta, aldrig lime-på-lime. */
@@ -930,7 +930,7 @@
   white-space: nowrap;
   font-family: var(--font-display);
   font-size: 17px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snShopDesc {
@@ -986,7 +986,7 @@
 }
 
 .snPost:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snPostPhoto {
@@ -1009,7 +1009,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snPostTitle {
@@ -1092,14 +1092,14 @@
 }
 
 .snFootNav a:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snFootNav a:first-child {
   font-weight: 700;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
   padding: 8px 14px;
   transition: background 0.2s;
 }
@@ -1245,7 +1245,7 @@
 .snDash,
 .snDot,
 .snSlash {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snPageTitle {
@@ -1303,7 +1303,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snTeamBio {
@@ -1329,7 +1329,7 @@
   font-size: 11.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   padding: 11px 20px;
   min-height: 44px;
@@ -1377,7 +1377,7 @@
   align-items: start;
 }
 
-.snCard {
+.snClubCard {
   background: var(--color-primary);
   padding: 40px 36px;
 }
@@ -1395,7 +1395,7 @@
   font-size: 22px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 .snCardBig {
@@ -1404,7 +1404,7 @@
   font-size: 40px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 .snCardSub {
@@ -1413,7 +1413,7 @@
   font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #3b3b10;
+  color: var(--tenant-primary-fg, #3b3b10);
 }
 
 .snPerkRow {
@@ -1434,7 +1434,7 @@
 .snPerkNo {
   font-family: var(--font-display);
   font-size: 15px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snClubJoin {
@@ -1460,7 +1460,7 @@
   padding: 13px 15px;
   font-family: var(--font-body);
   font-size: 15px;
-  outline-color: var(--color-primary);
+  outline-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .snClubJoin button {
@@ -1474,7 +1474,7 @@
   font-size: 11.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   padding: 0 22px;
   min-height: 44px;
@@ -1501,7 +1501,7 @@
     font-size: clamp(36px, 12vw, 64px);
   }
 
-  .snCard {
+  .snClubCard {
     padding: 28px 20px;
   }
 }

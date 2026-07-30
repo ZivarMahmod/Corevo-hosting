@@ -2,7 +2,12 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { ShopProductRow, ShopOrderRow, ShippingOptionRow } from '@/lib/admin/shop/types'
+import type {
+  ShopProductRow,
+  ShopOrderRow,
+  ShopRefundStatus,
+  ShippingOptionRow,
+} from '@/lib/admin/shop/types'
 import { SHOP_PAYMENT_METHODS, type ShopPaymentMethod } from '@/lib/storefront/shop/types'
 import { centsToKronorInput } from '@/lib/admin/format'
 import {
@@ -22,6 +27,7 @@ import {
   updateShippingOption,
   deleteShippingOption,
   setShopPaymentMethods,
+  type ShopRefundActionState,
 } from '@/lib/admin/shop/actions'
 import type { ActionState } from '@/lib/admin/actions'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
@@ -50,6 +56,20 @@ const FULFILMENT_LABELS: Record<string, string> = {
   ship: 'Posta hem',
   pickup_within_days: 'Hämta i butik',
   order_in_then_pickup: 'Beställ hem till butik',
+}
+
+const REFUND_STATUS_LABELS: Record<ShopRefundStatus, string> = {
+  pending: 'Återbetalning pågår',
+  succeeded: 'Återbetald',
+  failed: 'Återbetalning misslyckades',
+}
+
+function RefundStatusBadge({ status }: { status: ShopRefundStatus }) {
+  return (
+    <Badge tone={status === 'succeeded' ? 'success' : status === 'failed' ? 'warning' : 'neutral'}>
+      {REFUND_STATUS_LABELS[status]}
+    </Badge>
+  )
 }
 
 // ── Root component ──────────────────────────────────────────────────────────
@@ -602,13 +622,16 @@ function OrdersSection({ orders, onOpen }: { orders: ShopOrderRow[]; onOpen: (o:
   return (
     <Card pad={0}>
       <Table
-        cols={['Kund', 'Leveranssätt', 'Status', 'Belopp', 'Datum', '']}
+        cols={['Kund', 'Leveranssätt', 'Status', 'Återbetalning', 'Belopp', 'Datum', '']}
         rows={orders.map((o) => [
           <OrderCustomerCell key="kund" order={o} />,
           <span key="lev" style={{ fontSize: 13 }}>
             {FULFILMENT_LABELS[o.fulfilment] ?? o.fulfilment}
           </span>,
           <OrderStatusCell key="status" order={o} />,
+          <span key="refund">
+            {o.refund_status ? <RefundStatusBadge status={o.refund_status} /> : '—'}
+          </span>,
           <span key="belopp" className="num" style={{ fontWeight: 600 }}>
             {formatCents(o.total_cents, o.currency)}
           </span>,
@@ -632,7 +655,11 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
   const { notify } = useToast()
   const router = useRouter()
   const [track, trackAction, tracking] = useActionState<ActionState, FormData>(setShopOrderTracking, {})
-  const [refund, refundAction, refunding] = useActionState<ActionState, FormData>(refundShopOrderAction, {})
+  const [refund, refundAction, refunding] = useActionState<ShopRefundActionState, FormData>(
+    refundShopOrderAction,
+    {},
+  )
+  const refundStatus = refund.refundStatus ?? order.refund_status
 
   useEffect(() => {
     if (track.success) {
@@ -645,13 +672,15 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
 
   useEffect(() => {
     if (refund.success) {
-      notify('Återbetalning genomförd.', 'success')
+      notify(refund.success, refund.refundStatus === 'succeeded' ? 'success' : 'warning')
       router.refresh()
-      onClose()
     }
-    if (refund.error) notify(refund.error, 'warning')
+    if (refund.error) {
+      notify(refund.error, 'warning')
+      if (refund.refundStatus) router.refresh()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refund.success, refund.error])
+  }, [refund.success, refund.error, refund.refundStatus])
 
   const trackFormId = `order-track-${order.id}`
 
@@ -712,6 +741,15 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
           </div>
         )}
 
+        {refundStatus && (
+          <div>
+            <span className="eyebrow" style={{ display: 'block', marginBottom: 6 }}>
+              Återbetalning
+            </span>
+            <RefundStatusBadge status={refundStatus} />
+          </div>
+        )}
+
         {/* Spårning */}
         <form action={trackAction} id={trackFormId} style={{ display: 'grid', gap: 10 }}>
           <TenantField />
@@ -728,8 +766,8 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
           </Button>
         </form>
 
-        {/* Refund (bara betald order; betal-rälsen pausad → knappen syns när paid) */}
-        {order.payment_status === 'paid' && (
+        {/* En skapad refund hanteras bara av den durabla outboxen. */}
+        {order.payment_status === 'paid' && refundStatus === null && (
           <form action={refundAction} style={{ borderTop: '1px solid var(--c-line)', paddingTop: 14 }}>
             <TenantField />
             <input type="hidden" name="id" value={order.id} />

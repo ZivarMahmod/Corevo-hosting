@@ -297,6 +297,16 @@ function RegistrationItem({ reg }: { reg: RegistrationRow }) {
             ”{reg.message}”
           </div>
         )}
+        {cancelled && reg.cancellation_reason ? (
+          <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)', marginTop: 2 }}>
+            Orsak: {reg.cancellation_reason}
+          </div>
+        ) : null}
+        {reg.order_item_id && !cancelled ? (
+          <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)', marginTop: 2 }}>
+            Betald anmälan — kräver återbetalning före avbokning.
+          </div>
+        ) : null}
         {state.error && (
           <p className="auth-error" role="alert" style={{ margin: '4px 0 0' }}>
             {state.error}
@@ -307,10 +317,15 @@ function RegistrationItem({ reg }: { reg: RegistrationRow }) {
         <TenantField />
         <input type="hidden" name="id" value={reg.id} />
         <input type="hidden" name="status" value={cancelled ? 'confirmed' : 'cancelled'} />
+        <input
+          type="hidden"
+          name="reason"
+          value={cancelled ? 'Återanmäld av administratör' : 'Avbokad av administratör'}
+        />
         <PillToggle
           type="submit"
           active={!cancelled}
-          disabled={pending}
+          disabled={pending || Boolean(reg.order_item_id && !cancelled)}
           ariaLabel={`${cancelled ? 'Återanmäl' : 'Avboka'}: ${reg.name}`}
         >
           {pending ? '…' : cancelled ? 'Återanmäl' : 'Avboka'}
@@ -347,20 +362,30 @@ function StatusButton({ event, status }: { event: EventRow; status: (typeof EVEN
   }, [state.success])
 
   return (
-    <form action={formAction} style={{ display: 'inline-flex' }}>
-      <TenantField />
-      <input type="hidden" name="id" value={event.id} />
-      <input type="hidden" name="status" value={status} />
-      <PillToggle
-        type="submit"
-        mode="state"
-        active={active}
-        disabled={pending || active}
-        ariaLabel={`${EVENT_STATUS_LABELS[status]}: ${event.title}`}
-      >
-        {pending ? '…' : EVENT_STATUS_LABELS[status]}
-      </PillToggle>
-    </form>
+    <div>
+      <form action={formAction} style={{ display: 'inline-flex' }}>
+        <TenantField />
+        <input type="hidden" name="id" value={event.id} />
+        <input type="hidden" name="status" value={status} />
+        {status === 'cancelled' ? (
+          <input type="hidden" name="reason" value="Inställt av administratör" />
+        ) : null}
+        <PillToggle
+          type="submit"
+          mode="state"
+          active={active}
+          disabled={pending || active || event.status !== 'open'}
+          ariaLabel={`${EVENT_STATUS_LABELS[status]}: ${event.title}`}
+        >
+          {pending ? '…' : EVENT_STATUS_LABELS[status]}
+        </PillToggle>
+      </form>
+      {state.error ? (
+        <span className="auth-error" role="alert" style={{ display: 'block', fontSize: 11 }}>
+          {state.error}
+        </span>
+      ) : null}
+    </div>
   )
 }
 
@@ -475,6 +500,12 @@ function EditDrawer({
         <input type="hidden" name="id" value={event.id} />
         <EventFields event={event} />
       </form>
+
+      {event.status === 'cancelled' && event.cancellation_reason ? (
+        <Callout tone="gold" icon="info">
+          Inställt{event.cancelled_at ? ` ${fmtDateTime(event.cancelled_at)}` : ''}: {event.cancellation_reason}
+        </Callout>
+      ) : null}
 
       <div style={{ marginTop: 18 }}>
         <p className="eyebrow" style={{ marginBottom: 6 }}>

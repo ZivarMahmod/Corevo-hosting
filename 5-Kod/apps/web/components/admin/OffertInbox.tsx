@@ -36,6 +36,7 @@ import {
 // Local alias — matches ActionState from @/lib/admin/actions without crossing
 // the 'use server' boundary in a client import (type-only, erased at build time).
 type ActionState = { error?: string; success?: string }
+type ReplyActionState = ActionState & { lifecycleVersion?: number }
 
 function statusLabel(status: string): string {
   return (OFFERT_STATUS_LABELS as Record<string, string>)[status] ?? status
@@ -183,15 +184,23 @@ function DetailDrawer({
       <form action={formAction} id={formId} style={{ display: 'grid', gap: 14 }}>
         <TenantField />
         <input type="hidden" name="id" value={request.id} />
+        <input
+          type="hidden"
+          name="lifecycleVersion"
+          value={request.lifecycle_version}
+        />
 
         <Field label="Status">
-          {/* FSM: bara tillåtna övergångar visas (nuvarande status alltid valbar). */}
+          {/* "Offererad" sätts först efter verifierad outboxleverans. */}
           <select name="status" defaultValue={request.status} style={inputStyle}>
-            {OFFERT_STATUSES.filter((s) => offertTransitionAllowed(request.status, s)).map((s) => (
-              <option key={s} value={s}>
-                {statusLabel(s)}
-              </option>
-            ))}
+            {OFFERT_STATUSES
+              .filter((s) => offertTransitionAllowed(request.status, s))
+              .filter((s) => s !== 'quoted' || request.status === 'quoted')
+              .map((s) => (
+                <option key={s} value={s}>
+                  {statusLabel(s)}
+                </option>
+              ))}
           </select>
         </Field>
 
@@ -272,13 +281,24 @@ function DeleteForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.error])
 
-  // En accepterad/betald förfrågan är en affär — den raderas inte bort ur historiken.
-  if (!offertDeletable(request.status, request.payment_status)) return null
+  // En accepterad/betald eller pågående leverans raderas inte ur historiken.
+  if (
+    !offertDeletable(request.status, request.payment_status)
+    || (
+      request.reply_outbox_id !== null
+      && request.reply_delivery_state === 'pending'
+    )
+  ) return null
 
   return (
     <form action={formAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
       <TenantField />
       <input type="hidden" name="id" value={request.id} />
+      <input
+        type="hidden"
+        name="lifecycleVersion"
+        value={request.lifecycle_version}
+      />
       {armed ? (
         <>
           <Button
@@ -306,7 +326,15 @@ function DeleteForm({
 function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(sendOffertReply, {})
+  const [draft, setDraft] = useState(
+    request.reply_delivery_state === 'failed'
+      ? request.reply_pending_message ?? ''
+      : '',
+  )
+  const [state, formAction, pending] = useActionState<ReplyActionState, FormData>(
+    sendOffertReply,
+    {},
+  )
 
   useEffect(() => {
     if (state.success) {
@@ -317,16 +345,30 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success])
   useEffect(() => {
-    if (state.error) notify(state.error, 'warning')
+    if (state.error) {
+      notify(state.error, 'warning')
+      router.refresh()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.error])
 
   const noEmail = !request.customer_email
+  const persistedVersion = state.lifecycleVersion ?? request.lifecycle_version
+  const hasDelivery = request.reply_outbox_id !== null
+    || (
+      request.reply_delivery_state === 'failed'
+      && request.reply_pending_message !== null
+    )
+  const deliveryLabel = request.reply_delivery_state === 'sent'
+    ? 'Skickat'
+    : request.reply_delivery_state === 'failed'
+      ? 'Kunde inte skickas'
+      : 'Skickar'
 
   return (
     <div style={{ marginTop: 20, borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
       <span className="eyebrow">Svara kunden</span>
-      {request.replied_at ? (
+      {hasDelivery ? (
         <div
           style={{
             margin: '10px 0 12px',
@@ -341,9 +383,14 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
           }}
         >
           <strong style={{ display: 'block', marginBottom: 4, color: 'var(--c-ink)' }}>
-            Svar skickat {formatDate(request.replied_at)}
+            {deliveryLabel}
+            {request.reply_delivery_state === 'sent' && request.replied_at
+              ? ` ${formatDate(request.replied_at)}`
+              : ''}
           </strong>
-          {request.reply_message}
+          {request.reply_delivery_state === 'sent'
+            ? request.reply_message
+            : request.reply_pending_message}
         </div>
       ) : null}
       {noEmail ? (
@@ -354,12 +401,19 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
         <form action={formAction} style={{ display: 'grid', gap: 10, marginTop: 10 }}>
           <TenantField />
           <input type="hidden" name="id" value={request.id} />
+          <input
+            type="hidden"
+            name="lifecycleVersion"
+            value={persistedVersion}
+          />
           <textarea
             name="reply"
             rows={4}
             required
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
             placeholder={
-              request.replied_at
+              request.reply_delivery_state === 'sent'
                 ? 'Skicka ett nytt svar till kunden…'
                 : `Skriv ditt svar — mejlas till ${request.customer_email}. Sparad prisuppskattning följer med.`
             }

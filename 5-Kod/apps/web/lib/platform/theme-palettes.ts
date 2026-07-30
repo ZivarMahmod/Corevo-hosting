@@ -14,6 +14,10 @@ import { EKONOMI_PALETTES } from '@/components/storefront/layouts/ekonomi/regist
 import { SALONG_PALETTES } from '@/components/storefront/layouts/salong/registry'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import type { StorefrontTheme } from '@/lib/tenant-data'
+import {
+  SELECTABLE_THEME_CATALOG,
+  isSelectableCatalogTheme,
+} from '@/lib/platform/theme-catalog'
 
 /** Mallväljarens flikar. En mall kan bara ligga i EN kategori (annars är den inte ett val). */
 export type ThemeCategory = 'florist' | 'bokning' | 'ekonomi' | 'kund'
@@ -42,23 +46,11 @@ export type ThemePalette = {
 
 /** De enda mallar som handoff-paketet definierar och som därför får erbjudas
  * när en kund skapas eller byter mall. Äldre/kundegna teman förblir renderbara. */
-export const COREVO_12_THEME_KEYS = [
-  'ateljevinter',
-  'aurora',
-  'blomstertorget',
-  'calytrix',
-  'eloria',
-  'lunaria',
-  'onyx',
-  'sivsav',
-  'solsalt',
-  'kalla',
-  'siluett',
-  'snitt',
-] as const satisfies readonly StorefrontTheme[]
+export const COREVO_12_THEME_KEYS: readonly StorefrontTheme[] =
+  SELECTABLE_THEME_CATALOG.map((entry) => entry.key as StorefrontTheme)
 
-export function isSelectableTheme(key: string): key is (typeof COREVO_12_THEME_KEYS)[number] {
-  return (COREVO_12_THEME_KEYS as readonly string[]).includes(key)
+export function isSelectableTheme(key: string): key is StorefrontTheme {
+  return isSelectableCatalogTheme(key)
 }
 
 /** Ljus eller mörk mall? Relativ luminans på bakgrunden (samma formel som WCAG). */

@@ -49,11 +49,11 @@ export async function loadGalleriData(tenantId: string, slug: string): Promise<G
       // Aktiva bilder för denna kund, i kundens egen ordning, joinade mot sitt foto.
       const { data: rows } = await supabase
         .from('gallery_items')
-        .select('id, caption, tag, year_label, aspect_ratio, media_assets(url, alt)')
+        .select('id, caption, tag, year_label, aspect_ratio, alt_override, decorative, media_assets(url)')
         .eq('tenant_id', tenantId) // app-lagrets tenant-isolering (RLS gör det INTE för anon)
         .eq('active', true)
         .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
 
       const items: GalleryItem[] = (
         (rows ?? []) as unknown as {
@@ -62,7 +62,9 @@ export async function loadGalleriData(tenantId: string, slug: string): Promise<G
           tag: string | null
           year_label: string | null
           aspect_ratio: string | null
-          media_assets: { url: string; alt: string | null } | { url: string; alt: string | null }[] | null
+          alt_override: string | null
+          decorative: boolean
+          media_assets: { url: string } | { url: string }[] | null
         }[]
       ).map((r) => {
         // Supabase typar den inbäddade relationen som objekt ELLER array beroende på
@@ -72,7 +74,8 @@ export async function loadGalleriData(tenantId: string, slug: string): Promise<G
         return {
           id: r.id,
           imageUrl: asset?.url ?? null,
-          imageAlt: asset?.alt ?? null,
+          imageAlt: r.decorative ? '' : r.alt_override,
+          decorative: r.decorative === true,
           caption: r.caption ?? null,
           tag: r.tag ?? null,
           yearLabel: r.year_label ?? null,

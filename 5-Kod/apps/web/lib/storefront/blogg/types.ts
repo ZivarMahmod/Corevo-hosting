@@ -63,6 +63,11 @@ export type BloggPost = {
 export type BloggData = {
   config: BloggConfig
   posts: BloggPost[]
+  pagination: {
+    page: number
+    total: number
+    totalPages: number
+  }
 }
 
 const DEFAULT_BLOGG_CONFIG: BloggConfig = {
@@ -92,6 +97,19 @@ export function parseBloggConfig(raw: unknown): BloggConfig {
     layout: asLayout(src.layout),
     postsPerPage: asPositiveInt(src.posts_per_page, DEFAULT_BLOGG_CONFIG.postsPerPage),
   }
+}
+
+/** Invalid or impractically large query values fall back to the canonical first page. */
+export function parseBloggPage(raw: unknown): number {
+  if (typeof raw !== 'string' || !/^[1-9]\d*$/.test(raw)) return 1
+  const page = Number(raw)
+  return Number.isSafeInteger(page) && page <= 1_000_000 ? page : 1
+}
+
+/** Supabase ranges are inclusive at both ends. */
+export function bloggPageRange(page: number, pageSize: number): { from: number; to: number } {
+  const from = (page - 1) * pageSize
+  return { from, to: from + pageSize - 1 }
 }
 
 /** Human label for a layout variant (Swedish). Pure — used by the server section

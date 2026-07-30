@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-27.
+Senast uppdaterad: 2026-07-29.
 
 ## Läsordning
 
@@ -22,10 +22,10 @@ tenant och ett testfall, aldrig produktdefinitionen.
   på `codex/launch-inventory-customer-design`, som även innehåller aktuell
   `main`. Endast dessa två lokala brancher/worktrees återstår. Ingen push,
   produktionsmerge, deploy eller databasskrivning gjordes vid konsolideringen.
-- Den samlade kodacceptansen genom Goal 88 är körd på final-head:
+- Den samlade kodacceptansen genom Goal 89 är körd på final-head:
   `376` testfiler och `2 909` tester passerar tillsammans. Atomfixens
   fokussvit är separat grön med `5` testfiler/`44` tester. Goal 74–84 och
-  87–88 är lokalt låsta i samma arbetsyta.
+  87–89 är lokalt låsta i samma arbetsyta.
   Produktionsmigration, domän/HTTPS, kvarvarande
   extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
   tillsammans med Zivar. Protokoll finns i
@@ -256,10 +256,28 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal-74–84 och Goal 87–88 är lokalt låsta och den samlade kodacceptansen är grön.
+Goal-74–84, Goal 87–91 och Goal 93 är lokalt tekniskt verifierade. Goal 92:s
+interna kod-, SQL-, concurrency- och browsergrindar är gröna, men fyra externa
+sandbox-/runtimeprov återstår. Den samlade kodacceptansen är grön.
 Goal 88 låste en gemensam revisionsägd kundarbetsyta och sidmotor för
-kundadmin och superadmin. Nästa byggdel enligt roadmap är Goal 89:
-gemensam storefront, preview och mallslots.
+kundadmin och superadmin. Goal 89 låser den gemensamma storefront-/previewytan
+och mallslottsgaten. Zivar aktiverade Goal 90–93 före den samlade
+localhostacceptansen den 2026-07-29. Goal 90 är KODKLAR: blogg-, event- och
+galleri/media-kontrakten är runtimeverifierade i preview, hela kodbasen är grön
+och slutlig oberoende omgranskning gav 0 fynd över 81 filer. Produktion är
+orörd. Goal 91 är KODKLAR I PREVIEW: manuella presentkorts- och
+lojalitetskommandon, kodskydd, ledger, reconciliation och konkurrerande
+värdeskrivningar är verifierade. En privat DB-release per tenant gör att
+presentkortens issue/redeem/adjustment inte kan öppnas genom ett direkt
+admin-RPC. Goal 92 har nu en gemensam media-, offert-, settlement- och
+refundkedja som är internt runtimeverifierad i preview. Verklig Stripe-sandbox,
+PayPal-sandbox, R2 Worker-bindning och mottagande e-postsink är fortsatt
+blockerade och får inte räknas som godkända. Goal 93:s kodägda katalog matchar
+design och preview-DB för 12 nyvalbara teman; 376/376 matrisfall och 12/12
+verkliga previewteman är gröna. Användarauditen rättade gemensamt mobilnav,
+Calytrix-footern och E2E-teardownen. Zivar kan nu starta den lokalt testbara
+Goal 86-acceptansen. Goal 85 och de externa Goal 92-proven återstår före samlad
+release.
 Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
 produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
 lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
@@ -267,7 +285,8 @@ Den godkända ordningen finns i `2-Byggplan/ROADMAP.md`.
 Den persistenta Supabase-previewbranchen `localhost-acceptance`
 (`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
 innehåller inga kopierade produktionsdata. Readiness `0132` och RLS-/öppettidsfix
-`0133` samt Goal 87:s tre modulmigrationer är runtimeverifierade där.
+`0133`, Goal 87:s tre modulmigrationer, Goal 90:s sju migrationer, Goal 91:s
+värdeflödesmigrationer samt Goal 92–93:s migrationer är runtimeverifierade där.
 Previewns migrationshistorik innehåller även
 äldre timestampade korrektionsposter och ska inte repareras i denna låsning:
 `tenant_mutation_lifecycle_claim_guard`,

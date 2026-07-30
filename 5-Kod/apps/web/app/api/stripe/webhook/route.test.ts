@@ -6,9 +6,12 @@ const mocks = vi.hoisted(() => ({
   constructEventAsync: vi.fn(),
   createServiceClient: vi.fn(),
   captureException: vi.fn(),
-  deliverIssuedGiftCards: vi.fn(),
   refundBookingPayment: vi.fn(),
   refundShopOrder: vi.fn(),
+  settleShopOrderPaid: vi.fn(),
+  settleShopPaymentEvent: vi.fn(),
+  completeShopPaymentEvent: vi.fn(),
+  stripeRefundCreate: vi.fn(),
   dispatchPaymentRefundJobById: vi.fn(),
   after: vi.fn(),
 }))
@@ -23,13 +26,17 @@ vi.mock('@/lib/notifications/booking', () => ({
   parseGuestEmail: vi.fn(() => null),
   sendPaymentReceipt: vi.fn(),
 }))
-vi.mock('@/lib/notifications/gift', () => ({ deliverIssuedGiftCards: mocks.deliverIssuedGiftCards }))
 vi.mock('@/lib/stripe/refund', () => ({
   refundBookingPayment: mocks.refundBookingPayment,
   refundShopOrder: mocks.refundShopOrder,
 }))
 vi.mock('@/lib/payments/refund-outbox', () => ({
   dispatchPaymentRefundJobById: mocks.dispatchPaymentRefundJobById,
+}))
+vi.mock('@/lib/payments/settle', () => ({
+  settleShopOrderPaid: mocks.settleShopOrderPaid,
+  settleShopPaymentEvent: mocks.settleShopPaymentEvent,
+  completeShopPaymentEvent: mocks.completeShopPaymentEvent,
 }))
 vi.mock('next/server', () => ({ after: mocks.after }))
 
@@ -64,11 +71,14 @@ function request() {
 
 function succeededOrderEvent() {
   return {
+    id: 'evt_succeeded_1',
     type: 'payment_intent.succeeded',
     account: 'acct_t1',
     data: {
       object: {
         id: 'pi_1',
+        amount_received: 52900,
+        currency: 'sek',
         metadata: { order_id: 'order_1', tenant_id: 'tenant_1' },
       },
     },
@@ -78,10 +88,16 @@ function succeededOrderEvent() {
 describe('Stripe webhook DB-fel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.getStripe.mockReturnValue({ webhooks: { constructEventAsync: mocks.constructEventAsync } })
+    mocks.getStripe.mockReturnValue({
+      webhooks: { constructEventAsync: mocks.constructEventAsync },
+      refunds: { create: mocks.stripeRefundCreate },
+    })
     mocks.getWebhookSecret.mockReturnValue('whsec_test')
     mocks.captureException.mockResolvedValue(undefined)
-    mocks.deliverIssuedGiftCards.mockResolvedValue(undefined)
+    mocks.settleShopOrderPaid.mockResolvedValue({ ok: true })
+    mocks.settleShopPaymentEvent.mockResolvedValue({ ok: true })
+    mocks.completeShopPaymentEvent.mockResolvedValue(true)
+    mocks.stripeRefundCreate.mockResolvedValue({ id: 're_1' })
     mocks.constructEventAsync.mockResolvedValue(succeededOrderEvent())
     mocks.after.mockImplementation((callback: () => Promise<unknown>) => { void callback() })
     mocks.dispatchPaymentRefundJobById.mockResolvedValue({ completed: 1 })
@@ -125,9 +141,12 @@ describe('Stripe webhook DB-fel', () => {
   it('svarar 500 och committar inte ordern när payment-status inte kan sparas', async () => {
     const tenantLookup = query({ data: { stripe_account_id: 'acct_t1' }, error: null })
     const orderLookup = query({ data: { id: 'order_1' }, error: null })
-    const rpc = vi.fn(async (name: string) => name === 'confirm_shop_order_payment'
-      ? { data: null, error: { message: 'payment update failed' } }
-      : { data: null, error: null })
+    const rpc = vi.fn()
+    mocks.settleShopOrderPaid.mockResolvedValue({
+      ok: false,
+      reason: 'event_settle_failed',
+      eventId: 'event-1',
+    })
     mocks.createServiceClient.mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === 'tenants') return tenantLookup
@@ -140,17 +159,19 @@ describe('Stripe webhook DB-fel', () => {
     const response = await POST(request())
 
     expect(response.status).toBe(500)
-    expect(rpc).toHaveBeenCalledWith('confirm_shop_order_payment', expect.anything())
-    expect(rpc).not.toHaveBeenCalledWith('mark_shop_order_paid', expect.anything())
-    expect(mocks.deliverIssuedGiftCards).not.toHaveBeenCalled()
+    expect(mocks.settleShopOrderPaid).toHaveBeenCalledOnce()
+    expect(rpc).not.toHaveBeenCalled()
   })
 
   it('svarar 500 och levererar inte presentkort när order-commit misslyckas', async () => {
     const tenantLookup = query({ data: { stripe_account_id: 'acct_t1' }, error: null })
     const orderLookup = query({ data: { id: 'order_1' }, error: null })
-    const rpc = vi.fn(async (name: string) => name === 'confirm_shop_order_payment'
-      ? { data: { outcome: 'succeeded' }, error: null }
-      : { data: null, error: { message: 'order commit failed' } })
+    const rpc = vi.fn()
+    mocks.settleShopOrderPaid.mockResolvedValue({
+      ok: false,
+      reason: 'event_settle_failed',
+      eventId: 'event-1',
+    })
     mocks.createServiceClient.mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === 'tenants') return tenantLookup
@@ -163,15 +184,14 @@ describe('Stripe webhook DB-fel', () => {
     const response = await POST(request())
 
     expect(response.status).toBe(500)
-    expect(mocks.deliverIssuedGiftCards).not.toHaveBeenCalled()
+    expect(mocks.settleShopOrderPaid).toHaveBeenCalledOnce()
   })
 
   it('committar aldrig en order från ett sent succeeded-event när betalningen redan är refunded', async () => {
     const tenantLookup = query({ data: { stripe_account_id: 'acct_t1' }, error: null })
     const orderLookup = query({ data: { id: 'order_1' }, error: null })
-    const rpc = vi.fn(async (name: string) => name === 'confirm_shop_order_payment'
-      ? { data: { outcome: 'refunded' }, error: null }
-      : { data: null, error: null })
+    const rpc = vi.fn()
+    mocks.settleShopOrderPaid.mockResolvedValue({ ok: true })
     mocks.createServiceClient.mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === 'tenants') return tenantLookup
@@ -184,18 +204,15 @@ describe('Stripe webhook DB-fel', () => {
     const response = await POST(request())
 
     expect(response.status).toBe(200)
-    expect(rpc).toHaveBeenCalledWith('confirm_shop_order_payment', expect.anything())
-    expect(rpc).not.toHaveBeenCalledWith('mark_shop_order_paid', expect.anything())
-    expect(mocks.deliverIssuedGiftCards).not.toHaveBeenCalled()
+    expect(mocks.settleShopOrderPaid).toHaveBeenCalledOnce()
+    expect(rpc).not.toHaveBeenCalled()
   })
 
   it('behåller lyckad orderhantering idempotent när alla DB-steg lyckas', async () => {
     const tenantLookup = query({ data: { stripe_account_id: 'acct_t1' }, error: null })
     const orderLookup = query({ data: { id: 'order_1', status: 'paid' }, error: null })
     const paymentUpdate = query({ data: { status: 'succeeded' }, error: null })
-    const rpc = vi.fn(async (name: string) => name === 'confirm_shop_order_payment'
-      ? { data: { outcome: 'succeeded' }, error: null }
-      : { data: null, error: null })
+    const rpc = vi.fn()
     mocks.createServiceClient.mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === 'tenants') return tenantLookup
@@ -209,33 +226,43 @@ describe('Stripe webhook DB-fel', () => {
     const response = await POST(request())
 
     expect(response.status).toBe(200)
-    expect(rpc).toHaveBeenCalledWith('confirm_shop_order_payment', {
-      p_order: 'order_1',
-      p_tenant: 'tenant_1',
-      p_payment_intent: 'pi_1',
-      p_connected_account: 'acct_t1',
+    expect(mocks.settleShopOrderPaid).toHaveBeenCalledWith({
+      provider: 'stripe',
+      accountScope: 'acct_t1',
+      providerEventId: 'evt_succeeded_1',
+      orderId: 'order_1',
+      tenantId: 'tenant_1',
+      amountCents: 52900,
+      currency: 'sek',
+      providerRef: 'pi_1',
+      source: 'webhook',
     })
-    expect(rpc).toHaveBeenCalledWith('mark_shop_order_paid', { p_order_id: 'order_1' })
     expect(paymentUpdate.update).not.toHaveBeenCalled()
-    expect(mocks.deliverIssuedGiftCards).toHaveBeenCalledTimes(1)
+    expect(rpc).not.toHaveBeenCalled()
   })
 
   it('avvisar en andra PaymentIntent för en redan betald order före order-commit', async () => {
     mocks.constructEventAsync.mockResolvedValue({
+      id: 'evt_second',
       type: 'payment_intent.succeeded',
       account: 'acct_t1',
       data: {
         object: {
           id: 'pi_second',
+          amount_received: 52900,
+          currency: 'sek',
           metadata: { order_id: 'order_1', tenant_id: 'tenant_1' },
         },
       },
     })
     const tenantLookup = query({ data: { stripe_account_id: 'acct_t1' }, error: null })
     const orderLookup = query({ data: { id: 'order_1' }, error: null })
-    const rpc = vi.fn(async (name: string) => name === 'confirm_shop_order_payment'
-      ? { data: null, error: { code: '55000', message: 'payment_provider_identity_conflict' } }
-      : { data: null, error: null })
+    const rpc = vi.fn()
+    mocks.settleShopOrderPaid.mockResolvedValue({
+      ok: false,
+      reason: 'provider_identity_mismatch',
+      eventId: 'event-second',
+    })
     mocks.createServiceClient.mockReturnValue({
       from: vi.fn((table: string) => table === 'tenants' ? tenantLookup : orderLookup),
       rpc,
@@ -243,9 +270,19 @@ describe('Stripe webhook DB-fel', () => {
 
     const response = await POST(request())
 
-    expect(response.status).toBe(500)
-    expect(rpc).not.toHaveBeenCalledWith('mark_shop_order_paid', expect.anything())
-    expect(mocks.deliverIssuedGiftCards).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    expect(mocks.stripeRefundCreate).toHaveBeenCalledWith(
+      { payment_intent: 'pi_second' },
+      {
+        stripeAccount: 'acct_t1',
+        idempotencyKey: 'refund_rejected_shop_event_evt_second',
+      },
+    )
+    expect(mocks.completeShopPaymentEvent).toHaveBeenCalledWith(
+      'event-second',
+      'refunded',
+      'provider_identity_mismatch',
+    )
   })
 
   it('svarar 500 när ett payment_failed-event inte kan spara failed-status', async () => {
@@ -273,9 +310,17 @@ describe('Stripe webhook DB-fel', () => {
 
   it('svarar 500 och avbryter orderuppdateringen när refund-status inte kan sparas', async () => {
     mocks.constructEventAsync.mockResolvedValue({
+      id: 'evt_refunded',
       type: 'charge.refunded',
       account: 'acct_t1',
-      data: { object: { id: 'ch_refunded', payment_intent: 'pi_refunded' } },
+      data: {
+        object: {
+          id: 'ch_refunded',
+          payment_intent: 'pi_refunded',
+          amount_refunded: 52900,
+          currency: 'sek',
+        },
+      },
     })
     const paymentLookup = query({
       data: {
@@ -286,7 +331,11 @@ describe('Stripe webhook DB-fel', () => {
       error: null,
     })
     const orderUpdate = query({ data: null, error: null })
-    const rpc = vi.fn(async () => ({ data: null, error: { message: 'refund status write failed' } }))
+    const rpc = vi.fn()
+    mocks.settleShopPaymentEvent.mockResolvedValue({
+      ok: false,
+      reason: 'event_settle_failed',
+    })
     mocks.createServiceClient.mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === 'payments') return paymentLookup
@@ -299,6 +348,7 @@ describe('Stripe webhook DB-fel', () => {
     const response = await POST(request())
 
     expect(response.status).toBe(500)
+    expect(mocks.settleShopPaymentEvent).toHaveBeenCalledOnce()
     expect(orderUpdate.update).not.toHaveBeenCalled()
   })
 

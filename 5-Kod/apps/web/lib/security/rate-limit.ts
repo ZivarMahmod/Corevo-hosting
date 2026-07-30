@@ -29,6 +29,7 @@ export const LIMITS = {
   // goal-64: "GÅ MED" i klubben. Snålare än de andra — en riktig människa går med EN
   // gång; ett högt tak här skulle bara låta någon pumpa in e-postadresser i kundregistret.
   loyalty: { max: 6, windowSecs: 300 } as RateLimit, // 6 klubb-anmälningar / 5 min per IP+tenant
+  giftCardCode: { max: 8, windowSecs: 300 } as RateLimit,
   // goal-64: kontaktformuläret. Den enda anonyma skrivningen som finns på VARJE mall —
   // /kontakt är ingen modul och kan därför aldrig stängas av. Snålt tak: en människa
   // skriver ETT meddelande, medan varje rad här kostar kunden ett mejl i inkorgen.

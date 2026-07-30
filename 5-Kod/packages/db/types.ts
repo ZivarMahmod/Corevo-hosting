@@ -63,7 +63,7 @@ export type Database = {
           excerpt: string | null
           id: string
           published_at: string | null
-          slug: string | null
+          slug: string
           sort_order: number
           status: string
           tag: string | null
@@ -78,7 +78,7 @@ export type Database = {
           excerpt?: string | null
           id?: string
           published_at?: string | null
-          slug?: string | null
+          slug: string
           sort_order?: number
           status?: string
           tag?: string | null
@@ -93,7 +93,7 @@ export type Database = {
           excerpt?: string | null
           id?: string
           published_at?: string | null
-          slug?: string | null
+          slug?: string
           sort_order?: number
           status?: string
           tag?: string | null
@@ -103,11 +103,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "blog_posts_cover_asset_id_fkey"
-            columns: ["cover_asset_id"]
+            foreignKeyName: "blog_posts_asset_tenant_fkey"
+            columns: ["cover_asset_id", "tenant_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "blog_posts_tenant_id_fkey"
@@ -359,11 +359,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "content_slots_asset_id_fkey"
-            columns: ["asset_id"]
+            foreignKeyName: "content_slots_asset_tenant_fkey"
+            columns: ["asset_id", "tenant_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "content_slots_tenant_id_fkey"
@@ -663,10 +663,15 @@ export type Database = {
       }
       event_registrations: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           email: string | null
           event_id: string
           id: string
+          idempotency_key: string
+          lifecycle_version: number
           message: string | null
           name: string
           order_item_id: string | null
@@ -676,10 +681,15 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           email?: string | null
           event_id: string
           id?: string
+          idempotency_key?: string
+          lifecycle_version?: number
           message?: string | null
           name: string
           order_item_id?: string | null
@@ -689,10 +699,15 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           email?: string | null
           event_id?: string
           id?: string
+          idempotency_key?: string
+          lifecycle_version?: number
           message?: string | null
           name?: string
           order_item_id?: string | null
@@ -703,11 +718,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: "event_registrations_event_tenant_fkey"
+            columns: ["event_id", "tenant_id"]
             isOneToOne: false
             referencedRelation: "tenant_events"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "event_registrations_order_item_id_fkey"
@@ -728,10 +743,12 @@ export type Database = {
       gallery_items: {
         Row: {
           active: boolean
+          alt_override: string | null
           aspect_ratio: string | null
           asset_id: string | null
           caption: string | null
           created_at: string
+          decorative: boolean
           id: string
           sort_order: number
           tag: string | null
@@ -740,10 +757,12 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          alt_override?: string | null
           aspect_ratio?: string | null
           asset_id?: string | null
           caption?: string | null
           created_at?: string
+          decorative?: boolean
           id?: string
           sort_order?: number
           tag?: string | null
@@ -752,10 +771,12 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          alt_override?: string | null
           aspect_ratio?: string | null
           asset_id?: string | null
           caption?: string | null
           created_at?: string
+          decorative?: boolean
           id?: string
           sort_order?: number
           tag?: string | null
@@ -764,14 +785,90 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "gallery_items_asset_id_fkey"
-            columns: ["asset_id"]
+            foreignKeyName: "gallery_items_asset_tenant_fkey"
+            columns: ["asset_id", "tenant_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "gallery_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_card_entries: {
+        Row: {
+          actor_user_id: string | null
+          amount_cents: number
+          balance_after_cents: number
+          created_at: string
+          currency: string
+          entry_type: string
+          gift_card_id: string
+          id: string
+          idempotency_key: string | null
+          reason: string | null
+          request_hash: string | null
+          reversal_of: string | null
+          source_id: string | null
+          source_type: string
+          tenant_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          amount_cents: number
+          balance_after_cents: number
+          created_at?: string
+          currency: string
+          entry_type: string
+          gift_card_id: string
+          id?: string
+          idempotency_key?: string | null
+          reason?: string | null
+          request_hash?: string | null
+          reversal_of?: string | null
+          source_id?: string | null
+          source_type: string
+          tenant_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          amount_cents?: number
+          balance_after_cents?: number
+          created_at?: string
+          currency?: string
+          entry_type?: string
+          gift_card_id?: string
+          id?: string
+          idempotency_key?: string | null
+          reason?: string | null
+          request_hash?: string | null
+          reversal_of?: string | null
+          source_id?: string | null
+          source_type?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_card_entries_card_tenant_fkey"
+            columns: ["gift_card_id", "tenant_id"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id", "tenant_id"]
+          },
+          {
+            foreignKeyName: "gift_card_entries_reversal_tenant_fkey"
+            columns: ["reversal_of", "tenant_id"]
+            isOneToOne: false
+            referencedRelation: "gift_card_entries"
+            referencedColumns: ["id", "tenant_id"]
+          },
+          {
+            foreignKeyName: "gift_card_entries_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -783,6 +880,9 @@ export type Database = {
         Row: {
           balance_cents: number
           code: string
+          code_hash: string
+          code_last_four: string
+          code_version: string
           created_at: string
           currency: string
           delivery_mode: string | null
@@ -803,6 +903,9 @@ export type Database = {
         Insert: {
           balance_cents?: number
           code: string
+          code_hash: string
+          code_last_four: string
+          code_version: string
           created_at?: string
           currency?: string
           delivery_mode?: string | null
@@ -823,6 +926,9 @@ export type Database = {
         Update: {
           balance_cents?: number
           code?: string
+          code_hash?: string
+          code_last_four?: string
+          code_version?: string
           created_at?: string
           currency?: string
           delivery_mode?: string | null
@@ -1041,33 +1147,54 @@ export type Database = {
       }
       loyalty_ledger: {
         Row: {
+          actor_user_id: string | null
+          balance_after_points: number | null
           booking_id: string | null
           created_at: string
           customer_id: string
           id: string
+          idempotency_key: string | null
           note: string | null
           points_delta: number
           reason: string
+          request_hash: string | null
+          reversal_of: string | null
+          source_id: string | null
+          source_type: string | null
           tenant_id: string
         }
         Insert: {
+          actor_user_id?: string | null
+          balance_after_points?: number | null
           booking_id?: string | null
           created_at?: string
           customer_id: string
           id?: string
+          idempotency_key?: string | null
           note?: string | null
           points_delta: number
           reason: string
+          request_hash?: string | null
+          reversal_of?: string | null
+          source_id?: string | null
+          source_type?: string | null
           tenant_id: string
         }
         Update: {
+          actor_user_id?: string | null
+          balance_after_points?: number | null
           booking_id?: string | null
           created_at?: string
           customer_id?: string
           id?: string
+          idempotency_key?: string | null
           note?: string | null
           points_delta?: number
           reason?: string
+          request_hash?: string | null
+          reversal_of?: string | null
+          source_id?: string | null
+          source_type?: string | null
           tenant_id?: string
         }
         Relationships: [
@@ -1084,6 +1211,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_ledger_reversal_tenant_fkey"
+            columns: ["reversal_of", "tenant_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_ledger"
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "loyalty_ledger_tenant_id_fkey"
@@ -1198,48 +1332,69 @@ export type Database = {
           alt: string | null
           content_hash: string | null
           created_at: string
+          deleted_at: string | null
           height: number | null
           id: string
+          last_error: string | null
           library_item_id: string | null
+          lifecycle_version: number
+          published: boolean
           r2_key: string
+          reserved_at: string
           size_bytes: number
           source: string
+          status: string
           tenant_id: string
           type: string
           updated_at: string | null
-          url: string
+          url: string | null
+          variants: Json
           width: number | null
         }
         Insert: {
           alt?: string | null
           content_hash?: string | null
           created_at?: string
+          deleted_at?: string | null
           height?: number | null
           id?: string
+          last_error?: string | null
           library_item_id?: string | null
+          lifecycle_version?: number
+          published?: boolean
           r2_key: string
+          reserved_at?: string
           size_bytes?: number
           source?: string
+          status?: string
           tenant_id: string
           type?: string
           updated_at?: string | null
-          url: string
+          url?: string | null
+          variants?: Json
           width?: number | null
         }
         Update: {
           alt?: string | null
           content_hash?: string | null
           created_at?: string
+          deleted_at?: string | null
           height?: number | null
           id?: string
+          last_error?: string | null
           library_item_id?: string | null
+          lifecycle_version?: number
+          published?: boolean
           r2_key?: string
+          reserved_at?: string
           size_bytes?: number
           source?: string
+          status?: string
           tenant_id?: string
           type?: string
           updated_at?: string | null
-          url?: string
+          url?: string | null
+          variants?: Json
           width?: number | null
         }
         Relationships: [
@@ -1428,10 +1583,18 @@ export type Database = {
           details: Json
           estimate_cents: number | null
           id: string
+          lifecycle_version: number
           message: string | null
           mode: string
           note: string | null
           payment_status: string
+          reply_content_hash: string | null
+          reply_delivery_state: string
+          reply_error_code: string | null
+          reply_outbox_id: string | null
+          reply_pending_message: string | null
+          reply_requested_by: string | null
+          reply_requested_version: number | null
           replied_at: string | null
           reply_message: string | null
           status: string
@@ -1449,10 +1612,18 @@ export type Database = {
           details?: Json
           estimate_cents?: number | null
           id?: string
+          lifecycle_version?: number
           message?: string | null
           mode?: string
           note?: string | null
           payment_status?: string
+          reply_content_hash?: string | null
+          reply_delivery_state?: string
+          reply_error_code?: string | null
+          reply_outbox_id?: string | null
+          reply_pending_message?: string | null
+          reply_requested_by?: string | null
+          reply_requested_version?: number | null
           replied_at?: string | null
           reply_message?: string | null
           status?: string
@@ -1470,10 +1641,18 @@ export type Database = {
           details?: Json
           estimate_cents?: number | null
           id?: string
+          lifecycle_version?: number
           message?: string | null
           mode?: string
           note?: string | null
           payment_status?: string
+          reply_content_hash?: string | null
+          reply_delivery_state?: string
+          reply_error_code?: string | null
+          reply_outbox_id?: string | null
+          reply_pending_message?: string | null
+          reply_requested_by?: string | null
+          reply_requested_version?: number | null
           replied_at?: string | null
           reply_message?: string | null
           status?: string
@@ -2389,11 +2568,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "shop_product_variants_image_asset_id_fkey"
-            columns: ["image_asset_id"]
+            foreignKeyName: "shop_product_variants_asset_tenant_fkey"
+            columns: ["image_asset_id", "tenant_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "shop_product_variants_product_id_fkey"
@@ -2471,11 +2650,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "shop_products_image_asset_id_fkey"
-            columns: ["image_asset_id"]
+            foreignKeyName: "shop_products_asset_tenant_fkey"
+            columns: ["image_asset_id", "tenant_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "shop_products_tenant_id_fkey"
@@ -2808,6 +2987,36 @@ export type Database = {
           },
         ]
       }
+      template_required_modules: {
+        Row: {
+          module_key: string
+          template_key: string
+        }
+        Insert: {
+          module_key: string
+          template_key: string
+        }
+        Update: {
+          module_key?: string
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_required_modules_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "template_required_modules_template_key_fkey"
+            columns: ["template_key"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       template_slots: {
         Row: {
           aspect_hint: string | null
@@ -2862,6 +3071,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "template_slots_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["key"]
+          },
+          {
             foreignKeyName: "template_slots_template_key_fkey"
             columns: ["template_key"]
             isOneToOne: false
@@ -2870,38 +3086,88 @@ export type Database = {
           },
         ]
       }
+      template_verticals: {
+        Row: {
+          template_key: string
+          vertical_key: string
+        }
+        Insert: {
+          template_key: string
+          vertical_key: string
+        }
+        Update: {
+          template_key?: string
+          vertical_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_verticals_template_key_fkey"
+            columns: ["template_key"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "template_verticals_vertical_key_fkey"
+            columns: ["vertical_key"]
+            isOneToOne: false
+            referencedRelation: "verticals"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       templates: {
         Row: {
+          contract_version: number
           created_at: string
           key: string
           name: string
+          owner: string
+          replacement_key: string | null
           sections: Json
+          selectable: boolean
           status: string
           tags: Json
           tokens: Json
           updated_at: string | null
         }
         Insert: {
+          contract_version?: number
           created_at?: string
           key: string
           name: string
+          owner?: string
+          replacement_key?: string | null
           sections?: Json
+          selectable?: boolean
           status?: string
           tags?: Json
           tokens?: Json
           updated_at?: string | null
         }
         Update: {
+          contract_version?: number
           created_at?: string
           key?: string
           name?: string
+          owner?: string
+          replacement_key?: string | null
           sections?: Json
+          selectable?: boolean
           status?: string
           tags?: Json
           tokens?: Json
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "templates_replacement_key_fkey"
+            columns: ["replacement_key"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       tenant_domains: {
         Row: {
@@ -2940,11 +3206,15 @@ export type Database = {
       }
       tenant_events: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           capacity: number
           created_at: string
           description: string | null
           duration_min: number
           id: string
+          lifecycle_version: number
           price_cents: number
           reserved_qty: number
           starts_at: string
@@ -2954,11 +3224,15 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           capacity: number
           created_at?: string
           description?: string | null
           duration_min?: number
           id?: string
+          lifecycle_version?: number
           price_cents?: number
           reserved_qty?: number
           starts_at: string
@@ -2968,11 +3242,15 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           capacity?: number
           created_at?: string
           description?: string | null
           duration_min?: number
           id?: string
+          lifecycle_version?: number
           price_cents?: number
           reserved_qty?: number
           starts_at?: string
@@ -3451,7 +3729,15 @@ export type Database = {
           terminology?: Json
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "verticals_default_template_fkey"
+            columns: ["default_template"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       working_hour_slots: {
         Row: {
@@ -3613,6 +3899,25 @@ export type Database = {
           visits: number
         }[]
       }
+      admin_loyalty_members: {
+        Args: { p_tenant: string }
+        Returns: {
+          customer_id: string
+          last_activity_at: string | null
+          points_balance: number
+          rewarded_visits: number
+        }[]
+      }
+      adjust_gift_card: {
+        Args: {
+          p_delta_cents: number
+          p_gift_card: string
+          p_idempotency_key: string
+          p_reason: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
       atomic_erase_self_customer_account: {
         Args: { p_auth_user: string; p_tenant: string }
         Returns: {
@@ -3654,6 +3959,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      cancel_media_upload: {
+        Args: {
+          p_asset: string
+          p_cleanup_required: boolean
+          p_error: string
+          p_tenant: string
+        }
+        Returns: {
+          asset_id: string
+          outcome: string
+          status: string
+        }[]
+      }
       check_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_secs: number }
         Returns: boolean
@@ -3689,6 +4007,17 @@ export type Database = {
           p_now: string
         }
         Returns: string[]
+      }
+      claim_media_cleanup_jobs: {
+        Args: { p_lease_seconds: number; p_limit: number }
+        Returns: {
+          asset_id: string
+          attempt: number
+          job_id: string
+          lease_token: string
+          r2_keys: string[]
+          tenant_id: string
+        }[]
       }
       claim_notification_outbox: {
         Args: {
@@ -3873,6 +4202,10 @@ export type Database = {
         }
         Returns: Json
       }
+      complete_media_cleanup_job: {
+        Args: { p_job: string; p_lease_token: string }
+        Returns: boolean
+      }
       complete_payment_refund_job: {
         Args: { p_id: string; p_lease_token: string; p_provider_ref: string }
         Returns: boolean
@@ -3911,6 +4244,14 @@ export type Database = {
           p_order: string
           p_payment_intent: string
           p_tenant: string
+        }
+        Returns: Json
+      }
+      complete_shop_payment_event: {
+        Args: {
+          p_error_code?: string
+          p_event: string
+          p_outcome: string
         }
         Returns: Json
       }
@@ -3980,6 +4321,7 @@ export type Database = {
         Args: {
           p_email: string
           p_event: string
+          p_idempotency_key: string
           p_message: string
           p_name: string
           p_party_size: number
@@ -4476,9 +4818,34 @@ export type Database = {
         Returns: number
       }
       delete_my_time_off: { Args: { p_time_off: string }; Returns: boolean }
+      delete_offert_request: {
+        Args: {
+          p_expected_version: number
+          p_request: string
+          p_tenant: string
+        }
+        Returns: {
+          outcome: string
+          version: number
+        }[]
+      }
       discard_site_draft: {
         Args: { p_expected_lock_version: number; p_tenant: string }
         Returns: string
+      }
+      enqueue_offert_reply: {
+        Args: {
+          p_expected_version: number
+          p_reply: string
+          p_request: string
+          p_tenant: string
+        }
+        Returns: {
+          delivery_state: string
+          outbox_id: string
+          outcome: string
+          version: number
+        }[]
       }
       enqueue_notification: {
         Args: {
@@ -4523,6 +4890,36 @@ export type Database = {
           p_tenant: string
         }
         Returns: Json
+      }
+      finalize_offert_reply: {
+        Args: {
+          p_outbox: string
+          p_request: string
+          p_tenant: string
+        }
+        Returns: {
+          delivery_state: string
+          error_code: string
+          offert_status: string
+          outcome: string
+          version: number
+        }[]
+      }
+      finalize_media_upload: {
+        Args: {
+          p_asset: string
+          p_published: boolean
+          p_tenant: string
+          p_url: string
+          p_variants: Json
+        }
+        Returns: {
+          asset_id: string
+          outcome: string
+          status: string
+          url: string
+          variants: Json
+        }[]
       }
       finalize_verified_storefront_booking: {
         Args: {
@@ -4645,6 +5042,32 @@ export type Database = {
         Args: { p_purpose: string; p_tenant: string; p_token_hash: string }
         Returns: boolean
       }
+      gift_card_reconciliation: {
+        Args: { p_tenant: string }
+        Returns: {
+          cached_balance_cents: number
+          card_count: number
+          currency: string
+          ledger_balance_cents: number
+          mismatch_count: number
+          pending_outbox: number
+        }[]
+      }
+      issue_gift_card: {
+        Args: {
+          p_amount_cents: number
+          p_code_hash: string
+          p_code_last_four: string
+          p_currency: string
+          p_expires_at: string | null
+          p_idempotency_key: string
+          p_message: string | null
+          p_recipient_email: string | null
+          p_recipient_name: string | null
+          p_tenant: string
+        }
+        Returns: Json
+      }
       join_loyalty_club: {
         Args: {
           p_email: string
@@ -4652,7 +5075,19 @@ export type Database = {
           p_plan?: string
           p_tenant_slug: string
         }
-        Returns: string
+        Returns: Json
+      }
+      loyalty_reconciliation: {
+        Args: { p_tenant: string }
+        Returns: {
+          command_metadata_gap_count: number
+          customer_count: number
+          duplicate_reversal_count: number
+          missing_completion_earn_count: number
+          negative_customer_count: number
+          pending_outbox: number
+          total_balance_points: number
+        }[]
       }
       mark_admin_time_off_booking_handled: {
         Args: {
@@ -4664,6 +5099,19 @@ export type Database = {
         Returns: undefined
       }
       mark_shop_order_paid: { Args: { p_order_id: string }; Returns: undefined }
+      offert_reply_delivery_target: {
+        Args: { p_lease_token: string; p_outbox: string }
+        Returns: {
+          customer_email: string
+          customer_name: string
+          estimate_cents: number
+          outcome: string
+          reply_message: string
+          subject: string
+          tenant_id: string
+          tenant_name: string
+        }[]
+      }
       partner_update_tenant_user: {
         Args: {
           p_access_scope: string
@@ -4675,6 +5123,36 @@ export type Database = {
         Returns: undefined
       }
       payment_refund_health: { Args: never; Returns: Json }
+      redeem_gift_card: {
+        Args: {
+          p_amount_cents: number
+          p_code_hash: string
+          p_currency: string
+          p_idempotency_key: string
+          p_source_id?: string | null
+          p_source_type?: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      restore_gift_card_redemption: {
+        Args: {
+          p_idempotency_key: string
+          p_reason: string
+          p_redemption_entry: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      reverse_loyalty_spend: {
+        Args: {
+          p_idempotency_key: string
+          p_reason: string
+          p_spend_entry: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
       place_slot_hold: {
         Args: {
           p_service: string
@@ -4865,6 +5343,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      prepare_shop_order_payment: {
+        Args: {
+          p_account_scope: string
+          p_order: string
+          p_provider: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
       prepare_staff_invite_cleanup: {
         Args: { p_auth_user: string; p_role: string; p_tenant: string }
         Returns: string
@@ -4937,6 +5424,14 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: boolean
       }
+      record_shop_payment_order_reference: {
+        Args: {
+          p_payment: string
+          p_provider: string
+          p_reference: string
+        }
+        Returns: Json
+      }
       record_sms_delivery: {
         Args: {
           p_delivered_at: string | null
@@ -4950,6 +5445,21 @@ export type Database = {
         Args: { p_month?: string }
         Returns: number
       }
+      register_shop_payment_event: {
+        Args: {
+          p_account_scope: string
+          p_amount_cents?: number | null
+          p_currency?: string | null
+          p_event_type: string
+          p_order: string | null
+          p_payload?: Json
+          p_provider: string
+          p_provider_event_id: string
+          p_provider_reference_id: string
+          p_tenant?: string | null
+        }
+        Returns: Json
+      }
       release_shop_order: {
         Args: { p_order_id: string; p_status?: string; p_token?: string }
         Returns: undefined
@@ -4957,6 +5467,21 @@ export type Database = {
       release_slot_hold: {
         Args: { p_staff: string; p_start: string; p_token: string }
         Returns: undefined
+      }
+      request_media_delete: {
+        Args: { p_asset: string; p_tenant: string }
+        Returns: {
+          asset_id: string
+          outcome: string
+          status: string
+        }[]
+      }
+      reorder_gallery_items: {
+        Args: { p_ids: string[]; p_tenant: string }
+        Returns: {
+          item_count: number
+          outcome: string
+        }[]
       }
       replace_staff_services: {
         Args: { p_services: string[]; p_staff: string }
@@ -4987,10 +5512,28 @@ export type Database = {
         }
         Returns: Json
       }
+      reserve_media_upload: {
+        Args: {
+          p_content_hash: string
+          p_size_bytes: number
+          p_source: string
+          p_tenant: string
+        }
+        Returns: {
+          asset_id: string
+          outcome: string
+          published: boolean
+          r2_key: string
+          status: string
+          url: string | null
+          variants: Json
+        }[]
+      }
       reserve_shop_order: {
         Args: {
           p_fulfilment?: string
           p_items: Json
+          p_reserve_request_id?: string
           p_tenant_slug: string
           p_token?: string
           p_ttl_min?: number
@@ -5025,6 +5568,15 @@ export type Database = {
           lock_version: number
           revision_id: string
         }[]
+      }
+      retry_media_cleanup_job: {
+        Args: {
+          p_error: string
+          p_job: string
+          p_lease_token: string
+          p_retry_after_seconds: number
+        }
+        Returns: boolean
       }
       retry_notification_outbox: {
         Args: {
@@ -5127,6 +5679,40 @@ export type Database = {
         Args: { p_booking: string; p_status: string }
         Returns: Json
       }
+      set_blog_post_status: {
+        Args: { p_post: string; p_status: string; p_tenant: string }
+        Returns: {
+          blog_status: string
+          first_published_at: string | null
+          outcome: string
+        }[]
+      }
+      set_event_registration_status: {
+        Args: {
+          p_reason?: string
+          p_registration: string
+          p_status: string
+          p_tenant: string
+        }
+        Returns: {
+          outcome: string
+          registration_status: string
+          version: number
+        }[]
+      }
+      set_tenant_event_status: {
+        Args: {
+          p_event: string
+          p_reason?: string
+          p_status: string
+          p_tenant: string
+        }
+        Returns: {
+          event_status: string
+          outcome: string
+          version: number
+        }[]
+      }
       set_my_notification_preferences: {
         Args: {
           p_notify_booking_changes: boolean
@@ -5154,6 +5740,22 @@ export type Database = {
           p_staff: string
         }
         Returns: undefined
+      }
+      settle_shop_payment_event: {
+        Args: { p_event: string }
+        Returns: Json
+      }
+      spend_loyalty_points: {
+        Args: {
+          p_customer: string
+          p_idempotency_key: string
+          p_note?: string | null
+          p_points: number
+          p_source_id?: string | null
+          p_source_type?: string
+          p_tenant: string
+        }
+        Returns: Json
       }
       start_booking_verification: {
         Args: {
@@ -5197,6 +5799,37 @@ export type Database = {
       tenant_launch_readiness: { Args: { p_tenant: string }; Returns: Json }
       tenant_module_readiness: { Args: { p_tenant: string }; Returns: Json }
       tenant_storage_usage: { Args: { p_tenant: string }; Returns: number }
+      update_offert_request: {
+        Args: {
+          p_estimate_cents: number | null
+          p_expected_version: number
+          p_note: string | null
+          p_request: string
+          p_status: string
+          p_tenant: string
+        }
+        Returns: {
+          offert_status: string
+          outcome: string
+          version: number
+        }[]
+      }
+      update_media_alt: {
+        Args: { p_alt: string; p_asset: string; p_tenant: string }
+        Returns: {
+          asset_id: string
+          outcome: string
+        }[]
+      }
+      void_gift_card: {
+        Args: {
+          p_gift_card: string
+          p_idempotency_key: string
+          p_reason: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

@@ -126,6 +126,7 @@ describe('SidaStudioV2 acceptance shell', () => {
   it('keeps iframe navigation, active tab and editor field scan on one route', () => {
     expect(component).toContain("data.type === 'preview-route'")
     expect(component).toContain('selectTab(target.id)')
+    expect(component).toContain('setPreviewRoute(data.path)')
   })
 
   it('shows only module tabs backed by active modules', () => {
@@ -134,8 +135,8 @@ describe('SidaStudioV2 acceptance shell', () => {
   })
 
   it('renders the booking route with a slash in the visible tenant URL', () => {
-    expect(component).toContain("const displayPath = activeTab?.path.startsWith('?')")
-    expect(component).toContain("`/${activeTab.path}`")
+    expect(component).toContain("const displayPath = activePreviewPath.startsWith('?')")
+    expect(component).toContain("`/${activePreviewPath}`")
     expect(component).toContain('{storefrontHost}{displayPath}')
   })
 

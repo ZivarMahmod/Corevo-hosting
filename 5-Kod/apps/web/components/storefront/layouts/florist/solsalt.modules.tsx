@@ -210,8 +210,9 @@ export function SolSaltGalleri({ items, content }: ThemeGalleriViewProps) {
               <div
                 key={g.id}
                 className={styles.slGalImg}
-                role="img"
-                aria-label={g.imageAlt ?? g.caption ?? ''}
+                role={g.decorative ? undefined : 'img'}
+                aria-label={g.decorative ? undefined : (g.imageAlt ?? '')}
+                aria-hidden={g.decorative || undefined}
                 style={{
                   backgroundImage: `url(${g.imageUrl})`,
                   aspectRatio: g.aspectRatio ?? '1/1',

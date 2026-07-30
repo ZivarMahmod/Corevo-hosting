@@ -16,7 +16,10 @@ import { modulesForVertical, type VerticalPresetData, type TemplateOption } from
 import { ONBOARDING_STEPS } from '@/lib/platform/onboarding-steps'
 import { PageHead, Card, Button, Badge, Icon } from '@/components/portal/ui'
 import { Callout } from '@/components/portal/ui'
-import { FLORIST_THEMES } from '@/components/storefront/layouts/florist/registry'
+import {
+  ONBOARDING_THEME_KEYS,
+  SELECTABLE_THEME_CATALOG,
+} from '@/lib/platform/theme-catalog'
 import mobileStyles from './CreateTenantForm.module.css'
 import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
 
@@ -38,14 +41,7 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
   paused: 'Tillfälligt stängd — visar "stängt" publikt.',
 }
 
-// ── The five storefront themes ──────────────────────────────────────────────────
-// Palette / fonts MIRROR the live [data-theme] tokens (packages/ui/tokens.css) and
-// the per-theme copy mirrors THEME_CONTENT, so the onboarding preview shows the REAL
-// look of each template — what the operator picks here is exactly what the storefront
-// renders (settings.theme → [data-theme]). hero img = each theme's own default photo
-// (THEME_CONTENT.heroImages[0]) so the preview reflects the real storefront, not a
-// generic stand-in. Keep these in sync with tokens.css / theme-content.ts.
-type ThemeKey = 'salvia' | 'leander' | 'zigge' | 'linnea' | 'edit' | 'flora' | 'freshcut'
+// Palette, fonts och copy härleds ur samma runtime-definitioner som storefronten.
 type ThemeDef = {
   name: string
   primary: string
@@ -64,14 +60,11 @@ type ThemeDef = {
 }
 const uns = (id: string) =>
   `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`
-// freshcut utesluten (FAS 1 2026-07-11): kundens eget tema erbjuds aldrig nya tenants.
-const BUILTIN_THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora']
 
-// FLORIST-SVITEN (goal-58): de 13 mallarnas preview-kort HÄRLEDS ur florist-registryt
-// (palett, typsnitt, radie, copy, hero-foto) — ingen kopierad literal-tabell som kan
-// glida isär från det storefronten faktiskt renderar.
-const FLORIST_WIZARD: Record<string, ThemeDef> = Object.fromEntries(
-  FLORIST_THEMES.map((t) => [
+export const CREATE_TENANT_THEME_KEYS = ONBOARDING_THEME_KEYS
+
+const CATALOG_WIZARD: Record<string, ThemeDef> = Object.fromEntries(
+  SELECTABLE_THEME_CATALOG.map(({ definition: t }) => [
     t.key,
     {
       name: t.name,
@@ -91,51 +84,7 @@ const FLORIST_WIZARD: Record<string, ThemeDef> = Object.fromEntries(
     } satisfies ThemeDef,
   ]),
 )
-const THEME_KEYS: string[] = [...BUILTIN_THEME_KEYS, ...FLORIST_THEMES.map((t) => t.key)]
-const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
-  salvia: {
-    name: 'Salvia', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', fg2: '#5C5F55', line: '#E2DED2',
-    display: "'Cormorant Garamond', Georgia, serif", radius: 10, caps: false, vibe: 'Lugn & minimal',
-    eyebrow: 'Boka online', hero: 'Lugnt bemött. Skickligt utfört.',
-    lede: 'En stillsam plats där varje besök får ta sin tid.', img: uns('1521590832167-7bcbfaa6381f'),
-  },
-  leander: {
-    name: 'Leander', primary: '#7E6E92', bg: '#FBFAF8', fg: '#2A2630', fg2: '#6A6472', line: '#ECE7EF',
-    display: "'Playfair Display', Georgia, serif", radius: 14, caps: false, vibe: 'Romantisk editorial',
-    eyebrow: 'Studio & mottagning', hero: 'Din stund av lugn.',
-    lede: 'Mjuka toner och varsam hand i en romantisk miljö.', img: uns('1633681926035-ec1ac984418a'),
-  },
-  zigge: {
-    name: 'Zigge', primary: '#C8743C', bg: '#14120E', fg: '#F2ECE2', fg2: '#B3A998', line: '#322C24',
-    display: "'Bebas Neue', sans-serif", radius: 4, caps: true, vibe: 'Mörk & rå barber',
-    eyebrow: 'Barber & frisör', hero: 'Skarp fade. Ren stil.',
-    lede: 'Klassisk barbering med modern attityd.', img: uns('1585747860715-2ba37e788b70'),
-  },
-  linnea: {
-    name: 'Linnea', primary: '#B0693F', bg: '#F4EDE1', fg: '#2E2820', fg2: '#6E6452', line: '#E3D9C8',
-    display: "'DM Serif Display', Georgia, serif", radius: 12, caps: false, vibe: 'Varm skandinavisk',
-    eyebrow: 'Kropp & välmående', hero: 'Naturligt vacker.',
-    lede: 'Varma jordnära toner i en avslappnad miljö.', img: uns('1595476108010-b4d1f102b1b1'),
-  },
-  edit: {
-    name: 'Edit', primary: '#3A3733', bg: '#F8F6F1', fg: '#232220', fg2: '#6B675F', line: '#E5E0D6',
-    display: "'Cormorant Garamond', Georgia, serif", radius: 2, caps: false, vibe: 'Elegant minimal',
-    eyebrow: 'Hair atelier', hero: 'Tidlöst. Editorial.',
-    lede: 'Ren typografi och skarp komposition.', img: uns('1599351431202-1e0f0137899a'),
-  },
-  flora: {
-    name: 'Flora', primary: '#44523B', bg: '#F7F3EA', fg: '#2B2A24', fg2: '#6E6A5B', line: '#E4DDCC',
-    display: "'Playfair Display', Georgia, serif", radius: 14, caps: false, vibe: 'Bohemisk florist',
-    eyebrow: 'Blomsterbutik', hero: 'Blommor, bundna för hand.',
-    lede: 'Buketter i säsong, binderier och kurser.', img: uns('1487530811176-3780de880c2d'),
-  },
-  freshcut: {
-    name: 'FreshCut', primary: '#B59775', bg: '#FFFFFF', fg: '#252525', fg2: '#555555', line: '#E7E2DA',
-    display: "'Playfair Display', Georgia, serif", radius: 0, caps: false, vibe: 'Barbershop (freshcut.se)',
-    eyebrow: 'Barbershop', hero: 'FreshCut',
-    lede: 'Barbershop i centrala Linköping.', img: uns('1503951914875-452162b0f3f1'),
-  },
-}
+const THEME_KEYS = CREATE_TENANT_THEME_KEYS
 
 // Multi-bransch: the chosen template key is now a free string (it comes from the
 // `templates` catalog filtered by bransch, not just the built-in five). A key that
@@ -152,11 +101,7 @@ function neutralTheme(name: string): ThemeDef {
 /** Preview metadata for a template key: the rich built-in theme when known, else a
  *  neutral fallback carrying the template's display name. */
 function wizardTheme(key: string, name?: string): ThemeDef {
-  return (
-    (WIZARD_THEMES as Record<string, ThemeDef>)[key] ??
-    FLORIST_WIZARD[key] ??
-    neutralTheme(name ?? key)
-  )
+  return CATALOG_WIZARD[key] ?? neutralTheme(name ?? key)
 }
 
 // Multi-bransch (spår 5): a NEW step 0 "Bransch" leads the wizard (preset-driven),

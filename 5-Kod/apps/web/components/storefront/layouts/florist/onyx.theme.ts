@@ -45,7 +45,7 @@ export const onyx: FloristTheme = {
     fg: '#F2EFEA',
     fg2: '#9C968C',
     line: '#2E2E2E',
-    accentSoft: '#6B655B',
+    accentSoft: '#89857D',
   },
   // Manifestets `fonts`: Space Grotesk i rubrikerna, IBM Plex Mono i mikroetiketterna.
   fonts: {

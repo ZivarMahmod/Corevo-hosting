@@ -6,8 +6,13 @@ import { moduleCtx as resolveModuleCtx } from '@/lib/admin/module-ctx'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { kronorToCents } from '@/lib/admin/format'
 import type { ActionState } from '@/lib/admin/actions'
-import { refundShopOrder } from '@/lib/stripe/refund'
-import { SHOP_ORDER_STATUSES, isShopOrderTransitionAllowed, type ShopOrderStatus } from './types'
+import { dispatchPaymentRefundJobById } from '@/lib/payments/refund-outbox'
+import {
+  SHOP_ORDER_STATUSES,
+  isShopOrderTransitionAllowed,
+  type ShopOrderStatus,
+  type ShopRefundStatus,
+} from './types'
 import { parsePaymentMethods } from '@/lib/storefront/shop/types'
 import { sendOrderStatusEmail } from '@/lib/notifications/shop'
 import { commerceReleaseGate } from '@/lib/release/commerce'
@@ -38,6 +43,7 @@ async function resolveTenantAssetId(
     .select('id')
     .eq('id', id)
     .eq('tenant_id', tenantId)
+    .eq('status', 'ready')
     .maybeSingle()
   return data ? id : null
 }
@@ -366,29 +372,78 @@ export async function setShopOrderTracking(_p: ActionState, fd: FormData): Promi
   return { success: 'Spårning uppdaterad.' }
 }
 
-/** Återbetala en betald order (Fas 3). refundShopOrder är idempotent + no-op om ingen
- *  lyckad betalning finns (betal-rälsen pausad → tyst no-op tills den tänds). */
-export async function refundShopOrderAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+export type ShopRefundActionState = ActionState & {
+  refundStatus?: ShopRefundStatus
+}
+
+type RefundRpcClient = {
+  rpc: (
+    name: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ data: unknown; error: unknown }>
+}
+
+/** Köar en full refund och använder direkt dispatch enbart som accelerator. */
+export async function refundShopOrderAction(
+  _p: ShopRefundActionState,
+  fd: FormData,
+): Promise<ShopRefundActionState> {
   const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
   if (!id) return { error: 'Saknar order.' }
 
-  // Verifiera att ordern tillhör tenanten (refundShopOrder är tenant-scopad internt).
   const supabase = await createClient()
-  const { data: order } = await supabase
-    .from('shop_orders')
-    .select('id, payment_status')
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  if (!order) return { error: 'Ordern hittades inte.' }
-  if (order.payment_status !== 'paid') return { error: 'Ordern är inte betald.' }
+  const refundRpc = supabase as unknown as RefundRpcClient
+  const queued = await refundRpc.rpc('enqueue_shop_order_refund', {
+    p_tenant: ctx.tenant.id,
+    p_order: id,
+  })
+  const enqueueRow = Array.isArray(queued.data) ? queued.data[0] : null
+  if (
+    queued.error
+    || !enqueueRow
+    || typeof enqueueRow !== 'object'
+    || typeof enqueueRow.job_id !== 'string'
+    || !['pending', 'succeeded', 'failed'].includes(String(enqueueRow.refund_status))
+  ) {
+    return { error: 'Ordern kunde inte köas för återbetalning.' }
+  }
 
-  await refundShopOrder(id, ctx.tenant.id)
+  const enqueuedStatus = enqueueRow.refund_status as ShopRefundStatus
+  if (enqueuedStatus === 'pending') {
+    try {
+      await dispatchPaymentRefundJobById(enqueueRow.job_id)
+    } catch {
+      // Jobbet är durabelt köat. Ett osäkert acceleratorsvar får aldrig bli
+      // falsk success eller trigga ett andra provideranrop här.
+    }
+  }
+
+  const statusResult = await refundRpc.rpc('shop_order_refund_statuses', {
+    p_tenant: ctx.tenant.id,
+  })
+  const statusRows = Array.isArray(statusResult.data) ? statusResult.data : []
+  const statusRow = statusRows.find((row) => (
+    row
+    && typeof row === 'object'
+    && row.order_id === id
+    && ['pending', 'succeeded', 'failed'].includes(String(row.refund_status))
+  )) as { refund_status: ShopRefundStatus } | undefined
+  const refundStatus = statusRow?.refund_status ?? enqueuedStatus
+
   revalidatePath('/admin/webshop')
-  return { success: 'Återbetalning genomförd.' }
+  if (refundStatus === 'succeeded') {
+    return { success: 'Återbetalning genomförd.', refundStatus }
+  }
+  if (refundStatus === 'failed') {
+    return {
+      error: 'Återbetalningen kräver manuell kontroll.',
+      refundStatus,
+    }
+  }
+  return { success: 'Återbetalning köad.', refundStatus: 'pending' }
 }
 
 // ── Leveransval (goal-64) ─────────────────────────────────────────────────────

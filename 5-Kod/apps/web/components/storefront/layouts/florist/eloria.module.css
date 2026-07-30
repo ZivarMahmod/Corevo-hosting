@@ -26,7 +26,7 @@
 /* Filens eyebrow: 12px, 0.26em, guld, versal. Återkommer i VARJE sektionshuvud. */
 .elEyebrow {
   margin: 0 0 8px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   font-size: 12px;
   letter-spacing: 0.26em;
   text-transform: uppercase;
@@ -58,7 +58,7 @@
 
 .elBtnDark:hover {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 /* Den konturerade knappen ("Se hela katalogen", "Till katalogen"). */
@@ -89,7 +89,7 @@
   border: none;
   border-bottom: 1px solid var(--color-primary);
   border-radius: 0;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.24em;
@@ -146,7 +146,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 19px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Menyraden mellan två hårlinjer — filens signatur. */
@@ -174,7 +174,7 @@
 }
 
 .elNavLinks a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Avdelaren "|" mellan menyposterna (filens item.sep). */
@@ -206,7 +206,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 17px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   padding: 0 0 2px;
   cursor: pointer;
   transition: color 0.2s;
@@ -217,7 +217,7 @@
 }
 
 .elNavAccount {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   display: inline-flex;
   align-items: center;
 }
@@ -284,7 +284,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 19px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ────────────────────────── hem (3) bildbrickorna ─────────────────────────── */
@@ -311,7 +311,7 @@
 }
 
 .elTile:hover .elTileFrame {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .elTileImg {
@@ -335,7 +335,7 @@
   font-size: 11.5px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ───────────────────── hem (4) mörkgrön platta med guldram ────────────────── */
@@ -414,7 +414,7 @@
 .elBandEyebrow {
   margin: 0 0 8px;
   text-align: center;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   font-size: 12px;
   letter-spacing: 0.26em;
   text-transform: uppercase;
@@ -463,7 +463,7 @@
   margin: 0;
   font-size: 13px;
   letter-spacing: 0.1em;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .elBandFoot {
@@ -508,7 +508,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 17px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   min-width: 110px;
 }
 
@@ -524,7 +524,7 @@
   font-size: 11.5px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ───────────────────────────── undersidor / vyer ──────────────────────────── */
@@ -571,7 +571,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 24px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Pausad butik: katalogen är läsbar, köp-knapparna borta. Meddelandet bär filens linjer. */
@@ -584,7 +584,7 @@
   font-size: 12px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ─────────────────────────── /om — uppslaget + siffror ────────────────────── */
@@ -624,7 +624,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 20px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .elStats {
@@ -655,7 +655,7 @@
   font-size: 12px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ───────────────── /tjanster — prislistan med guldprickade linjer ─────────── */
@@ -703,7 +703,7 @@
 .elPriceValue {
   font-size: 13.5px;
   letter-spacing: 0.08em;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   white-space: nowrap;
 }
 
@@ -729,7 +729,7 @@
   font-size: 11.5px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .elFactValue {
@@ -744,7 +744,7 @@
 }
 
 .elFactValue a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .elContactProse {
@@ -812,7 +812,7 @@
   margin: 0 0 16px;
   font-size: 13px;
   letter-spacing: 0.1em;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ─────────────────────── modul-vy: JOURNALEN (blogg) ──────────────────────── */
@@ -846,7 +846,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 17px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .elPostTitle {
@@ -952,7 +952,7 @@
 
 .elFootMeta {
   margin: 0;
-  color: color-mix(in srgb, var(--color-bg) 40%, transparent);
+  color: color-mix(in srgb, var(--color-bg) 50%, transparent);
   font-size: 12.5px;
 }
 
@@ -1116,7 +1116,7 @@
 }
 
 .elGalFrame:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .elGalImg {

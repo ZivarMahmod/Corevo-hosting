@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import { getServices } from '@/lib/tenant-data'
 import { LocationHours, ClosingCta } from '@/components/storefront/sections'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
+import { themePages } from '@/components/storefront/layouts/florist/layouts'
 import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell } from '../preview-shell'
 
 // Preview av /kontakt — samma innehåll som app/(public)/kontakt/page.tsx, i preview-
@@ -22,15 +24,29 @@ export default async function PreviewContactPage({
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
   const copyMode = resolvePreviewCopyMode(copyParam)
-  const { tenant, settings } = bundle
+  const { tenant, settings, location } = bundle
 
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
   const content = resolveThemeContent(theme, settings.branding, copy)
+  const Page = themePages(theme).kontakt
+  const services = Page ? await getServices(tenant.id, tenant.slug) : []
 
   return (
     <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
-      <LocationHours salonName={tenant.name} content={content} />
-      <ClosingCta content={content} />
+      {Page ? (
+        <Page
+          tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+          content={content}
+          services={services}
+          location={location}
+          contact={settings.contact}
+        />
+      ) : (
+        <>
+          <LocationHours salonName={tenant.name} content={content} />
+          <ClosingCta content={content} />
+        </>
+      )}
     </PreviewShell>
   )
 }

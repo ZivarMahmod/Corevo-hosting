@@ -162,15 +162,36 @@ function AssetCard({ asset }: { asset: MediaAssetRow }) {
           overflow: 'hidden',
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={asset.url}
-          alt={asset.alt ?? ''}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-        />
+        {asset.url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={asset.url}
+            alt={asset.alt ?? ''}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <span style={{ padding: 12, textAlign: 'center', color: 'var(--c-ink-3)', fontSize: 12 }}>
+            Ingen färdig bild
+          </span>
+        )}
       </div>
 
       <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {asset.status !== 'ready' && (
+          <span
+            role={asset.status === 'delete_failed' ? 'alert' : undefined}
+            style={{
+              fontSize: 12,
+              color: asset.status === 'delete_failed' ? 'var(--c-danger)' : 'var(--c-ink-2)',
+            }}
+          >
+            {asset.status === 'delete_failed'
+              ? 'R2-städningen misslyckades. Försök igen.'
+              : asset.status === 'deleting'
+                ? 'Säker borttagning pågår…'
+                : 'Uppladdningen väntar på att slutföras…'}
+          </span>
+        )}
         <span
           style={{
             fontSize: 12,
@@ -197,12 +218,14 @@ function AssetCard({ asset }: { asset: MediaAssetRow }) {
             {asset.sizeBytes > 0 ? formatBytes(asset.sizeBytes) : ''}
           </span>
           <span style={{ display: 'inline-flex', gap: 4 }}>
-            <IconButton
-              label="Redigera alt-text"
-              icon="edit"
-              onClick={() => setEditingAlt(true)}
-            />
-            <DeleteButton asset={asset} />
+            {asset.status === 'ready' && (
+              <IconButton
+                label="Redigera alt-text"
+                icon="edit"
+                onClick={() => setEditingAlt(true)}
+              />
+            )}
+            {asset.status !== 'deleting' && <DeleteButton asset={asset} />}
           </span>
         </div>
       </div>
@@ -255,7 +278,7 @@ function DeleteButton({ asset }: { asset: MediaAssetRow }) {
 
   useEffect(() => {
     if (state.success) {
-      notify('Bild borttagen.', 'success')
+      notify(state.success, 'success')
       router.refresh()
     }
     if (state.error) {
@@ -285,12 +308,19 @@ function DeleteButton({ asset }: { asset: MediaAssetRow }) {
     return (
       <button
         type="button"
-        aria-label="Ta bort bild"
-        title="Ta bort bild"
+        aria-label={asset.status === 'delete_failed' ? 'Försök ta bort bilden igen' : 'Ta bort bild'}
+        title={asset.status === 'delete_failed' ? 'Försök igen' : 'Ta bort bild'}
         onClick={() => setArmed(true)}
-        style={baseBtn}
+        style={{
+          ...baseBtn,
+          width: asset.status === 'delete_failed' ? 'auto' : baseBtn.width,
+          padding: asset.status === 'delete_failed' ? '5px 8px' : baseBtn.padding,
+          fontSize: asset.status === 'delete_failed' ? 11 : undefined,
+          fontWeight: asset.status === 'delete_failed' ? 600 : undefined,
+          whiteSpace: 'nowrap',
+        }}
       >
-        <Icon name="trash" size={14} />
+        {asset.status === 'delete_failed' ? 'Försök igen' : <Icon name="trash" size={14} />}
       </button>
     )
   }

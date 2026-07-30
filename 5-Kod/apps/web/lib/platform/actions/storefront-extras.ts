@@ -3,13 +3,16 @@
 import { revalidatePath } from 'next/cache'
 import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
-import { uploadImage, uploadErrorMessage, deleteByPublicUrl } from '@/lib/r2/upload'
+import {
+  managedUploadErrorMessage,
+  retireManagedImages,
+  uploadManagedImage,
+} from '@/lib/media/lifecycle'
 import { mergeBranding } from '@/lib/branding/merge'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import type { TenantBranding } from '@corevo/ui'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
-import { recordMediaAsset } from './media-record'
 
 // ── Rikare-tema-media: about_image + closing_image (enkla bild-slots) + stats-par ──
 // Används av de RIKARE mallarna (Salvia m.fl.), inte FreshCut. Skriver branding-jsonb;
@@ -49,16 +52,21 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
   const prevUrl = typeof prev[key] === 'string' ? (prev[key] as string) : null
 
   let nextUrl: string | null = prevUrl
-  let uploaded: { file: File; url: string; key: string } | null = null
+  let uploadedNew = false
   if (remove) {
     nextUrl = null
   } else {
     const image = fd.get('image')
     if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
-    const res = await uploadImage(image, `tenants/${tenantId}/storefront`)
-    if (!res.ok) return { error: uploadErrorMessage(res.reason) }
+    const res = await uploadManagedImage(
+      supabase,
+      tenantId,
+      image,
+      'sajtbyggare',
+    )
+    if (!res.ok) return { error: managedUploadErrorMessage(res.reason) }
     nextUrl = res.url
-    uploaded = { file: image, url: res.url, key: res.key }
+    uploadedNew = !res.duplicate
   }
 
   const branding = mergeBranding(prev, { [key]: nextUrl } as Partial<TenantBranding>)
@@ -66,15 +74,14 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, branding }, { onConflict: 'tenant_id' })
   if (error) {
+    if (uploadedNew && nextUrl && nextUrl !== prevUrl) {
+      await retireManagedImages(supabase, tenantId, [nextUrl])
+    }
     await reportActionError('saveTenantSingleImage.upsert', error, { tenantId })
     return { error: GENERIC }
   }
 
-  // Städa gamla objektet när det byttes/togs bort (aldrig blockerande).
-  if (prevUrl && prevUrl !== nextUrl) await deleteByPublicUrl(prevUrl)
-
-  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
-  if (uploaded) await recordMediaAsset(supabase, tenantId, uploaded.file, uploaded, 'sajtbyggare')
+  await retireManagedImages(supabase, tenantId, [prevUrl], [nextUrl])
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/kunder/${tenantId}`)
@@ -167,7 +174,8 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
   }))
 
   let removedImg: string | null = null
-  let uploaded: { file: File; url: string; key: string } | null = null
+  let uploadedImg: string | null = null
+  let uploadedNew = false
   if (remove) {
     if (index === null || index >= team.length) return { error: 'Okänd medlem.' }
     removedImg = team[index]!.img || null
@@ -181,10 +189,16 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
     let img = prevImg
     const image = fd.get('image')
     if (image instanceof File && image.size > 0) {
-      const res = await uploadImage(image, `tenants/${tenantId}/team`)
-      if (!res.ok) return { error: uploadErrorMessage(res.reason) }
+      const res = await uploadManagedImage(
+        supabase,
+        tenantId,
+        image,
+        'sajtbyggare',
+      )
+      if (!res.ok) return { error: managedUploadErrorMessage(res.reason) }
       img = res.url
-      uploaded = { file: image, url: res.url, key: res.key }
+      uploadedImg = res.url
+      uploadedNew = !res.duplicate
       if (prevImg) removedImg = prevImg
     }
 
@@ -199,14 +213,14 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, branding }, { onConflict: 'tenant_id' })
   if (error) {
+    if (uploadedNew && uploadedImg) {
+      await retireManagedImages(supabase, tenantId, [uploadedImg])
+    }
     await reportActionError('saveTenantTeamMember.upsert', error, { tenantId })
     return { error: GENERIC }
   }
 
-  if (removedImg) await deleteByPublicUrl(removedImg)
-
-  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
-  if (uploaded) await recordMediaAsset(supabase, tenantId, uploaded.file, uploaded, 'sajtbyggare')
+  await retireManagedImages(supabase, tenantId, [removedImg], [uploadedImg])
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/kunder/${tenantId}`)
@@ -234,8 +248,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
  * bifogade filen upp till R2 under tenants/<id>/staff. Gamla objektet städas
  * best-effort EFTER commit och BARA när det är medarbetarens EGNA lagrade
  * avatar_url (läst ur DB ovan — aldrig en klient-skickad URL; samma fence-princip
- * som removeTenantStorefrontImage). deleteByPublicUrl vägrar dessutom främmande
- * origins (keyFromPublicUrl base-check), så en förgiftad rad kan inte radera annat.
+ * som removeTenantStorefrontImage).
  */
 export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
@@ -261,14 +274,19 @@ export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promi
   const prevUrl = member.avatar_url
 
   let nextUrl: string | null = null
-  let uploadedPhoto: { file: File; url: string; key: string } | null = null
+  let uploadedNew = false
   if (!remove) {
     const image = fd.get('image')
     if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
-    const res = await uploadImage(image, `tenants/${tenantId}/staff`)
-    if (!res.ok) return { error: uploadErrorMessage(res.reason) }
+    const res = await uploadManagedImage(
+      supabase,
+      tenantId,
+      image,
+      'sajtbyggare',
+    )
+    if (!res.ok) return { error: managedUploadErrorMessage(res.reason) }
     nextUrl = res.url
-    uploadedPhoto = { file: image, url: res.url, key: res.key }
+    uploadedNew = !res.duplicate
   }
 
   const { error } = await supabase
@@ -277,19 +295,14 @@ export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promi
     .eq('id', staffId)
     .eq('tenant_id', tenantId)
   if (error) {
-    // Nyss uppladdat objekt utan DB-rad → städa direkt så inget orphan blir kvar.
-    if (nextUrl) await deleteByPublicUrl(nextUrl)
+    if (uploadedNew && nextUrl) {
+      await retireManagedImages(supabase, tenantId, [nextUrl])
+    }
     await reportActionError('saveTenantStaffPhoto.update', error, { tenantId })
     return { error: GENERIC }
   }
 
-  // Städa gamla objektet när det byttes/togs bort (aldrig blockerande, FX-14).
-  if (prevUrl && prevUrl !== nextUrl) await deleteByPublicUrl(prevUrl)
-
-  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
-  if (uploadedPhoto) {
-    await recordMediaAsset(supabase, tenantId, uploadedPhoto.file, uploadedPhoto, 'sajtbyggare')
-  }
+  await retireManagedImages(supabase, tenantId, [prevUrl], [nextUrl])
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/kunder/${tenantId}`)

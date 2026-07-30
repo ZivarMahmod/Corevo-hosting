@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { directPreviewHref } from './SidaPreviewBridge.route'
 
 const source = readFileSync(new URL('./SidaPreviewBridge.tsx', import.meta.url), 'utf8')
 const sectionsSource = readFileSync(new URL('../storefront/sections.tsx', import.meta.url), 'utf8')
@@ -38,10 +39,17 @@ describe('SidaPreviewBridge full snapshot contract', () => {
     ]) expect(source).toContain(`'${type}'`)
   })
 
-  it('delegates storefront navigation to the parent editor route state', () => {
+  it('delegates embedded navigation and keeps direct preview navigation inside preview', () => {
     expect(source).toContain("type: 'preview-route'")
-    expect(source).toContain('path: target ? `/${target}` :')
-    expect(source).not.toContain('window.location.assign(dest)')
+    expect(source).toContain('path: `${path}${url.search}`')
+    expect(source).toContain('window.parent === window')
+    expect(source).toContain('window.location.assign(directPreviewHref(')
+    expect(
+      directPreviewHref('freshcut', '/blogg', '?page=2', '?theme=snitt&copy=preview'),
+    ).toBe('/salong-preview/freshcut/blogg?theme=snitt&copy=preview&page=2')
+    expect(
+      directPreviewHref('freshcut', '/blogg/post', '', '?theme=snitt'),
+    ).toBe('/salong-preview/freshcut/blogg/post?theme=snitt')
   })
 
   it('previews social, booking and all non-copy field highlights', () => {

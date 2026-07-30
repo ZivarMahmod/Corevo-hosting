@@ -7,9 +7,17 @@ const readSeed = (name: string) =>
 
 describe('preview platform-admin seeds', () => {
   it.each([
-    ['seed.sql', '33333333-0000-0000-0000-000000000003'],
-    ['seeds/e2e-seed.sql', 'e2e00000-0000-0000-0000-0000000000a3'],
-  ])('%s keeps the super-admin identity global', (file, userId) => {
+    [
+      'seed.sql',
+      '33333333-0000-0000-0000-000000000003',
+      /update public\.tenants[\s\S]*set status = 'active'/i,
+    ],
+    [
+      'seeds/e2e-seed.sql',
+      'e2e00000-0000-0000-0000-0000000000a3',
+      /select public\.publish_tenant\('e2e00000-0000-0000-0000-000000000001'\)/i,
+    ],
+  ])('%s keeps the super-admin identity global', (file, userId, publishTenant) => {
     const sql = readSeed(file)
     expect(sql).toContain('"tenant_id":null,"platform_admin":true')
     expect(sql).toMatch(
@@ -18,6 +26,6 @@ describe('preview platform-admin seeds', () => {
     expect(sql).toMatch(
       /insert into public\.tenants \(id, slug, name, status\)[\s\S]*'provisioning'/i,
     )
-    expect(sql).toMatch(/update public\.tenants[\s\S]*set status = 'active'/i)
+    expect(sql).toMatch(publishTenant)
   })
 })

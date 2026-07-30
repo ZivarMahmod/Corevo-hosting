@@ -81,6 +81,7 @@ export function useCheckout(args: {
   const [paymentMethod, setPaymentMethod] = useState<ShopPaymentMethod | null>(
     paymentMethods[0] ?? null,
   )
+  const [reserveRequestId] = useState(() => crypto.randomUUID())
 
   const didReserve = useRef(false)
   // Dubbelbetalnings-vakt: synkron ref (state är asynkront — två snabba klick kan annars
@@ -97,7 +98,7 @@ export function useCheckout(args: {
     // goal-64: korgen kan bära produkter, presentkort OCH kursplatser.
     // cartLineToReserveItem översätter raden till sitt VAL (variant / belopp / tillfälle) —
     // aldrig till ett pris. Servern (0059) slår upp priset och räknar totalen.
-    reserveOrder({ items: lines.map(cartLineToReserveItem), token })
+    reserveOrder({ items: lines.map(cartLineToReserveItem), token, reserveRequestId })
       .then((r) => {
         if (r.ok) setOrderId(r.orderId)
         else setReserveError(r.message)
@@ -105,12 +106,15 @@ export function useCheckout(args: {
       .catch(() => setReserveError('Något gick fel. Försök igen.'))
       .finally(() => setReserving(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  }, [token, reserveRequestId])
 
   // Släpp lager-holdet om kunden lämnar kassan utan att slutföra.
   useEffect(() => {
     return () => {
-      if (orderId && token && !submitting) void cancelOrder(orderId, token)
+      // inFlight is synchronous and remains true across a successful provider
+      // redirect. State captured when this effect was created would still say
+      // submitting=false and could otherwise release the paid order's stock hold.
+      if (orderId && token && !inFlight.current) void cancelOrder(orderId, token)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId])

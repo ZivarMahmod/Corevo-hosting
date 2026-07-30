@@ -298,6 +298,50 @@ a.link:hover .title {
   outline-offset: 4px;
 }
 
+.pagination {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.paginationLink {
+  color: var(--color-primary-ink, var(--color-primary, #232520));
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.paginationLink:last-child {
+  justify-self: end;
+}
+
+.paginationLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 4px;
+}
+
+.paginationStatus {
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
+}
+
+@media (max-width: 420px) {
+  .pagination {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .paginationStatus {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card,
   .img,

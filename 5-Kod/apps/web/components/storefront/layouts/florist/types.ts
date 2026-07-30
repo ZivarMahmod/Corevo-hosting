@@ -338,6 +338,9 @@ export type FloristTheme = {
    *  ren :global()-regel i en CSS Module är inte "pure" → webpack-fel i produktionsbygget.
    *  [mobil, desktop] — mobilvärdet läggs i en max-width:720px-media. */
   navHeight?: { desktop: string; mobile: string }
+  /** Faktiskt reserverat fixed-shell-utrymme när toppklustret innehåller fler rader
+   *  än manifestets nav. Visuella katalogjämförelser använder fortfarande navHeight. */
+  shellOffset?: { desktop: string; mobile: string }
   /** Mallens evergreen-copy + fotostandard. ThemeContentDefaults = THEME_CONTENTs
    *  bas-kontrakt + de valfria sektions-texterna (shopEyebrow/blogTitle/giftLede …)
    *  som mallen får ge egna standardvärden för; ägarens settings.copy vinner ändå. */
@@ -394,9 +397,10 @@ export type FloristTheme = {
  * och onboarding-studions preview.
  */
 export function floristThemeBlock(t: FloristTheme): string {
-  const nav = t.navHeight
-    ? `[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${t.navHeight.desktop};}` +
-      `@media(max-width:720px){[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${t.navHeight.mobile};}}`
+  const shellOffset = t.shellOffset ?? t.navHeight
+  const nav = shellOffset
+    ? `[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${shellOffset.desktop};}` +
+      `@media(max-width:720px){[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${shellOffset.mobile};}}`
     : ''
   // goal-62 B2a: accenten ÄR mallens primary på storefronten (tokens.css), men
   // --color-accent-fg låg kvar som ett globalt #ffffff — vit text på en LJUS accent
@@ -411,7 +415,10 @@ export function floristThemeBlock(t: FloristTheme): string {
   // faller igenom på tonade sektioner. Mörka mallar (onyx) har ingen ljus yta → primary
   // står orörd, den ligger redan på mörkt.
   const lightSurfaces = [t.palette.bg, t.palette.surface, t.palette.accentSoft].filter(
-    (c) => accentForeground(c) === '#15281f',
+    (c) => {
+      const fg = accentForeground(c)
+      return fg === '#15281f' || fg === '#000000'
+    },
   )
   const worstLight = lightSurfaces.sort(
     (a, b) => (contrastRatio('#000000', a) ?? 0) - (contrastRatio('#000000', b) ?? 0),

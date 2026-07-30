@@ -2,10 +2,9 @@
 --
 -- E2E-TEARDOWN — river fixturen och ALLT sviten skapade. Körs via scripts/e2e-db.mjs.
 --
--- Kontraktet: efter det här ska databasen se EXAKT ut som före seeden. Sviten kör mot
--- produktionsdatabasen (Zivars beslut 2026-07-14: inga slutkunder ännu, Free-planen
--- har ingen branching), så "städar efter sig" är inte en artighet — det är villkoret
--- för att den får köras alls.
+-- Kontraktet: efter det här ska databasen se EXAKT ut som före seeden. Sviten kör
+-- endast mot det explicit guardade previewprojektet. Att städa efter sig är ändå
+-- ett villkor, inte en artighet.
 --
 -- Vad som raderas, och varför just det:
 --   1. tenants.slug = 'frisor1'  → själva fixturen. Allt tenant-scopat (bokningar,
@@ -21,6 +20,19 @@
 --
 -- Inga riktiga tenants (freshcut, florist, zentum) matchar något av mönstren.
 
+begin;
+
+-- Adminflöden skriver append-only auditposter. De måste bort före tenantens
+-- cascade-delete; vakten stängs bara för exakt E2E-raderna och återställs direkt.
+alter table public.audit_log disable trigger trg_audit_no_delete;
+delete from public.audit_log
+ where tenant_id in (
+   select id from public.tenants
+    where slug = 'frisor1'
+       or slug like 'e2e%'
+ );
+alter table public.audit_log enable trigger trg_audit_no_delete;
+
 -- 1 + 2. Fixtur-tenanten och alla tenants platform.spec provisionerat.
 delete from public.tenants
  where slug = 'frisor1'
@@ -35,3 +47,5 @@ delete from auth.users
 -- 4. Den globala super_admin-rollen (tenant_id NULL → ingen cascade).
 delete from public.roles
  where id::text like 'e2e00000%';
+
+commit;

@@ -11,7 +11,7 @@ import { parseModuleSelections, writeTenantVerticalAndModules } from '../tenant-
 import { parseServiceInputs } from '../onboarding-studio/services'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 import { isSelectableTheme } from '@/lib/platform/theme-palettes'
-import { uploadImage } from '@/lib/r2/upload'
+import { retireManagedImages, uploadManagedImage } from '@/lib/media/lifecycle'
 import { tenantStorefrontHost } from '@/lib/storefront-url'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
@@ -160,13 +160,8 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
       .eq('status', 'provisioning') // never delete an ambiguously committed active tenant
   }
 
-  // Optional logo (Token-branding step): upload now that we have the tenant id for the
-  // R2 path. Best-effort — a failed/absent upload never blocks the atomic create.
+  // Optional logo is uploaded only after modules and required ownership are in place.
   const logo = fd.get('logo')
-  if (logo instanceof File && logo.size > 0) {
-    const res = await uploadImage(logo, `tenants/${tenantId}/branding`)
-    if (res.ok) initialBranding.logo_url = res.url
-  }
 
   // 2) tenant_settings (defaults + theme + accent/tagline branding + FLÖDE 2 billing).
   //    settings.theme is read by the public layout → [data-theme], so the new salon
@@ -369,6 +364,31 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     if (ownerFailed) {
       await rollback()
       return { error: `Kunden skapades inte: ${ownerFailed}. Försök igen.` }
+    }
+  }
+
+  // The tenant now owns its module rows and required owner. Keep the optional logo
+  // best-effort, but route it through the same quota/lifecycle contract as all later
+  // uploads. A settings failure queues a newly-created asset for cleanup.
+  if (logo instanceof File && logo.size > 0) {
+    const res = await uploadManagedImage(
+      supabase,
+      tenantId,
+      logo,
+      'branding',
+    )
+    if (res.ok) {
+      initialBranding.logo_url = res.url
+      const { error: logoError } = await supabase
+        .from('tenant_settings')
+        .update({ branding: initialBranding as unknown as Json })
+        .eq('tenant_id', tenantId)
+      if (logoError) {
+        if (!res.duplicate) {
+          await retireManagedImages(supabase, tenantId, [res.url])
+        }
+        await reportActionError('createTenant.logo_update', logoError, { tenantId })
+      }
     }
   }
 

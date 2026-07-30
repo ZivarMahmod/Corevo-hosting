@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import type { BlogPostRow } from '@/lib/admin/blogg/types'
-import { BLOG_STATUSES, BLOG_STATUS_LABELS } from '@/lib/admin/blogg/types'
+import { BLOG_STATUS_LABELS } from '@/lib/admin/blogg/types'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
 import { ImagePicker } from './ImagePicker'
 import { TenantScope, TenantField } from './TenantScope'
@@ -60,13 +60,13 @@ function StatusToggle({ post }: { post: BlogPostRow }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setBlogPostStatus, {})
 
   const isPublished = post.status === 'published'
-  const nextStatus = isPublished ? 'draft' : 'published'
-  const label = isPublished ? 'Avpublicera' : 'Publicera'
+  const nextStatus = isPublished ? 'archived' : 'published'
+  const label = isPublished ? 'Arkivera' : post.published_at ? 'Publicera igen' : 'Publicera'
 
   useEffect(() => {
     if (state.success) {
       notify(
-        isPublished ? `"${post.title}" satt till utkast` : `"${post.title}" publicerad`,
+        isPublished ? `"${post.title}" arkiverad` : `"${post.title}" publicerad`,
         'success',
       )
       router.refresh()
@@ -150,7 +150,7 @@ export function BloggAdmin({
             text={
               <>
                 Skapa ditt första blogginlägg med <strong>Nytt inlägg</strong> — rubrik, ingress
-                och brödtext. Publicera direkt eller spara som utkast.
+                och brödtext. Inlägget skapas som utkast och publiceras sedan från listan.
               </>
             }
           />
@@ -285,15 +285,6 @@ function CreateDrawer({ assets, onClose }: { assets: MediaAssetRow[]; onClose: (
         <Field label="Brödtext">
           <textarea form="create-blog-post" name="body" style={bodyStyle} />
         </Field>
-        <Field label="Status">
-          <select form="create-blog-post" name="status" defaultValue="draft" style={inputStyle}>
-            {BLOG_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {BLOG_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Ordning">
           <input
             form="create-blog-post"
@@ -329,11 +320,8 @@ function EditDrawer({
   const router = useRouter()
   const [save, saveAction, saving] = useActionState<ActionState, FormData>(updateBlogPost, {})
   const [del, delAction, deleting] = useActionState<ActionState, FormData>(deleteBlogPost, {})
-  // Tvåstegsbekräftelse: "Ta bort" raderade tidigare på ETT klick — granne med
-  // "Spara" i samma footer. Klick 1 armerar (knappen blir "Säker? Ta bort
-  // permanent" i varningston + en Ångra), klick 2 skickar delete-formuläret.
-  // Drawern remountas per inlägg (key=post.id) så armeringen kan aldrig läcka
-  // mellan inlägg. Samma mönster som ServicesManager/StaffRoster.
+  // Aldrig publicerade utkast kan fortfarande tas bort efter två klick.
+  // Publicerad historik arkiveras i stället och skyddas även av databasen.
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
@@ -369,30 +357,36 @@ function EditDrawer({
       ariaLabel={`Redigera ${post.title}`}
       footer={
         <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}>
-          <form action={delAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            <TenantField />
-            <input type="hidden" name="id" value={post.id} />
-            {confirmDelete ? (
-              <>
-                <Button
-                  variant="ghost"
-                  type="submit"
-                  icon="trash"
-                  disabled={deleting}
-                  style={{ color: 'var(--c-danger)' }}
-                >
-                  {deleting ? '…' : 'Säker? Ta bort permanent'}
+          {post.published_at ? (
+            <span style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>
+              Publicerad historik bevaras. Använd Arkivera i listan.
+            </span>
+          ) : (
+            <form action={delAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+              <TenantField />
+              <input type="hidden" name="id" value={post.id} />
+              {confirmDelete ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    type="submit"
+                    icon="trash"
+                    disabled={deleting}
+                    style={{ color: 'var(--c-danger)' }}
+                  >
+                    {deleting ? '…' : 'Säker? Ta bort permanent'}
+                  </Button>
+                  <Button variant="ghost" type="button" onClick={() => setConfirmDelete(false)}>
+                    Ångra
+                  </Button>
+                </>
+              ) : (
+                <Button variant="ghost" type="button" icon="trash" onClick={() => setConfirmDelete(true)}>
+                  Ta bort
                 </Button>
-                <Button variant="ghost" type="button" onClick={() => setConfirmDelete(false)}>
-                  Ångra
-                </Button>
-              </>
-            ) : (
-              <Button variant="ghost" type="button" icon="trash" onClick={() => setConfirmDelete(true)}>
-                Ta bort
-              </Button>
-            )}
-          </form>
+              )}
+            </form>
+          )}
           <div style={{ flex: 1 }} />
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
@@ -432,15 +426,6 @@ function EditDrawer({
         </Field>
         <Field label="Brödtext">
           <textarea name="body" defaultValue={post.body ?? ''} style={bodyStyle} />
-        </Field>
-        <Field label="Status">
-          <select name="status" defaultValue={post.status} style={inputStyle}>
-            {BLOG_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {BLOG_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </select>
         </Field>
         <Field label="Ordning">
           <input

@@ -31,6 +31,7 @@ export type AdminArea =
   | 'scheman'
   | 'kurser'
   | 'media'
+  | 'galleri'
   | 'webshop'
   | 'blogg'
   | 'offerter'
@@ -59,6 +60,7 @@ export const ADMIN_AREA_MIN_LEVEL: Record<AdminArea, number> = {
   scheman: ROLE_LEVEL.salonAdmin,
   kurser: ROLE_LEVEL.salonAdmin,
   media: ROLE_LEVEL.salonAdmin,
+  galleri: ROLE_LEVEL.salonAdmin,
   webshop: ROLE_LEVEL.salonAdmin,
   blogg: ROLE_LEVEL.salonAdmin,
   offerter: ROLE_LEVEL.salonAdmin,
@@ -88,6 +90,7 @@ const AREA_PREFIX: ReadonlyArray<readonly [string, AdminArea]> = [
   ['/admin/scheman', 'scheman'],
   ['/admin/kurser', 'kurser'],
   ['/admin/media', 'media'],
+  ['/admin/galleri', 'galleri'],
   ['/admin/webshop', 'webshop'],
   ['/admin/blogg', 'blogg'],
   ['/admin/offerter', 'offerter'],

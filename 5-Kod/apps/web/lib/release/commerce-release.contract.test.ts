@@ -102,11 +102,10 @@ describe('pilot commerce release fence', () => {
 
   it('hides commerce navigation and CTAs in authenticated preview when unreleased', () => {
     const source = read('app/salong-preview/[slug]/preview-shell.tsx')
-    expect(source).toContain('const commerceRelease = commerceReleaseGate(tenant.id)')
-    expect(source).toContain("commerceRelease.shop && (shopState === 'live' || shopState === 'paused')")
-    expect(source).toContain("commerceRelease.presentkort &&")
-    expect(source).toContain("ctaModule === 'shop' && !commerceRelease.shop")
-    expect(source).toContain("ctaModule === 'presentkort' && !commerceRelease.presentkort")
+    expect(source).toContain('const layoutModules = await loadLayoutModuleTeasers(tenant.id, tenant.slug)')
+    expect(source).toContain('const moduleLinks = moduleNavigationLinks(layoutModules)')
+    expect(source).toContain('moduleRouteReachable(rawPrimaryCta.href, layoutModules, bookingReachable)')
+    expect(source).toContain('cartEnabled={layoutModules.shopReachable}')
   })
 
   it('shows an operator-facing release notice instead of loading commerce admin data', () => {

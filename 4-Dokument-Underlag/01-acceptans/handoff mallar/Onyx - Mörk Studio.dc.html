@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="sv">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,16 +19,24 @@
     a:hover { color: #F2EFEA; }
     ::selection { background: #C9973F; color: #121212; }
     input, textarea { background: #1C1C1C; color: #F2EFEA; }
-    input::placeholder, textarea::placeholder { color: #6B655B; }
+    input::placeholder, textarea::placeholder { color: #89857D; }
 
     /* Corevo-tillägg: fokus, knappsemantik, mobil ≤760px */
     a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #C9973F !important; outline-offset: 2px; }
     button { font: inherit; cursor: pointer; }
     @media (max-width: 760px) {
+      div:has(> aside + main) { display: block !important; }
+      aside { position: static !important; width: 100% !important; height: auto !important; overflow: visible !important; }
+      aside nav { flex-direction: row !important; flex-wrap: wrap; margin-top: 20px !important; }
+      aside > div:last-child { margin-top: 20px !important; }
+      aside + main { width: 100% !important; }
+      main, main section, main section > * { min-width: 0 !important; max-width: 100%; box-sizing: border-box; }
       [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
       h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
       h2 { font-size: clamp(24px, 7vw, 34px) !important; }
-      a[style*="cursor:pointer"], button { min-height: 44px; }
+      a[style*="cursor"] { min-width: 44px !important; min-height: 44px !important; }
+      a[style*="cursor"]:not([style*="display"]) { display: inline-flex; align-items: center; }
+      button { min-width: 44px; min-height: 44px; }
       nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
       section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
     }
@@ -52,7 +60,7 @@
       <a onClick="{{ goKorg }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #C9973F; padding:12px 14px; color:#C9973F; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.06em" style-hover="background:#C9973F; color:#121212">
         <span>KASSE</span><span>[{{ cartCount }}]</span>
       </a>
-      <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; color:#6B655B; line-height:1.7">ÖPPET TIS–LÖR 12–22<br>KATARINA BANGATA 9</p>
+      <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; color:#89857D; line-height:1.7">ÖPPET TIS–LÖR 12–22<br>KATARINA BANGATA 9</p>
     </div>
   </aside>
 
@@ -72,7 +80,7 @@
               <a onClick="{{ goButik }}" style="cursor:pointer; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:16px 32px" style-hover="background:#F2EFEA; color:#121212">SE DROPPET</a>
               <a onClick="{{ goBoka }}" style="cursor:pointer; border:1px solid #2E2E2E; color:#F2EFEA; font-weight:500; font-size:14px; letter-spacing:0.06em; padding:15px 28px" style-hover="border-color:#C9973F; color:#C9973F">BOKA STUDION</a>
             </div>
-            <p style="margin:44px 0 0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B; letter-spacing:0.06em">KVÄLLSLEVERANS 18–23 · BESTÄLL FÖRE 20:00</p>
+            <p style="margin:44px 0 0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#89857D; letter-spacing:0.06em">KVÄLLSLEVERANS 18–23 · BESTÄLL FÖRE 20:00</p>
           </div>
           <div style="position:relative; min-height:560px; background:url('https://images.unsplash.com/photo-1518343161123-c7e9ab4dc4da?w=1600&q=80&auto=format&fit=crop') center/cover; border-left:1px solid #2E2E2E">
             <span style="position:absolute; bottom:20px; right:20px; font-family:'IBM Plex Mono'; font-size:10.5px; color:#F2EFEA; background:rgba(18,18,18,0.75); padding:6px 10px; letter-spacing:0.08em">FIG. 01 — MAGNOLIA NOIR</span>
@@ -94,7 +102,7 @@
                   <span style="font-family:'IBM Plex Mono'; font-size:13px; color:#C9973F; white-space:nowrap">{{ p.price }}</span>
                 </div>
                 <p style="margin:0 0 16px; color:#9C968C; font-size:13.5px; line-height:1.6">{{ p.desc }}</p>
-                <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; padding:10px 18px" style-hover="background:#C9973F; color:#121212">+ LÄGG I KASSE</button>
+                <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; background:transparent; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; padding:10px 18px" style-hover="background:#C9973F; color:#121212">+ LÄGG I KASSE</button>
               </div>
             </sc-for>
           </div>
@@ -125,7 +133,7 @@
           <div>
             <sc-for list="{{ homeBlog }}" as="b" hint-placeholder-count="2">
               <a onClick="{{ goBlogg }}" style="cursor:pointer; display:grid; grid-template-columns:140px 1fr auto; gap:32px; align-items:baseline; border-top:1px solid #2E2E2E; padding:22px 4px" style-hover="background:#1C1C1C">
-                <span style="font-family:'IBM Plex Mono'; font-size:12px; color:#6B655B">{{ b.date }}</span>
+                <span style="font-family:'IBM Plex Mono'; font-size:12px; color:#89857D">{{ b.date }}</span>
                 <span style="font-weight:600; font-size:19px; color:#F2EFEA">{{ b.title }}</span>
                 <span style="font-family:'IBM Plex Mono'; font-size:12px; color:#C9973F">LÄS →</span>
               </a>
@@ -163,7 +171,7 @@
                 <span style="font-family:'IBM Plex Mono'; font-size:13px; color:#C9973F; white-space:nowrap">{{ p.price }}</span>
               </div>
               <p style="margin:0 0 16px; color:#9C968C; font-size:13.5px; line-height:1.6">{{ p.desc }}</p>
-              <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; padding:10px 18px" style-hover="background:#C9973F; color:#121212">+ LÄGG I KASSE</button>
+              <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; background:transparent; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; padding:10px 18px" style-hover="background:#C9973F; color:#121212">+ LÄGG I KASSE</button>
             </div>
           </sc-for>
         </div>
@@ -177,7 +185,7 @@
         <h1 style="margin:0 0 44px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Din kasse</h1>
         <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
           <div style="border:1px solid #2E2E2E; padding:64px 40px; text-align:center">
-            <p style="margin:0 0 8px; font-family:'IBM Plex Mono'; font-size:13px; letter-spacing:0.1em; color:#6B655B">[ TOM ]</p>
+            <p style="margin:0 0 8px; font-family:'IBM Plex Mono'; font-size:13px; letter-spacing:0.1em; color:#89857D">[ TOM ]</p>
             <p style="margin:0 0 28px; color:#9C968C; font-size:15px">Droppet väntar inte på någon.</p>
             <a onClick="{{ goButik }}" style="cursor:pointer; display:inline-block; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:15px 32px" style-hover="background:#F2EFEA; color:#121212">TILL BUTIKEN</a>
           </div>
@@ -190,7 +198,7 @@
                   <div style="width:72px; height:72px; background:url('{{ ci.img }}') center/cover; flex-shrink:0"></div>
                   <div style="flex:1">
                     <p style="margin:0 0 3px; font-weight:600; font-size:16px">{{ ci.name }}</p>
-                    <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B">{{ ci.unit }} / ST</p>
+                    <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#89857D">{{ ci.unit }} / ST</p>
                   </div>
                   <div style="display:flex; align-items:center; border:1px solid #2E2E2E">
                     <button onClick="{{ ci.dec }}" style="border:none; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:#C9973F; font-weight:700" style-hover="background:#1C1C1C">−</button>
@@ -198,7 +206,7 @@
                     <button onClick="{{ ci.inc }}" style="border:none; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:#C9973F; font-weight:700" style-hover="background:#1C1C1C">+</button>
                   </div>
                   <span style="font-family:'IBM Plex Mono'; font-size:14px; color:#C9973F; min-width:90px; text-align:right; white-space:nowrap">{{ ci.lineTotal }}</span>
-                  <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-family:'IBM Plex Mono'; font-size:11px; color:#6B655B; white-space:nowrap" style-hover="color:#C9973F">[X]</button>
+                  <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-family:'IBM Plex Mono'; font-size:11px; color:#89857D; white-space:nowrap" style-hover="color:#C9973F">[X]</button>
                 </div>
               </sc-for>
               <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 22px">
@@ -253,7 +261,7 @@
               <input placeholder="CVC" style="border:1px solid #2E2E2E; padding:13px 14px; font-family:'IBM Plex Mono'; font-size:12.5px; outline-color:#C9973F">
             </div>
           </sc-if>
-          <p style="margin:18px 0 0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B; line-height:1.7">{{ payHint }}</p>
+          <p style="margin:18px 0 0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#89857D; line-height:1.7">{{ payHint }}</p>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid #C9973F; padding:22px 28px">
@@ -330,13 +338,13 @@
               </div>
               <div style="text-align:right">
                 <p style="margin:0 0 4px; font-family:'IBM Plex Mono'; font-size:14px; color:#C9973F; white-space:nowrap">{{ k.price }}</p>
-                <p style="margin:0 0 12px; font-family:'IBM Plex Mono'; font-size:10.5px; color:#6B655B; white-space:nowrap">{{ k.seats }}</p>
-                <button onClick="{{ k.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.1em; padding:9px 16px; white-space:nowrap" style-hover="background:#C9973F; color:#121212">+ BOKA</button>
+                <p style="margin:0 0 12px; font-family:'IBM Plex Mono'; font-size:10.5px; color:#89857D; white-space:nowrap">{{ k.seats }}</p>
+                <button onClick="{{ k.add }}" style="background:transparent; cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.1em; padding:9px 16px; white-space:nowrap" style-hover="background:#C9973F; color:#121212">+ BOKA</button>
               </div>
             </div>
           </sc-for>
         </div>
-        <p style="margin:36px 0 0; font-family:'IBM Plex Mono'; font-size:12px; color:#6B655B">PRIVAT GRUPP EFTER STÄNGNING? <a onClick="{{ goOffert }}" style="cursor:pointer; color:#C9973F" style-hover="color:#F2EFEA">BEGÄR OFFERT →</a></p>
+        <p style="margin:36px 0 0; font-family:'IBM Plex Mono'; font-size:12px; color:#89857D">PRIVAT GRUPP EFTER STÄNGNING? <a onClick="{{ goOffert }}" style="cursor:pointer; color:#C9973F" style-hover="color:#F2EFEA">BEGÄR OFFERT →</a></p>
       </section>
     </sc-if>
 
@@ -366,7 +374,7 @@
             <a style="cursor:pointer; display:grid; grid-template-columns:180px 1fr; gap:36px; border-top:1px solid #2E2E2E; padding:32px 4px" style-hover="background:#1C1C1C">
               <div>
                 <p style="margin:0 0 6px; font-family:'IBM Plex Mono'; font-size:12px; color:#C9973F">{{ b.date }}</p>
-                <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.1em; color:#6B655B">{{ b.tag }}</p>
+                <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.1em; color:#89857D">{{ b.tag }}</p>
               </div>
               <div>
                 <h2 style="margin:0 0 10px; font-weight:600; font-size:24px; line-height:1.25">{{ b.title }}</h2>
@@ -390,7 +398,7 @@
             <p style="margin:0; font-weight:700; font-size:20px; letter-spacing:0.12em">ONYX<span style="color:#C9973F">.</span> KRETSEN</p>
             <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11px; color:#C9973F">NO. 0847</p>
           </div>
-          <p style="margin:0 0 6px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.12em; color:#6B655B">MEDLEM</p>
+          <p style="margin:0 0 6px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.12em; color:#89857D">MEDLEM</p>
           <p style="margin:0; font-family:'IBM Plex Mono'; font-size:15px; color:#F2EFEA">DITT NAMN HÄR</p>
         </div>
         <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; background:#2E2E2E; border:1px solid #2E2E2E; margin-bottom:36px">
@@ -438,10 +446,10 @@
           <div style="border:1px solid #C9973F; background:#1C1C1C; padding:44px 36px">
             <div style="display:flex; justify-content:space-between; margin-bottom:52px">
               <p style="margin:0; font-weight:700; font-size:18px; letter-spacing:0.12em">ONYX<span style="color:#C9973F">.</span></p>
-              <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.12em; color:#6B655B">GIFT CARD</p>
+              <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.12em; color:#89857D">GIFT CARD</p>
             </div>
             <p style="margin:0; font-family:'IBM Plex Mono'; font-size:40px; color:#C9973F">{{ giftAmount }}</p>
-            <p style="margin:16px 0 0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.1em; color:#6B655B">GILTIGT 12 MÅN · KOD VIA MEJL</p>
+            <p style="margin:16px 0 0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.1em; color:#89857D">GILTIGT 12 MÅN · KOD VIA MEJL</p>
           </div>
           <div>
             <p style="margin:0 0 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">BELOPP</p>
@@ -486,7 +494,7 @@
             <p style="margin:0 0 20px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">STUDION</p>
             <p style="margin:0 0 14px; font-size:15px; line-height:1.7; color:#F2EFEA">Katarina Bangata 9<br>116 39 Stockholm</p>
             <p style="margin:0 0 14px; font-family:'IBM Plex Mono'; font-size:13px; color:#C9973F">08-640 22 19<br>natt@onyx.flowers</p>
-            <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B; line-height:1.8">TIS–FRE 12–22<br>LÖR 12–23 · SÖN–MÅN STÄNGT</p>
+            <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#89857D; line-height:1.8">TIS–FRE 12–22<br>LÖR 12–23 · SÖN–MÅN STÄNGT</p>
           </div>
           <div style="border:1px solid #2E2E2E; padding:32px">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
@@ -503,7 +511,7 @@
     <!-- FOOTER -->
     <footer style="border-top:1px solid #2E2E2E; padding:44px 56px; display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap">
       <p style="margin:0; font-weight:700; font-size:18px; letter-spacing:0.12em">ONYX<span style="color:#C9973F">.</span></p>
-      <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; color:#6B655B">© 2026 ONYX FLOWERS · KATARINA BANGATA 9 · BYGGD MED COREVO</p>
+      <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; color:#89857D">© 2026 ONYX FLOWERS · KATARINA BANGATA 9 · BYGGD MED COREVO</p>
       <a onClick="{{ goKrets }}" style="cursor:pointer; white-space:nowrap; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; color:#C9973F" style-hover="color:#F2EFEA">GÅ MED I KRETSEN →</a>
     </footer>
   </main>
@@ -633,7 +641,7 @@ class Component extends DCLogic {
       pick: () => this.setState({ delivery: d.id }),
       border: st.delivery === d.id ? '#C9973F' : '#2E2E2E',
       bg: st.delivery === d.id ? '#1C1C1C' : 'transparent',
-      numColor: st.delivery === d.id ? '#C9973F' : '#6B655B',
+      numColor: st.delivery === d.id ? '#C9973F' : '#89857D',
     }));
     const shipCost = (delOpts.find((d) => d.id === st.delivery) || delOpts[0]).cost;
 
@@ -740,7 +748,7 @@ class Component extends DCLogic {
     "fg": "#F2EFEA",
     "fg2": "#9C968C",
     "line": "#2E2E2E",
-    "accentSoft": "#6B655B"
+    "accentSoft": "#89857D"
   },
   "fonts": {
     "heading": "Space Grotesk",

@@ -16,7 +16,7 @@ export async function listTenantEvents(tenantId: string): Promise<EventRow[]> {
     supabase
       .from('tenant_events')
       .select(
-        'id, tenant_id, title, description, starts_at, duration_min, capacity, price_cents, status',
+        'id, tenant_id, title, description, starts_at, duration_min, capacity, price_cents, status, cancelled_at, cancelled_by, cancellation_reason, lifecycle_version',
       )
       .eq('tenant_id', tenantId)
       .order('starts_at', { ascending: false })
@@ -44,7 +44,7 @@ export async function listEventRegistrations(tenantId: string): Promise<Registra
   const supabase = await createClient()
   const { data } = await supabase
     .from('event_registrations')
-    .select('id, tenant_id, event_id, name, email, phone, party_size, message, status')
+    .select('id, tenant_id, event_id, name, email, phone, party_size, message, status, order_item_id, cancelled_at, cancelled_by, cancellation_reason, lifecycle_version')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: true })
     // ponytail: cap (goal-56 A5) — 2000 registrations covers admin scale; paginate past it.

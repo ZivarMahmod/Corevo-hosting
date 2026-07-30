@@ -6,20 +6,30 @@ const actions = readFileSync(resolve(import.meta.dirname, '../../app/butik/actio
   '\r\n',
   '\n',
 )
+const checkoutHook = readFileSync(
+  resolve(import.meta.dirname, '../../components/storefront/shop/useCheckout.ts'),
+  'utf8',
+).replaceAll('\r\n', '\n')
 
 describe('webshop payment persistence', () => {
-  it('does not create a Stripe session when the payment row cannot be persisted', () => {
-    expect(actions).toContain('const { error: stripePaymentError } = await admin.from(\'payments\').upsert(')
-    expect(actions).toContain('if (stripePaymentError)')
+  it('prepares one DB-owned payment snapshot for Stripe', () => {
+    expect(actions).toContain("admin.rpc('prepare_shop_order_payment'")
+    expect(actions).not.toContain("admin.from('payments').upsert(")
+    expect(actions).toContain("'stripe',\n    tenant.stripe_account_id")
   })
 
-  it('does not create a PayPal order when the payment row cannot be persisted', () => {
-    expect(actions).toContain('const { error: paypalPaymentError } = await admin.from(\'payments\').upsert(')
-    expect(actions).toContain('if (paypalPaymentError)')
+  it('prepares the same DB-owned payment snapshot for PayPal', () => {
+    expect(actions).toContain("'paypal',\n    'paypal:platform'")
   })
 
-  it('does not report Stripe checkout success when its session id cannot be persisted', () => {
-    expect(actions).toContain('const { error: stripeSessionError } = await admin')
-    expect(actions).toContain('if (stripeSessionError)')
+  it('sends providers one exact total line and persists their order reference by RPC', () => {
+    expect(actions).toContain("product_data: { name: 'Beställning' }")
+    expect(actions).toContain("admin.rpc('record_shop_payment_order_reference'")
+    expect(actions).not.toContain('shop_order_items(product_name,unit_price_cents,quantity)')
+  })
+
+  it('does not release the stock hold during a successful provider redirect', () => {
+    expect(checkoutHook).toContain('if (orderId && token && !inFlight.current)')
+    expect(checkoutHook).not.toContain('if (orderId && token && !submitting)')
   })
 })

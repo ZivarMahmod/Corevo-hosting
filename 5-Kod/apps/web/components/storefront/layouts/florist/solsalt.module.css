@@ -8,7 +8,7 @@
  * terrakotta (--color-primary-d) som hover OCH som eyebrow-färg. Allt är rundat: 999px på
  * varje knapp/pill, 24px på korten, 32px på de stora plattorna.
  *
- * OBS: `primaryD` = terrakotta (#C2512E) är AVSIKTLIG i manifestet — mallens hover är
+ * OBS: `primaryD` = terrakotta (#B74D2C) är AVSIKTLIG i manifestet — mallens hover är
  * terrakotta, inte en mörkare kobolt. Rör den inte.
  *
  * Solgult (#F2C349) och de tre tile-tonerna finns inte i FloristPalettens åtta nycklar, så
@@ -18,10 +18,15 @@
  * H1/H2 clamp, sektionspadding 20px, tap-targets ≥44px.
  */
 
-.slRoot {
+.slRoot,
+.slNav,
+.slFoot {
   --sl-sun: #F2C349; /* solgult — filens accent (badge, pill-CTA, remsa, stämplar) */
+}
+
+.slRoot {
   --sl-ink-soft: #6E6A57; /* produkternas brödtext */
-  --sl-ink-faint: #8A8770; /* meta/underrader */
+  --sl-ink-faint: #6E6A57; /* meta/underrader */
   --sl-shadow: #EADDBB; /* kortens 2px "skugga" (samma ton som --color-line) */
   --sl-tile-2: #DCE5C7; /* krukväxt-tilens salviegröna platta */
   --sl-tile-3: #F4DCC4; /* presentkort-tilens persika */
@@ -59,7 +64,7 @@
   white-space: nowrap;
   font-weight: 700;
   font-size: 14.5px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   cursor: pointer;
   transition: color 0.2s;
 }
@@ -75,7 +80,7 @@
   white-space: nowrap;
   font-weight: 700;
   font-size: 15px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: var(--sl-sun);
   border-radius: 999px;
   padding: 15px 30px;
@@ -95,7 +100,7 @@
   white-space: nowrap;
   font-weight: 700;
   font-size: 14px;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   border-radius: 999px;
   padding: 11px 22px;
@@ -114,7 +119,7 @@
   white-space: nowrap;
   font-weight: 700;
   font-size: 15px;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: transparent;
   border: 1.5px solid var(--color-bg);
   border-radius: 999px;
@@ -125,7 +130,7 @@
 
 .slPillGhost:hover {
   background: var(--color-bg);
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ───────────────────────────────── sidhuvud ───────────────────────────────── */
@@ -191,7 +196,7 @@
   white-space: nowrap;
   font-weight: 700;
   font-size: 13.5px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: var(--sl-sun);
   border: none;
   border-radius: 999px;
@@ -232,7 +237,7 @@
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: var(--sl-sun);
   border-radius: 999px;
   padding: 6px 14px;
@@ -252,7 +257,7 @@
   margin: 0 0 34px;
   font-size: 17px;
   line-height: 1.7;
-  color: var(--color-accent-soft);
+  color: var(--tenant-primary-fg, var(--color-accent-soft));
   max-width: 400px;
 }
 
@@ -688,6 +693,11 @@
   color: var(--color-accent-soft);
 }
 
+.slFactBlue .slFactPaper,
+.slFactBlue .slFactPaperSoft {
+  color: var(--tenant-primary-fg, var(--color-bg));
+}
+
 /* /tjanster — kobolt-kortet med rader (filens boka-panel) */
 .slPanel {
   background: var(--color-surface);
@@ -770,14 +780,14 @@
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--sl-sun);
+  color: var(--tenant-primary-fg, var(--sl-sun));
 }
 
 .slKontaktValue {
   margin: 0 0 20px;
   font-size: 16px;
   line-height: 1.7;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 .slKontaktValue:last-child {
@@ -785,11 +795,11 @@
 }
 
 .slKontaktValue a {
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 .slKontaktValue a:hover {
-  color: var(--sl-sun);
+  color: var(--tenant-primary-fg, var(--sl-sun));
 }
 
 .slKontaktForm {
@@ -945,13 +955,13 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 26px;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 .slFootTagline {
   margin: 0;
   font-size: 13.5px;
-  color: #A9C3EE; /* filens ljusblå sidfotston — ingen palett-nyckel bär den */
+  color: var(--tenant-primary-fg, #CBDCF6); /* filens ljusblå sidfotston — ingen palett-nyckel bär den */
 }
 
 .slFootNav {
@@ -965,7 +975,7 @@
   white-space: nowrap;
   font-weight: 600;
   font-size: 13.5px;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   border: 1.5px solid var(--color-bg);
   border-radius: 999px;
   padding: 6px 13px;
@@ -974,11 +984,11 @@
 
 .slFootNav a:hover {
   background: var(--color-bg);
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .slFootNav a:first-child {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: var(--sl-sun);
   border-color: var(--sl-sun);
   padding: 7px 14px;
@@ -992,7 +1002,7 @@
 .slFootMeta {
   margin: 0;
   font-size: 12px;
-  color: #8EA9DC; /* filens dämpade sidfots-copyright */
+  color: var(--tenant-primary-fg, #CBDCF6); /* filens dämpade sidfots-copyright */
 }
 
 /* ───────────────────── mobil — speglar filens egen media query ────────────── */
@@ -1159,7 +1169,7 @@
   height: 46px;
   border-radius: 999px;
   background: rgba(250, 243, 225, 0.2);
-  color: #a9c3ee;
+  color: #faf3e1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1187,7 +1197,7 @@
 }
 
 .slPerks li[data-featured='true'] {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .slClubJoin {
@@ -1213,7 +1223,7 @@
   padding: 13px 15px;
   font-family: var(--font-body);
   font-size: 15px;
-  outline-color: var(--color-primary);
+  outline-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .slClubJoin button {
@@ -1222,7 +1232,7 @@
   white-space: nowrap;
   font-weight: 700;
   font-size: 15px;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   border-radius: 999px;
   padding: 14px 28px;

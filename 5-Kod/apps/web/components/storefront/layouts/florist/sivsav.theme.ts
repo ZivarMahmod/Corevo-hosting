@@ -35,8 +35,8 @@ export const sivsav: FloristTheme = {
   desc: 'Skandinaviskt ljust · varmvitt, salvia och pill-knappar',
   // Manifestets `palette`, alla 8 nycklar, oförändrade.
   palette: {
-    primary: '#819071',
-    primaryD: '#647253',
+    primary: '#5D6A4E',
+    primaryD: '#4F5A41',
     bg: '#F4F1EA',
     surface: '#FFFFFF',
     fg: '#33352E',

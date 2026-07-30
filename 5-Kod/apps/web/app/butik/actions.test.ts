@@ -74,7 +74,11 @@ describe('reserveOrder — shop lifecycle gate', () => {
     async (state) => {
       lifecycle.shop = state
 
-      const result = await reserveOrder({ items: [], token: 'session-token' })
+      const result = await reserveOrder({
+        items: [],
+        token: 'session-token',
+        reserveRequestId: '00000000-0000-4000-8000-000000000001',
+      })
 
       expect(result).toEqual({
         ok: false,
@@ -85,7 +89,11 @@ describe('reserveOrder — shop lifecycle gate', () => {
   )
 
   it('admits live shop state to the checkout validation', async () => {
-    const result = await reserveOrder({ items: [], token: 'session-token' })
+    const result = await reserveOrder({
+      items: [],
+      token: 'session-token',
+      reserveRequestId: '00000000-0000-4000-8000-000000000001',
+    })
 
     expect(result).toEqual({
       ok: false,

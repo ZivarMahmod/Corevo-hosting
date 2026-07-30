@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { keyFromPublicUrl, removedImageKeys, pruneRemovedImages, deleteByPublicUrl } from './upload'
+import {
+  deleteByPublicUrl,
+  deleteR2Keys,
+  keyFromPublicUrl,
+  removedImageKeys,
+  pruneRemovedImages,
+  uploadImageAtKey,
+} from './upload'
 import { logger } from '@/lib/observability'
 
 // FX-14 "replace, don't accumulate". publicBase() reads R2_PUBLIC_BASE_URL at CALL
@@ -13,8 +20,9 @@ const u = (p: string) => `${BASE}/${p}`
 const deleteSpy = vi.fn(async () => {
   throw new Error('r2 boom')
 })
+const putSpy = vi.fn(async () => {})
 vi.mock('@opennextjs/cloudflare', () => ({
-  getCloudflareContext: () => ({ env: { BUCKET: { put: async () => {}, delete: deleteSpy } } }),
+  getCloudflareContext: () => ({ env: { BUCKET: { put: putSpy, delete: deleteSpy } } }),
 }))
 
 describe('keyFromPublicUrl', () => {
@@ -105,5 +113,38 @@ describe('pruneRemovedImages / deleteByPublicUrl are best-effort (delete rejects
   it('skips foreign URLs entirely (no delete attempted)', async () => {
     await expect(deleteByPublicUrl('https://evil.example/x.png')).resolves.toBeUndefined()
     expect(deleteSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('lifecycle-aware R2 primitives', () => {
+  beforeEach(() => {
+    process.env.R2_PUBLIC_BASE_URL = BASE
+    putSpy.mockClear()
+    deleteSpy.mockClear()
+  })
+  afterEach(() => {
+    delete process.env.R2_PUBLIC_BASE_URL
+    vi.restoreAllMocks()
+  })
+
+  it('uploads to the exact key reserved by Postgres', async () => {
+    const file = new File(['image'], 'image.webp', { type: 'image/webp' })
+
+    await expect(uploadImageAtKey(file, 'media/tenant-1/asset-1')).resolves.toEqual({
+      ok: true,
+      key: 'media/tenant-1/asset-1',
+      url: `${BASE}/media/tenant-1/asset-1`,
+    })
+    expect(putSpy).toHaveBeenCalledWith(
+      'media/tenant-1/asset-1',
+      expect.any(ArrayBuffer),
+      { httpMetadata: { contentType: 'image/webp' } },
+    )
+  })
+
+  it('reports a failed delete so the DB job can be retried', async () => {
+    vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+    await expect(deleteR2Keys(['media/tenant-1/asset-1'])).resolves.toBe(false)
   })
 })

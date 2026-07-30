@@ -38,13 +38,71 @@ export async function submitEventRegistration(
   const ctx = await getTenantContext()
   if (!ctx) return { phase: 'error', message: 'Okänd verksamhet.' }
 
-  // b. Rate-limit the anon write per IP+tenant (same shape as offert/booking).
+  // b. Read + trim + validate the fields.
+  const name = (formData.get('name') ?? '').toString().trim()
+  const email = (formData.get('email') ?? '').toString().trim()
+  const phone = (formData.get('phone') ?? '').toString().trim()
+  const message = (formData.get('message') ?? '').toString().trim()
+  const partySize = Number.parseInt((formData.get('party_size') ?? '').toString(), 10)
+  const eventId = (formData.get('event_id') ?? '').toString().trim()
+  const requestId = (formData.get('request_id') ?? '').toString().trim()
+
+  if (!eventId) return { phase: 'error', message: 'Något gick fel. Ladda om sidan och försök igen.' }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+    return { phase: 'error', message: 'Ladda om sidan och försök igen.' }
+  }
+  if (!name || name.length > 120) {
+    return { phase: 'error', message: 'Fyll i ditt namn (max 120 tecken).' }
+  }
+  if (!email || email.length > 160 || !email.includes('@') || !email.includes('.')) {
+    return { phase: 'error', message: 'Kontrollera e-postadressen.' }
+  }
+  if (phone && phone.length > 40) {
+    return { phase: 'error', message: 'Kontrollera telefonnumret (max 40 tecken).' }
+  }
+  if (!Number.isInteger(partySize) || partySize < 1 || partySize > 8) {
+    return { phase: 'error', message: 'Välj antal platser (1–8).' }
+  }
+  if (message.length > 2000) {
+    return { phase: 'error', message: 'Meddelandet är för långt (max 2000 tecken).' }
+  }
+
+  // c. Ett exakt återförsök är redan klart och ska inte kunna fastna på en
+  // senare rate-limit eller moduländring. Nyckeln är fortfarande bunden till
+  // hela payloaden; samma nyckel med ändrade uppgifter nekas.
+  const writer = createServiceClient()
+  if (!writer) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
+  const { data: existing, error: existingError } = await writer
+    .from('event_registrations')
+    .select('event_id, name, email, phone, party_size, message')
+    .eq('tenant_id', ctx.id)
+    .eq('idempotency_key', requestId)
+    .maybeSingle()
+  if (existingError) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
+  if (existing) {
+    if (
+      existing.event_id !== eventId
+      || existing.name !== name
+      || existing.email !== email
+      || (existing.phone ?? '') !== phone
+      || existing.party_size !== partySize
+      || (existing.message ?? '') !== message
+    ) {
+      return {
+        phase: 'error',
+        message: 'Anmälan matchar inte ditt tidigare försök. Ladda om sidan och försök igen.',
+      }
+    }
+    return { phase: 'done' }
+  }
+
+  // d. Rate-limit the anon write per IP+tenant (same shape as offert/booking).
   const ip = await getClientIp()
   if (!(await checkRateLimit(rateLimitKey('event', ctx.id, ip), LIMITS.event))) {
     return { phase: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
   }
 
-  // c. Re-gate SERVER-side: bara LIVE tar emot anmälningar (paused visar listan
+  // e. Re-gate SERVER-side: bara LIVE tar emot anmälningar (paused visar listan
   //    läsbar, draft/off är inte publik alls).
   //
   //    BUGG (goal-64): den här gaten läste `booking`, medan sidan och adminytan gatar
@@ -65,32 +123,7 @@ export async function submitEventRegistration(
     return { phase: 'error', message: 'Anmälan är inte öppen just nu.' }
   }
 
-  // d. Read + trim + validate the fields.
-  const name = (formData.get('name') ?? '').toString().trim()
-  const email = (formData.get('email') ?? '').toString().trim()
-  const phone = (formData.get('phone') ?? '').toString().trim()
-  const message = (formData.get('message') ?? '').toString().trim()
-  const partySize = Number.parseInt((formData.get('party_size') ?? '').toString(), 10)
-  const eventId = (formData.get('event_id') ?? '').toString().trim()
-
-  if (!eventId) return { phase: 'error', message: 'Något gick fel. Ladda om sidan och försök igen.' }
-  if (!name || name.length > 120) {
-    return { phase: 'error', message: 'Fyll i ditt namn (max 120 tecken).' }
-  }
-  if (!email || email.length > 160 || !email.includes('@') || !email.includes('.')) {
-    return { phase: 'error', message: 'Kontrollera e-postadressen.' }
-  }
-  if (phone && phone.length > 40) {
-    return { phase: 'error', message: 'Kontrollera telefonnumret (max 40 tecken).' }
-  }
-  if (!Number.isInteger(partySize) || partySize < 1 || partySize > 8) {
-    return { phase: 'error', message: 'Välj antal platser (1–8).' }
-  }
-  if (message.length > 2000) {
-    return { phase: 'error', message: 'Meddelandet är för långt (max 2000 tecken).' }
-  }
-
-  // e. Läs eventet: rätt tenant, open, i framtiden. Anon FÅR läsa tenant_events.
+  // f. Läs eventet: rätt tenant, open, i framtiden. Anon FÅR läsa tenant_events.
   const { data: event } = await supabase
     .from('tenant_events')
     .select('id, title, starts_at, capacity, price_cents, status')
@@ -101,12 +134,10 @@ export async function submitEventRegistration(
     return { phase: 'error', message: 'Tillfället är inte öppet för anmälan längre.' }
   }
 
-  // f. Atomisk kapacitetsvakt + insert genom en server-only RPC. Funktionen
+  // g. Atomisk kapacitetsvakt + insert genom en server-only RPC. Funktionen
   //    låser eventraden och räknar både bekräftade platser och checkout-holds,
   //    så två samtidiga anmälningar kan aldrig överboka eventet.
-  const writer = createServiceClient()
-  if (!writer) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
-  const { error } = await writer.rpc('create_onsite_event_registration', {
+  const { data: registration, error } = await writer.rpc('create_onsite_event_registration', {
     p_tenant: ctx.id,
     p_event: event.id,
     p_name: name,
@@ -114,6 +145,7 @@ export async function submitEventRegistration(
     p_phone: phone || '',
     p_party_size: partySize,
     p_message: message || '',
+    p_idempotency_key: requestId,
   })
   if (error?.code === '23P01') {
     const left = Number.parseInt(error.details ?? '', 10)
@@ -130,17 +162,24 @@ export async function submitEventRegistration(
   }
 
   // h. Bekräftelsemejl — best-effort by contract, never blocks the anmälan.
-  await sendEventConfirmationEmail({
-    supabase: writer,
-    tenantId: ctx.id,
-    tenantName: ctx.name,
-    to: email,
-    name,
-    eventTitle: event.title,
-    startsAtText: formatEventStart(event.starts_at),
-    partySize,
-    priceCents: event.price_cents,
-  })
+  if (!(
+    registration
+    && typeof registration === 'object'
+    && !Array.isArray(registration)
+    && registration.already_registered === true
+  )) {
+    await sendEventConfirmationEmail({
+      supabase: writer,
+      tenantId: ctx.id,
+      tenantName: ctx.name,
+      to: email,
+      name,
+      eventTitle: event.title,
+      startsAtText: formatEventStart(event.starts_at),
+      partySize,
+      priceCents: event.price_cents,
+    })
+  }
 
   // i. Bust the per-tenant storefront cache so "platser kvar" refreshes.
   revalidateTag(`tenant:${ctx.slug.trim().toLowerCase()}`)

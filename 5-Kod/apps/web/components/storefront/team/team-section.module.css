@@ -92,7 +92,7 @@
   align-self: flex-start;
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-primary-ink, var(--color-primary, #1f4636));
+  color: var(--tenant-primary-ink, var(--color-primary-ink, var(--color-primary, #1f4636)));
   text-decoration: none;
   border-bottom: 1px solid transparent;
 }

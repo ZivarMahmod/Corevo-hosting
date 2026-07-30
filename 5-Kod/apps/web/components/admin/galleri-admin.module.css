@@ -1,0 +1,160 @@
+.list {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--c-line);
+  border-radius: 14px;
+  background: var(--c-paper);
+}
+
+.thumb {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--c-cream);
+  color: var(--c-ink-3);
+  font-size: 12px;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meta {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.meta > strong,
+.meta > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta > span {
+  color: var(--c-ink-3);
+  font-size: 12.5px;
+}
+
+.badges,
+.moveControls,
+.rowActions,
+.confirmDelete,
+.drawerFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.badges span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--c-cream);
+  color: var(--c-ink-2);
+  font-size: 11.5px;
+}
+
+.controls {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.drawerGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.drawerFooter {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.accessibility {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-cream);
+}
+
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.check span {
+  display: grid;
+  gap: 2px;
+}
+
+.check small {
+  color: var(--c-ink-3);
+}
+
+@media (max-width: 720px) {
+  .card {
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .thumb {
+    width: 88px;
+  }
+
+  .controls {
+    grid-column: 1 / -1;
+    justify-items: stretch;
+  }
+
+  .moveControls,
+  .rowActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .moveControls > *,
+  .rowActions > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+}

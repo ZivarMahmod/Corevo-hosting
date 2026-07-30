@@ -300,8 +300,8 @@
 @media (max-width: 720px) {
   .burger { display: inline-flex; }
   .navThemed { grid-template-columns: 1fr; justify-items: start; }
-  .navLinks,
-  .navCluster {
+  .navThemed .navLinks.navLinks,
+  .navThemed .navCluster.navCluster {
     display: none;
   }
   .navWordmark,

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   revalidateTenantById: vi.fn(),
   audit: vi.fn(async () => {}),
   uploadImage: vi.fn(),
-  recordMediaAsset: vi.fn(async () => {}),
+  uploadManagedImage: vi.fn(),
   geocodeAddress: vi.fn(),
   from: vi.fn(),
 }))
@@ -21,7 +21,10 @@ vi.mock('@/lib/r2/upload', () => ({
   uploadImage: mocks.uploadImage,
   uploadErrorMessage: () => 'Uppladdningen misslyckades.',
 }))
-vi.mock('./media-record', () => ({ recordMediaAsset: mocks.recordMediaAsset }))
+vi.mock('@/lib/media/lifecycle', () => ({
+  uploadManagedImage: mocks.uploadManagedImage,
+  managedUploadErrorMessage: () => 'Uppladdningen misslyckades.',
+}))
 vi.mock('./geocode', () => ({ geocodeAddress: mocks.geocodeAddress }))
 
 import { publishSiteDraft, saveSiteDraft, uploadSiteDraftImage } from './site-revisions'
@@ -49,6 +52,13 @@ beforeEach(() => {
     error: null,
   })
   mocks.uploadImage.mockResolvedValue({ ok: true, url: 'https://cdn.test/crop.webp', key: 'draft/crop.webp' })
+  mocks.uploadManagedImage.mockResolvedValue({
+    ok: true,
+    assetId: 'asset-1',
+    url: 'https://cdn.test/crop.webp',
+    key: 'media/tenant-session/asset-1',
+    duplicate: false,
+  })
   mocks.geocodeAddress.mockResolvedValue({ lat: 58.4108, lon: 15.6214 })
   mocks.from.mockImplementation((table: string) => {
     const result = table === 'site_revisions'
@@ -243,7 +253,7 @@ describe('site revision server actions', () => {
     expect(mocks.revalidateTenantById).not.toHaveBeenCalled()
   })
 
-  it('uploads a cropped draft image to R2 without changing the live storefront', async () => {
+  it('routes a cropped draft image through the shared reserved media lifecycle', async () => {
     const image = new File(['cropped'], 'crop.webp', { type: 'image/webp' })
     const form = new FormData()
     form.set('tenantId', 'tenant-attacker')
@@ -252,8 +262,13 @@ describe('site revision server actions', () => {
     const result = await uploadSiteDraftImage(form)
 
     expect(result).toMatchObject({ url: 'https://cdn.test/crop.webp' })
-    expect(mocks.uploadImage).toHaveBeenCalledWith(image, 'tenants/tenant-session/storefront-drafts')
-    expect(mocks.recordMediaAsset).toHaveBeenCalled()
+    expect(mocks.uploadManagedImage).toHaveBeenCalledWith(
+      expect.objectContaining({ rpc: mocks.rpc }),
+      'tenant-session',
+      image,
+      'sajtbyggare',
+    )
+    expect(mocks.uploadImage).not.toHaveBeenCalled()
     expect(mocks.rpc).not.toHaveBeenCalled()
     expect(mocks.revalidateTenantById).not.toHaveBeenCalled()
   })
