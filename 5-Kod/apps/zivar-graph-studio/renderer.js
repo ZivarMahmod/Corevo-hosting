@@ -2836,7 +2836,7 @@ function bindControls() {
       || (event.key.toLowerCase() === "k" && (event.ctrlKey || event.metaKey))
     ) {
       event.preventDefault();
-      if (window.innerWidth <= 720) setMobilePanel("search");
+      if (window.innerWidth <= 720) setMobilePanel("search", document.activeElement);
       $("#global-search").focus();
     }
     if (event.key === "Escape" && !$("#search-results").hidden) {

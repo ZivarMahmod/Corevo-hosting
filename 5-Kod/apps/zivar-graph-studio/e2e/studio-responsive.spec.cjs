@@ -241,6 +241,12 @@ test("mobile panels and activity controls remain reachable", async ({ page }) =>
   await page.getByRole("button", { name: "Filter", exact: true }).click();
   await expect(page.locator("#control-rail")).toBeInViewport();
   await page.getByRole("button", { name: "Stäng filter", exact: true }).click();
+  const searchTrigger = page.getByRole("button", { name: "Sök", exact: true });
+  await searchTrigger.focus();
+  await page.keyboard.press("Control+K");
+  await expect(page.getByRole("searchbox", { name: "Sök i grafen", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(searchTrigger).toBeFocused();
   await page.getByRole("button", { name: "AI", exact: true }).click();
   await expect(page.locator("#activity-timeline")).toBeVisible();
   await expect(page.locator("#activity-play")).toBeVisible();
