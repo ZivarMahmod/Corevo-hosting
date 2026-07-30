@@ -61,7 +61,7 @@ test.describe('03 Redigera sidan v2 — source contract @readonly @contract', ()
     expect(studioSource).toContain('restoreSiteRevision')
   })
 
-  test('03-C05 images, facts and every realtime channel are complete', () => {
+  test('03-C05 images, facts and preview channels are complete', () => {
     expect(studioSource).toContain('uploadSiteDraftImage')
     expect(studioSource).toContain('cropFocusedImage')
     expect(studioSource).toContain('type="file"')
@@ -77,7 +77,7 @@ test.describe('03 Redigera sidan v2 — source contract @readonly @contract', ()
     expect(bridgeSource).toContain("data.type === 'img-flash'")
     expect(bridgeSource).toContain("new CustomEvent('corevo-booking-preview'")
     expect(bookingSource).toContain("addEventListener('corevo-booking-preview'")
-    expect(revisionActionSource).toContain('storefront-drafts')
+    expect(revisionActionSource).toContain('uploadManagedImage')
   })
 })
 
