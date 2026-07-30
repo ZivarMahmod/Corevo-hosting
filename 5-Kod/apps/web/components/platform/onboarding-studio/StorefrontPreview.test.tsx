@@ -78,6 +78,22 @@ describe('W2 StorefrontPreview', () => {
     expect(html).toContain('byggs vid lansering')
   })
 
+  it('keeps every active built module reachable from the preview navigation', () => {
+    const states: Record<string, ModuleState> = {
+      shop: 'live',
+      kurser: 'live',
+      blogg: 'live',
+      offert: 'paused',
+      presentkort: 'paused',
+      lojalitet: 'live',
+      galleri: 'paused',
+    }
+    const html = render(cfgWith({ branch: 'frisor', moduleStates: states }))
+    for (const href of ['/shop', '/kurser', '/blogg', '/offert', '/presentkort', '/klubb', '/galleri']) {
+      expect(html).toContain(`href="${href}"`)
+    }
+  })
+
   it('services=[] → the layout honest empty-state, never fake sample services', () => {
     const html = render(cfgWith({ branch: 'frisor' }))
     expect(html).toContain('Tjänster läggs upp inom kort')

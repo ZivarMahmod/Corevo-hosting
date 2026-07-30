@@ -1,0 +1,119 @@
+.paused {
+  margin: 8px 0 0;
+  padding: 12px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-fg, #232520);
+  background: color-mix(in srgb, var(--color-accent, #c8a24a) 14%, transparent);
+  border-left: 4px solid var(--color-accent, #c8a24a);
+  border-radius: var(--sf-field-radius, var(--sf-radius, 4px));
+}
+
+.empty {
+  margin: 16px 0 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-fg, #232520) 70%, var(--color-bg, #fff));
+}
+
+.list {
+  display: grid;
+  gap: var(--sf-card-gap, 24px);
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  padding: var(--sf-card-pad, 26px 28px);
+  overflow: hidden;
+  background: var(--sf-card-bg, var(--color-surface, var(--color-bg, #fff)));
+  border: 1px solid
+    var(--sf-card-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 14%, transparent)));
+  border-radius: var(--sf-card-radius, var(--sf-field-radius, var(--sf-radius, 4px)));
+}
+
+.cardFull {
+  background: color-mix(in srgb, var(--color-fg, #232520) 3%, var(--color-bg, #fff));
+}
+
+.when {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--sf-micro-fs, 12px);
+  font-weight: 600;
+  letter-spacing: var(--sf-micro-ls, 0.08em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-fg, #232520) 65%, var(--color-bg, #fff));
+}
+
+.title {
+  margin: 10px 0 0;
+  font-family: var(--font-display, var(--font-body));
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-fg, #232520);
+}
+
+.lede {
+  max-width: 62ch;
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-fg, #232520) 82%, var(--color-bg, #fff));
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: baseline;
+  margin: 18px 0 0;
+  padding: 14px 0 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  border-top: 1px solid
+    var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 12%, transparent));
+}
+
+.price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-fg, #232520);
+}
+
+.fact {
+  color: color-mix(in srgb, var(--color-fg, #232520) 65%, var(--color-bg, #fff));
+}
+
+.seats {
+  font-weight: 600;
+  color: var(--color-fg, #232520);
+}
+
+.fullBadge {
+  padding: 4px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--sf-danger, #b00020);
+  background: color-mix(in srgb, var(--sf-danger, #b00020) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sf-danger, #b00020) 32%, transparent);
+  border-radius: 999px;
+}
+
+.moreWrap {
+  margin-top: 18px;
+}
+
+.more {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-fg, #232520);
+  text-underline-offset: 3px;
+}

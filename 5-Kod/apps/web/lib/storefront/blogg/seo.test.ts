@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   bloggLive: true,
+  kurserLive: true,
+  galleriLive: true,
   post: {
     id: 'post-1',
     title: 'Sommarens buketter',
@@ -41,8 +43,12 @@ vi.mock('@/lib/storefront/blogg/load-blogg', () => ({
 }))
 
 vi.mock('@/lib/tenant-modules', () => ({
-  getTenantModuleStates: vi.fn(async () => ({ blogg: mocks.bloggLive ? 'live' : 'paused' })),
-  isModuleLive: (_states: unknown, key: string) => key === 'blogg' && mocks.bloggLive,
+  getTenantModuleStates: vi.fn(async () => ({
+    blogg: mocks.bloggLive ? 'live' : 'paused',
+    kurser: mocks.kurserLive ? 'live' : 'off',
+    galleri: mocks.galleriLive ? 'live' : 'off',
+  })),
+  isModuleLive: (states: Record<string, string>, key: string) => states[key] === 'live',
   isModulePaused: vi.fn(() => false),
 }))
 
@@ -63,6 +69,8 @@ import { loadPublishedBlogSitemapRows } from './load-blogg'
 describe('Goal 90 blogg SEO', () => {
   beforeEach(() => {
     mocks.bloggLive = true
+    mocks.kurserLive = true
+    mocks.galleriLive = true
     vi.clearAllMocks()
   })
 
@@ -93,5 +101,21 @@ describe('Goal 90 blogg SEO', () => {
     const paused = await sitemap()
     expect(paused.some((row) => row.url.includes('/blogg/'))).toBe(false)
     expect(loadPublishedBlogSitemapRows).not.toHaveBeenCalled()
+  })
+
+  it('publishes live kurser and galleri routes under their own module gates', async () => {
+    const rows = await sitemap()
+    expect(rows).toContainEqual(expect.objectContaining({
+      url: 'https://ateljen.corevo.se/kurser',
+    }))
+    expect(rows).toContainEqual(expect.objectContaining({
+      url: 'https://ateljen.corevo.se/galleri',
+    }))
+
+    mocks.kurserLive = false
+    mocks.galleriLive = false
+    const hidden = await sitemap()
+    expect(hidden.some((row) => row.url.endsWith('/kurser'))).toBe(false)
+    expect(hidden.some((row) => row.url.endsWith('/galleri'))).toBe(false)
   })
 })

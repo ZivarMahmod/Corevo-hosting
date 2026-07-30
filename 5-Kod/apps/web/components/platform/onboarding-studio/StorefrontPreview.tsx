@@ -71,8 +71,13 @@ export function StorefrontPreview({
   const previewNavLinks = [
     { href: '/', label: 'Hem' },
     ...(activeKeys.includes('shop') ? [{ href: '/shop', label: 'Butik' }] : []),
-    { href: '/tjanster', label: 'Tjänster' },
+    ...(activeKeys.includes('kurser') ? [{ href: '/kurser', label: 'Kurser' }] : []),
     ...(activeKeys.includes('blogg') ? [{ href: '/blogg', label: 'Blogg' }] : []),
+    ...(activeKeys.includes('offert') ? [{ href: '/offert', label: 'Begär offert' }] : []),
+    ...(activeKeys.includes('presentkort') ? [{ href: '/presentkort', label: 'Presentkort' }] : []),
+    ...(activeKeys.includes('lojalitet') ? [{ href: '/klubb', label: 'Klubben' }] : []),
+    ...(activeKeys.includes('galleri') ? [{ href: '/galleri', label: 'Galleri' }] : []),
+    { href: '/tjanster', label: 'Tjänster' },
     { href: '/om', label: 'Om oss' },
     { href: '/kontakt', label: 'Kontakt' },
   ]

@@ -60,10 +60,12 @@ export function activeModuleKeys(cfg: StudioCfg): string[] {
 // Storefront section titles + the konto/roadmap ones (preview.jsx:421-426).
 const SECTION_TITLES: Record<string, string> = {
   shop: 'Webshop',
+  kurser: 'Kurser',
   offert: 'Begär offert',
   blogg: 'Journal',
   lojalitet: 'Stammis',
   presentkort: 'Presentkort',
+  galleri: 'Galleri',
   portfolio: 'Portfolio',
   meny: 'Meny',
   recurring: 'Återkommande',
@@ -339,6 +341,32 @@ function BloggMock() {
   )
 }
 
+function KurserMock() {
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      {[0, 1, 2].map((i) => (
+        <div key={i} style={{ ...card, padding: 18, display: 'grid', gap: 10 }}>
+          <div style={skel('40%', 12)} />
+          <div style={skel('85%', 18)} />
+          <div style={skel('65%', 13)} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function GalleriMock() {
+  return (
+    <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      {[0, 1, 2].map((i) => (
+        <div key={i} style={card}>
+          <div style={{ ...imgFill, height: 120 }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function LojalitetMock({ branch }: { branch: string }) {
   const points = branch === 'cafe' || branch === 'restaurang'
   return (
@@ -454,6 +482,8 @@ function renderBody(key: string, branch: string, serviceWord: string): ReactNode
   switch (key) {
     case 'shop':
       return <ShopMock branch={branch} />
+    case 'kurser':
+      return <KurserMock />
     case 'offert':
       return <OffertMock branch={branch} serviceWord={serviceWord} />
     case 'blogg':
@@ -462,12 +492,14 @@ function renderBody(key: string, branch: string, serviceWord: string): ReactNode
       return <LojalitetMock branch={branch} />
     case 'presentkort':
       return <PresentkortMock />
+    case 'galleri':
+      return <GalleriMock />
     default:
       return <RoadmapCard moduleKey={key} />
   }
 }
 
-/** All active PUBLIC main sections: the 5 BUILT mocks + roadmap dashed cards, in the
+/** All active PUBLIC main sections: the 7 BUILT mocks + roadmap dashed cards, in the
  *  real composition order, each gated by resolveModuleState (live → render, paused →
  *  read-only notice, off/draft → absent). Returns null when none are active → the
  *  preview is the bare <Layout/> (its services rows already cover booking). */

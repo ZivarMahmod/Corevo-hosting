@@ -16,10 +16,11 @@ const PUBLIC_PATHS = ['', '/tjanster', '/om', '/kontakt'] as const
  *  S11: the commercial pages were invisible to search engines). */
 const MODULE_PATHS: readonly { module: string; path: string }[] = [
   { module: 'shop', path: '/shop' },
+  { module: 'kurser', path: '/kurser' },
   { module: 'blogg', path: '/blogg' },
   { module: 'offert', path: '/offert' },
-  { module: 'booking', path: '/kurser' }, // kurser rider på booking-modulen (goal-54 körning 4)
   { module: 'presentkort', path: '/presentkort' },
+  { module: 'galleri', path: '/galleri' },
 ]
 
 /**

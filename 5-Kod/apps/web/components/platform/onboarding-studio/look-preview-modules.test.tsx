@@ -39,6 +39,12 @@ describe('ModuleSections renders a selected module (the route reuses this)', () 
     expect(renderToStaticMarkup(createElement(ModuleSections, { cfg: cfgWith({ offert: 'live' }) }))).toContain('Begär offert')
     expect(renderToStaticMarkup(createElement(ModuleSections, { cfg: cfgWith({ offert: 'off' }) }))).not.toContain('Begär offert')
   })
+  it('shows kurser when kurser is live', () => {
+    expect(renderToStaticMarkup(createElement(ModuleSections, { cfg: cfgWith({ kurser: 'live' }) }))).toContain('Kurser')
+  })
+  it('shows galleri when galleri is live', () => {
+    expect(renderToStaticMarkup(createElement(ModuleSections, { cfg: cfgWith({ galleri: 'live' }) }))).toContain('Galleri')
+  })
   it('renders nothing when no section module is active', () => {
     // booking-only (booking floors to live) → no separate section → null render
     const html = renderToStaticMarkup(createElement(ModuleSections, { cfg: cfgWith({ booking: 'live' }) }))
