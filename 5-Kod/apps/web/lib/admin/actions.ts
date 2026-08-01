@@ -6,15 +6,20 @@ import type { Database } from '@corevo/db'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
 import type { AdminArea } from '@/lib/auth/admin-areas'
-import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
+import {
+  getAdminTenant,
+  requireActiveTenantMutation,
+  revalidateTenant,
+  type AdminTenant,
+} from './tenant'
 import { kronorToCents } from './format'
 import {
-  uploadImage,
-  uploadErrorMessage,
-  deleteByPublicUrl,
-  pruneRemovedImages,
-  type UploadResult,
-} from '@/lib/r2/upload'
+  managedUploadErrorMessage,
+  retainOwnedMediaUrls,
+  retireManagedImages,
+  uploadManagedImage,
+  type ManagedUploadFailureReason,
+} from '@/lib/media/lifecycle'
 import { mergeBranding } from '@/lib/branding/merge'
 import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
 import { canWrite } from '@/lib/platform/catalog-shared'
@@ -33,6 +38,11 @@ import { captureException } from '@/lib/observability'
 import { getAdminLocationPreferences } from './location-context'
 import { notificationQueueMessage, queueBookingEvent } from '@/lib/notifications/booking-events'
 import { mergeScopedSettings, parseSettingsScope, type SettingsScope } from './scoped-settings'
+import {
+  isBookingVerificationMode,
+  type BookingVerificationMode,
+} from '@/lib/platform/booking-variant'
+import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -111,6 +121,7 @@ async function adminCtx(
   const user = await requireAdminArea(area)
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
+  await requireActiveTenantMutation(user, tenant.id)
   return { user, tenant }
 }
 
@@ -530,8 +541,9 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
   // visas); annars laddas bifogad fil upp till R2 (samma pipeline som Sida-ytans
   // saveTenantStaffPhoto). Gamla objektet städas best-effort EFTER commit och BARA
   // när det är medarbetarens EGNA lagrade avatar_url (DB-läst — aldrig en klient-
-  // skickad URL; deleteByPublicUrl vägrar dessutom främmande origins).
+  // skickad URL).
   let removedAvatar: string | null = null
+  let uploadedAvatarNew = false
   const removeAvatar = String(fd.get('remove_avatar') ?? '') === 'true'
   const avatar = fd.get('avatar')
   const hasAvatarFile = avatar instanceof File && avatar.size > 0
@@ -546,9 +558,15 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
     if (removeAvatar) {
       patch.avatar_url = null
     } else {
-      const res = await uploadImage(avatar as File, `tenants/${ctx.tenant.id}/staff`)
-      if (!res.ok) return { error: uploadErrorMessage(res.reason) }
+      const res = await uploadManagedImage(
+        supabase,
+        ctx.tenant.id,
+        avatar as File,
+        'sajtbyggare',
+      )
+      if (!res.ok) return { error: managedUploadErrorMessage(res.reason) }
       patch.avatar_url = res.url
+      uploadedAvatarNew = !res.duplicate
     }
     removedAvatar = row.avatar_url
   }
@@ -561,13 +579,18 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
   if (error) {
-    // Nyss uppladdat foto utan sparad rad → städa direkt (inget orphan i R2).
-    if (typeof patch.avatar_url === 'string') await deleteByPublicUrl(patch.avatar_url)
+    if (uploadedAvatarNew && typeof patch.avatar_url === 'string') {
+      await retireManagedImages(supabase, ctx.tenant.id, [patch.avatar_url])
+    }
     return { error: GENERIC }
   }
 
-  // Ersatt/borttaget foto: städa gamla objektet efter commit (aldrig blockerande).
-  if (removedAvatar && removedAvatar !== patch.avatar_url) await deleteByPublicUrl(removedAvatar)
+  await retireManagedImages(
+    supabase,
+    ctx.tenant.id,
+    [removedAvatar],
+    [patch.avatar_url],
+  )
 
   revalidateStaff(ctx.tenant.slug)
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
@@ -1319,11 +1342,19 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
 
   let logoUrl = prev.logo_url ?? null
   let warning: string | null = null
+  let uploadedLogoNew = false
   if (removeLogo) logoUrl = null
   if (logo instanceof File && logo.size > 0) {
-    const res = await uploadImage(logo, `tenants/${ctx.tenant.id}/branding`)
-    if (res.ok) logoUrl = res.url
-    else warning = uploadErrorMessage(res.reason)
+    const res = await uploadManagedImage(
+      supabase,
+      ctx.tenant.id,
+      logo,
+      'branding',
+    )
+    if (res.ok) {
+      logoUrl = res.url
+      uploadedLogoNew = !res.duplicate
+    } else warning = managedUploadErrorMessage(res.reason)
   }
 
   // Preserve any owner-uploaded storefront media (hero/gallery/about/closing/
@@ -1341,10 +1372,19 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
   const { error } = await supabase
     .from('tenant_settings')
     .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
-  if (error) return { error: GENERIC }
+  if (error) {
+    if (uploadedLogoNew && logoUrl) {
+      await retireManagedImages(supabase, ctx.tenant.id, [logoUrl])
+    }
+    return { error: GENERIC }
+  }
 
-  // FX-14: drop the previous logo object when it was replaced or removed.
-  await pruneRemovedImages([prev.logo_url], [branding.logo_url])
+  await retireManagedImages(
+    supabase,
+    ctx.tenant.id,
+    [prev.logo_url],
+    [branding.logo_url],
+  )
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/sida')
@@ -1406,8 +1446,8 @@ const GALLERY_MAX = 8
 const TEAM_MAX = 12
 const STATS_MAX = 6
 
-/** Neutral upload-failure copy for storefront photos (uploadErrorMessage is logo-worded). */
-function mediaUploadMessage(reason: Exclude<UploadResult, { ok: true }>['reason']): string {
+/** Neutral upload-failure copy for storefront photos. */
+function mediaUploadMessage(reason: ManagedUploadFailureReason): string {
   switch (reason) {
     case 'bad_type':
       return 'Bilderna måste vara PNG, JPG, WEBP eller GIF.'
@@ -1416,6 +1456,14 @@ function mediaUploadMessage(reason: Exclude<UploadResult, { ok: true }>['reason'
     case 'no_public_base':
     case 'no_binding':
       return 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2 + R2_PUBLIC_BASE_URL). Övriga ändringar sparades.'
+    case 'quota':
+      return 'Bildkvoten är full. Ta bort en oanvänd bild och försök igen.'
+    case 'pending':
+      return 'Samma bild håller redan på att laddas upp. Försök igen om en stund.'
+    case 'unavailable':
+      return 'Samma bild väntar på städning. Försök igen när städningen är klar.'
+    case 'database':
+      return 'Bilderna kunde inte sparas säkert. Försök igen.'
     default:
       return 'En eller flera bilder kunde inte laddas upp. Försök igen.'
   }
@@ -1441,14 +1489,33 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   const ctx = await adminCtx('sida')
   if (!ctx) return { error: NO_TENANT }
 
-  const keyPrefix = `tenants/${ctx.tenant.id}/storefront`
+  const tenantId = ctx.tenant.id
+  const supabase = await createClient()
   let uploadWarning: string | null = null
+  const uploadedNewUrls: string[] = []
+
+  const { data: existing, error: existingError } = await supabase
+    .from('tenant_settings')
+    .select('branding')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (existingError) return { error: GENERIC }
+  const prev = (existing?.branding ?? {}) as Branding
+  const previousTeamImages = (prev.team ?? []).map((member) => member.img)
 
   // Upload a single file; on failure record a (first) warning and return null so
   // the caller can degrade gracefully — exactly like saveBranding's logo path.
   async function tryUpload(file: File): Promise<string | null> {
-    const res = await uploadImage(file, keyPrefix)
-    if (res.ok) return res.url
+    const res = await uploadManagedImage(
+      supabase,
+      tenantId,
+      file,
+      'sajtbyggare',
+    )
+    if (res.ok) {
+      if (!res.duplicate) uploadedNewUrls.push(res.url)
+      return res.url
+    }
     if (!uploadWarning) uploadWarning = mediaUploadMessage(res.reason)
     return null
   }
@@ -1457,7 +1524,11 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   // Cap retained first, then upload only as many new files as still fit under the
   // cap (FX-14): uploading files we'd slice off afterwards would orphan them in R2 —
   // their URLs would be in neither prev nor the saved set, so prune never sees them.
-  const heroRetained = fd.getAll('hero_existing').map(String).filter(Boolean).slice(0, HERO_MAX)
+  const heroRetained = retainOwnedMediaUrls(
+    fd.getAll('hero_existing').map(String),
+    prev.hero_images ?? [],
+    HERO_MAX,
+  )
   const heroFiles = fd
     .getAll('hero_files')
     .filter((f): f is File => f instanceof File && f.size > 0)
@@ -1469,11 +1540,11 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   }
   const heroImages = [...heroRetained, ...heroUploaded]
 
-  const galleryRetained = fd
-    .getAll('gallery_existing')
-    .map(String)
-    .filter(Boolean)
-    .slice(0, GALLERY_MAX)
+  const galleryRetained = retainOwnedMediaUrls(
+    fd.getAll('gallery_existing').map(String),
+    prev.gallery_images ?? [],
+    GALLERY_MAX,
+  )
   const galleryFiles = fd
     .getAll('gallery_files')
     .filter((f): f is File => f instanceof File && f.size > 0)
@@ -1486,7 +1557,10 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   const galleryImages = [...galleryRetained, ...galleryUploaded]
 
   // ── About / closing: single image each (retained URL unless removed/replaced). ──
-  async function singleImage(prefix: string): Promise<string | null> {
+  async function singleImage(
+    prefix: string,
+    previousUrl: string | null | undefined,
+  ): Promise<string | null> {
     if (String(fd.get(`${prefix}_remove`) ?? '') === 'true') return null
     const file = fd.get(`${prefix}_file`)
     if (file instanceof File && file.size > 0) {
@@ -1495,10 +1569,10 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
       // Upload failed — fall back to the retained URL so we don't silently drop it.
     }
     const existing = String(fd.get(`${prefix}_existing`) ?? '').trim()
-    return existing || null
+    return retainOwnedMediaUrls([existing], [previousUrl], 1)[0] ?? null
   }
-  const aboutImage = await singleImage('about')
-  const closingImage = await singleImage('closing')
+  const aboutImage = await singleImage('about', prev.about_image)
+  const closingImage = await singleImage('closing', prev.closing_image)
 
   // ── Team: indexed rows (name + role + retained-img + optional photo file). ──
   // Indexed (not parallel getAll) so an optional missing photo can't misalign rows.
@@ -1506,7 +1580,11 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   for (let i = 0; i < TEAM_MAX; i++) {
     const name = String(fd.get(`team_name_${i}`) ?? '').trim()
     const role = String(fd.get(`team_role_${i}`) ?? '').trim()
-    let img = String(fd.get(`team_img_${i}`) ?? '').trim()
+    let img = retainOwnedMediaUrls(
+      [String(fd.get(`team_img_${i}`) ?? '')],
+      previousTeamImages,
+      1,
+    )[0] ?? ''
     const photo = fd.get(`team_photo_${i}`)
     if (photo instanceof File && photo.size > 0) {
       const url = await tryUpload(photo)
@@ -1527,15 +1605,6 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
     if (value && label) stats.push([value, label])
   }
 
-  const supabase = await createClient()
-  // Merge onto existing branding so colours/font/logo are never clobbered.
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('branding')
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  const prev = (existing?.branding ?? {}) as Branding
-
   // Owner media slice only — mergeBranding keeps colours/font/logo/accent intact.
   const branding: Branding = mergeBranding(prev, {
     hero_images: heroImages,
@@ -1549,19 +1618,24 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   const { error } = await supabase
     .from('tenant_settings')
     .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
-  if (error) return { error: GENERIC }
+  if (error) {
+    await retireManagedImages(supabase, tenantId, uploadedNewUrls)
+    return { error: GENERIC }
+  }
 
   // VÅG 5 durability: the DB save has COMMITTED. Everything below is best-effort
-  // cleanup (R2 prune + cache revalidation) and must NEVER turn a successful save
+  // cleanup + cache revalidation and must NEVER turn a successful save
   // into an error-boundary crash — that's the "data saved but UI says it failed =
   // appears to vanish" class WORKFLOW-03 hunts (Zivar repro: removing an image then
-  // saving). pruneRemovedImages is already best-effort internally; this wraps the
+  // saving). retireManagedImages is already best-effort internally; this wraps the
   // whole tail (incl. revalidate*) so any throw here can't unwind a committed save.
   try {
     // FX-14: delete storefront objects this save dropped or replaced (hero, gallery,
     // about, closing, team photos). The logo is owned by saveBranding, so prev.logo_url
     // is deliberately NOT in this set — a media save must never delete the live logo.
-    await pruneRemovedImages(
+    await retireManagedImages(
+      supabase,
+      tenantId,
       [
         ...(prev.hero_images ?? []),
         ...(prev.gallery_images ?? []),
@@ -1677,6 +1751,9 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const contactEmail = String(fd.get('contact_email') ?? '').trim()
   const contactPhone = String(fd.get('contact_phone') ?? '').trim()
   const customerAccounts = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
+  const bookingVerificationModeRaw = String(fd.get('booking_verification_mode') ?? '')
+  const bookingExternalUrlRaw = String(fd.get('booking_external_url') ?? '').trim()
+  const bookingExternalUrl = normalizeBookingExternalUrl(bookingExternalUrlRaw)
 
   // Checkboxes only appear in FormData when checked. Scope makes absence mean
   // "off" only for the visible card, never for unrelated settings.
@@ -1703,6 +1780,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
   )
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
+  if (includesScope('booking') && !isBookingVerificationMode(bookingVerificationModeRaw))
+    return { error: 'Ogiltigt kanalval för bokningskoder.' }
+  if (includesScope('booking') && bookingExternalUrlRaw && !bookingExternalUrl)
+    return { error: 'Extern bokningslänk måste vara en fullständig https-länk.' }
   if (scope === 'all' && timezone && !isValidTz(timezone))
     return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
   if (includesScope('integrations') && googleReviewUrl === undefined)
@@ -1728,6 +1809,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
   const settings = mergeScopedSettings(prev, scope, {
     cancellationHours: includesScope('booking') ? cancelHours : undefined,
+    bookingVerificationMode: includesScope('booking')
+      ? bookingVerificationModeRaw as BookingVerificationMode
+      : undefined,
+    bookingExternalUrl: includesScope('booking') ? bookingExternalUrl : undefined,
     contact:
       scope === 'all' ? { email: contactEmail || null, phone: contactPhone || null } : undefined,
     customerAccountsEnabled: includesScope('booking') ? customerAccounts : undefined,

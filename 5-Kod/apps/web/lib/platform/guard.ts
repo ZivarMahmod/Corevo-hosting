@@ -1,11 +1,13 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import {
+  requireAdminArea,
+  requirePortal,
   requirePlatformAdmin,
   requirePlatformOperator,
-  requirePortal,
   type CurrentUser,
 } from '@/lib/auth/session'
+import { requireActiveTenantMutation } from '@/lib/admin/tenant'
 
 export type PlatformScope =
   | { kind: 'global'; partnerId: null }
@@ -85,13 +87,17 @@ export async function sidaCtx(fd: FormData): Promise<{
   supabase: Awaited<ReturnType<typeof createClient>>
   tenantId: string
 }> {
-  const user = await requirePortal('admin') // platform_admin always passes
+  // Legacy actions behind this context write across tenants, settings, locations,
+  // staff and module configuration. Keep that broad matrix at organization-admin
+  // scope; delegated site editors use siteRevisionCtx and its purpose-built RPCs.
+  const user = await requirePortal('admin')
   const supabase = await createClient()
   const isPlatformOperator = user.platformAdmin || user.partnerAdmin
   const tenantId = isPlatformOperator
     ? String(fd.get('tenantId') ?? '')
     : (user.tenantId ?? '')
   if (isPlatformOperator) await assertPlatformTenantAccess(supabase, tenantId)
+  await requireActiveTenantMutation(user, tenantId, supabase)
   return { user, supabase, tenantId }
 }
 
@@ -103,12 +109,13 @@ export async function siteRevisionCtx(input: { tenantId?: string | null }): Prom
   supabase: Awaited<ReturnType<typeof createClient>>
   tenantId: string
 }> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('sida')
   const supabase = await createClient()
   const isPlatformOperator = user.platformAdmin || user.partnerAdmin
   const tenantId = isPlatformOperator
     ? String(input.tenantId ?? '')
     : (user.tenantId ?? '')
   if (isPlatformOperator) await assertPlatformTenantAccess(supabase, tenantId)
+  await requireActiveTenantMutation(user, tenantId, supabase)
   return { user, supabase, tenantId }
 }

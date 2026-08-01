@@ -17,6 +17,7 @@ describe('public booking PIN action contract', () => {
     expect(source).toMatch(/\.rpc\(\s*'start_booking_verification'/)
     expect(source).toContain('dispatchNotificationOutboxById(row.pin_outbox_id')
     expect(source).toContain('deliverBookingPin({')
+    expect(source).toContain('expiresAt: row.expires_at')
     expect(source).toMatch(/\.rpc\(\s*'record_booking_verification_delivery'/)
     expect(source).toMatch(/\.rpc\(\s*'release_slot_hold'/)
     expect(source).toMatch(/\.rpc\(\s*'cancel_booking_verification'/)
@@ -40,5 +41,11 @@ describe('public booking PIN action contract', () => {
     expect(source).toContain('checkRateLimitFailClosed')
     expect(source).toContain("rateLimitKey(bucket, ctx.tenantId, 'ip', ip)")
     expect(source).toContain("rateLimitKey(bucket, ctx.tenantId, 'target', limiterPart)")
+  })
+
+  it('keeps the challenge visible after three errors so the customer can request a new code', () => {
+    expect(source).toMatch(
+      /row\.outcome === 'attempts_exhausted'[\s\S]*?reason: 'invalid_pin'[\s\S]*?attemptsRemaining: 0/,
+    )
   })
 })

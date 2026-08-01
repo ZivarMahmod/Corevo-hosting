@@ -3,149 +3,227 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
-import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
+import {
+  getAdminTenant,
+  requireActiveTenantMutation,
+  type AdminTenant,
+} from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
-import { giftCardVoidable, giftStatusLabel, kronorToCents, type GiftCardStatus } from './types'
+import { kronorToCents } from './types'
 import { commerceReleaseGate } from '@/lib/release/commerce'
+import { createGiftCardCode, hashGiftCardCode } from '@/lib/security/gift-card-code'
+import {
+  checkRateLimitFailClosed,
+  getClientIp,
+  LIMITS,
+  rateLimitKey,
+} from '@/lib/security/rate-limit'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
-const CODE_CLASH = 'Kunde inte skapa kod, försök igen.'
 
-/**
- * Authorization fence for every gift-card mutation. Mirrors lib/admin/shop/actions.ts:
- * requireAdminArea('presentkort') + getAdminTenant, which together verify the caller's role AND
- * resolve the tenant (id + slug) for scoped writes. RLS is defence-in-depth, not a
- * substitute.
- */
+export type GiftCardActionState = ActionState & {
+  issuedCode?: string
+  issuedCardId?: string
+}
+
 async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
   const user = await requireAdminArea('presentkort')
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
+  await requireActiveTenantMutation(user, tenant.id)
   if (!commerceReleaseGate(tenant.id).presentkort) return null
   return { user, tenant }
 }
 
-// Unambiguous code alphabet — excludes 0/O and 1/I so handwritten/spoken codes
-// don't get transcribed wrong. 32 symbols.
-const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-
-/** Generate a XXXX-XXXX-XXXX-XXXX code (4 groups of 4) from the safe alphabet. */
-function generateGiftCode(): string {
-  const groups: string[] = []
-  for (let g = 0; g < 4; g++) {
-    let group = ''
-    for (let c = 0; c < 4; c++) {
-      group += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]
-    }
-    groups.push(group)
-  }
-  return groups.join('-')
+function requestIdOf(formData: FormData): string | null {
+  const requestId = String(formData.get('requestId') ?? '').trim()
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    requestId,
+  )
+    ? requestId
+    : null
 }
 
-/**
- * Issue a new gift card (administrative registration — NOT a payment).
- *
- * Registers a gift card the salon sold or gave out. balance_cents is set equal to
- * initial_amount_cents on issue; this action NEVER touches payment_status/provider
- * (those columns don't exist on gift_cards — online purchase + redemption arrive
- * when payment is switched on). The code is generated server-side and is unique
- * per tenant; on a unique-collision we retry once with a fresh code.
- */
-export async function issueGiftCard(formData: FormData): Promise<ActionState> {
+function commandError(error: { message?: string } | null): string {
+  const message = error?.message ?? ''
+  if (message.includes('value_module_not_live'))
+    return 'Presentkort måste vara live för den här åtgärden.'
+  if (message.includes('gift_card_value_not_released'))
+    return 'Presentkort är inte frisläppt för det här företaget.'
+  if (message.includes('gift_card_insufficient_balance'))
+    return 'Presentkortet har inte tillräckligt saldo.'
+  if (message.includes('gift_card_expired')) return 'Presentkortet har gått ut.'
+  if (message.includes('gift_card_void')) return 'Presentkortet är makulerat.'
+  if (message.includes('gift_card_unavailable')) return 'Koden kunde inte användas.'
+  if (message.includes('gift_card_idempotency_conflict'))
+    return 'Förfrågan har redan använts med andra uppgifter.'
+  if (message.includes('gift_card_not_voidable'))
+    return 'Presentkortet kan inte makuleras i sitt nuvarande läge.'
+  return GENERIC
+}
+
+export async function issueGiftCard(formData: FormData): Promise<GiftCardActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
 
-  const amountKr = Number(formData.get('amountKr'))
-  if (!Number.isFinite(amountKr) || amountKr < 1) {
-    return { error: 'Ange ett belopp på minst 1 kr.' }
+  const requestId = requestIdOf(formData)
+  if (!requestId) return { error: 'Förfrågan saknar giltigt id.' }
+
+  const amountCents = kronorToCents(Number(formData.get('amountKr')))
+  if (amountCents < 100 || amountCents > 10_000_000) {
+    return { error: 'Ange ett belopp mellan 1 och 100 000 kr.' }
   }
-  const amountCents = kronorToCents(amountKr)
 
-  const recipientNameRaw = String(formData.get('recipientName') ?? '').trim()
-  const recipientName = recipientNameRaw || null
+  const recipientName = String(formData.get('recipientName') ?? '').trim() || null
+  const recipientEmail = String(formData.get('recipientEmail') ?? '').trim() || null
+  const message = String(formData.get('message') ?? '').trim() || null
+  const expiresAt = String(formData.get('expiresAt') ?? '').trim() || null
+  if ((recipientName?.length ?? 0) > 120 || (recipientEmail?.length ?? 0) > 320) {
+    return { error: 'Mottagaruppgifterna är för långa.' }
+  }
+  if ((message?.length ?? 0) > 2_000) return { error: 'Meddelandet är för långt.' }
 
-  const recipientEmailRaw = String(formData.get('recipientEmail') ?? '').trim()
-  const recipientEmail = recipientEmailRaw || null
-
-  const messageRaw = String(formData.get('message') ?? '').trim()
-  const message = messageRaw || null
-
-  const expiresAtRaw = String(formData.get('expiresAt') ?? '').trim()
-  const expiresAt = expiresAtRaw || null
+  let code
+  try {
+    code = await createGiftCardCode(
+      ctx.tenant.id,
+      requestId,
+      process.env.GIFT_CARD_HMAC_KEY ?? '',
+    )
+  } catch {
+    return { error: 'Presentkort är inte korrekt driftkonfigurerat.' }
+  }
 
   const supabase = await createClient()
+  const { data, error } = await supabase.rpc('issue_gift_card', {
+    p_tenant: ctx.tenant.id,
+    p_code_hash: code.codeHash,
+    p_code_last_four: code.lastFour,
+    p_amount_cents: amountCents,
+    p_currency: 'SEK',
+    p_recipient_name: recipientName,
+    p_recipient_email: recipientEmail,
+    p_message: message,
+    p_expires_at: expiresAt,
+    p_idempotency_key: requestId,
+  })
+  if (error || !data || typeof data !== 'object') return { error: commandError(error) }
 
-  // Try to insert with a generated code; on a unique-collision (23505) retry once.
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const { error } = await supabase.from('gift_cards').insert({
-      tenant_id: ctx.tenant.id,
-      code: generateGiftCode(),
-      initial_amount_cents: amountCents,
-      balance_cents: amountCents,
-      currency: 'SEK',
-      status: 'active',
-      recipient_name: recipientName,
-      recipient_email: recipientEmail,
-      message,
-      expires_at: expiresAt,
-    })
-
-    if (!error) {
-      revalidatePath('/admin/presentkort')
-      return { success: 'Presentkort skapat.' }
-    }
-
-    // 23505 = unique_violation (code clash). Anything else is a hard failure.
-    if (error.code !== '23505') return { error: GENERIC }
+  const result = data as { gift_card_id?: unknown }
+  revalidatePath('/admin/presentkort')
+  return {
+    success: 'Presentkort utfärdat.',
+    issuedCode: code.rawCode,
+    issuedCardId: typeof result.gift_card_id === 'string' ? result.gift_card_id : undefined,
   }
-
-  return { error: CODE_CLASH }
 }
 
-/**
- * Makulera (void) a gift card — administrative cancellation. Sets status='void'.
- * NEVER mutates balance_cents (the recorded value stays intact for audit); this is
- * not a refund or redemption, just marking the card unusable.
- *
- * SPÅRBARHET: raden RADERAS ALDRIG. Ett utfärdat värdebevis får inte försvinna ur
- * historiken — makulering är ett status-byte (active → void), inte ett delete.
- *
- * STATUS-VAKT (server-fence): bara ett 'active'-kort kan makuleras, via
- * giftCardVoidable. UI:t döljer redan knappen för icke-aktiva kort, men en
- * server-action är en publik HTTP-yta — utan den här kollen kan en handgjord POST
- * skriva 'void' över ett redan inlöst kort och därmed förfalska historiken.
- */
+export async function redeemGiftCard(formData: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const requestId = requestIdOf(formData)
+  const rawCode = String(formData.get('code') ?? '').trim()
+  const amountCents = kronorToCents(Number(formData.get('amountKr')))
+  const currency = String(formData.get('currency') ?? 'SEK').trim().toUpperCase()
+  if (!requestId || !rawCode || amountCents < 1 || amountCents > 10_000_000) {
+    return { error: 'Kontrollera kod och belopp.' }
+  }
+
+  const ip = await getClientIp()
+  if (
+    !(await checkRateLimitFailClosed(
+      rateLimitKey('gift_card_code', ctx.tenant.id, ctx.user.id, ip),
+      LIMITS.giftCardCode,
+    ))
+  ) {
+    return { error: 'För många kodförsök. Vänta en stund och försök igen.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('redeem_gift_card', {
+    p_tenant: ctx.tenant.id,
+    p_code_hash: await hashGiftCardCode(rawCode),
+    p_amount_cents: amountCents,
+    p_currency: currency,
+    p_idempotency_key: requestId,
+    p_source_type: 'admin',
+  })
+  if (error) return { error: commandError(error) }
+
+  revalidatePath('/admin/presentkort')
+  return { success: 'Beloppet har lösts in.' }
+}
+
 export async function voidGiftCard(formData: FormData): Promise<ActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
 
-  const id = String(formData.get('id') ?? '')
-  if (!id) return { error: 'Saknar presentkort.' }
+  const id = String(formData.get('id') ?? '').trim()
+  const reason = String(formData.get('reason') ?? '').trim()
+  const requestId = requestIdOf(formData)
+  if (!id || !requestId) return { error: 'Saknar presentkort eller förfrågnings-id.' }
+  if (!reason || reason.length > 500) return { error: 'Ange en kort orsak till makuleringen.' }
 
   const supabase = await createClient()
-
-  // Läs nuvarande status tenant-scopat (samma fence som skrivningen nedan) — en
-  // rad som inte tillhör tenanten finns helt enkelt inte.
-  const { data: current } = await supabase
-    .from('gift_cards')
-    .select('status')
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  if (!current) return { error: 'Presentkortet hittades inte.' }
-  if (!giftCardVoidable(current.status as GiftCardStatus)) {
-    return { error: `Kortet är ${giftStatusLabel(current.status as GiftCardStatus).toLowerCase()} och kan inte makuleras.` }
-  }
-
-  const { error } = await supabase
-    .from('gift_cards')
-    .update({ status: 'void' })
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-    .eq('status', 'active') // race-fence: kortet får inte hinna lösas in mellan läsning och skrivning
-  if (error) return { error: GENERIC }
+  const { error } = await supabase.rpc('void_gift_card', {
+    p_tenant: ctx.tenant.id,
+    p_gift_card: id,
+    p_idempotency_key: requestId,
+    p_reason: reason,
+  })
+  if (error) return { error: commandError(error) }
 
   revalidatePath('/admin/presentkort')
   return { success: 'Presentkort makulerat.' }
+}
+
+export async function adjustGiftCard(formData: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(formData.get('id') ?? '').trim()
+  const reason = String(formData.get('reason') ?? '').trim()
+  const deltaCents = kronorToCents(Math.abs(Number(formData.get('deltaKr'))))
+    * (String(formData.get('direction')) === 'decrease' ? -1 : 1)
+  const requestId = requestIdOf(formData)
+  if (!id || !requestId || !reason || deltaCents === 0) {
+    return { error: 'Kontrollera presentkort, belopp och orsak.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('adjust_gift_card', {
+    p_tenant: ctx.tenant.id,
+    p_gift_card: id,
+    p_delta_cents: deltaCents,
+    p_idempotency_key: requestId,
+    p_reason: reason,
+  })
+  if (error) return { error: commandError(error) }
+
+  revalidatePath('/admin/presentkort')
+  return { success: 'Saldot har justerats.' }
+}
+
+export async function restoreGiftCardRedemption(formData: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const entryId = String(formData.get('entryId') ?? '').trim()
+  const reason = String(formData.get('reason') ?? '').trim()
+  const requestId = requestIdOf(formData)
+  if (!entryId || !requestId || !reason) return { error: 'Kontrollera inlösen och orsak.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('restore_gift_card_redemption', {
+    p_tenant: ctx.tenant.id,
+    p_redemption_entry: entryId,
+    p_idempotency_key: requestId,
+    p_reason: reason,
+  })
+  if (error) return { error: commandError(error) }
+
+  revalidatePath('/admin/presentkort')
+  return { success: 'Inlösen har återställts.' }
 }

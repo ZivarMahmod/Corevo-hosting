@@ -5,11 +5,15 @@ begin;
 
 select set_config('request.jwt.claim.role', 'service_role', true);
 
-insert into public.tenants (id, slug, name) values
-  ('99000000-0000-0000-0000-000000000001', 'gdpr-0099-a', 'GDPR A'),
-  ('99000000-0000-0000-0000-000000000002', 'gdpr-0099-b', 'GDPR B');
+insert into public.tenants (id, slug, name, status) values
+  ('99000000-0000-0000-0000-000000000001', 'gdpr-0099-a', 'GDPR A', 'provisioning'),
+  ('99000000-0000-0000-0000-000000000002', 'gdpr-0099-b', 'GDPR B', 'provisioning');
+select set_config('request.jwt.claim.role', '', true);
+insert into public.tenant_settings (tenant_id) values
+  ('99000000-0000-0000-0000-000000000001');
+select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.roles (id, tenant_id, name, level) values
-  ('99000000-0000-0000-0000-000000000011', '99000000-0000-0000-0000-000000000001', 'owner-a', 6),
+  ('99000000-0000-0000-0000-000000000011', '99000000-0000-0000-0000-000000000001', 'salon_admin', 6),
   ('99000000-0000-0000-0000-000000000012', '99000000-0000-0000-0000-000000000001', 'customer-a', 2),
   ('99000000-0000-0000-0000-000000000013', '99000000-0000-0000-0000-000000000002', 'customer-b', 2);
 insert into auth.users (id, email) values
@@ -49,6 +53,7 @@ select '99000000-0000-0000-0000-000000000001',
   from generate_series(0, 6) day;
 update public.staff set active = true
  where id = '99000000-0000-0000-0000-000000000041';
+select public.publish_tenant('99000000-0000-0000-0000-000000000001');
 
 -- Shared Auth identity across two tenants: self-service must fail before writes.
 insert into public.customers (
@@ -110,11 +115,13 @@ insert into public.bookings (
   'completed', 10000, 'private booking note'
 );
 insert into public.payments (
-  id, tenant_id, booking_id, amount_cents, currency, status
+  id, tenant_id, booking_id, amount_cents, currency, status,
+  stripe_connected_account_id
 ) values (
   '99000000-0000-0000-0000-000000000072',
   '99000000-0000-0000-0000-000000000001',
-  '99000000-0000-0000-0000-000000000071', 10000, 'sek', 'succeeded'
+  '99000000-0000-0000-0000-000000000071', 10000, 'sek', 'succeeded',
+  'acct_gdpr_0099'
 );
 insert into public.customer_favorites (id, tenant_id, customer_id, kind, staff_id) values (
   '99000000-0000-0000-0000-000000000073',
@@ -262,6 +269,7 @@ insert into public.gift_cards (
   'Other card message', '99000000-0000-0000-0000-000000000088',
   '99000000-0000-0000-0000-000000000089'
 );
+select set_config('request.jwt.claim.role', '', true);
 insert into public.offert_requests (
   id, tenant_id, customer_id, customer_name, customer_email, customer_phone,
   subject, message, details, estimate_cents, status, payment_status, note,
@@ -274,13 +282,14 @@ insert into public.offert_requests (
   '{"private":"value"}'::jsonb, 54321, 'accepted', 'paid', 'private admin note',
   'Private reply'
 );
+select set_config('request.jwt.claim.role', 'service_role', true);
 
 -- Wrong tenant is rejected and cannot touch the target.
 do $$
 begin
   perform * from public.atomic_erase_tenant_customer(
-    '99000000-0000-0000-0000-000000000002',
-    '99000000-0000-0000-0000-000000000061',
+    '99000000-0000-0000-0000-000000000001',
+    '99000000-0000-0000-0000-000000000062',
     '99000000-0000-0000-0000-000000000021'
   );
   raise exception 'cross_tenant_erase_succeeded';

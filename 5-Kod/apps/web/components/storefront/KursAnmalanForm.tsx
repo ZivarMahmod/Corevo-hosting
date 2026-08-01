@@ -15,7 +15,7 @@
 // omöjliga att göra fina. Samma sjuka som köpknappen hade. Mallen sätter --sf-field-*
 // i sitt [data-theme]-block; funktionen här rörs aldrig.
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { KURS_SUBMIT_INITIAL, type KursSubmitState } from '@/lib/storefront/kurser/types'
 import { submitEventRegistration } from '@/app/(public)/kurser/actions'
@@ -40,6 +40,7 @@ function SubmitButton() {
 
 /** Anmälningsformulär för ETT kurstillfälle. maxParty <= 8, capped av "kvar". */
 export function KursAnmalanForm({ eventId, maxParty }: { eventId: string; maxParty: number }) {
+  const [requestId] = useState(() => crypto.randomUUID())
   const [state, formAction] = useActionState<KursSubmitState, FormData>(
     submitEventRegistration,
     KURS_SUBMIT_INITIAL,
@@ -58,6 +59,7 @@ export function KursAnmalanForm({ eventId, maxParty }: { eventId: string; maxPar
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="event_id" value={eventId} />
+      <input type="hidden" name="request_id" value={requestId} />
 
       <div className={styles.row}>
         <div>

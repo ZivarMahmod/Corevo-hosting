@@ -1,14 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   parseModuleSelections,
   normalizeSelections,
+  writeTenantVerticalAndModules,
   type ModuleSelection,
 } from '@/lib/platform/tenant-modules-write'
 
 // Multi-bransch spår 5 — the create-path module write. These pin the two pure
 // transforms: parsing the wizard's JSON `modules` field, and normalizing it so
-// booking is always provisioned at least 'live' (FreshCut-parity) and 'off' rows
-// are dropped (absence == off on the read side).
+// missing/draft booking keeps the safe live default while an explicit booking=off
+// survives as the website-only contract. Other off rows are dropped.
 
 describe('parseModuleSelections — wizard `modules` field → clean list', () => {
   it('parses a valid { module_key: state } map', () => {
@@ -38,19 +39,22 @@ describe('parseModuleSelections — wizard `modules` field → clean list', () =
   })
 })
 
-describe('normalizeSelections — booking floor + drop off-rows', () => {
+describe('normalizeSelections — safe booking default + explicit website-only', () => {
   it('floors a missing booking to live', () => {
     const out = normalizeSelections([{ moduleKey: 'media_library', state: 'live' }])
     expect(out).toContainEqual({ moduleKey: 'booking', state: 'live' })
     expect(out).toContainEqual({ moduleKey: 'media_library', state: 'live' })
   })
 
-  it('raises a below-live booking up to live', () => {
+  it('raises a draft booking up to live', () => {
     expect(normalizeSelections([{ moduleKey: 'booking', state: 'draft' }])).toEqual([
       { moduleKey: 'booking', state: 'live' },
     ])
+  })
+
+  it('preserves an explicitly off booking as the website-only state', () => {
     expect(normalizeSelections([{ moduleKey: 'booking', state: 'off' }])).toEqual([
-      { moduleKey: 'booking', state: 'live' },
+      { moduleKey: 'booking', state: 'off' },
     ])
   })
 
@@ -66,14 +70,85 @@ describe('normalizeSelections — booking floor + drop off-rows', () => {
     const out = normalizeSelections([
       { moduleKey: 'booking', state: 'live' },
       { moduleKey: 'media_library', state: 'off' },
-      { moduleKey: 'loyalty', state: 'draft' },
+      { moduleKey: 'lojalitet', state: 'draft' },
     ])
     expect(out.find((s) => s.moduleKey === 'media_library')).toBeUndefined()
-    expect(out).toContainEqual({ moduleKey: 'loyalty', state: 'draft' })
+    expect(out).toContainEqual({ moduleKey: 'lojalitet', state: 'draft' })
     expect(out).toContainEqual({ moduleKey: 'booking', state: 'live' })
   })
 
   it('always includes booking even from an empty selection', () => {
     expect(normalizeSelections([])).toEqual([{ moduleKey: 'booking', state: 'live' }])
+  })
+})
+
+describe('writeTenantVerticalAndModules — catalog fence', () => {
+  it.each([
+    { data: null, error: { message: 'catalog unavailable' } },
+    { data: [], error: null },
+  ])('fails closed when booking cannot be validated against the module catalog', async (catalog) => {
+    const insert = vi.fn()
+    const supabase = {
+      from: vi.fn((table: string) => table === 'modules'
+        ? { select: vi.fn().mockResolvedValue(catalog) }
+        : { insert }),
+    }
+
+    await expect(writeTenantVerticalAndModules(
+      supabase as never,
+      'tenant-a',
+      null,
+      [{ moduleKey: 'booking', state: 'off' }],
+    )).resolves.toEqual({ ok: false })
+    expect(insert).not.toHaveBeenCalled()
+  })
+
+  it('provisions requested states through off → draft → live → paused without app-owned config', async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null })
+    const transitions: { state: string; keys: string[] }[] = []
+    const update = vi.fn((value: { state: string }) => ({
+      eq: vi.fn(() => ({
+        in: vi.fn((_column: string, keys: string[]) => {
+          transitions.push({ state: value.state, keys })
+          return Promise.resolve({ error: null })
+        }),
+      })),
+    }))
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === 'modules') {
+          return {
+            select: vi.fn().mockResolvedValue({
+              data: [
+                { key: 'booking' },
+                { key: 'shop' },
+                { key: 'lojalitet' },
+              ],
+              error: null,
+            }),
+          }
+        }
+        return { insert, update }
+      }),
+    }
+
+    await expect(
+      writeTenantVerticalAndModules(supabase as never, 'tenant-a', null, [
+        { moduleKey: 'booking', state: 'live' },
+        { moduleKey: 'shop', state: 'paused' },
+        { moduleKey: 'lojalitet', state: 'draft' },
+      ]),
+    ).resolves.toEqual({ ok: true })
+
+    expect(insert).toHaveBeenCalledWith([
+      { tenant_id: 'tenant-a', module_key: 'booking', state: 'off' },
+      { tenant_id: 'tenant-a', module_key: 'shop', state: 'off' },
+      { tenant_id: 'tenant-a', module_key: 'lojalitet', state: 'off' },
+    ])
+    expect(transitions).toEqual([
+      { state: 'draft', keys: ['booking', 'shop', 'lojalitet'] },
+      { state: 'live', keys: ['booking', 'shop'] },
+      { state: 'paused', keys: ['shop'] },
+    ])
   })
 })

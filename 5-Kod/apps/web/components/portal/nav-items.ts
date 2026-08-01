@@ -111,6 +111,7 @@ export const NAV: Record<PortalRole, NavConfig> = {
       // Kurser = egen opt-in-modul sedan 0056 (rad krävs, isModuleActivated).
       { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', module: 'kurser', minLevel: A.kurser },
       { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', module: 'media_library', minLevel: A.media },
+      { href: '/admin/galleri', label: 'Galleri', icon: 'grid', module: 'galleri', minLevel: A.galleri },
       { href: '/admin/webshop', label: 'Webshop', icon: 'grid', module: 'shop', minLevel: A.webshop },
       { href: '/admin/blogg', label: 'Blogg', icon: 'edit', module: 'blogg', minLevel: A.blogg },
       { href: '/admin/offerter', label: 'Offerter', icon: 'mail', module: 'offert', minLevel: A.offerter },

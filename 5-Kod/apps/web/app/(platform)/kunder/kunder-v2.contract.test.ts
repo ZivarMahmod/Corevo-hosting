@@ -8,7 +8,7 @@ const readWeb = (relative: string) => {
   return existsSync(file) ? readFileSync(file, 'utf8') : ''
 }
 
-describe('goal-72 customer master–detail route contract', () => {
+describe('goal-72/80 customer master–detail and full-width workspace contract', () => {
   it('owns the tenant fetch and honest card mapping in a persistent layout', () => {
     const layout = readWeb('app/(platform)/kunder/(board)/layout.tsx')
 
@@ -32,17 +32,23 @@ describe('goal-72 customer master–detail route contract', () => {
     expect(page).not.toContain('LegacyCustomersClient')
   })
 
-  it('keeps the workbench as the direct platform-main child with the canonical skeleton', () => {
+  it('keeps the list skeleton and gives a selected customer the canonical full-width workspace', () => {
     const board = readWeb('components/platform/KunderBoard.tsx')
     const css = readWeb('components/platform/kunder-v2.module.css')
 
-    expect(board).toContain('className={`workbench ${styles.board}`}')
+    expect(board).toContain(
+      'className={`workbench ${styles.board}${hasSelection ? ` ${styles.boardState}` : \'\'}`}',
+    )
+    expect(board).toContain('{!hasSelection ? <aside className={styles.list}')
     expect(board).toContain("data-mobile-view={hasSelection ? 'card' : 'list'}")
     expect(css).toMatch(/\.board\s*\{[\s\S]*?grid-template-columns:\s*400px 1fr;/)
+    expect(css).toMatch(/\.boardState\s*\{[\s\S]*?grid-template-columns:\s*1fr;/)
     expect(css).toMatch(/\.list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?border-right:/)
     expect(css).toMatch(/\.rows\s*\{[\s\S]*?overflow-y:\s*auto;/)
-    expect(css).toMatch(/\.pane\s*\{[\s\S]*?overflow-y:\s*auto;[\s\S]*?min-height:\s*0;/)
-    expect(css).toMatch(/\.paneInner\s*\{[\s\S]*?max-width:\s*880px;[\s\S]*?margin:\s*0 auto;/)
+    expect(css).toMatch(
+      /\.pane\s*\{[\s\S]*?overflow-y:\s*auto;[\s\S]*?min-height:\s*0;[\s\S]*?min-width:\s*0;/,
+    )
+    expect(css).toMatch(/\.paneInner\s*\{[\s\S]*?max-width:\s*1320px;[\s\S]*?margin:\s*0 auto;/)
     expect(css).toContain('.rowOn')
     expect(css).toContain('.search')
     expect(css).toContain('.chipOn')
@@ -90,6 +96,8 @@ describe('goal-72 customer master–detail route contract', () => {
   it('changes only the detail shell while preserving all 14 tab keys and module gates', () => {
     const page = readWeb('app/(platform)/kunder/(board)/[id]/page.tsx')
     const tabs = readWeb('components/platform/TenantDetailTabs.tsx')
+    const detailCss = readWeb('components/platform/tenant-detail.module.css')
+    const boardCss = readWeb('components/platform/kunder-v2.module.css')
     const keys = [...tabs.matchAll(/\| '([^']+)'/g)].map((match) => match[1])
 
     expect(keys).toEqual([
@@ -112,6 +120,11 @@ describe('goal-72 customer master–detail route contract', () => {
     expect(page).toContain('className={boardStyles.paneInner}')
     expect(page).not.toContain('<main className={boardStyles.pane}>')
     expect(page).toContain('<TenantDetailTabs tabs={tabs} />')
+    expect(tabs).toContain("active === 'Sida' ? styles.editorTabs : undefined")
+    expect(detailCss).toMatch(/\.crumb\s*\{[^}]*position:\s*absolute/is)
+    expect(detailCss).toMatch(/\.head \.ident\s*\{[^}]*display:\s*none/is)
+    expect(detailCss).toMatch(/\.editorTabs \.subtabs\s*\{[^}]*margin-bottom:\s*4px/is)
+    expect(boardCss).toMatch(/\.paneInner:has\(:global\(\.sida-studio-host\)\)\s*\{[^}]*padding-top:\s*70px/is)
     expect(page).toContain('...(shopOn && {')
     expect(page).toContain('...(bloggOn && {')
     expect(page).toContain('...(kurserOn && {')

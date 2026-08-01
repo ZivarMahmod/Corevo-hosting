@@ -44,15 +44,17 @@ describe('size-limited Worker client boundaries', () => {
 
   it('keeps the superadmin site studio outside the Worker while tenant scoping stays on the page', () => {
     const page = readWeb('app/(platform)/kunder/(board)/[id]/page.tsx')
-    const lazy = readWeb('components/platform/SidaStudioLazy.tsx')
+    const lazy = readWeb('components/platform/SidaStudioV2Lazy.tsx')
 
-    expect(page).toContain("import { SidaStudioLazy } from '@/components/platform/SidaStudioLazy'")
-    expect(page).toContain('<SidaStudioLazy')
-    expect(page).not.toContain("import { SidaStudio } from '@/components/platform/SidaStudio'")
+    expect(page).toContain("import { SidaStudioV2Lazy } from '@/components/platform/SidaStudioV2Lazy'")
+    expect(page).toContain('<SidaStudioV2Lazy')
+    expect(page).not.toContain("import { SidaStudioLazy } from '@/components/platform/SidaStudioLazy'")
+    expect(page).not.toContain("import { SidaStudioV2 } from '@/components/platform/SidaStudioV2'")
     expect(page).toContain('await requirePlatformOperator()')
-    expect(page).toContain('const detail = await getTenantDetail(id)')
+    expect(page).toContain('getTenantDetail(id, supabase)')
+    expect(page).toContain('loadSiteRevisionState(supabase, id)')
 
-    expect(lazy).toContain("import('./SidaStudio')")
+    expect(lazy).toContain("import('./SidaStudioV2')")
     expect(lazy).toContain('ssr: false')
     expect(lazy).toContain('aria-live="polite"')
   })

@@ -49,9 +49,15 @@ export function ImagePicker({
   /** Where "Ladda upp i Bildbibliotek" links when the library is empty. */
   emptyHref?: string
 }) {
+  const selectableAssets = assets.filter(
+    (asset): asset is MediaAssetRow & { url: string } =>
+      asset.status === 'ready' && Boolean(asset.url),
+  )
   // Only honour a default that still exists in the tenant's library.
   const [selectedId, setSelectedId] = useState<string | null>(
-    defaultAssetId && assets.some((a) => a.id === defaultAssetId) ? defaultAssetId : null,
+    defaultAssetId && selectableAssets.some((a) => a.id === defaultAssetId)
+      ? defaultAssetId
+      : null,
   )
   const [open, setOpen] = useState(false)
   // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): "Ta bort"
@@ -60,7 +66,9 @@ export function ImagePicker({
   // så det finns inget pending-läge att spegla; armeringen är hela skyddet.
   const [armed, setArmed] = useState(false)
 
-  const selected = selectedId ? assets.find((a) => a.id === selectedId) ?? null : null
+  const selected = selectedId
+    ? selectableAssets.find((a) => a.id === selectedId) ?? null
+    : null
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -69,7 +77,7 @@ export function ImagePicker({
       {/* The value the surrounding form submits. '' → server persists null. */}
       <input type="hidden" name={name} value={selectedId ?? ''} form={formId} />
 
-      {assets.length === 0 ? (
+      {selectableAssets.length === 0 ? (
         <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0 }}>
           Du har inga bilder än.{' '}
           <Link
@@ -114,6 +122,7 @@ export function ImagePicker({
                 variant="ghost"
                 size="sm"
                 type="button"
+                style={{ minHeight: 44 }}
                 onClick={() => {
                   setArmed(false)
                   setOpen((v) => !v)
@@ -135,16 +144,22 @@ export function ImagePicker({
                       size="sm"
                       type="button"
                       icon="trash"
-                      style={{ color: 'var(--c-danger)' }}
+                      style={{ minHeight: 44, color: 'var(--c-danger)' }}
                       onClick={() => {
                         setSelectedId(null)
                         setOpen(false)
                         setArmed(false)
                       }}
                     >
-                      Säker? Ta bort permanent
+                      Säker? Ta bort bildvalet
                     </Button>
-                    <Button variant="ghost" size="sm" type="button" onClick={() => setArmed(false)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      style={{ minHeight: 44 }}
+                      onClick={() => setArmed(false)}
+                    >
                       Ångra
                     </Button>
                   </>
@@ -154,6 +169,7 @@ export function ImagePicker({
                     size="sm"
                     type="button"
                     icon="trash"
+                    style={{ minHeight: 44 }}
                     onClick={() => setArmed(true)}
                   >
                     Ta bort
@@ -179,7 +195,7 @@ export function ImagePicker({
                 gap: 8,
               }}
             >
-              {assets.map((a) => {
+              {selectableAssets.map((a) => {
                 const isSel = a.id === selectedId
                 return (
                   <button

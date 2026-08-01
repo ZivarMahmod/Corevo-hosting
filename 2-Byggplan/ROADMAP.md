@@ -1,44 +1,78 @@
 # ROADMAP — Corevo
 
-Detta är projektets enda aktuella byggordning. Git-historiken bär äldre planer och
-avslutade goals; skapa inte nya parallella roadmap-filer.
+Detta är projektets enda aktuella byggordning. Produktion lämnas orörd tills
+alla lokala byggdelar och Zivars gemensamma localhostacceptans är klara.
 
-## Stabil grund
+## Låst lokalt på samma branch
 
-- Multi-tenant och multi-bransch med modulstyrning per tenant.
-- Publik storefront, bokning, kundadmin, personalyta och plattformsadmin.
-- Boknings-/schemagrund live genom migration 0079.
-- Redigera sidan v2 med revisioner/utkast genom migration 0080.
-- Ägaradmin mobil-PWA samt kalender Mobil v2.
+1. **Goal 74 — PIN och kanalval**
+2. **Goal 75 — kundportal, säkerhet och PWA**
+3. **Goal 76 — provisionering och readiness**
+4. **Goal 77 — säkert mallbyte och innehållsägande**
+5. **Goal 78 — webbplatsläge och extern bokning**
+6. **Goal 79 — FreshCuts fasta kundwebb**
+7. **Goal 80 — superadminens kundarbetsyta**
+8. **Goal 81 — bokningsmotorns fulla variantmatris**
+9. **Goal 82 — personaladmin och tenantlivscykel**
+10. **Goal 83 — tenantens regionala grundkontrakt**
+11. **Goal 84 — komplett onboarding till första bokning**
 
-## Byggordning
+Den samlade branchen är `codex/launch-inventory-customer-design`. Goal 74 är
+arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Goal
+77–84 är verifierade lokalt enligt respektive klar-fil.
 
-1. **Goal-71 acceptansstängning** — 04 Inställningar v2 och 06 Personaladmin
-   mobil-PWA är driftsatta. Ingen ny koddel återstår, men Zivars autentiserade
-   manuella acceptans krävs före flytt till `klart/`. `minbooking.corevo.se`
-   behålls tills Zivar uttryckligen stänger dörren.
-2. **Goal-72 Superadmin v2** — S1–S7 är live från `main`-SHA `88d59b5`.
-   Automatisk release proof och oautentiserad prod-rök är gröna; Zivars
-   autentiserade superadmin-/partneracceptans återstår före arkivering.
-3. **Senaste admin-chrome-paketet** — `Dagens genomgångar/Mobil pwa/` är inkommet
-   underlag men saknar goal-73. Det blir en egen byggdel efter goal-72, inte ett
-   parallellt svep.
-4. **05 Kundportal** — överhoppad i denna byggomgång; paketet ligger kvar orört.
-5. **Lanseringsgrindar** — betalning, juridik, secrets, domänsmoke och driftbevis.
+## Nästa byggordning
 
-Designpaketen ligger i `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/`.
-Numrerade paket byggs i ordning; verifierat och deployat paket flyttas till `klar/`.
+12. **Goal 87 — modulstate, readiness och DB-säkerhet**
+    Lås dagens modulstates, defaults, publika grindar, readiness, RLS och
+    katalogkontrakt.
+13. **Goal 88 — en kundarbetsyta och en sidmotor**
+    Samla superadmin och kundadmin på SidaStudioV2/revisioner och gör varje
+    verklig modul nåbar från rätt yta.
+14. **Goal 89 — storefront, preview och mallslots — KODKLAR**
+    Preview och publik yta använder samma modulägda loaders, navigation,
+    CTA-gating och fasta mallslots. Full lokal teknisk verifiering är grön.
+    Samlad användaracceptans återstår i Goal 86.
+15. **Goal 90 — blogg, kurser och galleri — KODKLAR**
+    Lås innehållslivscykel, eventintegritet och galleri/media från kundadmin
+    genom preview till storefront. Full teknisk verifiering, previewacceptans
+    och oberoende omgranskning är gröna. Samlad användaracceptans återstår i
+    Goal 86.
+16. **Goal 91 — presentkort och lojalitet — KODKLAR I PREVIEW**
+    Manuella presentkorts- och lojalitetsvärden är tenantbundna, append-only,
+    idempotenta och samtidighetsverifierade. Betald issuance, leverans och
+    refund förblir fail-closed till Goal 92; samlad browseracceptans sker i
+    Goal 86.
+17. **Goal 92 — media, offert och webshop — INTERNT TEKNISKT GRÖN**
+    SQL, concurrency, interna providergränser, browser och full kodkvalitet är
+    gröna. Fyra verkliga externa sandbox-/runtimeprov är tydligt blockerade och
+    Goal 92 ligger därför kvar öppet.
+18. **Goal 93 — katalog och mekanisk mallacceptans — TEKNISKT GRÖN**
+    12 teman, 174 rutter, 376/376 matrisfall och 12/12 verkliga previewteman är
+    gröna. Samlad användaracceptans återstår i Goal 86.
+19. **Goal 86 — en gemensam localhostacceptans — NÄSTA**
+    Testa hela den byggda lokala produkten, inklusive Goal 74–93. Zivar testar
+    en gång; godkända delar fryses och inga nya funktioner läggs till före
+    samlad release.
+20. **Goal 85 — fail-closed lokal releaseövning**
+    Lås migrations-, säkerhets-, host-, scheduler-, rollback- och
+    deploykontrakt utan att deploya produktion, före den samlade releasen.
 
-## Regler för varje del
+Full exekveringsplan finns i
+`1-Planering/22-modulprogram/01-lokal-fardigstallandeplan.md`.
 
-- Läs hela designpaketet och relevanta kodmönster först.
-- Skapa högst ett aktivt goal i `2-Byggplan/goals/`.
-- Skriv regression/acceptans före beteendeändring när en testbar seam finns.
-- Verifiera fokuserade tester, full testsvit, typecheck, lint och build.
-- Behåll Corevo generellt: modul- och branschord ska komma från tenantens konfiguration.
-- Flytta goal till `2-Byggplan/klart/` först efter verkligt livebevis.
+## Samlad release efter Goal 86
 
-## Nästa startpunkt
+Produktionsmigrationer, portalhost/HTTPS, deploy, domänsmoke, e-postcanary och
+de autentiserade manuella rollproven görs tillsammans med Zivar. Dessa är
+releasebevis, inte skäl att hålla lokalt färdig produktkod öppen.
 
-`2-Byggplan/goals/goal-72-superadmin-v2.md` — kör autentiserad slutacceptans;
-därefter skapa goal-73 från det orörda admin-chrome-paketet.
+## Regler
+
+- En aktiv byggdel åt gången: beslut → test → kod → verifiering → lokal låsning.
+- Endast pågående byggdel har en aktiv goal-fil; senare mål beskrivs i
+  färdigställandeplanen tills föregående del är låst.
+- `corevo.se`-roten är POS-/plattformsyta; tenantstorefront använder
+  `*.boka.corevo.se`.
+- Ingen parallell motor, kö, roll-, person- eller statusmodell byggs.
+- Funktioner som kan verifieras lokalt ska bli 100 % lokalt innan Goal 86.

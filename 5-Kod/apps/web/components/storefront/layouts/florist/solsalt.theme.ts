@@ -24,7 +24,7 @@ const IMG = {
  * EXAKT KOPIA av "Sol & Salt - Medelhav.dc.html". Palett, typsnitt, radie, navHeight och caps
  * är LYFTA ur filens `#corevo-manifest`-block — inget är re-härlett.
  *
- * OBS paletten: `primaryD` = #C2512E (TERRAKOTTA), inte en mörkare kobolt. Det är avsiktligt
+ * OBS paletten: `primaryD` = #B74D2C (TERRAKOTTA), inte en mörkare kobolt. Det är avsiktligt
  * i manifestet och ÄR mallen: varje hover i filen går från kobolt till terrakotta, och varje
  * eyebrow är terrakotta. "Rätta" den aldrig till en nyansmörkare primary.
  *
@@ -39,7 +39,7 @@ export const solsalt: FloristTheme = {
   // Manifestets `palette`, alla 8 nycklar, oförändrade.
   palette: {
     primary: '#1F4F9C',
-    primaryD: '#C2512E',
+    primaryD: '#B74D2C',
     bg: '#FAF3E1',
     surface: '#FFFCF2',
     fg: '#1E2B49',

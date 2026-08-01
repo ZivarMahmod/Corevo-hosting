@@ -11,7 +11,7 @@
  *   --color-fg       #131313 bläck       --color-surface #FFFFFF
  *   --color-fg-2     #6E685D             --color-line    #E5E0D4
  *   --color-accent-soft #ECE5FB
- * Filens #9B9486 (den ljusare mikroversalen) finns INTE i paletten — den är mallens egen
+ * Filens #6E685D (den ljusare mikroversalen) finns INTE i paletten — den är mallens egen
  * ton och står därför hårdkodad, precis som i designen.
  */
 
@@ -38,7 +38,7 @@
   font-size: 11px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Filens understrukna textlänk: 12px / 0.16em / 2px bläcklinje under */
@@ -54,8 +54,8 @@
   padding-bottom: 3px;
 }
 .siUnderline:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Filens fyllda knapp: bläck-platta som blir elviolett vid hover. Radie 0. */
@@ -75,7 +75,7 @@
 }
 .siSolid:hover {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 /* Filens "Boka →" — bara elviolett mikroversal, ingen platta */
@@ -86,7 +86,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: transparent;
   border: none;
   padding: 0;
@@ -170,8 +170,8 @@
   padding-bottom: 3px;
 }
 .siNavLinks a:hover {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
+  border-bottom-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .siNavCluster {
@@ -196,7 +196,7 @@
 }
 .siNavCta:hover {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 /* ── HEM (1) HERO ────────────────────────────────────────────────────────── */
@@ -217,7 +217,7 @@
   font-size: 11px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .siHeroTitle {
@@ -255,7 +255,7 @@
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 
 .siHeroPhoto {
@@ -277,14 +277,14 @@
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 .siHeroCapSeason {
   margin: 0;
   font-family: var(--font-display);
   font-style: italic;
   font-size: 15px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ── HEM (2) REMSAN ──────────────────────────────────────────────────────── */
@@ -367,7 +367,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 28px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siSigName {
   margin: 0 0 10px;
@@ -399,7 +399,7 @@
   font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 .siSigBook {
   display: inline-block;
@@ -408,7 +408,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siSigCard:hover .siSigBook {
   color: var(--color-fg);
@@ -443,7 +443,7 @@
   font-size: 11px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siAboutBody {
   margin: 0 0 24px;
@@ -488,7 +488,7 @@
   font-size: 10.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 
 /* ── HEM (6) JOURNAL ─────────────────────────────────────────────────────── */
@@ -520,7 +520,7 @@
   font-size: 10.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siJournalTitle {
   margin: 0;
@@ -533,10 +533,10 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 18px;
-  color: #9b9486;
+  color: #6e685d;
 }
 .siJournalRow:hover .siJournalTitle {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ── UNDERSIDOR ──────────────────────────────────────────────────────────── */
@@ -620,7 +620,7 @@
   font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 .siPriceKr {
   white-space: nowrap;
@@ -636,7 +636,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siPriceRow:hover .siPriceBook {
   color: var(--color-fg);
@@ -693,7 +693,7 @@
   color: var(--color-fg);
 }
 .siStatValueAccent {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siStatLabel {
   margin: 6px 0 0;
@@ -701,7 +701,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 
 /* /kontakt — bläckplattan + faktabladet */
@@ -720,7 +720,7 @@
   font-size: 10.5px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-accent-soft);
 }
 .siKontaktValue {
   margin: 0 0 22px;
@@ -740,7 +740,7 @@
 }
 .siKontaktValue a:hover,
 .siKontaktValueLast a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siKontaktProse {
   background: var(--color-surface);
@@ -794,7 +794,7 @@
 }
 .siFilter[data-active='true'] {
   color: var(--color-primary-ink);
-  border-bottom-color: var(--color-primary);
+  border-bottom-color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siShopGrid {
   list-style: none;
@@ -839,7 +839,7 @@
   color: var(--color-fg);
 }
 .siShopName a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siShopPrice {
   font-weight: 700;
@@ -891,7 +891,7 @@
   font-size: 10.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siPostTitle {
   margin: 0 0 10px;
@@ -902,7 +902,7 @@
   color: var(--color-fg);
 }
 .siPostRow:hover .siPostTitle {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 .siPostExcerpt {
   margin: 0;
@@ -963,11 +963,11 @@
   color: var(--color-bg);
 }
 .siFootNav a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
-/* Filens första sidfotslänk (klubben) ligger i elviolett och vänder vid hover. */
+/* Filens första sidfotslänk använder den ljusa violetttonen mot svart och vänder vid hover. */
 .siFootNavAccent {
-  color: var(--color-primary) !important;
+  color: var(--color-accent-soft) !important;
 }
 .siFootNavAccent:hover {
   color: var(--color-bg) !important;
@@ -975,7 +975,7 @@
 .siFootMeta {
   margin: 0;
   font-size: 12px;
-  color: var(--color-fg-2);
+  color: #9b9486;
 }
 
 /* ── MOBIL ≤760px — speglar Corevo-tillägget i filens egen media query ────── */
@@ -1143,7 +1143,7 @@
   font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 
 .siTeamBook {
@@ -1195,7 +1195,7 @@
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #9b9486;
+  color: #6e685d;
 }
 
 .siClubLede {
@@ -1231,7 +1231,7 @@
   font-size: 11px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-accent-soft);
 }
 
 .siCardName {
@@ -1294,7 +1294,7 @@
   padding: 13px 15px;
   font-family: var(--font-body);
   font-size: 15px;
-  outline-color: var(--color-primary);
+  outline-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .siClubJoin button {

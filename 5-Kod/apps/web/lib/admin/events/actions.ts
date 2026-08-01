@@ -10,6 +10,27 @@ import { EVENT_STATUSES } from './types'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
+const REFUND_REQUIRED =
+  'Återbetalning krävs innan en betald anmälan kan avbokas. Ingen status ändrades.'
+
+function eventLifecycleError(error: { message?: string; code?: string; details?: string } | null): string | null {
+  if (!error) return null
+  const message = error.message ?? ''
+  if (message.includes('paid_refund_required')) return REFUND_REQUIRED
+  if (message.includes('event_capacity_exceeded')) {
+    const left = Number.parseInt(error.details ?? '', 10)
+    return Number.isFinite(left)
+      ? `Anmälan får inte plats. Lediga platser: ${Math.max(0, left)}.`
+      : 'Anmälan får inte plats.'
+  }
+  if (message.includes('event_capacity_below_occupancy'))
+    return 'Max platser kan inte vara lägre än redan bokade eller reserverade platser.'
+  if (message.includes('event_module_read_only'))
+    return 'Kurser & event är pausad och kan inte ändras.'
+  if (message.includes('status_transition_invalid'))
+    return 'Den statusövergången är inte tillåten.'
+  return GENERIC
+}
 
 /**
  * Parse the shared event form fields (create + update use the same drawer form).
@@ -54,7 +75,7 @@ function parseEventFields(fd: FormData):
 }
 
 export async function createTenantEvent(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const parsed = parseEventFields(fd)
@@ -73,7 +94,7 @@ export async function createTenantEvent(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function updateTenantEvent(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -96,7 +117,7 @@ export async function updateTenantEvent(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function setTenantEventStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -106,13 +127,16 @@ export async function setTenantEventStatus(_p: ActionState, fd: FormData): Promi
   if (!(EVENT_STATUSES as readonly string[]).includes(statusRaw))
     return { error: 'Ogiltig status.' }
 
+  const reason = String(fd.get('reason') ?? '').trim()
+    || (statusRaw === 'cancelled' ? 'Inställt av administratör' : null)
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('tenant_events')
-    .update({ status: statusRaw })
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-  if (error) return { error: GENERIC }
+  const { error } = await supabase.rpc('set_tenant_event_status', {
+    p_tenant: ctx.tenant.id,
+    p_event: id,
+    p_status: statusRaw,
+    p_reason: reason ?? undefined,
+  })
+  if (error) return { error: eventLifecycleError(error) ?? GENERIC }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/kurser')
@@ -120,7 +144,7 @@ export async function setTenantEventStatus(_p: ActionState, fd: FormData): Promi
 }
 
 export async function deleteTenantEvent(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -128,23 +152,14 @@ export async function deleteTenantEvent(_p: ActionState, fd: FormData): Promise<
 
   const supabase = await createClient()
 
-  // Ett tillfälle med bekräftade anmälningar får INTE raderas — anmälda gäster
-  // skulle tappa sin plats spårlöst. Ställ in det i stället (status cancelled).
-  const { count } = await supabase
-    .from('event_registrations')
-    .select('id', { count: 'exact', head: true })
-    .eq('event_id', id)
-    .eq('tenant_id', ctx.tenant.id)
-    .eq('status', 'confirmed')
-  if ((count ?? 0) > 0)
-    return { error: 'Tillfället har anmälningar — ställ in det i stället.' }
-
   const { error } = await supabase
     .from('tenant_events')
     .delete()
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
-  if (error) return { error: GENERIC }
+  if (error?.message.includes('event_has_registration_history') || error?.code === '23503')
+    return { error: 'Tillfället har historik — ställ in det i stället.' }
+  if (error) return { error: eventLifecycleError(error) ?? GENERIC }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/kurser')
@@ -152,7 +167,7 @@ export async function deleteTenantEvent(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function setRegistrationStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await moduleCtx(fd, 'kurser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -162,13 +177,18 @@ export async function setRegistrationStatus(_p: ActionState, fd: FormData): Prom
   if (statusRaw !== 'confirmed' && statusRaw !== 'cancelled')
     return { error: 'Ogiltig status.' }
 
+  const reason = String(fd.get('reason') ?? '').trim()
+    || (statusRaw === 'cancelled'
+      ? 'Avbokad av administratör'
+      : 'Återanmäld av administratör')
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('event_registrations')
-    .update({ status: statusRaw })
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-  if (error) return { error: GENERIC }
+  const { error } = await supabase.rpc('set_event_registration_status', {
+    p_tenant: ctx.tenant.id,
+    p_registration: id,
+    p_status: statusRaw,
+    p_reason: reason,
+  })
+  if (error) return { error: eventLifecycleError(error) ?? GENERIC }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/kurser')

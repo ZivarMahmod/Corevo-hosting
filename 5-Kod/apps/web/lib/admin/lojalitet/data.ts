@@ -20,6 +20,7 @@ type LedgerRow = {
   points_delta: number
   reason: string | null
   note: string | null
+  reversal_of: string | null
   created_at: string
 }
 
@@ -78,36 +79,23 @@ async function loadCustomerNames(
 export async function listLoyaltyMembers(tenantId: string): Promise<LoyaltyMemberRow[]> {
   try {
     const supabase = await createClient()
-    const { data, error } = await supabase
-      .from('loyalty_ledger')
-      .select('customer_id, points_delta, reason, created_at')
-      .eq('tenant_id', tenantId)
+    const { data, error } = await supabase.rpc('admin_loyalty_members', {
+      p_tenant: tenantId,
+    })
     if (error || !data) return []
 
-    const rows = data as Pick<LedgerRow, 'customer_id' | 'points_delta' | 'reason' | 'created_at'>[]
-
-    type Agg = { balance: number; visits: number; last: string | null }
-    const byCustomer = new Map<string, Agg>()
-    for (const r of rows) {
-      if (!r.customer_id) continue
-      const a = byCustomer.get(r.customer_id) ?? { balance: 0, visits: 0, last: null }
-      a.balance += typeof r.points_delta === 'number' ? r.points_delta : 0
-      if (r.reason === 'earn_completed') a.visits += 1
-      if (a.last == null || r.created_at > a.last) a.last = r.created_at
-      byCustomer.set(r.customer_id, a)
-    }
-
-    const names = await loadCustomerNames(supabase, tenantId, [...byCustomer.keys()])
-
-    const members: LoyaltyMemberRow[] = [...byCustomer.entries()].map(([customerId, a]) => ({
-      customerId,
-      customerName: names.get(customerId) ?? null,
-      pointsBalance: a.balance,
-      visits: a.visits,
-      lastActivityAt: a.last,
+    const names = await loadCustomerNames(
+      supabase,
+      tenantId,
+      data.map((row) => row.customer_id),
+    )
+    return data.map((row) => ({
+      customerId: row.customer_id,
+      customerName: names.get(row.customer_id) ?? null,
+      pointsBalance: Number(row.points_balance),
+      visits: Number(row.rewarded_visits),
+      lastActivityAt: row.last_activity_at,
     }))
-    members.sort((x, y) => y.pointsBalance - x.pointsBalance)
-    return members
   } catch {
     return []
   }
@@ -174,7 +162,7 @@ export async function recentLoyaltyActivity(
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('loyalty_ledger')
-      .select('id, customer_id, points_delta, reason, note, created_at')
+      .select('id, customer_id, points_delta, reason, note, reversal_of, created_at')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -186,10 +174,12 @@ export async function recentLoyaltyActivity(
 
     return rows.map((r) => ({
       id: r.id,
+      customerId: r.customer_id,
       customerName: r.customer_id ? (names.get(r.customer_id) ?? null) : null,
       pointsDelta: typeof r.points_delta === 'number' ? r.points_delta : 0,
       reason: r.reason ?? 'adjustment',
       note: r.note,
+      reversalOf: r.reversal_of,
       createdAt: r.created_at,
     }))
   } catch {

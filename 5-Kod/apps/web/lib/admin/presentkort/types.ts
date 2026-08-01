@@ -9,7 +9,7 @@ export type GiftCardStatus = 'active' | 'redeemed' | 'expired' | 'void'
 
 export type GiftCardRow = {
   id: string
-  code: string
+  maskedCode: string
   initialAmountCents: number
   balanceCents: number
   currency: string
@@ -19,6 +19,36 @@ export type GiftCardRow = {
   message: string | null
   expiresAt: string | null
   createdAt: string
+}
+
+export type GiftCardEntryRow = {
+  id: string
+  giftCardId: string
+  amountCents: number
+  balanceAfterCents: number
+  currency: string
+  entryType: string
+  reason: string | null
+  createdAt: string
+}
+
+export function giftEntryLabel(entryType: string): string {
+  switch (entryType) {
+    case 'opening':
+      return 'Ingående saldo'
+    case 'issue':
+      return 'Utfärdat'
+    case 'redeem':
+      return 'Inlöst'
+    case 'restore':
+      return 'Återställt'
+    case 'void':
+      return 'Makulerat'
+    case 'adjustment':
+      return 'Justerat'
+    default:
+      return entryType
+  }
 }
 
 /**
@@ -99,12 +129,8 @@ export function giftCardVoidable(status: GiftCardStatus): boolean {
  * är alla obrukbara), saldot måste vara > 0, och giltighetstiden får inte ha
  * passerat.
  *
- * ⚠️ INGEN INLÖSEN-VÄG FINNS ÄN (2026-07-12). gift_cards är inte anon-läsbar
- * (0036) och lib/storefront/presentkort/load-presentkort.ts gör medvetet INGEN
- * tabell-query — den publika ytan är ren promo; adminens Callout säger "inlösen
- * aktiveras när betalning slås på". Den här predikaten är därför KONTRAKTET som
- * inlösen-vägen MÅSTE gå igenom den dagen den byggs — lägg inte en egen
- * status-koll bredvid, anropa den här.
+ * Databaskommandot är den auktoritativa vakten. Predikatet används endast för
+ * visning och lokala rena tester.
  */
 export function giftCardRedeemable(
   card: Pick<GiftCardRow, 'status' | 'balanceCents' | 'expiresAt'>,

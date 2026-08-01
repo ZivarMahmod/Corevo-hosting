@@ -67,7 +67,9 @@ export function accentForeground(hex: string | null | undefined): string | null 
   const ink = contrastRatio(ACCENT_INK, hex ?? '')
   const paper = contrastRatio(ACCENT_PAPER, hex ?? '')
   if (ink == null || paper == null) return null
-  return ink >= paper ? ACCENT_INK : ACCENT_PAPER
+  const best = ink >= paper ? ACCENT_INK : ACCENT_PAPER
+  if (Math.max(ink, paper) >= 4.5) return best
+  return contrastRatio('#000000', hex ?? '')! >= 4.5 ? '#000000' : best
 }
 
 const toHex = (c: [number, number, number]) =>
@@ -100,7 +102,7 @@ export function accentInk(
     const cr = contrastRatio(hex, bg)
     if (cr != null && cr >= min) return hex
   }
-  return ACCENT_INK
+  return contrastRatio('#000000', bg)! >= min ? '#000000' : ACCENT_INK
 }
 
 /**
@@ -111,7 +113,16 @@ export function injectTenantTokens(
   branding: TenantBranding | null | undefined,
 ): Record<string, string> {
   const vars: Record<string, string> = {}
-  if (branding?.color_primary) vars['--color-primary'] = branding.color_primary
+  if (branding?.color_primary) {
+    vars['--color-primary'] = branding.color_primary
+    const fg = accentForeground(branding.color_primary)
+    if (fg) {
+      vars['--color-primary-fg'] = fg
+      vars['--tenant-primary-fg'] = fg
+      vars['--tenant-primary-ink'] = 'var(--color-fg)'
+      if (!branding.color_accent) vars['--color-accent-fg'] = fg
+    }
+  }
   if (branding?.color_bg) vars['--color-bg'] = branding.color_bg
   if (branding?.color_fg) vars['--color-fg'] = branding.color_fg
   if (branding?.color_accent) {

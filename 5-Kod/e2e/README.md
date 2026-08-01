@@ -44,8 +44,8 @@ From `supabase/seed.sql` (exist only on a seeded DB):
 
 | Role | Email | Password |
 |------|-------|----------|
-| salon_admin | `admin@frisor1.se` | `Demo!1234` |
-| staff | `klippare@frisor1.se` | `Demo!1234` |
+| salon_admin | `e2e-admin@frisor1.test` | `E2E_PASSWORD` från seed-kommandot |
+| staff | `e2e-staff@frisor1.test` | `E2E_PASSWORD` från seed-kommandot |
 | platform_admin | `platform@corevo.se` | `Demo!1234` |
 
 Tenants: `frisor1` (Frisör Ett), `frisor2` (Salong Två).

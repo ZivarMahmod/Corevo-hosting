@@ -1,6 +1,7 @@
 import styles from './platform.module.css'
 import { listTenantDomains } from '@/lib/platform/domains'
 import { DomainManager } from './DomainManager'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 
 // Step 5 — Kundens EGNA domän (goal-23). Two states, gated by DOMAIN_PROVISIONING_ENABLED:
 //
@@ -27,7 +28,7 @@ export async function DomainPanel({ slug, tenantId }: { slug: string; tenantId: 
     <div className={styles.banner}>
       <p className={styles.bannerTitle}>Egen domän — inte påkopplat ännu</p>
       <p className={styles.muted} style={{ margin: 0 }}>
-        Kunden körs live på <code className={styles.code}>{slug}.corevo.se</code>. Egen domän
+        Standardadressen är <code className={styles.code}>{tenantStorefrontHost(slug)}</code>. Egen domän
         (t.ex. <code className={styles.code}>boka.exempel.se</code> via CNAME) är ett parkerat
         spår och slås på av drift (flagga{' '}
         <code className={styles.code}>DOMAIN_PROVISIONING_ENABLED</code>) — då dyker

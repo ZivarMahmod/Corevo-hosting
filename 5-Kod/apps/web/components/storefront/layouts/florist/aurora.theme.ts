@@ -40,12 +40,12 @@ export const aurora: FloristTheme = {
   desc: 'Blush & terracotta · romantisk studio',
   // Manifestets `palette`, alla 8 nycklar, oförändrade.
   palette: {
-    primary: '#B85C48',
+    primary: '#9B4D3C',
     primaryD: '#8A3E2E',
     bg: '#FAF1EC',
     surface: '#F3DED4',
     fg: '#3A2A24',
-    fg2: '#7A6257',
+    fg2: '#765E54',
     line: '#EAD8CD',
     accentSoft: '#F3DED4',
   },

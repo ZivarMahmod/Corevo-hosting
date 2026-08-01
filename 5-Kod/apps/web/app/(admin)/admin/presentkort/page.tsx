@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
-import { listGiftCards } from '@/lib/admin/presentkort/data'
+import { listGiftCardEntries, listGiftCards } from '@/lib/admin/presentkort/data'
 import { PresentkortAdmin } from '@/components/admin/PresentkortAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
 import { commerceReleaseGate } from '@/lib/release/commerce'
@@ -47,7 +47,10 @@ export default async function PresentkortPage() {
     )
   }
 
-  const cards = await listGiftCards(tenant.id)
+  const [cards, entries] = await Promise.all([
+    listGiftCards(tenant.id),
+    listGiftCardEntries(tenant.id),
+  ])
 
   const config = moduleAdminConfig(states, 'presentkort')
   const currency = typeof config.currency === 'string' ? config.currency : 'SEK'
@@ -57,6 +60,7 @@ export default async function PresentkortPage() {
     <section className="portal-section">
       <PresentkortAdmin
         cards={cards}
+        entries={entries}
         currency={currency}
         fulfilment={fulfilment}
         tenantName={tenant.name}

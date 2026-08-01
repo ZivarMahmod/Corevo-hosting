@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useActionState, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createTenant, type ActionState } from '@/lib/platform/actions'
 import {
   BOOKING_VARIANTS,
@@ -16,15 +16,17 @@ import { modulesForVertical, type VerticalPresetData, type TemplateOption } from
 import { ONBOARDING_STEPS } from '@/lib/platform/onboarding-steps'
 import { PageHead, Card, Button, Badge, Icon } from '@/components/portal/ui'
 import { Callout } from '@/components/portal/ui'
-import { FLORIST_THEMES } from '@/components/storefront/layouts/florist/registry'
+import {
+  ONBOARDING_THEME_KEYS,
+  SELECTABLE_THEME_CATALOG,
+} from '@/lib/platform/theme-catalog'
 import mobileStyles from './CreateTenantForm.module.css'
-
-const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
+import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
 
 // ── Module-state UI metadata (the "Moduler" step / multi-bransch spår 5) ─────────
-// state-toggle per module: a tenant_modules.state. booking is floored to 'live' in
-// the UI (the platform baseline + FreshCut-parity), so its only choices are live/
-// paused; every other module can also sit at draft/off. The publishable states the
+// state-toggle per module: a tenant_modules.state. Booking defaults safely to live,
+// but may explicitly be off for a website-only tenant; every other module can also
+// sit at draft/off. The publishable states the
 // operator can pick in the wizard (the DB also knows 'off' = simply not selected).
 const MODULE_STATE_LABELS: Record<ModuleState, string> = {
   off: 'Av',
@@ -39,14 +41,7 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
   paused: 'Tillfälligt stängd — visar "stängt" publikt.',
 }
 
-// ── The five storefront themes ──────────────────────────────────────────────────
-// Palette / fonts MIRROR the live [data-theme] tokens (packages/ui/tokens.css) and
-// the per-theme copy mirrors THEME_CONTENT, so the onboarding preview shows the REAL
-// look of each template — what the operator picks here is exactly what the storefront
-// renders (settings.theme → [data-theme]). hero img = each theme's own default photo
-// (THEME_CONTENT.heroImages[0]) so the preview reflects the real storefront, not a
-// generic stand-in. Keep these in sync with tokens.css / theme-content.ts.
-type ThemeKey = 'salvia' | 'leander' | 'zigge' | 'linnea' | 'edit' | 'flora' | 'freshcut'
+// Palette, fonts och copy härleds ur samma runtime-definitioner som storefronten.
 type ThemeDef = {
   name: string
   primary: string
@@ -65,14 +60,11 @@ type ThemeDef = {
 }
 const uns = (id: string) =>
   `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`
-// freshcut utesluten (FAS 1 2026-07-11): kundens eget tema erbjuds aldrig nya tenants.
-const BUILTIN_THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora']
 
-// FLORIST-SVITEN (goal-58): de 13 mallarnas preview-kort HÄRLEDS ur florist-registryt
-// (palett, typsnitt, radie, copy, hero-foto) — ingen kopierad literal-tabell som kan
-// glida isär från det storefronten faktiskt renderar.
-const FLORIST_WIZARD: Record<string, ThemeDef> = Object.fromEntries(
-  FLORIST_THEMES.map((t) => [
+export const CREATE_TENANT_THEME_KEYS = ONBOARDING_THEME_KEYS
+
+const CATALOG_WIZARD: Record<string, ThemeDef> = Object.fromEntries(
+  SELECTABLE_THEME_CATALOG.map(({ definition: t }) => [
     t.key,
     {
       name: t.name,
@@ -92,51 +84,7 @@ const FLORIST_WIZARD: Record<string, ThemeDef> = Object.fromEntries(
     } satisfies ThemeDef,
   ]),
 )
-const THEME_KEYS: string[] = [...BUILTIN_THEME_KEYS, ...FLORIST_THEMES.map((t) => t.key)]
-const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
-  salvia: {
-    name: 'Salvia', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', fg2: '#5C5F55', line: '#E2DED2',
-    display: "'Cormorant Garamond', Georgia, serif", radius: 10, caps: false, vibe: 'Lugn & minimal',
-    eyebrow: 'Boka online', hero: 'Lugnt bemött. Skickligt utfört.',
-    lede: 'En stillsam plats där varje besök får ta sin tid.', img: uns('1521590832167-7bcbfaa6381f'),
-  },
-  leander: {
-    name: 'Leander', primary: '#7E6E92', bg: '#FBFAF8', fg: '#2A2630', fg2: '#6A6472', line: '#ECE7EF',
-    display: "'Playfair Display', Georgia, serif", radius: 14, caps: false, vibe: 'Romantisk editorial',
-    eyebrow: 'Studio & mottagning', hero: 'Din stund av lugn.',
-    lede: 'Mjuka toner och varsam hand i en romantisk miljö.', img: uns('1633681926035-ec1ac984418a'),
-  },
-  zigge: {
-    name: 'Zigge', primary: '#C8743C', bg: '#14120E', fg: '#F2ECE2', fg2: '#B3A998', line: '#322C24',
-    display: "'Bebas Neue', sans-serif", radius: 4, caps: true, vibe: 'Mörk & rå barber',
-    eyebrow: 'Barber & frisör', hero: 'Skarp fade. Ren stil.',
-    lede: 'Klassisk barbering med modern attityd.', img: uns('1585747860715-2ba37e788b70'),
-  },
-  linnea: {
-    name: 'Linnea', primary: '#B0693F', bg: '#F4EDE1', fg: '#2E2820', fg2: '#6E6452', line: '#E3D9C8',
-    display: "'DM Serif Display', Georgia, serif", radius: 12, caps: false, vibe: 'Varm skandinavisk',
-    eyebrow: 'Kropp & välmående', hero: 'Naturligt vacker.',
-    lede: 'Varma jordnära toner i en avslappnad miljö.', img: uns('1595476108010-b4d1f102b1b1'),
-  },
-  edit: {
-    name: 'Edit', primary: '#3A3733', bg: '#F8F6F1', fg: '#232220', fg2: '#6B675F', line: '#E5E0D6',
-    display: "'Cormorant Garamond', Georgia, serif", radius: 2, caps: false, vibe: 'Elegant minimal',
-    eyebrow: 'Hair atelier', hero: 'Tidlöst. Editorial.',
-    lede: 'Ren typografi och skarp komposition.', img: uns('1599351431202-1e0f0137899a'),
-  },
-  flora: {
-    name: 'Flora', primary: '#44523B', bg: '#F7F3EA', fg: '#2B2A24', fg2: '#6E6A5B', line: '#E4DDCC',
-    display: "'Playfair Display', Georgia, serif", radius: 14, caps: false, vibe: 'Bohemisk florist',
-    eyebrow: 'Blomsterbutik', hero: 'Blommor, bundna för hand.',
-    lede: 'Buketter i säsong, binderier och kurser.', img: uns('1487530811176-3780de880c2d'),
-  },
-  freshcut: {
-    name: 'FreshCut', primary: '#B59775', bg: '#FFFFFF', fg: '#252525', fg2: '#555555', line: '#E7E2DA',
-    display: "'Playfair Display', Georgia, serif", radius: 0, caps: false, vibe: 'Barbershop (freshcut.se)',
-    eyebrow: 'Barbershop', hero: 'FreshCut',
-    lede: 'Barbershop i centrala Linköping.', img: uns('1503951914875-452162b0f3f1'),
-  },
-}
+const THEME_KEYS = CREATE_TENANT_THEME_KEYS
 
 // Multi-bransch: the chosen template key is now a free string (it comes from the
 // `templates` catalog filtered by bransch, not just the built-in five). A key that
@@ -153,11 +101,7 @@ function neutralTheme(name: string): ThemeDef {
 /** Preview metadata for a template key: the rich built-in theme when known, else a
  *  neutral fallback carrying the template's display name. */
 function wizardTheme(key: string, name?: string): ThemeDef {
-  return (
-    (WIZARD_THEMES as Record<string, ThemeDef>)[key] ??
-    FLORIST_WIZARD[key] ??
-    neutralTheme(name ?? key)
-  )
+  return CATALOG_WIZARD[key] ?? neutralTheme(name ?? key)
 }
 
 // Multi-bransch (spår 5): a NEW step 0 "Bransch" leads the wizard (preset-driven),
@@ -211,7 +155,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const [theme, setTheme] = useState<string>('salvia')
   const [variant, setVariant] = useState<BookingVariant>(DEFAULT_BOOKING_VARIANT)
   // Per-module states (the "Moduler" step) → tenant_modules rows. Keyed by module_key.
-  // Seeded from the bransch preset; booking is always floored to 'live' before submit.
+  // Seeded from the bransch preset; booking defaults to live until explicitly changed.
   const [moduleStates, setModuleStates] = useState<Record<string, ModuleState>>({})
   const [accent, setAccent] = useState('') // '' = none picked yet
   const [tagline, setTagline] = useState('')
@@ -258,20 +202,22 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const themeName = templateOptions.find((o) => o.key === theme)?.name
   const t = wizardTheme(theme, themeName)
   // Resolve a module's CURRENT chosen state: explicit pick → preset default → 'off'.
-  // booking can never read below 'live' (the floor) regardless of stored value.
+  // Booking ignores preset-off and defaults live, but an operator pick may be off.
   const stateFor = (key: string): ModuleState => {
     const picked = moduleStates[key]
+    if (key === 'booking') {
+      return picked === 'off' || picked === 'paused' || picked === 'live' ? picked : 'live'
+    }
     const preset = moduleOptions.find((m) => m.key === key)?.defaultState ?? 'off'
-    const resolved = picked ?? preset
-    return key === 'booking' && resolved !== 'live' && resolved !== 'paused' ? 'live' : resolved
+    return picked ?? preset
   }
   // The exact { module_key: state } map submitted to the server (hidden `modules`
-  // field). booking floored to live; off-state modules included as 'off' (the write
-  // helper drops them) so the operator's explicit "off" is unambiguous.
+  // field). Booking preserves explicit off as website-only; other off-state modules
+  // are included and dropped by the write helper.
   const moduleSubmitMap = useMemo(() => {
     const out: Record<string, ModuleState> = {}
     for (const m of moduleOptions) out[m.key] = stateFor(m.key)
-    out.booking = stateFor('booking') === 'paused' ? 'paused' : 'live'
+    out.booking = stateFor('booking')
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleOptions, moduleStates])
@@ -292,14 +238,17 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
       branschTemplates[0]?.key ??
       null
     if (next) setTheme(next)
-    // Seed module states from the preset (booking floored to live on read via stateFor).
+    // Seed preset states except booking: booking must default live unless the
+    // operator explicitly chooses website-only.
     const seeded: Record<string, ModuleState> = {}
-    for (const m of modulesForVertical(presets, key)) seeded[m.key] = m.defaultState
+    for (const m of modulesForVertical(presets, key)) {
+      if (m.key !== 'booking') seeded[m.key] = m.defaultState
+    }
     setModuleStates(seeded)
   }
 
-  /** Toggle/cycle a module's state. booking is restricted to live↔paused (floor);
-   *  other modules cycle off→draft→live→paused→off. */
+  /** Set one module state. Booking offers live/paused/off; draft is never valid
+   *  at create-time. Other modules offer the full state set. */
   const setModule = (key: string, next: ModuleState) =>
     setModuleStates((prev) => ({ ...prev, [key]: next }))
 
@@ -308,13 +257,13 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
       <PageHead
         eyebrow="Plattform"
         title="Onboarda ny kund"
-        lede="Du skapar kunderna — inte publik self-service. Välj bransch först; fyll resten du vill, inget fält är tvingande."
+        lede="Du skapar kunderna — inte publik self-service. Välj bransch först; ägarens e-post krävs för att kunden ska kunna skapas."
       />
 
       <div style={{ marginBottom: 18 }}>
         <Callout tone="info">
-          Inga forcerade måste-fält. Skapandet är <b>atomiskt</b>: bransch + moduler + slug +
-          settings + ägarroll i ett svep.
+          Ägarens e-post är obligatorisk. Skapandet är <b>atomiskt</b>: bransch + moduler +
+          slug + settings + ägarkonto i ett svep.
         </Callout>
       </div>
 
@@ -446,7 +395,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                     style={{ flex: 1, minWidth: 0, padding: '11px 13px', border: 'none', outline: 'none', fontFamily: 'var(--font-ui)', fontSize: 14, background: 'transparent', color: 'var(--c-ink)' }}
                   />
                   <span style={{ padding: '0 14px', color: 'var(--c-ink-3)', fontSize: 14, fontFamily: 'var(--font-ui)', borderLeft: '1px solid var(--c-line)', alignSelf: 'stretch', display: 'grid', placeItems: 'center' }}>
-                    .{ROOT}
+                    .{TENANT_HOST_SUFFIX}
                   </span>
                 </div>
                 <div style={{ marginTop: 8 }}><TableChip>tenants · tenant_settings</TableChip></div>
@@ -521,15 +470,16 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             <div>
               <p className="body" style={{ marginTop: 0, marginBottom: 16 }}>
                 Slå på modulerna kunden ska ha. Varje modul har ett <b>läge</b>: utkast (dold publikt),
-                live (publik) eller pausad. Bokning är alltid minst live.
+                live (publik) eller pausad. Bokning kan också vara av för en kund som
+                bara ska ha webbplats och länka till ett externt bokningssystem.
               </p>
               <div style={{ display: 'grid', gap: 12 }}>
                 {moduleOptions.map((m) => {
                   const isBooking = m.key === 'booking'
                   const cur = stateFor(m.key)
-                  // booking → live/paused only; others → off/draft/live/paused.
+                  // booking → live/paused/off; others → off/draft/live/paused.
                   const choices: ModuleState[] = isBooking
-                    ? (['live', 'paused'] as ModuleState[])
+                    ? (['live', 'paused', 'off'] as ModuleState[])
                     : ([...MODULE_STATES] as ModuleState[])
                   return (
                     <div
@@ -570,9 +520,12 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                       </div>
                       <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '4px 0 0' }}>
                         {MODULE_STATE_HINTS[cur]}
+                        {isBooking && cur === 'off'
+                          ? ' Kundens Boka-knappar använder den externa länken som sparas i admin.'
+                          : ''}
                       </p>
                       {/* booking.variant survives here as a sub-choice of the booking module. */}
-                      {isBooking ? (
+                      {isBooking && cur !== 'off' ? (
                         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--c-line)' }}>
                           <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--c-ink)', marginBottom: 8 }}>
                             Bokningsvariant — hur bokningen presenteras (99 % sker på mobil)
@@ -680,6 +633,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                 hint="Får en magic-link-invite — bekräftar och sätter eget lösenord."
                 ph="agare@kund.se"
                 type="email"
+                required
                 value={ownerEmail}
                 onChange={setOwnerEmail}
               />
@@ -705,7 +659,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
               </div>
               <Callout tone="success">
                 <b>{name || `${kundLabel[0]?.toUpperCase()}${kundLabel.slice(1)}`}</b> skapas på{' '}
-                <b>{(slug || 'subdomän')}.{ROOT}</b>
+                <b>{tenantStorefrontHost(slug || 'subdomän')}</b>
                 {vertical ? <> i branschen <b>{vertical.name}</b></> : null} med tema <b>{t.name}</b>.
                 Moduler: <b>{liveModuleSummary(moduleOptions, stateFor) || 'Bokning (Live)'}</b>.
                 Ägaren bjuds in som administratör.
@@ -753,20 +707,24 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
 const fieldLabel = { fontSize: 13, fontWeight: 600, color: 'var(--c-ink)', fontFamily: 'var(--font-ui)' } as const
 
 function Field({
-  label, hint, ph, type = 'text', value, onChange,
+  label, hint, ph, type = 'text', required = false, value, onChange,
 }: {
   label: string
   hint?: string
   ph?: string
   type?: string
+  required?: boolean
   value: string
   onChange: (v: string) => void
 }) {
+  const id = useId()
   return (
     <div>
-      <label style={fieldLabel}>{label}</label>
+      <label htmlFor={id} style={fieldLabel}>{label}</label>
       <input
+        id={id}
         type={type}
+        required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={ph}
@@ -834,7 +792,7 @@ function ThemePreview({
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', background: '#EDEAE3', borderBottom: '1px solid var(--c-line)' }}>
         {dot('#E0726A')}{dot('#E6B34D')}{dot('#7FB47F')}
         <div className={mobileStyles.previewAddress} style={{ marginLeft: 8, fontSize: 11.5, color: 'var(--c-ink-3)', fontFamily: 'var(--font-ui)', background: '#fff', padding: '3px 11px', borderRadius: 999 }}>
-          {slug}.{ROOT}
+          {tenantStorefrontHost(slug)}
         </div>
       </div>
       {/* two-column hero */}

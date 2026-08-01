@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 import { verifiedMapForAddress } from '@/lib/storefront/address-map'
+import { directPreviewHref } from './SidaPreviewBridge.route'
+import { normalizeEditorFieldKey } from './SidaStudioV2.pick'
 
 // Runs INSIDE the /salong-preview iframe. Listens for live brand-token patches posted
 // by the parent Sida editor (same-origin only) and applies them as CSS vars on the
@@ -17,7 +19,7 @@ const TEXT_SELECTOR = 'h1,h2,h3,h4,h5,h6,p,span,em,i,a,button,li,div,blockquote,
 // a key PRESENT in the patch → setProperty; a key ABSENT (e.g. font_body blanked, so
 // injectTenantTokens omits --font-body) → removeProperty, so the SSR value takes over
 // again instead of the old override lingering until reload.
-const TOKEN_KEYS = ['--color-primary', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body', '--font-display']
+const TOKEN_KEYS = ['--color-primary', '--color-primary-fg', '--tenant-primary-fg', '--tenant-primary-ink', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body', '--font-display']
 type PreviewImageSlot = 'logo_url' | 'about_image' | 'closing_image' | 'hero_images' | 'gallery_images'
 
 type SiteSnapshotPreview = {
@@ -70,6 +72,7 @@ const PREVIEW_PATHS = new Set([
 export function SidaPreviewBridge() {
   useEffect(() => {
     let previousSnapshot: SiteSnapshotPreview | null = null
+    const removeEditorPickBridge = installEditorPickBridge()
     function onMessage(e: MessageEvent) {
       if (e.origin !== window.location.origin || e.source !== window.parent) return
       const data = e.data as {
@@ -154,21 +157,125 @@ export function SidaPreviewBridge() {
       const m = /^\/salong-preview\/([a-z0-9-]+)/.exec(window.location.pathname)
       const slug = m?.[1]
       if (!slug) return
-      const target = href.split(/[?#]/)[0]?.replace(/^\/+|\/+$/g, '') ?? ''
-      if (!PREVIEW_PATHS.has(target)) return // ingen preview-tvilling → blockerad
+      const url = new URL(href, window.location.origin)
+      const target = url.pathname.replace(/^\/+|\/+$/g, '')
+      if (!PREVIEW_PATHS.has(target) && !target.startsWith('blogg/')) return
+      const path = target ? `/${target}` : ''
+      if (window.parent === window) {
+        window.location.assign(directPreviewHref(slug, path, url.search, window.location.search))
+        return
+      }
       window.parent.postMessage(
-        { source: MSG_SOURCE, type: 'preview-route', path: target ? `/${target}` : '' },
+        { source: MSG_SOURCE, type: 'preview-route', path: `${path}${url.search}` },
         window.location.origin,
       )
     }
     document.addEventListener('click', onClick, true)
 
     return () => {
+      removeEditorPickBridge()
       window.removeEventListener('message', onMessage)
       document.removeEventListener('click', onClick, true)
     }
   }, [])
   return null
+}
+
+export function installEditorPickBridge(): () => void {
+  let active = false
+  let allowedFields = new Set<string>()
+  let hovered: { element: HTMLElement; outline: string; outlineOffset: string; cursor: string } | null = null
+
+  const clearHover = () => {
+    if (!hovered) return
+    hovered.element.style.outline = hovered.outline
+    hovered.element.style.outlineOffset = hovered.outlineOffset
+    hovered.element.style.cursor = hovered.cursor
+    hovered = null
+  }
+  const cancel = (notifyParent: boolean) => {
+    active = false
+    allowedFields = new Set()
+    clearHover()
+    if (notifyParent) {
+      window.parent.postMessage(
+        { source: MSG_SOURCE, type: 'editor-pick-mode', enabled: false, fields: [] },
+        window.location.origin,
+      )
+    }
+  }
+  const pickedField = (target: EventTarget | null): { field: string; element: HTMLElement } | null => {
+    if (!(target instanceof Element)) return null
+    const stable = target.closest<HTMLElement>(`[${STABLE_FIELD_ATTR}]`)
+    const stableField = stable?.getAttribute(STABLE_FIELD_ATTR)
+    if (stable && stableField) {
+      const field = normalizeEditorFieldKey(stableField)
+      return allowedFields.has(field) ? { field, element: stable } : null
+    }
+    const scanned = target.closest<HTMLElement>(`[${FIELD_ATTR}]`)
+    const scannedField = scanned?.getAttribute(FIELD_ATTR)
+    if (!scanned || !scannedField) return null
+    const field = normalizeEditorFieldKey(scannedField)
+    return allowedFields.has(field) ? { field, element: scanned } : null
+  }
+  const onMessage = (event: MessageEvent) => {
+    if (event.origin !== window.location.origin || event.source !== window.parent) return
+    const data = event.data as { source?: string; type?: string; enabled?: unknown; fields?: unknown }
+    if (data.source !== MSG_SOURCE || data.type !== 'editor-pick-mode' ||
+        typeof data.enabled !== 'boolean' || !Array.isArray(data.fields) ||
+        !data.fields.every((field) => typeof field === 'string')) return
+    clearHover()
+    allowedFields = new Set(data.fields.map(normalizeEditorFieldKey))
+    active = data.enabled && allowedFields.size > 0
+  }
+  const onClick = (event: MouseEvent) => {
+    if (!active) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    const picked = pickedField(event.target)
+    if (!picked) return
+    cancel(false)
+    window.parent.postMessage(
+      { source: MSG_SOURCE, type: 'editor-pick-field', field: picked.field },
+      window.location.origin,
+    )
+  }
+  const onMouseOver = (event: MouseEvent) => {
+    if (!active) return
+    const picked = pickedField(event.target)
+    if (!picked || hovered?.element === picked.element) return
+    clearHover()
+    hovered = {
+      element: picked.element,
+      outline: picked.element.style.outline,
+      outlineOffset: picked.element.style.outlineOffset,
+      cursor: picked.element.style.cursor,
+    }
+    picked.element.style.outline = '2px solid #D6AC6A'
+    picked.element.style.outlineOffset = '4px'
+    picked.element.style.cursor = 'crosshair'
+  }
+  const onMouseOut = (event: MouseEvent) => {
+    if (!hovered || event.relatedTarget instanceof Node && hovered.element.contains(event.relatedTarget)) return
+    clearHover()
+  }
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (active && event.key === 'Escape') cancel(true)
+  }
+
+  window.addEventListener('message', onMessage)
+  window.addEventListener('keydown', onKeyDown)
+  document.addEventListener('click', onClick, true)
+  document.addEventListener('mouseover', onMouseOver, true)
+  document.addEventListener('mouseout', onMouseOut, true)
+  return () => {
+    cancel(false)
+    window.removeEventListener('message', onMessage)
+    window.removeEventListener('keydown', onKeyDown)
+    document.removeEventListener('click', onClick, true)
+    document.removeEventListener('mouseover', onMouseOver, true)
+    document.removeEventListener('mouseout', onMouseOut, true)
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

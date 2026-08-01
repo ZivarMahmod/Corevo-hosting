@@ -1,0 +1,291 @@
+import { renderToStaticMarkup } from 'react-dom/server'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PortalBookingProjection, PortalSessionSnapshot } from '@/lib/customer-portal/types'
+
+const mocks = vi.hoisted(() => ({
+  getPortalSessionSnapshot: vi.fn(),
+  listPortalBookings: vi.fn(),
+  getPortalBooking: vi.fn(),
+  getPortalProfileSnapshot: vi.fn(),
+  redirect: vi.fn((target: string) => { throw new Error(`NEXT_REDIRECT:${target}`) }),
+}))
+
+vi.mock('@/lib/customer-portal/data', () => mocks)
+vi.mock('@/lib/customer-portal/profile', () => ({
+  getPortalProfileSnapshot: mocks.getPortalProfileSnapshot,
+}))
+vi.mock('next/navigation', () => ({
+  redirect: mocks.redirect,
+  usePathname: () => '/mina',
+  useRouter: () => ({ replace: vi.fn() }),
+}))
+
+import HomePage, {
+  dynamic as homeDynamic,
+  fetchCache as homeFetchCache,
+  generateMetadata as generateHomeMetadata,
+  revalidate as homeRevalidate,
+} from './page'
+import HistoryPage, {
+  dynamic as historyDynamic,
+  fetchCache as historyFetchCache,
+  generateMetadata as generateHistoryMetadata,
+  revalidate as historyRevalidate,
+} from './historik/page'
+import DetailPage, {
+  dynamic as detailDynamic,
+  fetchCache as detailFetchCache,
+  generateMetadata as generateDetailMetadata,
+  revalidate as detailRevalidate,
+} from './bokningar/[id]/page'
+import ProfilePage, {
+  dynamic as profileDynamic,
+  fetchCache as profileFetchCache,
+  generateMetadata as generateProfileMetadata,
+  revalidate as profileRevalidate,
+} from './profil/page'
+
+const snapshot: PortalSessionSnapshot = {
+  tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null,
+  verticalLabel: 'Frisörsalong', phone: '+4613123456', address: 'Testgatan 1', mapUrl: null,
+  bookingOrigin: 'https://freshcut.boka.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
+  defaultCountry: 'SE', currency: 'SEK', cancellationCutoffHours: 24, customerName: 'Alex',
+  lastSeenAt: '2026-07-22T12:00:00.000Z', absoluteExpiresAt: '2027-07-22T12:00:00.000Z',
+}
+
+const bookingId = '323e4567-e89b-42d3-a456-426614174000'
+const booking = (overrides: Partial<PortalBookingProjection> = {}): PortalBookingProjection => ({
+  id: bookingId, startTs: '2026-08-23T12:30:00.000Z', endTs: '2026-08-23T13:00:00.000Z',
+  status: 'confirmed', presentationStatus: 'confirmed', serviceName: 'Service från RPC',
+  durationMinutes: 30, staffTitle: 'Sam', location: null, priceCents: 32900, currency: 'SEK',
+  canCancel: true, cancelDeadline: '2026-08-22T12:30:00.000Z',
+  publicRebookUrl: 'https://freshcut.boka.corevo.se/boka', ...overrides,
+})
+
+const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'ok', snapshot })
+  mocks.getPortalProfileSnapshot.mockResolvedValue({ outcome: 'ok', profile: {
+    tenantSlug: 'freshcut', tenantName: 'FreshCut', customerName: 'Alex',
+    verifiedContact: { channel: 'sms', maskedDestination: '•••• •• 00 00' },
+    secondaryContact: null,
+    contactChangeActions: ['change_phone'],
+  } })
+})
+
+describe('personal portal route cache contract', () => {
+  it('forces every personal route to render dynamically without fetch caching', () => {
+    expect([homeDynamic, historyDynamic, detailDynamic, profileDynamic]).toEqual([
+      'force-dynamic', 'force-dynamic', 'force-dynamic', 'force-dynamic',
+    ])
+    expect([homeRevalidate, historyRevalidate, detailRevalidate, profileRevalidate]).toEqual([0, 0, 0, 0])
+    expect([homeFetchCache, historyFetchCache, detailFetchCache, profileFetchCache]).toEqual([
+      'force-no-store', 'force-no-store', 'force-no-store', 'force-no-store',
+    ])
+  })
+
+  it('builds the canonical tenant-aware document titles for every route', async () => {
+    await expect(generateHomeMetadata()).resolves.toMatchObject({ title: 'Bokningar – FreshCut' })
+    await expect(generateHistoryMetadata()).resolves.toMatchObject({ title: 'Historik – FreshCut' })
+    await expect(generateDetailMetadata()).resolves.toMatchObject({ title: 'Bokning – FreshCut' })
+    await expect(generateProfileMetadata()).resolves.toMatchObject({
+      title: 'Profil – FreshCut', robots: { index: false, follow: false },
+    })
+  })
+})
+
+describe('/mina/profil', () => {
+  it('renders the profile projection through the real profile nav route without raw identity data', async () => {
+    const html = renderToStaticMarkup(await ProfilePage())
+    expect(html).toContain('<h1>Profil</h1>')
+    expect(html).toContain('Mina uppgifter')
+    expect(html).toContain('•••• •• 00 00')
+    expect(html).not.toMatch(/customerId|sessionPublicId|secretDigest|\+46729408522/)
+    expect(html).toContain('aria-current="page"')
+  })
+
+  it('redirects expired bound sessions and keeps a snapshot-backed profile failure functional', async () => {
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({
+      outcome: 'expired', recoveryTenantSlug: 'freshcut',
+    })
+    await expect(ProfilePage()).rejects.toThrow(
+      'NEXT_REDIRECT:/aterhamta/freshcut?session=expired',
+    )
+
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    const html = renderToStaticMarkup(await ProfilePage())
+    expect(html).toContain('Uppgifterna kunde inte hämtas')
+    expect(html).toContain('href="/mina/profil"')
+    expect(html).toContain('Mina uppgifter')
+    expect(html).toContain('Logga ut')
+    expect(html).toContain('Försök igen')
+    expect(html).not.toMatch(/Logga in|\/konto|tenantId|customerId/)
+  })
+
+  it('hides logout when both profile and session snapshots are unavailable', async () => {
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    mocks.getPortalSessionSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    const html = renderToStaticMarkup(await ProfilePage())
+    expect(html).toContain('Uppgifterna kunde inte hämtas')
+    expect(html).toContain('Mina uppgifter')
+    expect(html).toContain('Försök igen')
+    expect(html).not.toContain('Logga ut')
+  })
+
+  it('redirects to recovery when the profile fails and the session snapshot has expired', async () => {
+    mocks.getPortalProfileSnapshot.mockResolvedValueOnce({ outcome: 'unavailable' })
+    mocks.getPortalSessionSnapshot.mockResolvedValueOnce({
+      outcome: 'expired', recoveryTenantSlug: 'freshcut',
+    })
+    await expect(ProfilePage()).rejects.toThrow(
+      'NEXT_REDIRECT:/aterhamta/freshcut?session=expired',
+    )
+  })
+})
+
+describe('/mina', () => {
+  it('renders snapshot tenant identity and upcoming projections through one shell', async () => {
+    mocks.listPortalBookings.mockResolvedValue({
+      outcome: 'ok', scope: 'upcoming', pageSize: 20, items: [booking()],
+      hasMore: false, nextCursor: null,
+    })
+    const html = renderToStaticMarkup(await HomePage())
+    expect(mocks.listPortalBookings).toHaveBeenCalledWith({ scope: 'upcoming', pageSize: 20 })
+    expect(html.match(/<main id="huvudinnehall"/g)).toHaveLength(1)
+    expect(html).toContain('FreshCut')
+    expect(html).toContain('Service från RPC')
+    expect(html).toContain('>Avboka</button>')
+    expect(visibleText(html)).not.toContain(bookingId)
+    expect(html).not.toMatch(/Logga in|\/konto/)
+  })
+
+  it('uses history only for honest empty copy and builds Boka ny tid from the session origin', async () => {
+    mocks.listPortalBookings
+      .mockResolvedValueOnce({ outcome: 'ok', scope: 'upcoming', pageSize: 20, items: [], hasMore: false, nextCursor: null })
+      .mockResolvedValueOnce({ outcome: 'ok', scope: 'history', pageSize: 1, items: [], hasMore: false, nextCursor: null })
+    const html = renderToStaticMarkup(await HomePage())
+    expect(mocks.listPortalBookings).toHaveBeenNthCalledWith(2, { scope: 'history', pageSize: 1 })
+    expect(html).toContain('Du har inga bokningar hos FreshCut ännu.')
+    expect(html).toContain('Boka ny tid')
+    expect(html).toContain('href="https://freshcut.boka.corevo.se/boka"')
+    expect(html).not.toContain('href="undefined"')
+  })
+
+  it.each(['not_found', 'unavailable'] as const)(
+    'renders a neutral canonical surface when the snapshot is %s',
+    async (outcome) => {
+      mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome })
+      const html = renderToStaticMarkup(await HomePage())
+      expect(html).toContain('Något gick fel hos oss.')
+      expect(html).not.toMatch(/Logga in|\/konto|tenantId|customerId/)
+      expect(mocks.listPortalBookings).not.toHaveBeenCalled()
+    },
+  )
+
+  it('redirects an expired tenant-bound session to the canonical recovery route', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'expired', recoveryTenantSlug: 'freshcut' })
+    await expect(HomePage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+    expect(mocks.redirect).toHaveBeenCalledWith('/aterhamta/freshcut?session=expired')
+    expect(mocks.listPortalBookings).not.toHaveBeenCalled()
+  })
+
+  it('carries the neutral session-expired flag if the session ends during the booking query', async () => {
+    mocks.listPortalBookings.mockResolvedValue({ outcome: 'expired' })
+    await expect(HomePage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+
+  it('renders list failures as the canonical booking fetch surface', async () => {
+    mocks.listPortalBookings.mockResolvedValue({ outcome: 'unavailable' })
+    const html = renderToStaticMarkup(await HomePage())
+    expect(html).toContain('Bokningarna kunde inte hämtas. Din bokning är oförändrad.')
+    expect(html.match(/<h1/g)).toHaveLength(1)
+  })
+})
+
+describe('/mina/historik', () => {
+  it('carries the neutral session-expired flag from the route guard', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'expired', recoveryTenantSlug: 'freshcut' })
+    await expect(HistoryPage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+
+  it('renders the canonical grouped history and exposes pagination only from hasMore', async () => {
+    mocks.listPortalBookings.mockResolvedValue({
+      outcome: 'ok', scope: 'history', pageSize: 20,
+      items: [booking({ presentationStatus: 'unknown', status: 'new_internal_state' })],
+      hasMore: true, nextCursor: { startTs: '2026-08-23T12:30:00.000Z', id: bookingId },
+    })
+    const html = renderToStaticMarkup(await HistoryPage())
+    expect(mocks.listPortalBookings).toHaveBeenCalledWith({ scope: 'history', pageSize: 20 })
+    expect(html).toContain('Övriga bokningar')
+    expect(html).toContain('Status uppdateras')
+    expect(html).toContain('Visa fler')
+    expect(html).toContain(`/mina/bokningar/${bookingId}?from=history`)
+    expect(html.match(/<h1/g)).toHaveLength(1)
+    expect(visibleText(html)).not.toContain('new_internal_state')
+  })
+
+  it('never presents a failed history fetch as an empty state', async () => {
+    mocks.listPortalBookings.mockResolvedValue({ outcome: 'unavailable' })
+    const html = renderToStaticMarkup(await HistoryPage())
+    expect(html).toContain('Historiken kunde inte hämtas.')
+    expect(html).toContain('<h1>Historik</h1>')
+    expect(html).not.toContain('Du har inga tidigare bokningar')
+    expect(html.match(/<h1/g)).toHaveLength(1)
+  })
+
+  it('redirects if the session expires between snapshot and history query', async () => {
+    mocks.listPortalBookings.mockResolvedValue({ outcome: 'expired' })
+    await expect(HistoryPage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+})
+
+describe('/mina/bokningar/[id]', () => {
+  it('carries the neutral session-expired flag from the route guard', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'expired', recoveryTenantSlug: 'freshcut' })
+    await expect(DetailPage({ params: Promise.resolve({ id: bookingId }) }))
+      .rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+
+  it('passes only the route id to the narrow DAL and renders the owned booking', async () => {
+    mocks.getPortalBooking.mockResolvedValue({ outcome: 'ok', booking: booking() })
+    const html = renderToStaticMarkup(await DetailPage({ params: Promise.resolve({ id: bookingId }) }))
+    expect(mocks.getPortalBooking).toHaveBeenCalledWith(bookingId)
+    expect(mocks.getPortalBooking).toHaveBeenCalledTimes(1)
+    expect(html).toContain('Service från RPC')
+    expect(html).toContain('>Avboka bokningen</button>')
+    expect(visibleText(html)).not.toContain(bookingId)
+  })
+
+  it('preserves the documented history origin in both detail back controls', async () => {
+    mocks.getPortalBooking.mockResolvedValue({ outcome: 'ok', booking: booking() })
+    const html = renderToStaticMarkup(await DetailPage({
+      params: Promise.resolve({ id: bookingId }),
+      searchParams: Promise.resolve({ from: 'history' }),
+    }))
+    expect(html).toMatch(/class="cp-top-action cp-mobile-user" href="\/mina\/historik"/)
+    expect(html).toMatch(/class="cp-btn cp-btn-ghost cp-back" href="\/mina\/historik"/)
+  })
+
+  it.each(['not_found', 'unavailable'] as const)(
+    'uses a neutral non-reflective detail surface for %s',
+    async (outcome) => {
+      mocks.getPortalBooking.mockResolvedValue({ outcome })
+      const html = renderToStaticMarkup(await DetailPage({
+        params: Promise.resolve({ id: '423e4567-e89b-42d3-a456-426614174000' }),
+      }))
+      expect(html).toContain(outcome === 'not_found'
+        ? 'Bokningen kunde inte visas'
+        : 'Bokningen kunde inte hämtas. Din bokning är oförändrad.')
+      expect(visibleText(html)).not.toContain('423e4567-e89b-42d3-a456-426614174000')
+      expect(html).not.toMatch(/Logga in|\/konto/)
+    },
+  )
+
+  it('redirects if the session expires between snapshot and detail query', async () => {
+    mocks.getPortalBooking.mockResolvedValue({ outcome: 'expired' })
+    await expect(DetailPage({ params: Promise.resolve({ id: bookingId }) }))
+      .rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')
+  })
+})

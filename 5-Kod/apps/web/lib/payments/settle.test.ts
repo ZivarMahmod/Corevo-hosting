@@ -1,253 +1,245 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// BETAL-CALLBACKENS IDEMPOTENS (goal-64, hård regel).
-//
-// PayPal levererar om vid varje icke-200 och kan dubbel-leverera; dessutom kan RETUREN
-// (kunden kommer tillbaka) och WEBHOOKEN landa samtidigt för samma betalning. Två
-// effekter av en betalning = dubbelbokfört lager och ett felaktigt kvitto. Testet vaktar
-// att en andra leverans blir en NO-OP, och att en capture på fel belopp aldrig markerar
-// ordern som betald.
-
-type OrderRow = {
-  id: string
-  tenant_id: string
-  total_cents: number
-  currency: string
-  payment_status: string
-  status: string
-}
-
-let order: OrderRow | null
-let orderLookupError: { message: string } | null
-let paymentUpdateError: { message: string } | null
-let paymentUpdateRow: { id: string } | null
-let rpcError: { message: string } | null
 const rpc = vi.fn()
-const paymentsUpdate = vi.fn()
 const deliverIssuedGiftCards = vi.fn()
 
 vi.mock('@/lib/platform/service', () => ({
-  createServiceClient: () => ({
-    from: (table: string) => {
-      if (table === 'shop_orders') {
-        return {
-          select: () => ({
-            eq: () => ({ maybeSingle: async () => ({ data: order, error: orderLookupError }) }),
-          }),
-        }
-      }
-      // payments: .update(...).eq().eq().neq().select().maybeSingle()
-      const chain = {
-        eq: () => chain,
-        neq: () => chain,
-        select: () => chain,
-        maybeSingle: async () => ({ data: paymentUpdateRow, error: paymentUpdateError }),
-      }
-      return {
-        update: (patch: unknown) => {
-          paymentsUpdate(patch)
-          return chain
-        },
-      }
-    },
-    rpc: (...args: unknown[]) => {
-      rpc(...args)
-      return Promise.resolve({ error: rpcError })
-    },
-  }),
+  createServiceClient: () => ({ rpc }),
 }))
-
 vi.mock('@/lib/observability', () => ({ captureException: vi.fn() }))
 vi.mock('@/lib/notifications/gift', () => ({ deliverIssuedGiftCards }))
 
-const { settleShopOrderPaid } = await import('./settle')
+const {
+  completeShopPaymentEvent,
+  settleShopOrderPaid,
+  settleShopPaymentEvent,
+} = await import('./settle')
+
+const paidEvent = {
+  provider: 'paypal' as const,
+  accountScope: 'paypal:platform',
+  providerEventId: 'WH-1',
+  orderId: 'o1',
+  tenantId: null,
+  amountCents: 52900,
+  currency: 'SEK',
+  providerRef: 'CAP-1',
+  source: 'webhook' as const,
+}
 
 beforeEach(() => {
-  rpc.mockClear()
+  rpc.mockReset()
   deliverIssuedGiftCards.mockReset()
-  // Nya kontraktet: deliver returnerar utfall — failed>0 ⇒ giftDeliveryPending.
   deliverIssuedGiftCards.mockResolvedValue({ attempted: 1, failed: 0 })
-  paymentsUpdate.mockClear()
-  orderLookupError = null
-  paymentUpdateError = null
-  paymentUpdateRow = { id: 'payment_1' }
-  rpcError = null
-  order = {
-    id: 'o1',
-    tenant_id: 't1',
-    total_cents: 52900,
-    currency: 'SEK',
-    payment_status: 'unpaid',
-    status: 'awaiting_payment',
-  }
+  rpc.mockImplementation(async (name: string) => {
+    if (name === 'register_shop_payment_event') {
+      return { data: { event_id: 'event-1', status: 'pending' }, error: null }
+    }
+    if (name === 'settle_shop_payment_event') {
+      return {
+        data: {
+          outcome: 'succeeded',
+          tenant_id: 't1',
+          order_id: 'o1',
+        },
+        error: null,
+      }
+    }
+    if (name === 'complete_shop_payment_event') {
+      return { data: { outcome: 'refunded' }, error: null }
+    }
+    return { data: null, error: null }
+  })
 })
 
-describe('settleShopOrderPaid — idempotent betal-callback', () => {
-  it('markerar ordern betald första gången', async () => {
-    const res = await settleShopOrderPaid({
+describe('shop payment event boundary', () => {
+  it('registers before one DB-owned settlement and then delivers issued value', async () => {
+    const result = await settleShopOrderPaid(paidEvent)
+
+    expect(result).toEqual({
+      ok: true,
+      eventId: 'event-1',
+      tenantId: 't1',
       orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'PP-1',
     })
-    expect(res.ok).toBe(true)
-    expect(paymentsUpdate).toHaveBeenCalledWith({ status: 'succeeded' })
-    expect(rpc).toHaveBeenCalledWith('mark_shop_order_paid', { p_order_id: 'o1' })
+    expect(rpc).toHaveBeenNthCalledWith(1, 'register_shop_payment_event', {
+      p_provider: 'paypal',
+      p_account_scope: 'paypal:platform',
+      p_provider_event_id: 'WH-1',
+      p_event_type: 'payment_succeeded',
+      p_tenant: null,
+      p_order: 'o1',
+      p_provider_reference_id: 'CAP-1',
+      p_amount_cents: 52900,
+      p_currency: 'SEK',
+      p_payload: { source: 'webhook' },
+    })
+    expect(rpc).toHaveBeenNthCalledWith(2, 'settle_shop_payment_event', {
+      p_event: 'event-1',
+    })
     expect(deliverIssuedGiftCards).toHaveBeenCalledWith(expect.anything(), 't1', 'o1')
   })
 
-  it('en redan betald order backfillar presentkortsleveransen utan att committa igen', async () => {
-    order = {
-      id: 'o1',
-      tenant_id: 't1',
-      total_cents: 52900,
-      currency: 'SEK',
-      payment_status: 'paid',
-      status: 'pending',
-    }
-    const res = await settleShopOrderPaid({
-      orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'PP-1',
-    })
-    expect(res.ok).toBe(true)
-    expect(rpc).not.toHaveBeenCalled()
-    expect(paymentsUpdate).not.toHaveBeenCalled()
-    expect(deliverIssuedGiftCards).toHaveBeenCalledWith(expect.anything(), 't1', 'o1')
-  })
-
-  it('rapporterar betalningen som lyckad men leveransen som väntande när presentkortsmejl kastar', async () => {
-    deliverIssuedGiftCards.mockRejectedValueOnce(new Error('relay outcome unknown'))
-
-    const res = await settleShopOrderPaid({
-      orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'PP-1',
+  it('accepts exact replay without another app-owned state transition', async () => {
+    rpc.mockImplementation(async (name: string) => {
+      if (name === 'register_shop_payment_event') {
+        return { data: { event_id: 'event-1', status: 'processed' }, error: null }
+      }
+      return {
+        data: {
+          outcome: 'already_succeeded',
+          tenant_id: 't1',
+          order_id: 'o1',
+        },
+        error: null,
+      }
     })
 
-    expect(res).toEqual({ ok: true, giftDeliveryPending: true })
-    expect(rpc).toHaveBeenCalledWith('mark_shop_order_paid', { p_order_id: 'o1' })
+    await expect(settleShopOrderPaid(paidEvent)).resolves.toMatchObject({ ok: true })
+    expect(rpc).toHaveBeenCalledTimes(2)
   })
 
-  it('en capture på FÖR LITET belopp markerar aldrig ordern som betald', async () => {
-    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 100, currency: 'SEK', providerRef: 'PP-1' })
-    expect(res.ok).toBe(false)
-    expect(res.reason).toBe('amount_mismatch')
-    expect(rpc).not.toHaveBeenCalled()
+  it('returns a closed amount mismatch for provider compensation', async () => {
+    rpc.mockImplementation(async (name: string) => name === 'register_shop_payment_event'
+      ? { data: { event_id: 'event-1' }, error: null }
+      : {
+          data: { outcome: 'amount_mismatch', tenant_id: 't1', order_id: 'o1' },
+          error: null,
+        })
+
+    await expect(settleShopOrderPaid(paidEvent)).resolves.toEqual({
+      ok: false,
+      reason: 'amount_mismatch',
+      eventId: 'event-1',
+      tenantId: 't1',
+      orderId: 'o1',
+    })
+    expect(deliverIssuedGiftCards).not.toHaveBeenCalled()
   })
 
-  it('SAKNAT belopp i provider-svaret är en mismatch — aldrig ett frikort (CodeRabbit)', async () => {
-    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: null, currency: 'SEK', providerRef: 'PP-1' })
-    expect(res).toEqual({ ok: false, reason: 'amount_mismatch' })
-    expect(rpc).not.toHaveBeenCalled()
+  it('never acknowledges an event that could not be durably registered', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: new Error('db unavailable') })
+
+    await expect(settleShopOrderPaid(paidEvent)).resolves.toEqual({
+      ok: false,
+      reason: 'event_register_failed',
+    })
+    expect(rpc).toHaveBeenCalledTimes(1)
   })
 
-  it('FEL VALUTA markerar aldrig ordern som betald — 189 USD ≠ 189 SEK (CodeRabbit)', async () => {
-    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: 'USD', providerRef: 'PP-1' })
-    expect(res).toEqual({ ok: false, reason: 'amount_mismatch' })
-    expect(rpc).not.toHaveBeenCalled()
+  it('leaves a registered event retryable when settlement RPC fails', async () => {
+    rpc
+      .mockResolvedValueOnce({ data: { event_id: 'event-1' }, error: null })
+      .mockResolvedValueOnce({ data: null, error: new Error('transaction failed') })
+      .mockResolvedValueOnce({ data: { outcome: 'retryable' }, error: null })
+
+    await expect(settleShopOrderPaid(paidEvent)).resolves.toEqual({
+      ok: false,
+      reason: 'event_settle_failed',
+      eventId: 'event-1',
+    })
+    expect(rpc).toHaveBeenNthCalledWith(3, 'complete_shop_payment_event', {
+      p_event: 'event-1',
+      p_outcome: 'retryable',
+      p_error_code: 'settlement_rpc_failed',
+    })
   })
 
-  it('SAKNAD valuta i provider-svaret är också en mismatch', async () => {
-    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: null, providerRef: 'PP-1' })
-    expect(res).toEqual({ ok: false, reason: 'amount_mismatch' })
-    expect(rpc).not.toHaveBeenCalled()
+  it('surfaces missing payment state without losing the inbox row', async () => {
+    rpc.mockImplementation(async (name: string) => name === 'register_shop_payment_event'
+      ? { data: { event_id: 'event-1' }, error: null }
+      : {
+          data: { outcome: 'payment_missing', tenant_id: 't1', order_id: 'o1' },
+          error: null,
+        })
+
+    await expect(settleShopOrderPaid(paidEvent)).resolves.toMatchObject({
+      ok: false,
+      reason: 'payment_missing',
+      eventId: 'event-1',
+    })
   })
 
-  it('retry-bara leveransmissar (failed>0) ger giftDeliveryPending', async () => {
+  it('does not redeliver value for a payment already refunded', async () => {
+    rpc.mockImplementation(async (name: string) => name === 'register_shop_payment_event'
+      ? { data: { event_id: 'event-1' }, error: null }
+      : {
+          data: { outcome: 'refunded', tenant_id: 't1', order_id: 'o1' },
+          error: null,
+        })
+
+    await expect(settleShopOrderPaid(paidEvent)).resolves.toMatchObject({ ok: true })
+    expect(deliverIssuedGiftCards).not.toHaveBeenCalled()
+  })
+
+  it('keeps payment success truthful when gift delivery needs its own retry', async () => {
     deliverIssuedGiftCards.mockResolvedValueOnce({ attempted: 1, failed: 1 })
-    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: 'SEK', providerRef: 'PP-1' })
-    expect(res).toEqual({ ok: true, giftDeliveryPending: true })
+
+    await expect(settleShopOrderPaid(paidEvent)).resolves.toMatchObject({
+      ok: true,
+      giftDeliveryPending: true,
+    })
   })
 
-  it('återupplivar aldrig en order vars hold redan har släppts', async () => {
-    order = { ...order!, status: 'expired' }
+  it('uses the same boundary for failed provider events', async () => {
+    rpc.mockImplementation(async (name: string) => name === 'register_shop_payment_event'
+      ? { data: { event_id: 'event-2' }, error: null }
+      : {
+          data: { outcome: 'failed', tenant_id: 't1', order_id: 'o1' },
+          error: null,
+        })
 
-    const res = await settleShopOrderPaid({
-      orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'CAPTURE-1',
+    const result = await settleShopPaymentEvent({
+      ...paidEvent,
+      eventType: 'payment_failed',
+      amountCents: null,
     })
 
-    expect(res).toEqual({ ok: false, reason: 'terminal_order' })
-    expect(paymentsUpdate).not.toHaveBeenCalled()
-    expect(rpc).not.toHaveBeenCalled()
+    expect(result.ok).toBe(true)
     expect(deliverIssuedGiftCards).not.toHaveBeenCalled()
   })
 
-  it('en okänd order rör ingenting', async () => {
-    order = null
-    const res = await settleShopOrderPaid({ orderId: 'x', amountCents: 1, providerRef: 'PP-1' })
-    expect(res.ok).toBe(false)
-    expect(rpc).not.toHaveBeenCalled()
-  })
+  it('lets the DB resolve a signed provider refund without a Corevo order id', async () => {
+    rpc.mockImplementation(async (name: string) => name === 'register_shop_payment_event'
+      ? { data: { event_id: 'event-refund' }, error: null }
+      : {
+          data: { outcome: 'refunded', tenant_id: 't1', order_id: 'o1' },
+          error: null,
+        })
 
-  it('skriver ALDRIG PayPal-referensen i Stripes PI-kolumn (refund-vägen slår upp på den)', async () => {
-    await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: 'SEK', providerRef: 'PP-1' })
-    const patch = paymentsUpdate.mock.calls[0][0] as Record<string, unknown>
-    expect(patch).not.toHaveProperty('stripe_payment_intent_id')
-  })
-
-  it('returnerar fel och stoppar flödet när orderuppslaget fallerar', async () => {
-    orderLookupError = { message: 'db unavailable' }
-
-    const res = await settleShopOrderPaid({
+    await expect(settleShopPaymentEvent({
+      ...paidEvent,
+      eventType: 'refund_succeeded',
+      orderId: null,
+    })).resolves.toEqual({
+      ok: true,
+      eventId: 'event-refund',
+      tenantId: 't1',
       orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'PP-1',
     })
-
-    expect(res).toEqual({ ok: false, reason: 'order_lookup_failed' })
-    expect(paymentsUpdate).not.toHaveBeenCalled()
-    expect(rpc).not.toHaveBeenCalled()
+    expect(rpc).toHaveBeenNthCalledWith(1, 'register_shop_payment_event', {
+      p_provider: 'paypal',
+      p_account_scope: 'paypal:platform',
+      p_provider_event_id: 'WH-1',
+      p_event_type: 'refund_succeeded',
+      p_tenant: null,
+      p_order: null,
+      p_provider_reference_id: 'CAP-1',
+      p_amount_cents: 52900,
+      p_currency: 'SEK',
+      p_payload: { source: 'webhook' },
+    })
     expect(deliverIssuedGiftCards).not.toHaveBeenCalled()
   })
 
-  it('returnerar fel och committar inte ordern när payment-update fallerar', async () => {
-    paymentUpdateError = { message: 'write failed' }
-
-    const res = await settleShopOrderPaid({
-      orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'PP-1',
+  it('closes a compensating provider refund through the DB', async () => {
+    await expect(
+      completeShopPaymentEvent('event-1', 'refunded', 'terminal_order'),
+    ).resolves.toBe(true)
+    expect(rpc).toHaveBeenCalledWith('complete_shop_payment_event', {
+      p_event: 'event-1',
+      p_outcome: 'refunded',
+      p_error_code: 'terminal_order',
     })
-
-    expect(res).toEqual({ ok: false, reason: 'payment_update_failed' })
-    expect(rpc).not.toHaveBeenCalled()
-    expect(deliverIssuedGiftCards).not.toHaveBeenCalled()
-  })
-
-  it('committar inte en order när den skyddade payment-update:n inte matchar någon rad', async () => {
-    paymentUpdateRow = null
-
-    const res = await settleShopOrderPaid({
-      orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'PP-1',
-    })
-
-    expect(res).toEqual({ ok: false, reason: 'payment_not_updated' })
-    expect(rpc).not.toHaveBeenCalled()
-    expect(deliverIssuedGiftCards).not.toHaveBeenCalled()
-  })
-
-  it('returnerar fel och levererar inte presentkort när order-commit fallerar', async () => {
-    rpcError = { message: 'rpc failed' }
-
-    const res = await settleShopOrderPaid({
-      orderId: 'o1',
-      amountCents: 52900,
-      currency: 'SEK',
-      providerRef: 'PP-1',
-    })
-
-    expect(res).toEqual({ ok: false, reason: 'order_commit_failed' })
-    expect(deliverIssuedGiftCards).not.toHaveBeenCalled()
   })
 })

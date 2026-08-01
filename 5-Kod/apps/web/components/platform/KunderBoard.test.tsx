@@ -46,7 +46,9 @@ const TENANTS: KundCardVM[] = [
     staff: 3,
     displayStatus: 'active',
     lastLabel: 'för 1 dag',
-    storefrontUrl: 'https://alpha.corevo.se',
+    storefrontUrl: 'https://alpha.boka.corevo.se',
+    storefrontHost: 'alpha.boka.corevo.se',
+    storefrontPublished: true,
   },
   {
     id: 'tenant-b',
@@ -62,7 +64,9 @@ const TENANTS: KundCardVM[] = [
     staff: 1,
     displayStatus: 'suspended',
     lastLabel: '—',
-    storefrontUrl: 'https://beta.corevo.se',
+    storefrontUrl: 'https://beta.boka.corevo.se',
+    storefrontHost: 'beta.boka.corevo.se',
+    storefrontPublished: false,
   },
 ]
 
@@ -131,13 +135,21 @@ describe('goal-72 customer board behavior', () => {
     expect(container.firstElementChild?.getAttribute('data-mobile-view')).toBe(expected)
   })
 
-  it('marks only the selected master row', async () => {
+  it('gives a selected customer the full workspace without keeping the master list mounted', async () => {
     mocks.pathname = '/kunder/tenant-b'
     await render()
 
+    expect(container.querySelector('aside[aria-label="Kunder"]')).toBeNull()
+    expect(container.querySelector('[data-testid="detail"]')).not.toBeNull()
+  })
+
+  it('keeps the master list neutral before a customer is opened', async () => {
+    mocks.pathname = '/kunder'
+    await render()
+
     expect(
-      container.querySelector('a[href="/kunder/tenant-b"]')?.getAttribute('aria-current'),
-    ).toBe('page')
+      container.querySelector('a[href="/kunder/tenant-b"]')?.hasAttribute('aria-current'),
+    ).toBe(false)
     expect(
       container.querySelector('a[href="/kunder/tenant-a"]')?.hasAttribute('aria-current'),
     ).toBe(false)
@@ -172,13 +184,14 @@ describe('goal-72 customer board behavior', () => {
     const csv = buildKunderCsv([TENANTS[1]!])
     expect(csv).toBe(
       'Namn,Subdomän,Ägare,Status,Bokningar,Genomförda,Personal,Senast,Tema,Variant,Nivå\r\n' +
-        'Beta AB,beta.corevo.se,Bea Boss,Pausad,0,0,1,—,Edit,Lugn,Nivå 2',
+        'Beta AB,beta.boka.corevo.se,Bea Boss,Pausad,0,0,1,—,Edit,Lugn,Nivå 2',
     )
   })
 
   it('preserves storefront access and submits soft-delete only after explicit confirmation', async () => {
     await render()
-    expect(container.querySelector('a[href="https://alpha.corevo.se"]')).not.toBeNull()
+    expect(container.querySelector('a[href="https://alpha.boka.corevo.se"]')).not.toBeNull()
+    expect(container.querySelector('a[href="https://beta.boka.corevo.se"]')).toBeNull()
 
     await act(async () => button('Fler åtgärder för Alpha AB').click())
     const removeItem = button('Ta bort kund')
@@ -230,7 +243,7 @@ describe('goal-72 customer board behavior', () => {
 
   it('does not redirect away from a newer selection when delete resolves late', async () => {
     const action = deferred<{ success: string }>()
-    mocks.pathname = '/kunder/tenant-a'
+    mocks.pathname = '/kunder'
     mocks.setTenantStatus.mockReturnValueOnce(action.promise)
     await render()
 
@@ -244,14 +257,13 @@ describe('goal-72 customer board behavior', () => {
 
     expect(mocks.push).not.toHaveBeenCalled()
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
-    expect(
-      container.querySelector('a[href="/kunder/tenant-b"]')?.getAttribute('aria-current'),
-    ).toBe('page')
+    expect(container.querySelector('aside[aria-label="Kunder"]')).toBeNull()
+    expect(container.querySelector('[data-testid="detail"]')).not.toBeNull()
   })
 
   it('invalidates a pending delete as soon as a newer customer link is clicked', async () => {
     const action = deferred<{ success: string }>()
-    mocks.pathname = '/kunder/tenant-a'
+    mocks.pathname = '/kunder'
     mocks.setTenantStatus.mockReturnValueOnce(action.promise)
     await render()
 
@@ -268,28 +280,9 @@ describe('goal-72 customer board behavior', () => {
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps the delete redirect when the already-selected customer link is clicked', async () => {
-    const action = deferred<{ success: string }>()
-    mocks.pathname = '/kunder/tenant-a'
-    mocks.setTenantStatus.mockReturnValueOnce(action.promise)
-    await render()
-
-    await act(async () => button('Fler åtgärder för Alpha AB').click())
-    await act(async () => button('Ta bort kund').click())
-    await act(async () => button('Bekräfta borttagning').click())
-
-    const selectedCustomer = container.querySelector('a[href="/kunder/tenant-a"]')
-    if (!(selectedCustomer instanceof HTMLAnchorElement)) throw new Error('Customer link missing')
-    await act(async () => selectedCustomer.click())
-    await act(async () => action.resolve({ success: 'Kunden är borttagen.' }))
-
-    expect(mocks.push).toHaveBeenCalledWith('/kunder')
-    expect(mocks.refresh).toHaveBeenCalledTimes(1)
-  })
-
   it('does not re-arm an old customer when a late delete fails after navigation', async () => {
     const action = deferred<{ error: string }>()
-    mocks.pathname = '/kunder/tenant-a'
+    mocks.pathname = '/kunder'
     mocks.setTenantStatus.mockReturnValueOnce(action.promise)
     await render()
 
@@ -305,15 +298,15 @@ describe('goal-72 customer board behavior', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('navigates away from a deleted selected customer and refreshes the master list', async () => {
-    mocks.pathname = '/kunder/tenant-a'
+  it('refreshes the customer list without a redundant redirect after deletion', async () => {
+    mocks.pathname = '/kunder'
     await render()
 
     await act(async () => button('Fler åtgärder för Alpha AB').click())
     await act(async () => button('Ta bort kund').click())
     await act(async () => button('Bekräfta borttagning').click())
 
-    expect(mocks.push).toHaveBeenCalledWith('/kunder')
+    expect(mocks.push).not.toHaveBeenCalled()
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
   })
 

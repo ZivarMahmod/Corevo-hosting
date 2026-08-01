@@ -12,6 +12,11 @@ export type OffertRequestRow = {
   status: string
   payment_status: string
   note: string | null
+  lifecycle_version: number
+  reply_delivery_state: string
+  reply_outbox_id: string | null
+  reply_error_code: string | null
+  reply_pending_message: string | null
   reply_message: string | null
   replied_at: string | null
   created_at: string

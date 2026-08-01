@@ -1,4 +1,4 @@
-import type { Service, TenantLocation, StorefrontTheme } from '@/lib/tenant-data'
+import type { Service, TenantContact, TenantLocation, StorefrontTheme } from '@/lib/tenant-data'
 import type { ShopProduct } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
 import type { ResolvedThemeContent } from '../theme-content'
@@ -51,6 +51,10 @@ export type StorefrontLayoutProps = {
   services: Service[]
   /** Real location + derived opening hours; null when the tenant has none. */
   location: TenantLocation | null
+  /** Real tenant contact. Optional for older/onboarding preview callers. */
+  contact?: TenantContact
+  /** Real tenant social links. Optional for older/onboarding preview callers. */
+  social?: { instagram: string | null; facebook: string | null; tiktok: string | null }
   /** Invävda modul-teasers (S10) — se LayoutModuleTeasers. */
   modules?: LayoutModuleTeasers
 }

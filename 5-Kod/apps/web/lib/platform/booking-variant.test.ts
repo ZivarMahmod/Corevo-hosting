@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import * as bookingVariantModule from './booking-variant'
 import {
   isBookingVariant,
   readBookingVariant,
@@ -115,5 +116,26 @@ describe('readBookingMode (M3 storefront seam: variant → BookingWizard mode)',
     expect(readBookingMode({ booking: {} })).toBe('wizard')
     expect(readBookingMode({ booking: { variant: '9' } })).toBe('wizard')
     expect(readBookingMode('not-an-object')).toBe('wizard')
+  })
+})
+
+describe('booking verification channel policy', () => {
+  it('accepts three modes and defaults old tenants to SMS with e-mail fallback', () => {
+    const isBookingVerificationMode = bookingVariantModule.isBookingVerificationMode
+    const readBookingVerificationMode = bookingVariantModule.readBookingVerificationMode
+    expect(isBookingVerificationMode).toBeTypeOf('function')
+    expect(readBookingVerificationMode).toBeTypeOf('function')
+    if (!isBookingVerificationMode || !readBookingVerificationMode) return
+
+    expect(isBookingVerificationMode('sms_only')).toBe(true)
+    expect(isBookingVerificationMode('sms_with_email_fallback')).toBe(true)
+    expect(isBookingVerificationMode('email_only')).toBe(true)
+    expect(isBookingVerificationMode('tampered')).toBe(false)
+
+    expect(readBookingVerificationMode({
+      booking: { verificationMode: 'email_only' },
+    })).toBe('email_only')
+    expect(readBookingVerificationMode({ booking: {} })).toBe('sms_with_email_fallback')
+    expect(readBookingVerificationMode(null)).toBe('sms_with_email_fallback')
   })
 })

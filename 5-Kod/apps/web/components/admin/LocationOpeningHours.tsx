@@ -43,9 +43,13 @@ function hm(value: string) {
 export function LocationOpeningHours({
   location,
   rows,
+  tenantId,
+  action = saveLocationBookingSettings,
 }: {
   location: LocationBookingSettings
   rows: LocationOpeningHourRow[]
+  tenantId?: string
+  action?: typeof saveLocationBookingSettings
 }) {
   const router = useRouter()
   const { notify } = useToast()
@@ -59,7 +63,7 @@ export function LocationOpeningHours({
     })),
   )
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
-    saveLocationBookingSettings,
+    action,
     {},
   )
   const lastHandled = useRef(state)
@@ -139,6 +143,7 @@ export function LocationOpeningHours({
       <Card>
         <form action={formAction}>
           <input type="hidden" name="location_id" value={location.id} />
+          {tenantId && <input type="hidden" name="tenant_id" value={tenantId} />}
 
           <div style={{ display: 'grid', gap: 2 }}>
             {DAYS.map(({ weekday, name: day }) => {
@@ -321,7 +326,7 @@ export function LocationOpeningHours({
 }
 
 const timeInputStyle: CSSProperties = {
-  minHeight: 42,
+  minHeight: 44,
   padding: '7px 9px',
   borderRadius: 9,
   border: '1px solid var(--c-line)',
@@ -332,7 +337,7 @@ const timeInputStyle: CSSProperties = {
 }
 
 const inputStyle: CSSProperties = {
-  minHeight: 42,
+  minHeight: 44,
   padding: '8px 10px',
   borderRadius: 9,
   border: '1px solid var(--c-line)',

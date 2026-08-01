@@ -22,6 +22,7 @@ const STAFF_DENIED: AdminArea[] = [
   'webshop',
   'blogg',
   'media',
+  'galleri',
   'lojalitet',
   'presentkort',
   'tjanster',
@@ -79,6 +80,7 @@ describe('adminAreaForPath', () => {
     expect(adminAreaForPath('/admin/kunder/abc-123')).toBe('kunder')
     expect(adminAreaForPath('/admin/installningar')).toBe('installningar')
     expect(adminAreaForPath('/admin/statistik')).toBe('statistik')
+    expect(adminAreaForPath('/admin/galleri')).toBe('galleri')
   })
 
   it('är inte en adminrutt → null', () => {

@@ -21,11 +21,15 @@ export const LIMITS = {
   bookingPinStart: { max: 5, windowSecs: 300 } as RateLimit,
   bookingPinResend: { max: 3, windowSecs: 300 } as RateLimit,
   bookingPinVerify: { max: 10, windowSecs: 300 } as RateLimit,
+  portalRecoveryStart: { max: 5, windowSecs: 300 } as RateLimit,
+  portalRecoveryResend: { max: 3, windowSecs: 300 } as RateLimit,
+  portalRecoveryVerify: { max: 10, windowSecs: 300 } as RateLimit,
   offert: { max: 12, windowSecs: 300 } as RateLimit, // 12 offert submissions / 5 min per IP+tenant
   event: { max: 12, windowSecs: 300 } as RateLimit, // 12 kurs-anmälningar / 5 min per IP+tenant
   // goal-64: "GÅ MED" i klubben. Snålare än de andra — en riktig människa går med EN
   // gång; ett högt tak här skulle bara låta någon pumpa in e-postadresser i kundregistret.
   loyalty: { max: 6, windowSecs: 300 } as RateLimit, // 6 klubb-anmälningar / 5 min per IP+tenant
+  giftCardCode: { max: 8, windowSecs: 300 } as RateLimit,
   // goal-64: kontaktformuläret. Den enda anonyma skrivningen som finns på VARJE mall —
   // /kontakt är ingen modul och kan därför aldrig stängas av. Snålt tak: en människa
   // skriver ETT meddelande, medan varje rad här kostar kunden ett mejl i inkorgen.

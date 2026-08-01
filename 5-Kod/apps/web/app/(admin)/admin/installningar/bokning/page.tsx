@@ -10,6 +10,7 @@ import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
 import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
 import { PageHead } from '@/components/portal/ui'
 import { settingsCategories } from '@/lib/admin/settings-map'
+import { readBookingVerificationMode } from '@/lib/platform/booking-variant'
 
 /** L3 C-03 — bokningsregler som lägen. Läget ÄR tenant_modules.state för `booking`
  *  (samma mekanism som storefronten läser), aldrig en ny flagga. */
@@ -34,6 +35,7 @@ export default async function BokningsreglerPage() {
   const values = (settings?.settings ?? {}) as {
     cancellation_cutoff_hours?: number
     customer_accounts_enabled?: boolean
+    booking?: { external_url?: string }
   }
 
   return (
@@ -60,6 +62,10 @@ export default async function BokningsreglerPage() {
         contactEmail=""
         contactPhone=""
         customerAccountsEnabled={values.customer_accounts_enabled === true}
+        bookingVerificationMode={readBookingVerificationMode(settings?.settings)}
+        bookingExternalUrl={
+          typeof values.booking?.external_url === 'string' ? values.booking.external_url : ''
+        }
       />
     </section>
     </SettingsWorkspace>

@@ -14,6 +14,7 @@ const state = {
   moduleState: 'live' as string | null,
   rateLimitAllows: true,
   rpcError: null as { message: string } | null,
+  rpcData: 'member-1' as unknown,
   /** (tenant, e-post) som redan är medlem — låter oss simulera DB:ns unique-index. */
   members: new Set<string>(),
 }
@@ -66,7 +67,7 @@ vi.mock('@/lib/platform/service', () => ({
       if (state.rpcError) return { data: null, error: state.rpcError }
       // Simulera funktionens idempotens: en andra join med samma e-post är inget fel.
       state.members.add(`${args.p_tenant_slug}:${args.p_email}`)
-      return { data: 'member-1', error: null }
+      return { data: state.rpcData, error: null }
     },
   }),
 }))
@@ -86,6 +87,7 @@ beforeEach(() => {
   state.moduleState = 'live'
   state.rateLimitAllows = true
   state.rpcError = null
+  state.rpcData = 'member-1'
   state.members.clear()
 })
 
@@ -152,6 +154,19 @@ describe('joinLoyaltyClub — dubbel-join', () => {
     expect(first.phase).toBe('done')
     expect(second.phase).toBe('done') // kunden som klickar två gånger får inget fel
     expect(state.members.size).toBe(1) // och kundregistret får ingen dubblett
+  })
+})
+
+describe('joinLoyaltyClub — betald nivå', () => {
+  it('visar pending och påstår aldrig att en obetald nivå är aktiv', async () => {
+    state.rpcData = { membership_id: 'member-1', status: 'pending_payment' }
+    const res = await joinLoyaltyClub(
+      IDLE,
+      fd({ email: 'ada@b.se', planId: 'paid-plan' }),
+    )
+
+    expect(res).toMatchObject({ phase: 'done', pendingPayment: true })
+    expect(res.message).toContain('blir aktiv först efter verifierad betalning')
   })
 })
 

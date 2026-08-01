@@ -1,5 +1,9 @@
 import { verifyPaypalWebhook, paypalReady, refundPaypalCapture } from '@/lib/payments/paypal'
-import { recordShopOrderRefunded, settleShopOrderPaid } from '@/lib/payments/settle'
+import {
+  completeShopPaymentEvent,
+  settleShopOrderPaid,
+  settleShopPaymentEvent,
+} from '@/lib/payments/settle'
 import { captureException } from '@/lib/observability'
 
 // PAYPAL — WEBHOOKEN (goal-64). Nätet under returen: stänger kunden webbläsaren mitt i
@@ -39,6 +43,7 @@ export async function POST(req: Request): Promise<Response> {
 
   try {
     const event = JSON.parse(rawBody) as {
+      id?: string
       event_type?: string
       resource?: {
         id?: string
@@ -48,31 +53,42 @@ export async function POST(req: Request): Promise<Response> {
       }
     }
 
-    // Enda event som får flytta pengar i vår modell.
+    // Capture completion och full refund är de två pengar-event vi speglar.
     if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
       const res = event.resource
       // custom_id = vår shop_orders.id, satt av oss i createPaypalOrder. Vi litar ALDRIG
       // på något annat fält för att avgöra vilken order som betalades.
       const orderId = res?.custom_id
       if (!orderId) return ok({ skipped: 'no_reference' })
+      if (!event.id) throw new Error('paypal event id missing')
       const amountCents = res?.amount?.value ? Math.round(Number(res.amount.value) * 100) : null
       const settled = await settleShopOrderPaid({
+        provider: 'paypal',
+        accountScope: 'paypal:platform',
+        providerEventId: event.id,
         orderId,
+        tenantId: null,
         amountCents,
-        // Valutan valideras i settle (CodeRabbit-fynd: 189 USD ≠ 189 SEK).
         currency: res?.amount?.currency_code ?? null,
         providerRef: res?.id ?? 'paypal',
+        source: 'webhook',
       })
-      if (settled.ok && settled.giftDeliveryPending) {
-        // Pengarna är redan korrekt speglade. Be PayPal leverera om eventet så den
-        // idempotenta presentkortsclaimen får ett nytt leveransförsök.
-        throw new Error('paypal gift-card delivery pending')
-      }
-      if (!settled.ok && ['terminal_order', 'amount_mismatch'].includes(settled.reason ?? '')) {
+      if (
+        !settled.ok
+        && [
+          'terminal_order',
+          'amount_mismatch',
+          'provider_identity_mismatch',
+          'payment_missing',
+        ].includes(settled.reason ?? '')
+      ) {
         if (!res?.id || !(await refundPaypalCapture(res.id))) {
           throw new Error(`paypal auto-refund failed: ${settled.reason}`)
         }
-        if (!(await recordShopOrderRefunded(orderId))) {
+        if (
+          !settled.eventId
+          || !(await completeShopPaymentEvent(settled.eventId, 'refunded', settled.reason))
+        ) {
           throw new Error(`paypal refund persistence failed: ${settled.reason}`)
         }
         return ok({ refunded: true })
@@ -81,12 +97,39 @@ export async function POST(req: Request): Promise<Response> {
         if (!res?.id || !(await refundPaypalCapture(res.id))) {
           throw new Error('paypal unknown-order auto-refund failed')
         }
+        if (
+          !settled.eventId
+          || !(await completeShopPaymentEvent(settled.eventId, 'refunded', settled.reason))
+        ) {
+          throw new Error('paypal unknown-order refund persistence failed')
+        }
         return ok({ refunded: true })
       }
       if (!settled.ok) {
         // Ett verifierat pengar-event får inte kvitteras förrän vår egen status är
         // durabel. Kasta in i befintlig 500-väg så PayPal levererar om eventet.
         throw new Error(`paypal settlement failed: ${settled.reason ?? 'unknown'}`)
+      }
+    } else if (event.event_type === 'PAYMENT.CAPTURE.REFUNDED') {
+      const res = event.resource
+      if (!event.id || !res?.id) throw new Error('paypal refund identity missing')
+      const amountCents = res.amount?.value
+        ? Math.round(Number(res.amount.value) * 100)
+        : null
+      const settled = await settleShopPaymentEvent({
+        provider: 'paypal',
+        accountScope: 'paypal:platform',
+        providerEventId: event.id,
+        eventType: 'refund_succeeded',
+        orderId: null,
+        tenantId: null,
+        amountCents,
+        currency: res.amount?.currency_code ?? null,
+        providerRef: res.id,
+        source: 'webhook',
+      })
+      if (!settled.ok) {
+        throw new Error(`paypal refund settlement failed: ${settled.reason ?? 'unknown'}`)
       }
     }
     // Övriga event-typer ignoreras tyst (200 → PayPal slutar leverera om).

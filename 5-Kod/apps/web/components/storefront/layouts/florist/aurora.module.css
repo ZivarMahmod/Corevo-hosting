@@ -31,7 +31,7 @@
 /* Etiketten: spärrad versal i terracotta — filens enda "eyebrow"-form. */
 .auEyebrow {
   margin: 0 0 12px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.2em;
@@ -42,7 +42,7 @@
 .auBtn {
   display: inline-block;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
   border: none;
   border-radius: 0;
   font-family: var(--font-body);
@@ -76,7 +76,7 @@
 
 .auBtnOutline:hover {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
 }
 
 /* Hårlinje-länken: kursiv Lora + 1px terracotta under. Mallens mjuka handling. */
@@ -95,7 +95,7 @@
 }
 
 .auLink:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .auSrOnly {
@@ -151,7 +151,7 @@
 }
 
 .auNavLinks a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   font-style: italic;
 }
 
@@ -178,14 +178,14 @@
 }
 
 .auNavCart:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Huvudets CTA: fylld fyrkant, tätare än hemmets stora knapp. */
 .auNavCta {
   white-space: nowrap;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
   border: none;
   border-radius: 0;
   font-weight: 700;
@@ -223,7 +223,7 @@
 
 /* Filens <em> i rubriken — kursiv terracotta mitt i meningen. */
 .auHeroTitle em {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .auHeroLede {
@@ -261,7 +261,7 @@
   content: '✿\00a0';
   font-family: var(--font-display);
   font-style: italic;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* VALVET — heron är en halvcirkel, inte en fyrkant. */
@@ -279,7 +279,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 15px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ─────────────────────────── hemmet: de tre vägarna ───────────────────────── */
@@ -448,7 +448,7 @@
 
 .auBuyFramed button:hover {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
 }
 
 /* ─────────────────────────── hemmet: presentkort-bandet ───────────────────── */
@@ -568,7 +568,7 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .auPostTitle {
@@ -748,7 +748,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 19px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* teamet — cirklar, inga valv (filens enda helrunda form). */
@@ -838,7 +838,7 @@
 
 .auSvcBook:hover {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
 }
 
 .auSvcFoot {
@@ -857,7 +857,7 @@
 }
 
 .auSvcFoot a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* /kontakt — fakta-spalt + vit platta (filens showKontakt). */
@@ -897,7 +897,7 @@
 .auFactLabel {
   font-family: var(--font-display);
   font-style: italic;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   margin-right: 10px;
 }
 
@@ -1002,7 +1002,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 20px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ───────────────────────────────── sidfoten ───────────────────────────────── */
@@ -1047,7 +1047,7 @@
 }
 
 .auFootNav a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .auFootLegal {
@@ -1349,7 +1349,7 @@
   padding: 13px 15px;
   font-family: var(--font-body);
   font-size: 15px;
-  outline-color: var(--color-primary);
+  outline-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .auClubJoin button {
@@ -1357,7 +1357,7 @@
   border-radius: 0;
   cursor: pointer;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
   font-weight: 700;
   font-size: 15px;
   padding: 14px 32px;

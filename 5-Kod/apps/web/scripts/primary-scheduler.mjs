@@ -1,5 +1,10 @@
 const SCHEDULER_NAME = 'cloudflare-reminders-primary'
-const REMINDER_URL = 'https://booking.corevo.se/api/cron/reminders'
+const ROUTE_URLS = [
+  'https://booking.corevo.se/api/cron/pending-expiry',
+  'https://booking.corevo.se/api/cron/reminders',
+  'https://booking.corevo.se/api/cron/payment-refunds',
+  'https://booking.corevo.se/api/cron/media-cleanup',
+]
 
 function required(value) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
@@ -57,11 +62,19 @@ export async function runPrimaryScheduler({
   })
 
   try {
-    const response = await appFetch(new Request(REMINDER_URL, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${cronSecret}` },
-    }))
-    if (!response.ok) throw new Error('primary_scheduler_route_failed')
+    let routeFailed = false
+    for (const url of ROUTE_URLS) {
+      try {
+        const response = await appFetch(new Request(url, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${cronSecret}` },
+        }))
+        routeFailed ||= !response.ok
+      } catch {
+        routeFailed = true
+      }
+    }
+    if (routeFailed) throw new Error('primary_scheduler_route_failed')
     await recordHeartbeat({
       env: safeEnv,
       fetchImpl,

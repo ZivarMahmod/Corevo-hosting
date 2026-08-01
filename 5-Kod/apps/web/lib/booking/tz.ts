@@ -6,6 +6,29 @@
 /** Canonical key for the same UTC instant across Postgres and JavaScript ISO formats. */
 export const canonicalInstant = (value: string): string => new Date(value).toISOString()
 
+/** Calendar dates offered by the picker, starting at "today" in the selected
+ * location and ending exactly maxAdvanceDays ahead. UTC date arithmetic keeps
+ * the sequence stable across browser timezone and DST changes. */
+export function bookingDateWindow(
+  now: Date,
+  timeZone: string,
+  maxAdvanceDays: number,
+): string[] {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now)
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value)
+  const start = Date.UTC(value('year'), value('month') - 1, value('day'))
+  return Array.from(
+    { length: Math.max(0, Math.trunc(maxAdvanceDays)) + 1 },
+    (_, day) => new Date(start + day * 86_400_000).toISOString().slice(0, 10),
+  )
+}
+
 /**
  * UTC offset (ms) of `timeZone` at the given instant. Computed by asking Intl
  * what wall-clock time the instant maps to in the zone, then diffing against the

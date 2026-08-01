@@ -24,7 +24,7 @@ export type StudioCfg = {
   /** template key (settings.theme). Defaults to the built-in default until a bransch sets it. */
   theme: string
   variant: BookingVariant
-  /** module_key → chosen state (seeded from the bransch preset; booking floored on read). */
+  /** module_key → chosen state (seeded from the bransch preset except booking). */
   moduleStates: Record<string, ModuleState>
   /** accent hex ('' = none picked → theme's own primary wins). */
   accent: string
@@ -84,13 +84,16 @@ export function applyBranch(cfg: StudioCfg, verticalKey: string, presets: Vertic
   const theme = [v.defaultTemplate, ...branschTemplates.map((t) => t.key), cfg.theme, COREVO_12_THEME_KEYS[0]]
     .find((candidate): candidate is string => !!candidate && isSelectableTheme(candidate))!
   const moduleStates: Record<string, ModuleState> = {}
-  for (const m of modulesForVertical(presets, verticalKey)) moduleStates[m.key] = m.defaultState
+  for (const m of modulesForVertical(presets, verticalKey)) {
+    if (m.key !== 'booking') moduleStates[m.key] = m.defaultState
+  }
   return { ...cfg, branch: verticalKey, theme, moduleStates }
 }
 
 /**
- * The effective state of a module: explicit pick → preset default → 'off'. booking can
- * never read below 'live' (the platform floor) unless explicitly 'paused'.
+ * The effective state of a module: explicit pick → preset default → 'off'. Booking
+ * ignores the preset and defaults live unless the operator explicitly picks another
+ * create-time state.
  */
 export function resolveModuleState(
   cfg: StudioCfg,
@@ -98,9 +101,11 @@ export function resolveModuleState(
   presets: VerticalPresetData,
 ): ModuleState {
   const picked = cfg.moduleStates[key]
+  if (key === 'booking') {
+    return picked === 'live' || picked === 'paused' || picked === 'off' ? picked : 'live'
+  }
   const preset = modulesForVertical(presets, cfg.branch).find((m) => m.key === key)?.defaultState ?? 'off'
-  const resolved = picked ?? preset
-  return key === 'booking' && resolved !== 'live' && resolved !== 'paused' ? 'live' : resolved
+  return picked ?? preset
 }
 
 /** name → a clean storefront slug (a–z, 0–9, dash) — mirrors CreateTenantForm.slugify. */

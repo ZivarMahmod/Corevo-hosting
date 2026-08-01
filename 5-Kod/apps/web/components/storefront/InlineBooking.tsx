@@ -20,6 +20,10 @@ export function InlineBooking({
   bokaOnline = 'Boka online',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
+  countryCode,
+  locale,
+  currency,
+  defaultTimeZone,
   previewControlled = false,
 }: {
   services: WizardService[]
@@ -32,6 +36,10 @@ export function InlineBooking({
   bokaOnline?: string
   pickerMode?: PickerMode
   staffAvatarMode?: StaffAvatarMode
+  countryCode?: string
+  locale?: string
+  currency?: string
+  defaultTimeZone?: string
   /** Editor-preview only: follow the provider's live variant instead of the
    * server-resolved published variant. Public callers keep the old behaviour. */
   previewControlled?: boolean
@@ -64,6 +72,10 @@ export function InlineBooking({
           pickerMode={activePickerMode}
           staffAvatarMode={activeStaffAvatarMode}
           brandName={activeTenantName}
+          countryCode={countryCode}
+          locale={locale}
+          currency={currency}
+          defaultTimeZone={defaultTimeZone}
           open
         />
       </div>

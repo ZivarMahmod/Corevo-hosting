@@ -3,7 +3,7 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { OffertSection } from '@/components/storefront/OffertSection'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { loadOffertData } from '@/lib/storefront/offert/load-offert'
-import { loadPreviewBundle, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
+import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
 
 // goal-64 (regression, preview-parity): offertens preview-tvilling ANROPADE den
 // delade sektionen direkt — en super-admin som förhandsvisade en mall med egen
@@ -19,12 +19,13 @@ export default async function PreviewOffertPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string }>
+  searchParams: Promise<{ theme?: string; copy?: string }>
 }) {
   const { slug } = await params
-  const { theme: themeParam } = await searchParams
+  const { theme: themeParam, copy: copyParam } = await searchParams
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
+  const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
@@ -35,7 +36,7 @@ export default async function PreviewOffertPage({
   const data = View && !off ? await loadOffertData(tenant.id, tenant.slug) : null
 
   return (
-    <PreviewShell bundle={bundle} theme={theme}>
+    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
       {off ? (
         <PreviewModuleOff moduleLabel="Offert" />
       ) : View && data ? (

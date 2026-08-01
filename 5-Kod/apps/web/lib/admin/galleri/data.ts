@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { GalleryAdminRow } from '@/components/platform/GalleriCard'
+import type { GalleryAdminRow } from './types'
 
 /**
  * Kundens galleri för ADMIN-ytan (goal-64) — ALLA rader, även avstängda (active=false),
@@ -15,10 +15,12 @@ export async function listGalleryItems(tenantId: string): Promise<GalleryAdminRo
   const supabase = await createClient()
   const { data } = await supabase
     .from('gallery_items')
-    .select('id, asset_id, caption, tag, year_label, aspect_ratio, sort_order, active, media_assets(url)')
+    .select(
+      'id, asset_id, caption, tag, year_label, aspect_ratio, alt_override, decorative, sort_order, active, media_assets(url)',
+    )
     .eq('tenant_id', tenantId)
     .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
     .limit(500)
 
   if (!data) return []
@@ -31,6 +33,8 @@ export async function listGalleryItems(tenantId: string): Promise<GalleryAdminRo
       tag: string | null
       year_label: string | null
       aspect_ratio: string | null
+      alt_override: string | null
+      decorative: boolean
       sort_order: number
       active: boolean
       media_assets: { url: string } | { url: string }[] | null
@@ -45,6 +49,8 @@ export async function listGalleryItems(tenantId: string): Promise<GalleryAdminRo
       tag: r.tag ?? null,
       yearLabel: r.year_label ?? null,
       aspectRatio: r.aspect_ratio ?? null,
+      altOverride: r.alt_override ?? null,
+      decorative: r.decorative === true,
       sortOrder: r.sort_order ?? 0,
       active: r.active !== false,
     }

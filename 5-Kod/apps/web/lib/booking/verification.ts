@@ -2,18 +2,23 @@ import 'server-only'
 
 import { sendEmail } from '@/lib/notifications/email'
 import { sendGiadaMessage } from '@/lib/notifications/giada'
+import type { BookingVerificationChannel } from './contact-normalization'
 
-export type BookingVerificationChannel = 'sms' | 'email'
+export {
+  maskBookingContact,
+  normalizeBookingContact,
+} from './contact-normalization'
+export type { BookingVerificationChannel } from './contact-normalization'
 
-const PIN_SPACE = 1_000_000
 const UINT32_SPACE = 0x1_0000_0000
-const UINT32_PIN_LIMIT = UINT32_SPACE - (UINT32_SPACE % PIN_SPACE)
 
-export function generateBookingPin(): string {
+export function generateBookingPin(digits: 4 | 6 = 4): string {
+  const pinSpace = digits === 4 ? 10_000 : 1_000_000
+  const uint32PinLimit = UINT32_SPACE - (UINT32_SPACE % pinSpace)
   const value = new Uint32Array(1)
   do crypto.getRandomValues(value)
-  while (value[0]! >= UINT32_PIN_LIMIT)
-  return String(value[0]! % PIN_SPACE).padStart(6, '0')
+  while (value[0]! >= uint32PinLimit)
+  return String(value[0]! % pinSpace).padStart(digits, '0')
 }
 
 function pepper(): string {
@@ -46,30 +51,6 @@ export function bookingContactDigest(
   return hmac(`booking-contact:${channel}:${normalizedContact}`)
 }
 
-export function normalizeBookingContact(
-  channel: BookingVerificationChannel,
-  raw: string,
-): string | null {
-  if (channel === 'email') {
-    const email = raw.trim().toLowerCase()
-    return email.length <= 200 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? email : null
-  }
-  const cleaned = raw.replace(/[\s\-()]/g, '')
-  if (/^\+\d{8,15}$/.test(cleaned)) return cleaned
-  if (/^00\d{8,15}$/.test(cleaned)) return `+${cleaned.slice(2)}`
-  if (/^0\d{8,9}$/.test(cleaned)) return `+46${cleaned.slice(1)}`
-  return null
-}
-
-export function maskBookingContact(
-  channel: BookingVerificationChannel,
-  normalizedContact: string,
-): string {
-  if (channel === 'sms') return `${normalizedContact.slice(0, 3)} ••• •• ${normalizedContact.slice(-2)}`
-  const [local, domain] = normalizedContact.split('@')
-  return `${local?.slice(0, 1) ?? ''}•••@${domain ?? ''}`
-}
-
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -85,6 +66,7 @@ export async function deliverBookingPin(input: {
   pin: string
   outboxId: string
   tenantName: string
+  expiresAt: string
 }): Promise<{ accepted: true; providerRef?: string } | { accepted: false; reason: string }> {
   const tenantName = input.tenantName.trim() || 'Corevo'
   if (input.channel === 'sms') {
@@ -92,6 +74,7 @@ export async function deliverBookingPin(input: {
       to: input.contact,
       message: `${tenantName}: Din verifieringskod är ${input.pin}. Koden gäller i 5 minuter.`,
       idempotencyKey: `outbox:${input.outboxId}`,
+      expiresAt: input.expiresAt,
     })
     return result.ok
       ? { accepted: true, providerRef: `giada:${result.id}` }

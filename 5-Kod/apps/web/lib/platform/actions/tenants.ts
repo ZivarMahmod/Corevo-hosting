@@ -11,12 +11,13 @@ import { parseModuleSelections, writeTenantVerticalAndModules } from '../tenant-
 import { parseServiceInputs } from '../onboarding-studio/services'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 import { isSelectableTheme } from '@/lib/platform/theme-palettes'
-import { uploadImage } from '@/lib/r2/upload'
-import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
+import { retireManagedImages, uploadManagedImage } from '@/lib/media/lifecycle'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
 import { reportActionError } from './observe'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
+import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
 /**
  * Onboarding-studions inline slug-koll (Dunder-fix 2026-07-11): tidigare
@@ -25,13 +26,11 @@ import { inviteRedirectUrl } from '@/lib/auth/invite'
  */
 export async function isSlugTaken(slug: string): Promise<boolean> {
   const { supabase } = await platformCtx()
-  const clean = slug.toLowerCase().replace(/[^a-z0-9]/g, '')
-  if (!clean) return false
-  const { data } = await supabase.from('tenants').select('id').eq('slug', clean).maybeSingle()
+  const checked = validateSlug(slug)
+  if (!checked.ok) return false
+  const { data } = await supabase.from('tenants').select('id').eq('slug', checked.slug).maybeSingle()
   return !!data
 }
-
-const DEFAULT_TZ = 'Europe/Stockholm'
 
 // Storefront theme (the five named layouts). Picking a theme writes settings.theme,
 // which the public layout reads → [data-theme] on the storefront root. The old A/B
@@ -62,19 +61,19 @@ type Branding = {
 // ── Step 1: create tenant (transaktion via cascade-rollback) ────────────────────
 /**
  * Create a tenant + default settings + primary location + owner/staff roles, then
- * (best-effort) invite the salon_admin. "Transaction": tenants is the parent and
+ * invite the required salon_admin. "Transaction": tenants is the parent and
  * every child FKs it ON DELETE CASCADE, so any mid-flow failure deletes the tenant
  * and the partial children vanish with it. All DB writes use the authed platform
  * client (RLS bypass via is_platform_admin); only the auth-user invite needs the
- * service role — which degrades gracefully when SUPABASE_SERVICE_ROLE_KEY is unset.
+ * service role. A missing service role fails closed and rolls the tenant back.
  */
 export async function createTenant(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, scope } = await platformCtx()
 
   const name = String(fd.get('name') ?? '').trim()
   const slugCheck = validateSlug(String(fd.get('slug') ?? ''))
-  // Owner (design "Ägare & roll"): name is invite-metadata only (public.users has no
-  // name column — frozen schema), email triggers the magic-link invite when set.
+  // Owner (design "Ägare & roll"): name is invite-metadata only; email is required
+  // because no later owner-invite product path exists.
   const ownerName = String(fd.get('owner_name') ?? '').trim().slice(0, 120)
   const ownerEmail = String(fd.get('owner_email') ?? '').trim().toLowerCase()
   // Salongens stad (#14): real public column. Empty → leave null (never write '').
@@ -122,7 +121,8 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // egna ord visas i wizard-UI:t (terminology); detta är server-sidans säkra fallback.
   if (!name) return { error: 'Ange ett namn.' }
   if (!slugCheck.ok) return { error: slugCheck.reason }
-  if (ownerEmail && !EMAIL_RE.test(ownerEmail)) return { error: 'Ogiltig e-postadress för ägaren.' }
+  if (!ownerEmail) return { error: 'Ange ägarens e-postadress.' }
+  if (!EMAIL_RE.test(ownerEmail)) return { error: 'Ogiltig e-postadress för ägaren.' }
   if (!theme) return { error: 'Välj en av de 12 godkända mallarna.' }
   const slug = slugCheck.slug
 
@@ -145,7 +145,9 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     .select('id, slug')
     .single()
   if (tErr || !tenant) {
-    if (tErr?.code === '23505') return { error: `Subdomänen "${slug}.corevo.se" är upptagen.` }
+    if (tErr?.code === '23505') {
+      return { error: `Subdomänen "${tenantStorefrontHost(slug)}" är upptagen.` }
+    }
     await reportActionError('createTenant.tenant_insert', tErr, { slug })
     return { error: GENERIC }
   }
@@ -158,13 +160,8 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
       .eq('status', 'provisioning') // never delete an ambiguously committed active tenant
   }
 
-  // Optional logo (Token-branding step): upload now that we have the tenant id for the
-  // R2 path. Best-effort — a failed/absent upload never blocks the atomic create.
+  // Optional logo is uploaded only after modules and required ownership are in place.
   const logo = fd.get('logo')
-  if (logo instanceof File && logo.size > 0) {
-    const res = await uploadImage(logo, `tenants/${tenantId}/branding`)
-    if (res.ok) initialBranding.logo_url = res.url
-  }
 
   // 2) tenant_settings (defaults + theme + accent/tagline branding + FLÖDE 2 billing).
   //    settings.theme is read by the public layout → [data-theme], so the new salon
@@ -195,6 +192,10 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     setup_fee_cents: setupFee,
     per_booking_fee_cents: perBookingFee,
     flat_monthly_fee_cents: flatMonthlyFee,
+    country_code: DEFAULT_TENANT_REGION.countryCode,
+    locale: DEFAULT_TENANT_REGION.locale,
+    currency: DEFAULT_TENANT_REGION.currency,
+    default_timezone: DEFAULT_TENANT_REGION.defaultTimeZone,
   })
   if (sErr) {
     await rollback()
@@ -207,7 +208,12 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   //    the tenant can never take a booking.
   const { data: primaryLocation, error: lErr } = await supabase
     .from('locations')
-    .insert({ tenant_id: tenantId, name, timezone: DEFAULT_TZ, is_primary: true })
+    .insert({
+      tenant_id: tenantId,
+      name,
+      timezone: DEFAULT_TENANT_REGION.defaultTimeZone,
+      is_primary: true,
+    })
     .select('id')
     .single()
   if (lErr || !primaryLocation) {
@@ -280,23 +286,20 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     }
   }
 
-  // 5) invite the owner (salon_admin) via magic-link (service role; graceful degrade
-  //    when key absent). Owner name rides along as auth user_metadata.full_name
+  // 5) invite the required owner (salon_admin) via magic-link. A missing service
+  //    role fails closed below. Owner name rides along as auth user_metadata.full_name
   //    (public.users has no name column — frozen schema).
   let inviteNote = ''
-  // Orphan-salong guard (CHECKLISTA W0 #2): non-null = the owner was requested but
-  // couldn't be created+linked → roll the whole tenant back so no half-provisioned
-  // "ghost salon" lingers. Only set when ownerEmail was given; owner-less onboarding
-  // never trips it.
+  // Orphan-salong guard (CHECKLISTA W0 #2): if the required owner cannot be
+  // created+linked, roll the whole tenant back so no half-provisioned tenant lingers.
   let ownerFailed: string | null = null
   if (ownerEmail) {
     const svc = createServiceClient()
     if (!svc) {
-      // No service role → we literally cannot create the owner's auth account. Don't
-      // leave an un-ownable salon behind; roll back below. Survivable: onboard WITHOUT
-      // an owner email and invite later, or ops sets SUPABASE_SERVICE_ROLE_KEY.
+      // No service role → we cannot create the required owner's auth account. Don't
+      // leave an unownable tenant behind; roll back below.
       ownerFailed =
-        'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa kunden utan ägar-epost och bjud in ägaren senare'
+        'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops)'
     } else {
       // Carry the salon name into invite user_metadata so the Supabase invite
       // template can greet with the salon's name ({{ .Data.tenant_name }}) instead
@@ -338,6 +341,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
         // efter apply. Håll den tillfälliga typbryggan vid just denna insert.
         const { error: uErr } = await supabase.from('users').insert(ownerProfile as never)
         if (uErr) {
+          await reportActionError('createTenant.owner_profile_insert', uErr, { tenantId })
           // The auth user WAS created but couldn't be linked (most likely the email
           // already has an account). Best-effort delete it so the rollback below doesn't
           // leave an orphan auth identity dangling without its tenant.
@@ -363,32 +367,29 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     }
   }
 
-  // Activation is the final transactional boundary. For partner customers this
-  // trigger qualifies the current license month only after the whole tenant and
-  // optional owner account exist. Failed onboarding remains safely deletable.
-  const { error: activateError } = await supabase
-    .from('tenants')
-    .update({ status: 'active' })
-    .eq('id', tenantId)
-    .eq('status', 'provisioning')
-  const serviceReader = createServiceClient()
-  const activationReader = serviceReader && typeof serviceReader.from === 'function'
-    ? serviceReader
-    : supabase
-  const { data: activated, error: activationReadError } = await activationReader
-    .from('tenants')
-    .select('id')
-    .eq('id', tenantId)
-    .eq('status', 'active')
-    .maybeSingle()
-  if (!activated && activationReadError) {
-    await reportActionError('createTenant.activation_reconcile', activationReadError, { tenantId })
-    return { error: 'Kundens aktivering fick ett oklart svar. Kontot lämnades orört för säker avstämning.' }
-  }
-  if (!activated) {
-    await rollback()
-    await reportActionError('createTenant.activate', activateError ?? new Error('activation_not_committed'), { tenantId })
-    return { error: GENERIC }
+  // The tenant now owns its module rows and required owner. Keep the optional logo
+  // best-effort, but route it through the same quota/lifecycle contract as all later
+  // uploads. A settings failure queues a newly-created asset for cleanup.
+  if (logo instanceof File && logo.size > 0) {
+    const res = await uploadManagedImage(
+      supabase,
+      tenantId,
+      logo,
+      'branding',
+    )
+    if (res.ok) {
+      initialBranding.logo_url = res.url
+      const { error: logoError } = await supabase
+        .from('tenant_settings')
+        .update({ branding: initialBranding as unknown as Json })
+        .eq('tenant_id', tenantId)
+      if (logoError) {
+        if (!res.duplicate) {
+          await retireManagedImages(supabase, tenantId, [res.url])
+        }
+        await reportActionError('createTenant.logo_update', logoError, { tenantId })
+      }
+    }
   }
 
   await logPlatformAction(supabase, {
@@ -398,31 +399,16 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     meta: { slug, name, theme, booking_variant: bookingVariant, vertical_id: verticalKey },
   })
 
-  // goal-32 F2 — couple <slug>.corevo.se to the worker. The DURABLE coupling is
-  // mechanism (A): this tenant row is now in the DB, so scripts/gen-deploy-config.mjs
-  // includes <slug>.corevo.se in the NEXT deploy and every deploy after re-asserts it
-  // (it can never be detached). This call ALSO tries to attach it IMMEDIATELY (no
-  // deploy wait) via the Workers Domains API — but it is best-effort and DORMANT in
-  // prod (fail-closed without a scoped CF token + DOMAIN_AUTOATTACH_ENABLED). It must
-  // NEVER block or fail onboarding: a miss just means the domain goes live at the next
-  // deploy instead of instantly. Idempotent + add-only — never removes anything.
-  try {
-    await attachWorkerSubdomain(slug)
-  } catch {
-    // swallow — domain still rides the next deploy via the generator.
-  }
-
   revalidatePath('/platform')
   // The customer list now lives in the shared /kunder layout. Invalidate that
   // boundary explicitly so a create performed on /kunder/ny cannot leave the
   // persistent master pane stale during the next client navigation.
   revalidatePath('/kunder', 'layout')
-  // HONEST status (W6): the tenant is created + the booking engine + owner admin work
-  // immediately, but the PUBLIC host <slug>.corevo.se is NOT auto-attached (runtime
-  // auto-attach is dormant + the next-deploy path was retired in fix-35 → connecting the
-  // domain is a separate add-domain.mjs step). So don't claim it's "live på <slug>" here.
+  // Provisioning and publishing are deliberately separate. The canonical storefront
+  // already rides the isolated *.boka.corevo.se wildcard, but public RLS keeps this
+  // tenant hidden until the DB-owned readiness gate transitions it to active.
   return {
-    success: `Kund "${name}" skapad (${slug}.corevo.se).${inviteNote}`,
+    success: `Kund "${name}" skapad under konfiguration (${tenantStorefrontHost(slug)}).${inviteNote}`,
     tenant: { id: tenantId, slug },
   }
 }

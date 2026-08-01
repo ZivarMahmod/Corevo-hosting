@@ -73,6 +73,29 @@ describe('Modal portal host', () => {
     expect(document.activeElement).toBe(document.querySelector('[aria-label="Sök kund"]'))
   })
 
+  it('återför fokus till den ursprungliga anslutna öppnaren vid unmount', async () => {
+    const opener = document.createElement('button')
+    opener.textContent = 'Öppna bokning'
+    shell.insertBefore(opener, container)
+    opener.focus()
+
+    await act(async () => {
+      root.render(
+        <Modal title="Bokning" onClose={() => undefined}>
+          Bokningsdetaljer
+        </Modal>,
+      )
+    })
+    expect(document.activeElement).not.toBe(opener)
+
+    await act(async () => {
+      root.render(null)
+    })
+
+    expect(opener.isConnected).toBe(true)
+    expect(document.activeElement).toBe(opener)
+  })
+
   it('följer visualViewport när mobiltangentbordet ändrar den synliga höjden', async () => {
     const originalViewport = Object.getOwnPropertyDescriptor(window, 'visualViewport')
     const viewport = new EventTarget() as EventTarget & {

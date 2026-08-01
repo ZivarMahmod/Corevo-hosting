@@ -6,12 +6,16 @@ import { readBookingMode, readPickerMode, readStaffAvatarMode } from '@/lib/plat
 import {
   BookingWizard,
   type WizardService,
-  type WizardLocation,
 } from '@/components/booking/BookingWizard'
+import { getWizardLocations } from '@/components/storefront/wizard-services'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { branschBokning } from '@/components/storefront/bransch-copy'
 import { getTenantModuleStates } from '@/lib/tenant-modules'
 import { bookingModuleAccess } from '@/components/storefront/layouts/booking-access'
+import {
+  resolveBookingSearchParams,
+  resolveBookingStaffSearchParam,
+} from '@/lib/booking/preselection'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Boka tid' }
@@ -23,6 +27,7 @@ export const metadata: Metadata = { title: 'Boka tid' }
  *   /boka?personal=<staffId>          → medarbetaren förvald i "Hos vem?"-steget
  *   /boka?personal=<id>&tjanst=<id>   → + tjänsten förvald (wizarden startar på steg 2)
  *   /boka?tjanst=<serviceId>          → bara tjänsten (prisradens länk)
+ *   /boka?plats=<locationId>          → aktiv plats förvald
  *
  * Parametrarna är REN UI-FÖRIFYLLNAD och valideras av wizarden mot den data den redan
  * har (okänt id / personal som inte kan utföra tjänsten → tyst 'any'). Servern validerar
@@ -36,7 +41,7 @@ export default async function BokaPage({
 }) {
   const bundle = await currentTenant()
   if (!bundle) notFound()
-  const { tenant } = bundle
+  const { tenant, settings } = bundle
   const bookingAccess = bookingModuleAccess(await getTenantModuleStates(tenant.id, tenant.slug))
   if (bookingAccess === 'hidden') notFound()
 
@@ -57,12 +62,10 @@ export default async function BokaPage({
   }
 
   const sp = await searchParams
-  const one = (v: string | string[] | undefined): string | null =>
-    typeof v === 'string' && v.trim() ? v.trim() : null
-  const preselectStaffId = one(sp.personal)
-  const preselectServiceId = one(sp.tjanst)
-
-  const services = await getServices(tenant.id, tenant.slug)
+  const [services, locations] = await Promise.all([
+    getServices(tenant.id, tenant.slug),
+    getWizardLocations(tenant.id, tenant.slug),
+  ])
 
   const supabase = createPublicClient()
   const [
@@ -70,7 +73,6 @@ export default async function BokaPage({
     { data: links },
     { data: hours },
     { data: settingsRow },
-    { data: locationRows },
   ] = await Promise.all([
       // avatar_url (0049): barberarkortets foto-läge; null → initialer-fallback.
       supabase.from('staff').select('id, title, avatar_url').eq('tenant_id', tenant.id).eq('active', true),
@@ -84,15 +86,6 @@ export default async function BokaPage({
       // bundlen. Osatt/okänd → readBookingMode faller tillbaka på 'wizard' (Variant 3
       // = exakt dagens flöde).
       supabase.from('tenant_settings').select('settings').eq('tenant_id', tenant.id).maybeSingle(),
-      // Aktiva platser (VÅG 4b): location-picker i wizarden. Primär först. En-plats-
-      // salonger → picker döljs och auto-väljs i klienten (UX oförändrad).
-      supabase
-        .from('locations')
-        .select('id, name, is_primary')
-        .eq('tenant_id', tenant.id)
-        .eq('active', true)
-        .order('is_primary', { ascending: false })
-        .order('name', { ascending: true }),
     ])
   const mode = readBookingMode(settingsRow?.settings)
   // Redesign-prefs (design-paketet): tid-väljare + barberarbild-läge, samma
@@ -101,12 +94,6 @@ export default async function BokaPage({
   const staffAvatarMode = readStaffAvatarMode(settingsRow?.settings)
   // Bransch-resolved staff noun (default 'Frisör') for the customer-facing wizard.
   const staffNoun = await resolveStaffNoun(tenant.vertical_id)
-  const locations: WizardLocation[] = (locationRows ?? []).map((l) => ({
-    id: l.id,
-    name: l.name,
-    isPrimary: l.is_primary,
-  }))
-
   // staff_id → Set<location_id> (distinct, hoppa över null) — samma karta som
   // wizard-services.ts bygger, så båda /boka-vägarna scopar personal likadant.
   const locationsByStaff = new Map<string, Set<string>>()
@@ -139,12 +126,25 @@ export default async function BokaPage({
 
   const wizardServices: WizardService[] = services.map((s) => ({
     id: s.id,
+    locationId: s.location_id,
     name: s.name,
     description: s.description,
     durationMin: s.duration_min,
     priceCents: s.price_cents,
     staff: staffByService[s.id] ?? [],
   }))
+  // Queryförval är aldrig en egen trust path. Bara id:n som finns bland de redan
+  // tenant-skopade AKTIVA raderna ovan får nå klienten. Live-dialekten är
+  // `plats`/`tjanst`; designpaketets `location`/`service` accepteras som alias.
+  const preselection = resolveBookingSearchParams({
+    searchParams: sp,
+    locations,
+    services: wizardServices,
+  })
+  const preselectStaffId = resolveBookingStaffSearchParam({
+    searchParams: sp,
+    staff: [...staffById.values()],
+  })
 
   return (
     <section className="section">
@@ -162,7 +162,12 @@ export default async function BokaPage({
           pickerMode={pickerMode}
           staffAvatarMode={staffAvatarMode}
           brandName={tenant.name}
-          preselectServiceId={preselectServiceId}
+          countryCode={settings.countryCode}
+          locale={settings.locale}
+          currency={settings.currency}
+          defaultTimeZone={settings.defaultTimeZone}
+          preselectLocationId={preselection.locationId}
+          preselectServiceId={preselection.serviceId}
           preselectStaffId={preselectStaffId}
         />
       </div>

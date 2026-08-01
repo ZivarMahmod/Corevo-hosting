@@ -301,8 +301,9 @@ export function CalytrixGalleri({ items, content }: ThemeGalleriViewProps) {
               <div
                 key={g.id}
                 className={styles.cxGalTile}
-                role="img"
-                aria-label={g.imageAlt ?? g.caption ?? ''}
+                role={g.decorative ? undefined : 'img'}
+                aria-label={g.decorative ? undefined : (g.imageAlt ?? '')}
+                aria-hidden={g.decorative || undefined}
                 style={{ backgroundImage: `url(${g.imageUrl})` }}
               />
             ) : null,

@@ -1,15 +1,15 @@
 # PIN-verifierad bokning med SIM och e-postfallback
 
-Status: godkänd design 2026-07-21
+Status: godkänd design 2026-07-21, reviderad och fastställd med Zivar 2026-07-23
 Aktuell leverans: Corevos befintliga Giada/Huawei/SIM-spår
 Senare transport: Telia direkt REST eller SMPP bakom samma gatewaykontrakt
 
 ## Mål
 
 Kunden ska aldrig kunna skapa en publik bokning innan den angivna kontaktvägen
-har verifierats med en sexsiffrig PIN. När Giada och modemet är friska visas
-telefonnummer och PIN skickas direkt via SMS. När gatewayen är nere visas i
-stället e-post och samma PIN-flöde körs via Corevos befintliga e-posttransport.
+har verifierats med en fyrsiffrig PIN. Varje tenant väljer ett av tre lägen:
+endast SMS, SMS med e-postreserv eller endast e-post. Befintliga tenants får
+SMS med e-postreserv som bakåtkompatibel standard.
 
 En godkänd PIN skapar bokningen atomiskt och skickar bokningsbekräftelsen direkt
 via samma kanal. Den befintliga 15-minuterscronen fortsätter enbart att planera
@@ -20,9 +20,11 @@ bekräftelse.
 
 Den här leveransen omfattar:
 
-- automatisk växling mellan SMS och e-post innan kontaktfältet visas;
+- tenantstyrt kanalval från samma bokningsinställning i kundadmin och kundkort;
+- automatisk växling mellan SMS och e-post innan kontaktfältet visas när
+  tenantens läge är SMS med e-postreserv;
 - fem minuters serverägt slot-hold;
-- sexsiffrig PIN, fem verifieringsförsök och omskickscooldown;
+- fyrsiffrig PIN, tre verifieringsförsök och omskickscooldown;
 - ingen bokning före verifiering;
 - omedelbar PIN och omedelbar bekräftelse i samma befintliga Worker-request;
 - Corevos enda `notifications_outbox` som audit-/leveranssanning;
@@ -56,7 +58,7 @@ Välj tjänst -> person -> tid -> kontrollera Giada
                        |                           |
                        +-------------+-------------+
                                      |
-                               skriv sex siffror
+                               skriv fyra siffror
                                      |
                          fel/utgången  |  korrekt
                                       v
@@ -65,30 +67,41 @@ Välj tjänst -> person -> tid -> kontrollera Giada
 
 ### Kontaktsteget
 
-Webbläsaren frågar aldrig Giada direkt. En server action gör en kort
-server-till-server-kontroll mot `https://sms.corevo.se/health` och kräver:
+Webbläsaren frågar aldrig Giada direkt. Servern läser först
+`tenant_settings.settings.booking.verificationMode` och tillämpar:
+
+- `sms_only`: frisk Giada ger SMS; annars pausas verifieringen utan e-post;
+- `sms_with_email_fallback`: frisk Giada ger SMS; annars visas e-post;
+- `email_only`: e-post visas direkt utan Giada-kontroll.
+
+När SMS får användas gör en server action en kort server-till-server-kontroll
+mot `https://sms.corevo.se/health` och kräver:
 
 - HTTP 200 inom 1,5 sekunder;
 - `status = ok`;
 - `modem_online = true`;
 - färsk modemstatus.
 
-Om alla villkor är sanna visas namn + telefon. Annars visas namn + e-post.
+Om alla villkor är sanna visas namn + telefon. Annars följs tenantens val:
+e-postreserv eller ett tydligt tillfälligt stopp.
 Kontrollen kostar ingen ny Worker-invocation; den är en utgående subrequest i
 den sidrequest som redan körs.
 
 Hälsa är en ögonblicksbild. Därför skickas SMS-PIN med
 `require_online=true`. Om Giada svarar att modemet hunnit gå ned skapas ingen
-SMS-körad, SMS-challengen ogiltigförklaras och samma vy byter till e-post utan
-att kunden tappar vald tjänst, person eller tid.
+SMS-körad. I reservläget byter samma vy till e-post utan att kunden tappar vald
+tjänst, person eller tid. I endast-SMS-läget visas stoppet och ingen e-post
+skickas.
 
 ### PIN-vyn
 
-- Sex numeriska positioner med ett semantiskt `input` och visuell uppdelning.
+- Fyra numeriska positioner med ett semantiskt `input` och visuell uppdelning.
 - Maskerad destination, exempelvis `07•• ••• ••19` eller `zi•••@example.se`.
 - ”Ändra nummer/e-post” ogiltigförklarar aktuell challenge.
 - Omskick tillåts efter 30 sekunder och ogiltigförklarar alltid föregående PIN.
-- PIN gäller i fem minuter och högst fem felaktiga försök.
+- PIN gäller i fem minuter och högst tre felaktiga försök.
+- Efter tredje felet spärras koden. Kunden begär en ny kod; den gamla kan aldrig
+  användas igen. Bokningstiden behålls bara medan det befintliga holdet gäller.
 - Fel, utgången PIN eller uttömda försök skapar ingen bokning.
 - När holdet går ut återgår kunden till tidsvalet med en tydlig förklaring.
 
@@ -113,7 +126,7 @@ booking_verification_challenges
   guest_note
   pin_hmac              HMAC-SHA-256, aldrig klar PIN
   attempts
-  max_attempts          5
+  max_attempts          3
   expires_at            skapad + 5 minuter
   consumed_at
   invalidated_at
@@ -192,7 +205,7 @@ Meddelandet till `/api/v1/messages` innehåller:
 ```json
 {
   "to": "+46701234567",
-  "message": "Din kod är 123456",
+  "message": "Din kod är 1234",
   "idempotency_key": "outbox:uuid",
   "customer_ref": "challenge-or-booking-uuid",
   "require_online": true,
@@ -272,8 +285,14 @@ Telia-spåret kräver inget SIM per tenant.
 ## Acceptans
 
 - [ ] När Giada/modemet är friskt visas telefon och SMS-PIN accepteras direkt.
-- [ ] När Giada/modemet är nere visas e-post innan kunden skriver kontaktuppgift.
-- [ ] Om SMS faller mellan health och send byter samma intent till e-post.
+- [ ] `sms_only` visar telefon när Giada är frisk och stoppar utan e-post när
+      Giada är nere.
+- [ ] `sms_with_email_fallback` visar e-post innan kontaktuppgift när Giada är nere.
+- [ ] `email_only` visar e-post utan Giada-kontroll.
+- [ ] Om SMS faller mellan health och send byter samma intent till e-post endast
+      i reservläget.
+- [ ] Kundadmin och superadminens kundkort läser och sparar samma tenantvärde.
+- [ ] PIN är exakt fyra siffror och tredje felaktiga försöket spärrar challengen.
 - [ ] Ingen bokning finns före korrekt PIN.
 - [ ] Fel, utgången, gammal eller förbrukad PIN skapar ingen bokning.
 - [ ] Ny PIN ogiltigförklarar tidigare PIN.

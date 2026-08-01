@@ -50,7 +50,7 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     const cfg = reducer(initStudioCfg('edit'), { type: 'applyBranch', key: 'frisor' })
     expect(cfg.branch).toBe('frisor')
     expect(cfg.theme).toBe('aurora') // vertical.defaultTemplate
-    expect(cfg.moduleStates.booking).toBe('live')
+    expect(cfg.moduleStates.booking).toBeUndefined()
     expect(cfg.moduleStates.lojalitet).toBe('live')
   })
 
@@ -127,8 +127,7 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
     expect(fd.get('hero_lede')).toBe('Min ingress')
   })
 
-  it('floors booking to live in the modules JSON even when stored off', () => {
-    // setModule booking → off, then build: the FormData modules map floors it to live.
+  it('preserves an explicit booking=off pick in the modules JSON', () => {
     const cfg = reducer(applyBranch(initStudioCfg('salvia'), 'frisor', presets), {
       type: 'setModule',
       key: 'booking',
@@ -136,8 +135,13 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
     })
     const fd = buildCreateTenantFormData(cfg)
     const modules = JSON.parse(String(fd.get('modules'))) as Record<string, string>
-    expect(modules.booking).toBe('live')
+    expect(modules.booking).toBe('off')
     expect(modules.lojalitet).toBe('live')
+  })
+
+  it('floors an unset booking module to live in the modules JSON', () => {
+    const modules = JSON.parse(String(buildCreateTenantFormData(initStudioCfg('salvia')).get('modules'))) as Record<string, string>
+    expect(modules.booking).toBe('live')
   })
 
   it('keeps booking at paused when explicitly paused', () => {

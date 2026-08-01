@@ -11,6 +11,10 @@ const worker = readFileSync(resolve(appRoot, 'custom-worker.mjs'), 'utf8')
 const deployWorkflow = readFileSync(resolve(repoRoot, '.github', 'workflows', 'deploy.yml'), 'utf8')
 const ciWorkflow = readFileSync(resolve(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
 const cronWorkflow = readFileSync(resolve(repoRoot, '.github', 'workflows', 'cron-booking.yml'), 'utf8')
+const refundConcurrency = readFileSync(resolve(
+  repoRoot, '5-Kod', 'supabase', 'tests',
+  'customer_portal_cancellation_refunds_0121_concurrency_test.sh',
+), 'utf8')
 
 describe('Cloudflare primary scheduler wiring', () => {
   it('wraps OpenNext and schedules production reminders every 15 minutes', () => {
@@ -57,6 +61,12 @@ describe('Cloudflare primary scheduler wiring', () => {
     assert.match(ciWorkflow, /docker exec -i "\$db_container" psql/)
     assert.match(ciWorkflow, /ON_ERROR_STOP=1/)
     assert.match(ciWorkflow, /supabase\/tests\/\*_test\.sql/)
+    assert.match(ciWorkflow, /customer_portal_cancellation_refunds_0121_concurrency_test\.sh/)
+    assert.ok((refundConcurrency.match(/docker exec -i "\$db_container" psql/g) ?? []).length >= 4)
+    assert.match(refundConcurrency, /FOR UPDATE|pg_advisory_xact_lock/i)
+    assert.match(refundConcurrency, /claim_payment_refund_jobs/)
+    assert.match(refundConcurrency, /customer_portal_cancel_booking/)
+    assert.match(refundConcurrency, /finalize_customer_booking_rebook/)
   })
 
   it('puts hard network and job timeouts around the fallback cron', () => {

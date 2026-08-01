@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useMemo, useState, useTransition } from 'react'
+import { useActionState, useMemo, useRef, useState, useTransition } from 'react'
 import { getAvailableSlots, type SlotOption } from '@/app/boka/actions'
 import { rebookBooking, type BookingActionState } from '@/lib/kund/actions'
 import styles from './kund.module.css'
@@ -18,9 +18,11 @@ function ymd(d: Date): string {
 export function RebookPanel({
   bookingId,
   serviceId,
+  locationId,
 }: {
   bookingId: string
   serviceId: string
+  locationId: string
 }) {
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<string | null>(null)
@@ -29,6 +31,7 @@ export function RebookPanel({
   const [slot, setSlot] = useState<SlotOption | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const slotRequestRef = useRef(0)
 
   const [state, formAction, submitting] = useActionState<BookingActionState, FormData>(
     rebookBooking,
@@ -54,11 +57,13 @@ export function RebookPanel({
     )
 
   function pickDate(d: string) {
+    const request = ++slotRequestRef.current
     setDate(d)
     setSlot(null)
     setLoadError(null)
     startTransition(async () => {
-      const res = await getAvailableSlots(serviceId, null, d)
+      const res = await getAvailableSlots(serviceId, null, d, locationId)
+      if (request !== slotRequestRef.current) return
       if (res.ok) {
         setSlots(res.slots)
         setTimeZone(res.timeZone)
@@ -131,7 +136,14 @@ export function RebookPanel({
         <button type="submit" className="btn-primary" disabled={!slot || submitting}>
           {submitting ? 'Bokar om…' : 'Bekräfta ny tid'}
         </button>
-        <button type="button" className={styles.btnSecondary} onClick={() => setOpen(false)}>
+        <button
+          type="button"
+          className={styles.btnSecondary}
+          onClick={() => {
+            slotRequestRef.current += 1
+            setOpen(false)
+          }}
+        >
           Avbryt
         </button>
       </form>

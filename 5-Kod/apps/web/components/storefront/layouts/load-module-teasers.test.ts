@@ -58,6 +58,8 @@ describe('loadLayoutModuleTeasers reachability contract', () => {
   beforeEach(() => {
     vi.stubEnv('COREVO_COMMERCE_RELEASE', 'settlement-v1-verified')
     vi.stubEnv('COREVO_COMMERCE_TENANT_IDS', 'tenant-1,tenant-errors')
+    vi.stubEnv('COREVO_GIFT_CARD_VALUE_RELEASE', 'gift-value-v1-verified')
+    vi.stubEnv('COREVO_GIFT_CARD_TENANT_IDS', 'tenant-1,tenant-errors')
     mocks.states = {}
     mocks.products = []
     mocks.posts = []

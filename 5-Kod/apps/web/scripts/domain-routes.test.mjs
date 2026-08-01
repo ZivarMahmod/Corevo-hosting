@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { parse as parseJsonc } from 'jsonc-parser'
 import {
@@ -8,7 +9,10 @@ import {
   normalizeSlug,
   assertSafeSlug,
   patternForSlug,
+  RESERVED,
 } from './domain-routes.mjs'
+
+const CANONICAL_RESERVED = 'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(',')
 
 // A wrangler.jsonc shape with COMMENTS + top-level routes + an empty staging.routes.
 const WR = `{
@@ -18,6 +22,7 @@ const WR = `{
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
     { "pattern": "minbooking.corevo.se", "custom_domain": true },
+    { "pattern": "mina.corevo.se", "custom_domain": true },
     { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" }
   ],
   // ── env block comment ──
@@ -38,8 +43,8 @@ describe('applyCustomDomainEdit', () => {
     // comments survive (the FX-14 non-negotiable)
     expect(text).toContain('top comment that MUST survive')
     expect(text).toContain('env block comment')
-    // the 3 fixed hosts + boka wildcard untouched
-    for (const p of ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', '*.boka.corevo.se/*']) {
+    // the fixed hosts + boka wildcard untouched
+    for (const p of ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se', '*.boka.corevo.se/*']) {
       expect(text).toContain(p)
     }
   })
@@ -67,7 +72,8 @@ describe('applyCustomDomainEdit', () => {
   })
 
   it('REFUSES reserved/POS labels', () => {
-    for (const r of ['booking', 'admin', 'kiosk', 'superbooking', 'boka', 'www']) {
+    expect([...RESERVED]).toEqual(CANONICAL_RESERVED)
+    for (const r of RESERVED) {
       expect(() => applyCustomDomainEdit(WR, r)).toThrow(/reserved\/POS/)
     }
   })
@@ -82,13 +88,14 @@ describe('applyCustomDomainEdit', () => {
 describe('readCustomDomainPatternsFromText', () => {
   it('returns custom_domain patterns and EXCLUDES the zone_name wildcard', () => {
     const out = readCustomDomainPatternsFromText(WR)
-    expect(out).toEqual(['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se'])
+    expect(out).toEqual(['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se'])
     expect(out).not.toContain('*.boka.corevo.se/*')
   })
 })
 
-describe('fixed-route protection (the *.boka wildcard)', () => {
-  it('REQUIRED_FIXED_ROUTES includes the storefront wildcard (which is NOT a custom_domain)', () => {
+describe('fixed-route protection (customer portal + *.boka wildcard)', () => {
+  it('REQUIRED_FIXED_ROUTES includes mina.corevo.se and the storefront wildcard', () => {
+    expect(REQUIRED_FIXED_ROUTES).toContain('mina.corevo.se')
     expect(REQUIRED_FIXED_ROUTES).toContain('*.boka.corevo.se/*')
     // and the custom_domain reader does NOT see it → it must be asserted via all-routes
     expect(readCustomDomainPatternsFromText(WR)).not.toContain('*.boka.corevo.se/*')
@@ -113,6 +120,7 @@ describe('applyCustomDomainEdit — offset-math edge cases', () => {
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
     { "pattern": "minbooking.corevo.se", "custom_domain": true },
+    { "pattern": "mina.corevo.se", "custom_domain": true },
     { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" },
   ]
 }
@@ -130,6 +138,7 @@ describe('applyCustomDomainEdit — offset-math edge cases', () => {
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
     { "pattern": "minbooking.corevo.se", "custom_domain": true },
+    { "pattern": "mina.corevo.se", "custom_domain": true },
     { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" } // the storefront wildcard
   ]
 }
@@ -141,13 +150,53 @@ describe('applyCustomDomainEdit — offset-math edge cases', () => {
   })
 })
 
+describe('wrangler production/staging contract', () => {
+  const cfg = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'))
+
+  it('binds mina.corevo.se only to the production worker', () => {
+    expect(cfg.routes).toContainEqual({ pattern: 'mina.corevo.se', custom_domain: true })
+    expect(cfg.env.staging.routes).toEqual([])
+  })
+
+  it('declares the customer portal host in both runtime environments', () => {
+    expect(cfg.vars.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST).toBe('mina.corevo.se')
+    expect(cfg.env.staging.vars.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST).toBe('mina.corevo.se')
+  })
+})
+
+describe('customer portal environment mirrors', () => {
+  const envExample = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8')
+  const envProduction = readFileSync(new URL('../.env.production', import.meta.url), 'utf8')
+  const turbo = parseJsonc(readFileSync(new URL('../../../turbo.json', import.meta.url), 'utf8'))
+  const wrangler = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8')
+
+  it('keeps the customer portal host and reserved slug in both tracked env files', () => {
+    for (const source of [envExample, envProduction]) {
+      expect(source).toMatch(/^NEXT_PUBLIC_CUSTOMER_PORTAL_HOST=mina\.corevo\.se$/m)
+      const reserved = /^NEXT_PUBLIC_RESERVED_SUBDOMAINS=(.+)$/m.exec(source)?.[1]?.split(',') ?? []
+      expect(reserved).toContain('mina')
+    }
+  })
+
+  it('passes the customer portal host through Turborepo', () => {
+    expect(turbo.globalPassThroughEnv).toContain('NEXT_PUBLIC_CUSTOMER_PORTAL_HOST')
+  })
+
+  it('declares only an empty server-only HMAC placeholder and passes it through Turborepo', () => {
+    expect(envExample).toMatch(/^CUSTOMER_PORTAL_HMAC_KEY=$/m)
+    expect(turbo.globalPassThroughEnv).toContain('CUSTOMER_PORTAL_HMAC_KEY')
+    expect(envProduction).not.toMatch(/^CUSTOMER_PORTAL_HMAC_KEY=/m)
+    expect(wrangler).not.toContain('CUSTOMER_PORTAL_HMAC_KEY')
+  })
+})
+
 describe('slug helpers', () => {
   it('normalizeSlug + patternForSlug', () => {
     expect(normalizeSlug('  Foo ')).toBe('foo')
     expect(patternForSlug('foo')).toBe('foo.corevo.se')
   })
   it('assertSafeSlug throws on reserved/invalid', () => {
-    expect(() => assertSafeSlug('boka')).toThrow()
+    for (const reserved of RESERVED) expect(() => assertSafeSlug(reserved)).toThrow()
     expect(() => assertSafeSlug('a.b')).toThrow()
     expect(() => assertSafeSlug('ok-salon')).not.toThrow()
   })

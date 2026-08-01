@@ -65,6 +65,11 @@ export {
   saveTenantStaffProfile,
 } from './actions/storefront-extras'
 // goal-64: galleriet (gallery_items, 0057) — kundens egna bilder ur bildbiblioteket.
-export { createGalleryItem, updateGalleryItem, deleteGalleryItem } from './actions/galleri'
+export {
+  createGalleryItem,
+  updateGalleryItem,
+  deleteGalleryItem,
+  reorderGalleryItems,
+} from './actions/galleri'
 export { addCustomDomain, verifyCustomDomain, removeCustomDomain } from './actions/domains'
 export type { ActionState, DomainActionState } from './actions/shared'

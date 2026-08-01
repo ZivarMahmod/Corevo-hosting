@@ -63,7 +63,15 @@ const row: ClaimedNotificationOutboxRow = {
   delivered_at: null,
 }
 
-function service(status = 'confirmed') {
+function service(
+  status = 'confirmed',
+  region = {
+    country_code: 'SE',
+    locale: 'sv-SE',
+    currency: 'SEK',
+    default_timezone: 'Europe/Stockholm',
+  },
+) {
   const booking = {
     id: row.booking_id,
     tenant_id: row.tenant_id,
@@ -73,7 +81,11 @@ function service(status = 'confirmed') {
     services: { name: 'Klippning' },
     staff: { title: 'Alex' },
     locations: { timezone: 'Europe/Stockholm' },
-    tenants: { name: 'Demo', slug: 'demo' },
+    tenants: {
+      name: 'Demo',
+      slug: 'demo',
+      tenant_settings: region,
+    },
     customers: {
       id: row.customer_id,
       tenant_id: row.tenant_id,
@@ -126,6 +138,29 @@ beforeEach(() => {
 })
 
 describe('prepareBookingDelivery', () => {
+  it('fails closed for an unsupported tenant locale before preparing customer copy', async () => {
+    mocks.createServiceClient.mockReturnValue(service('confirmed', {
+      country_code: 'SE',
+      locale: 'en-US',
+      currency: 'SEK',
+      default_timezone: 'Europe/Stockholm',
+    }))
+
+    await expect(prepareBookingDelivery(row)).resolves.toEqual({
+      ok: false,
+      reason: 'payload_invalid',
+    })
+  })
+
+  it('uses the tenant locale and the location timezone in customer copy', async () => {
+    const prepared = await prepareBookingDelivery(row)
+
+    expect(prepared).toMatchObject({ ok: true, channel: 'email' })
+    if (!prepared.ok || prepared.channel !== 'email') throw new Error('expected email')
+    expect(prepared.html).toContain('onsdag 2 januari')
+    expect(prepared.html).toContain('kl. 11:00')
+  })
+
   it('describes a pending request as received and explicitly not yet confirmed', async () => {
     mocks.createServiceClient.mockReturnValue(service('pending'))
     const prepared = await prepareBookingDelivery({

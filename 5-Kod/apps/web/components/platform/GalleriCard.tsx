@@ -8,6 +8,7 @@ import {
   type ActionState,
 } from '@/lib/platform/actions'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
+import { GALLERY_RATIOS, type GalleryAdminRow } from '@/lib/admin/galleri/types'
 import styles from './platform.module.css'
 
 /**
@@ -21,22 +22,6 @@ import styles from './platform.module.css'
  * Kompakt <details>-mönster som resten av kundkortet (ServicesCard): en rad per bild,
  * öppna för att redigera.
  */
-
-/** En galleri-rad som kundkortet redigerar (platt vy av gallery_items + dess foto). */
-export type GalleryAdminRow = {
-  id: string
-  assetId: string | null
-  imageUrl: string | null
-  caption: string | null
-  tag: string | null
-  yearLabel: string | null
-  aspectRatio: string | null
-  sortOrder: number
-  active: boolean
-}
-
-/** Ratio-valen mallarna faktiskt ritar (masonry-rytmen i .dc.html-paketen). */
-const RATIOS = ['3/2', '4/5', '3/4', '1/1', '16/9'] as const
 
 function Feedback({ state }: { state: ActionState }) {
   if (state.error)
@@ -70,7 +55,7 @@ function ItemFields({
       {withAsset ? (
         <label className={styles.field}>
           <span>Bild (ur bildbiblioteket)</span>
-          <select name="assetId" required defaultValue="">
+          <select name="asset_id" required defaultValue="">
             <option value="" disabled>
               Välj bild…
             </option>
@@ -82,6 +67,23 @@ function ItemFields({
           </select>
         </label>
       ) : null}
+      {!withAsset ? (
+        <input type="hidden" name="asset_id" value={item?.assetId ?? ''} />
+      ) : null}
+      <label className={styles.field}>
+        <span>Bildbeskrivning i galleriet</span>
+        <input
+          type="text"
+          name="alt_override"
+          maxLength={500}
+          defaultValue={item?.altOverride ?? ''}
+          placeholder="Beskriv det viktiga i just det här sammanhanget"
+        />
+      </label>
+      <label className={styles.field} style={{ flexDirection: 'row', gap: 8 }}>
+        <input type="checkbox" name="decorative" defaultChecked={item?.decorative ?? false} />
+        <span>Dekorativ bild (saknar informationsbärande innehåll)</span>
+      </label>
       <label className={styles.field}>
         <span>Bildtext</span>
         <input
@@ -116,23 +118,13 @@ function ItemFields({
         <span>Bildformat</span>
         <select name="aspect_ratio" defaultValue={item?.aspectRatio ?? ''}>
           <option value="">Mallens standard</option>
-          {RATIOS.map((r) => (
+          {GALLERY_RATIOS.map((r) => (
             <option key={r} value={r}>
               {r}
             </option>
           ))}
         </select>
         <span className={styles.hint}>Styr bildens höjd i galleriets rutnät.</span>
-      </label>
-      <label className={styles.field}>
-        <span>Ordning</span>
-        <input
-          type="number"
-          name="sort_order"
-          min={0}
-          defaultValue={item?.sortOrder ?? 0}
-          style={{ maxWidth: 110 }}
-        />
       </label>
     </>
   )
@@ -196,7 +188,7 @@ function GalleryRow({
 
       <form action={saveAction} className={styles.form} style={{ gap: 6, marginTop: 10 }}>
         <input type="hidden" name="tenantId" value={tenantId} />
-        <input type="hidden" name="itemId" value={item.id} />
+        <input type="hidden" name="id" value={item.id} />
         <ItemFields assets={assets} item={item} withAsset={false} />
         <label className={styles.field} style={{ flexDirection: 'row', gap: 8 }}>
           <input type="checkbox" name="active" defaultChecked={item.active} />
@@ -212,7 +204,7 @@ function GalleryRow({
 
       <form action={delAction} className={styles.actions} style={{ marginTop: 6 }}>
         <input type="hidden" name="tenantId" value={tenantId} />
-        <input type="hidden" name="itemId" value={item.id} />
+        <input type="hidden" name="id" value={item.id} />
         {armed ? (
           <>
             <button type="submit" className={styles.btnDanger} disabled={delPending}>
@@ -274,6 +266,7 @@ export function GalleriCard({
           </summary>
           <form action={addAction} className={styles.form} style={{ gap: 6, marginTop: 10 }}>
             <input type="hidden" name="tenantId" value={tenantId} />
+            <input type="hidden" name="active" value="on" />
             <ItemFields assets={assets} withAsset />
             <div className={styles.actions}>
               <button type="submit" className="btn-primary" disabled={addPending}>

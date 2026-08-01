@@ -85,4 +85,10 @@ describe('06 Frisöradmin mobil PWA contract', () => {
       }).allowed,
     ).toBe(false)
   })
+
+  it('uses the existing branch-neutral staff noun on the personal profile', () => {
+    const profile = web('app/(personal)/personal/profil/page.tsx')
+    expect(profile).toContain('DEFAULT_STAFF_NOUN')
+    expect(profile).not.toContain("'FRISÖR'")
+  })
 })

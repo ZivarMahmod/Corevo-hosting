@@ -43,6 +43,10 @@ export function BookingDrawer({
   presentation = 'drawer',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
+  countryCode,
+  locale,
+  currency,
+  defaultTimeZone,
 }: {
   open: boolean
   onClose: () => void
@@ -65,6 +69,10 @@ export function BookingDrawer({
   pickerMode?: PickerMode
   /** Barberarbild-läget (settings.booking.staffAvatars) — vidarebefordras. */
   staffAvatarMode?: StaffAvatarMode
+  countryCode?: string
+  locale?: string
+  currency?: string
+  defaultTimeZone?: string
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -190,6 +198,10 @@ export function BookingDrawer({
             pickerMode={pickerMode}
             staffAvatarMode={staffAvatarMode}
             brandName={tenantName}
+            countryCode={countryCode}
+            locale={locale}
+            currency={currency}
+            defaultTimeZone={defaultTimeZone}
           />
         </div>
       </div>

@@ -8,7 +8,7 @@ const readWeb = (relative: string) => fs.readFileSync(path.join(WEB_ROOT, relati
 
 describe('sanningsenliga UI-besked', () => {
   it('framställer inte Google-länk eller mallvärde som ett hämtat kundbetyg', () => {
-    const editor = readWeb('app/(admin)/admin/sida/page.tsx')
+    const editor = readWeb('lib/platform/site-editor-manifest.ts')
     const snittTheme = readWeb('components/storefront/layouts/salong/snitt.theme.ts')
 
     expect(editor).not.toContain('uppdateras automatiskt')

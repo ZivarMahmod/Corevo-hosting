@@ -108,7 +108,7 @@ export async function joinLoyaltyClub(
   //    — en tampererad plan_id från en annan tenant kan aldrig fastna på raden.
   const writer = createServiceClient()
   if (!writer) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
-  const { error } = await writer.rpc('join_loyalty_club', {
+  const { data, error } = await writer.rpc('join_loyalty_club', {
     p_tenant_slug: ctx.slug,
     p_email: email,
     ...(name ? { p_name: name } : {}),
@@ -126,5 +126,16 @@ export async function joinLoyaltyClub(
 
   // f. Buste per-tenant-cachen (samma tag som loadern + resten av storefronten).
   revalidateTag(`tenant:${ctx.slug.trim().toLowerCase()}`)
-  return { phase: 'done' }
+  const pendingPayment =
+    !!data &&
+    typeof data === 'object' &&
+    !Array.isArray(data) &&
+    (data as Record<string, unknown>).status === 'pending_payment'
+  return {
+    phase: 'done',
+    pendingPayment,
+    message: pendingPayment
+      ? 'Din intresseanmälan är registrerad. Nivån blir aktiv först efter verifierad betalning.'
+      : 'Välkommen in. Vi hör av oss till din e-post.',
+  }
 }

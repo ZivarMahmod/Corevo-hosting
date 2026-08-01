@@ -72,12 +72,13 @@ export async function loadVerticalPresets(): Promise<VerticalPresetData> {
       .select('key, name, default_template, default_modules, terminology')
       .order('name', { ascending: true }),
     supabase.from('modules').select('key, name').order('name', { ascending: true }),
-    // Active templates only — the wizard lists what the operator can actually pick
-    // (mirrors templates_read_active RLS). Grouped by tags.bransch below.
+    // Only catalog templates that operators may select. Legacy active rows stay
+    // readable for existing tenants but must not re-enter onboarding.
     supabase
       .from('templates')
-      .select('key, name, tags')
+      .select('key, name, tags, selectable')
       .eq('status', 'active')
+      .eq('selectable', true)
       .order('name', { ascending: true }),
   ])
 

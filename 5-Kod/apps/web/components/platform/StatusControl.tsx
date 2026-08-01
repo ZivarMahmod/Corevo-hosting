@@ -6,13 +6,22 @@ import styles from './platform.module.css'
 
 const ARM_TIMEOUT_MS = 10_000
 
-export function StatusControl({ tenantId, status }: { tenantId: string; status: string }) {
+export function StatusControl({
+  tenantId,
+  status,
+  canActivate = true,
+}: {
+  tenantId: string
+  status: string
+  canActivate?: boolean
+}) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setTenantStatus, {})
   const [armed, setArmed] = useState(false)
   const triggerButtonRef = useRef<HTMLButtonElement>(null)
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
   const restoreTriggerFocusRef = useRef(false)
   const suspend = status === 'active'
+  const publish = status === 'provisioning'
   const nextStatus = suspend ? 'suspended' : 'active'
 
   useEffect(() => {
@@ -92,10 +101,16 @@ export function StatusControl({ tenantId, status }: { tenantId: string; status: 
             ref={suspend ? confirmButtonRef : undefined}
             type="submit"
             className={`${styles.btn}${suspend ? ` ${styles.btnDanger}` : ''}`}
-            disabled={pending}
+            disabled={pending || (!suspend && !canActivate)}
             aria-describedby={suspend ? 'suspend-tenant-warning' : undefined}
           >
-            {pending ? 'Uppdaterar…' : suspend ? 'Bekräfta paus' : 'Aktivera kund igen'}
+            {pending
+              ? 'Uppdaterar…'
+              : suspend
+                ? 'Bekräfta paus'
+                : publish
+                  ? 'Publicera kund'
+                  : 'Aktivera kund igen'}
           </button>
           {suspend ? (
             <button type="button" className={styles.btn} disabled={pending} onClick={disarmAndRestoreFocus}>

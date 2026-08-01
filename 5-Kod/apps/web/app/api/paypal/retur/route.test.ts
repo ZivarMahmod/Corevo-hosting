@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   capturePaypalOrder: vi.fn(),
   paypalReady: vi.fn(),
   refundPaypalCapture: vi.fn(),
-  recordShopOrderRefunded: vi.fn(),
+  completeShopPaymentEvent: vi.fn(),
   settleShopOrderPaid: vi.fn(),
   captureException: vi.fn(),
 }))
@@ -15,7 +15,7 @@ vi.mock('@/lib/payments/paypal', () => ({
   refundPaypalCapture: mocks.refundPaypalCapture,
 }))
 vi.mock('@/lib/payments/settle', () => ({
-  recordShopOrderRefunded: mocks.recordShopOrderRefunded,
+  completeShopPaymentEvent: mocks.completeShopPaymentEvent,
   settleShopOrderPaid: mocks.settleShopOrderPaid,
 }))
 vi.mock('@/lib/observability', () => ({ captureException: mocks.captureException }))
@@ -30,9 +30,10 @@ beforeEach(() => {
     reference: 'order-1',
     captureId: 'CAPTURE-1',
     amountCents: 52900,
+    currency: 'SEK',
   })
   mocks.refundPaypalCapture.mockResolvedValue(true)
-  mocks.recordShopOrderRefunded.mockResolvedValue(true)
+  mocks.completeShopPaymentEvent.mockResolvedValue(true)
   mocks.settleShopOrderPaid.mockResolvedValue({ ok: true })
 })
 
@@ -51,7 +52,11 @@ describe('PayPal return', () => {
   })
 
   it('återbetalar en capture vars interna order inte längre finns', async () => {
-    mocks.settleShopOrderPaid.mockResolvedValue({ ok: false, reason: 'unknown_order' })
+    mocks.settleShopOrderPaid.mockResolvedValue({
+      ok: false,
+      reason: 'unknown_order',
+      eventId: 'event-1',
+    })
 
     const response = await GET(
       new Request('https://booking.corevo.se/api/paypal/retur?token=PP-1&order=order-1'),
@@ -59,7 +64,11 @@ describe('PayPal return', () => {
 
     expect(response.status).toBe(307)
     expect(mocks.refundPaypalCapture).toHaveBeenCalledWith('CAPTURE-1')
-    expect(mocks.recordShopOrderRefunded).not.toHaveBeenCalled()
+    expect(mocks.completeShopPaymentEvent).toHaveBeenCalledWith(
+      'event-1',
+      'refunded',
+      'unknown_order',
+    )
     expect(response.headers.get('location')).toBe(
       'https://booking.corevo.se/bekraftelse/order-1?avbruten=1',
     )

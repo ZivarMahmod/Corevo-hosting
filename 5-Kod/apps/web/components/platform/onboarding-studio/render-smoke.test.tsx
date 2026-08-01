@@ -24,7 +24,7 @@ vi.mock('next/navigation', () => ({
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { initStudioCfg, applyBranch } from '@/lib/platform/onboarding-studio/model'
 import type { StudioAction, StudioStage } from '@/lib/platform/onboarding-studio/state'
-import { FLAT_STEP_ORDER } from '@/lib/platform/onboarding-studio/phases'
+import { FLAT_STEP_ORDER, PHASES } from '@/lib/platform/onboarding-studio/phases'
 import { JourneyBar } from './JourneyBar'
 import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
@@ -136,6 +136,23 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('Snabbboka') // the compact variant label
   })
 
+  it('the modval panel keeps booking off and hides its variant picker', () => {
+    const html = mounts(
+      <PanelHost
+        cfg={{ ...branched, moduleStates: { ...branched.moduleStates, booking: 'off' } }}
+        step="modval"
+        dispatch={noopDispatch}
+        presets={presets}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    expect(html).toContain('Av')
+    expect(html).not.toContain('Bokningsvariant')
+    expect(html).toContain('Kundens Boka-knappar kan använda en extern länk som sparas i admin.')
+  })
+
   // 2026-07-11: stegen "Tjänster & priser" och "Utseende & text" är BORTA ur onboardingen
   // (Zivar: "superlätt att komma igång — jag ska inte skriva in tjänster eller rubriker").
   // Texten kommer från branschens mall-text + mallens evergreen-copy; tjänster och
@@ -166,7 +183,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(preview).toContain('Klippning')
   })
 
-  it('the live panel renders the real Lansera button', () => {
+  it('the final panel creates the customer without publishing it', () => {
     const html = mounts(
       <PanelHost
         cfg={branched}
@@ -178,7 +195,60 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
         onLaunch={noop}
       />,
     )
-    expect(html).toContain('Lansera')
+    expect(html).toContain('Skapa kunden')
+    expect(html).toContain('Under konfiguration')
+  })
+
+  it('marks the owner step as required', () => {
+    const ownerStep = PHASES.flatMap((phase) => phase.steps).find((candidate) => candidate.id === 'agare')
+    expect(ownerStep?.req).toBe(true)
+  })
+
+  it('associates the required owner email field with its label', () => {
+    const html = mounts(
+      <PanelHost
+        cfg={branched}
+        step="agare"
+        dispatch={noopDispatch}
+        presets={presets}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    const ownerLabel = html.match(/<label[^>]*>Ägarens e-post<\/label>/)?.[0]
+    const fieldId = ownerLabel?.match(/for="([^"]+)"/)?.[1]
+    const emailInput = html.match(/<input[^>]*type="email"[^>]*>/)?.[0]
+
+    expect(fieldId).toBeTruthy()
+    expect(emailInput).toContain(`id="${fieldId}"`)
+    expect(emailInput).toContain('required=""')
+  })
+
+  it('requires an owner email before the customer can be created', () => {
+    const html = mounts(
+      <PanelHost
+        cfg={{
+          ...branched,
+          name: 'Goal 84 ownerless',
+          slug: 'goal84-ownerless',
+          ownerName: '',
+          ownerEmail: '',
+        }}
+        step="live"
+        dispatch={noopDispatch}
+        presets={presets}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    expect(html).toContain('Skapa Goal 84 ownerless')
+    expect(html).toContain('disabled=""')
+    expect(html).toContain('Ägare inbjuds via e-post')
+    expect(html).toContain('ägarens e-post')
+    expect(html).not.toContain('Ägare kan bjudas in senare')
+    expect(html).not.toContain('Ägaren kan bjudas in senare från kundkortet.')
   })
 
   it('the result-vy (W6) links the real /kunder/[id], shows the reserved address, no theater', () => {
@@ -192,7 +262,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       />,
     )
     expect(html).toContain('href="/kunder/t9"') // real, working platform link
-    expect(html).toContain('klippoteket.corevo.se') // reserved address shown
+    expect(html).toContain('klippoteket.boka.corevo.se') // canonical reserved address shown
     expect(html).toContain('Onboarda nästa kund')
     expect(html).toContain('är skapad') // honest header, NOT "är live" (host doesn't resolve yet)
     expect(html).not.toContain('byggs i senare vågor') // old placeholder copy is gone

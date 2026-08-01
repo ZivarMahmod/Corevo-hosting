@@ -47,6 +47,27 @@ describe('admin location opening hours contract', () => {
     expect(component).toContain('name="slot_step_min"')
     expect(component).toContain('name="min_notice_min"')
     expect(component).toContain('name="max_advance_days"')
+    expect(component).toContain('action = saveLocationBookingSettings')
+  })
+
+  it('keeps every local opening-hours control at least 44px high', () => {
+    const component = source('components/admin/LocationOpeningHours.tsx')
+
+    expect(component).toMatch(/const timeInputStyle:[^{]+\{[^}]*minHeight: 44[^}]*\}/)
+    expect(component).toMatch(/const inputStyle:[^{]+\{[^}]*minHeight: 44[^}]*\}/)
+    expect(component).toMatch(/const addStyle:[^{]+\{[^}]*minHeight: 44[^}]*\}/)
+    expect(component).toMatch(/const removeStyle:[^{]+\{[^}]*height: 44[^}]*\}/)
+  })
+
+  it('submits an explicit tenant only when the platform customer card supplies one', () => {
+    const component = source('components/admin/LocationOpeningHours.tsx')
+    const platformPage = source('app/(platform)/kunder/(board)/[id]/page.tsx')
+
+    expect(component).toContain('tenantId?: string')
+    expect(component).toMatch(
+      /\{tenantId && <input type="hidden" name="tenant_id" value=\{tenantId\} \/>\}/,
+    )
+    expect(platformPage).toContain('tenantId={tenant.id}')
   })
 
   it('mounts the location editor before the staff schedule surfaces', () => {

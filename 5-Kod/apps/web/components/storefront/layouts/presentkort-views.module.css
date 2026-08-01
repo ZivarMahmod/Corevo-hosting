@@ -24,7 +24,7 @@
   line-height: 1.6;
 }
 
-.aurora:hover { border-color: #b85c48 !important; }
+.aurora:hover { border-color: #9b4d3c !important; }
 .auroraBuy:hover { background: #8a3e2e !important; }
 .torget:hover { background: #ede7d8 !important; color: #191714 !important; }
 .torgetBuy:hover { background: #191714 !important; }
@@ -41,10 +41,10 @@
 .siluettBuy:hover { background: #6741d9 !important; }
 .snitt:hover { border-color: #d6f344 !important; }
 .snittBuy:hover { background: #efede6 !important; }
-.sivsav:hover { border-color: #7c8b6b !important; }
-.sivsavBuy:hover { background: #7c8b6b !important; }
+.sivsav:hover { border-color: #5D6A4E !important; }
+.sivsavBuy:hover { background: #5D6A4E !important; }
 .solsalt:hover { border-color: #1f4f9c !important; }
-.solsaltBuy:hover { background: #c2512e !important; }
+.solsaltBuy:hover { background: #b74d2c !important; }
 
 @media (max-width: 760px) {
   .section {

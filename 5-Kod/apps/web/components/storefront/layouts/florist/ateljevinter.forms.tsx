@@ -274,6 +274,7 @@ function KursSubmit() {
  * (event_id, name, email, phone, party_size, message). Bara formen är mallens.
  */
 export function AteljeVinterKursForm({ eventId, maxParty }: { eventId: string; maxParty: number }) {
+  const [requestId] = useState(() => crypto.randomUUID())
   const [state, formAction] = useActionState<KursSubmitState, FormData>(
     submitEventRegistration,
     KURS_SUBMIT_INITIAL,
@@ -292,6 +293,7 @@ export function AteljeVinterKursForm({ eventId, maxParty }: { eventId: string; m
   return (
     <form action={formAction} className={styles.avKursForm}>
       <input type="hidden" name="event_id" value={eventId} />
+      <input type="hidden" name="request_id" value={requestId} />
 
       <div className={styles.avFormRow}>
         <div>

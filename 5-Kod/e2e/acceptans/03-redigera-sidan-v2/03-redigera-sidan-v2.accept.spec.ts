@@ -9,6 +9,7 @@ const entrySource = read('apps/web/app/(admin)/admin/sida/page.tsx')
 const legacyEntrySource = read('apps/web/app/(admin)/admin/sida/redigera/page.tsx')
 const studioSource = read('apps/web/components/platform/SidaStudioV2.tsx')
 const studioCss = read('apps/web/components/platform/SidaStudioV2.module.css')
+const manifestSource = read('apps/web/lib/platform/site-editor-manifest.ts')
 const bridgeSource = read('apps/web/components/platform/SidaPreviewBridge.tsx')
 const bookingSource = read('apps/web/components/storefront/BookingProvider.tsx')
 const revisionActionSource = read('apps/web/lib/platform/actions/site-revisions.ts')
@@ -60,7 +61,7 @@ test.describe('03 Redigera sidan v2 — source contract @readonly @contract', ()
     expect(studioSource).toContain('restoreSiteRevision')
   })
 
-  test('03-C05 images, facts and every realtime channel are complete', () => {
+  test('03-C05 images, facts and preview channels are complete', () => {
     expect(studioSource).toContain('uploadSiteDraftImage')
     expect(studioSource).toContain('cropFocusedImage')
     expect(studioSource).toContain('type="file"')
@@ -68,15 +69,15 @@ test.describe('03 Redigera sidan v2 — source contract @readonly @contract', ()
     expect(studioSource).toContain('function StatsFields')
     expect(studioSource).toContain('Typsnitten är valda för att passa ihop')
     expect(studioSource).not.toContain('const BODY_FONTS')
-    expect(entrySource).toContain("path: '?boka=1'")
-    expect(entrySource).toContain("title: 'Google-recensionslänk'")
-    expect(entrySource).toContain('Ingen betygs- eller recensionsdata hämtas automatiskt.')
+    expect(manifestSource).toContain("path: '?boka=1'")
+    expect(manifestSource).toContain("title: 'Google-recensionslänk'")
+    expect(manifestSource).toContain('Ingen betygs- eller recensionsdata hämtas automatiskt.')
     expect(entrySource).toContain('scheduleHours={deriveSiteScheduleHours(detail)}')
     expect(bridgeSource).toContain("data.type === 'site-field-flash'")
     expect(bridgeSource).toContain("data.type === 'img-flash'")
     expect(bridgeSource).toContain("new CustomEvent('corevo-booking-preview'")
     expect(bookingSource).toContain("addEventListener('corevo-booking-preview'")
-    expect(revisionActionSource).toContain('storefront-drafts')
+    expect(revisionActionSource).toContain('uploadManagedImage')
   })
 })
 
@@ -85,6 +86,12 @@ const email = process.env.ACCEPT_ADMIN_EMAIL
 const password = process.env.ACCEPT_ADMIN_PASSWORD
 const theme = process.env.ACCEPT_THEME
 const canRunBrowser = Boolean(baseUrl && email && password && theme)
+const goal88Port = process.env.GOAL88_LOCAL_PORT
+const goal88RootEmail = process.env.GOAL88_ROOT_EMAIL
+const goal88RootPassword = process.env.GOAL88_ROOT_PASSWORD
+const canRunGoal88Browser = Boolean(
+  goal88Port && email && password && goal88RootEmail && goal88RootPassword,
+)
 
 test.describe('03 Redigera sidan v2 — browser oracle @readonly @browser', () => {
   test.skip(!canRunBrowser, 'ACCEPT_BASE_URL, ACCEPT_ADMIN_EMAIL, ACCEPT_ADMIN_PASSWORD och ACCEPT_THEME krävs')
@@ -190,6 +197,74 @@ test.describe('03 Redigera sidan v2 — browser oracle @readonly @browser', () =
     const publishBox = await publish.boundingBox()
     expect(publishBox?.height).toBeGreaterThanOrEqual(44)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  })
+})
+
+test.describe('Goal 88 — dual-surface browser parity @readonly @browser', () => {
+  test.skip(
+    !canRunGoal88Browser,
+    'GOAL88_LOCAL_PORT, tenant-admin och root-credentials krävs',
+  )
+
+  test('03-B02 same revision state and root-only template picker', async ({ browser }) => {
+    test.setTimeout(120_000)
+    const tenantOrigin = `http://booking.localhost:${goal88Port}`
+    const rootOrigin = `http://superbooking.localhost:${goal88Port}`
+    const tenantPath = '/admin/sida'
+    const rootPath = '/kunder/11111111-1111-1111-1111-111111111111?kundflik=sida'
+    const tenantContext = await browser.newContext()
+    const rootContext = await browser.newContext()
+
+    const login = async (
+      origin: string,
+      nextPath: string,
+      loginEmail: string,
+      loginPassword: string,
+      context: typeof tenantContext,
+    ) => {
+      const page = await context.newPage()
+      await page.goto(`${origin}/login?next=${encodeURIComponent(nextPath)}`)
+      await page.getByLabel('E-post').fill(loginEmail)
+      const passwordInput = page.locator('input[name="password"]')
+      await passwordInput.fill(loginPassword)
+      await page.getByRole('button', { name: 'Logga in' }).click()
+      await passwordInput.evaluate((input: HTMLInputElement) => { input.value = '' }).catch(() => {})
+      await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 })
+      await page.goto(`${origin}${nextPath}`)
+      await expect(page.locator('[data-accept="editor-shell"]')).toBeVisible()
+      return page
+    }
+
+    try {
+      const tenantPage = await login(tenantOrigin, tenantPath, email!, password!, tenantContext)
+      const rootPage = await login(
+        rootOrigin,
+        rootPath,
+        goal88RootEmail!,
+        goal88RootPassword!,
+        rootContext,
+      )
+      const revisionState = async (page: typeof tenantPage) => {
+        const history = page
+          .getByRole('heading', { name: 'Versionshistorik', exact: true })
+          .locator('..')
+        await expect(history).toBeVisible()
+        return {
+          status: await page.locator('[data-accept="editor-status"]').innerText(),
+          draftBanner: await page.locator('[data-accept="draft-banner"]').count(),
+          emptyHistory: await history.getByText('Ingen tidigare publicering ännu.').count(),
+          restoreActions: await history.getByRole('button', { name: 'Återställ', exact: true }).count(),
+        }
+      }
+
+      expect(await revisionState(tenantPage)).toEqual(await revisionState(rootPage))
+      await expect(tenantPage.getByRole('heading', { name: 'Mall', exact: true })).toHaveCount(0)
+      await expect(rootPage.getByRole('heading', { name: 'Mall', exact: true })).toBeVisible()
+      await expect(rootPage.getByRole('tablist', { name: 'Mallkategori' })).toBeVisible()
+    } finally {
+      await tenantContext.close()
+      await rootContext.close()
+    }
   })
 })
 

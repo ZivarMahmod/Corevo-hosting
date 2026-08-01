@@ -8,8 +8,8 @@
  * mellan sektionerna (68px) är lika mycket design som innehållet.
  *
  * OFF-PALETT-TONER: filen använder fyra hexar som INTE finns i manifestets 8 palett-nycklar
- * (#93998C dämpad meta, #E7E1D3 mjukare radlinje, #EDF2EC text på teal, #A9C4B8 dämpad text
- * på teal, #4E837B/#7FA79E sidfotens linjer). De står som literaler här, precis som i filen —
+ * (#5F6B60 dämpad meta, #E7E1D3 mjukare radlinje, #EDF2EC text på teal, #CDDFD6 dämpad text
+ * på teal, #4E837B/#CDDFD6 sidfotens linjer). De står som literaler här, precis som i filen —
  * att tvinga in dem i var(--color-*) hade ändrat designen.
  *
  * Mobil (≤760px) speglar filens egna /* Corevo-tillägg *​/-block: grid → en kolumn, H1/H2
@@ -33,7 +33,7 @@
   font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #edf2ec;
+  color: var(--tenant-primary-fg, #edf2ec);
   background: var(--color-primary);
   border: none;
   border-radius: 6px;
@@ -55,7 +55,7 @@
   font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: transparent;
   border: 1px solid var(--color-primary);
   border-radius: 6px;
@@ -76,7 +76,7 @@
   font-size: 12.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   transition: color 0.2s;
 }
 
@@ -91,7 +91,7 @@
   font-size: 12px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaMeta {
@@ -100,7 +100,7 @@
   font-size: 11px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 .kaSrOnly {
@@ -131,7 +131,7 @@
   font-size: 24px;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaNavLinks {
@@ -155,7 +155,7 @@
 }
 
 .kaNavLinks a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaNavCluster {
@@ -172,7 +172,7 @@
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #edf2ec;
+  color: var(--tenant-primary-fg, #edf2ec);
   background: var(--color-primary);
   border: none;
   border-radius: 6px;
@@ -243,7 +243,7 @@
   font-size: 11px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 /* ──────────────────────────── ritualen 01 · 02 · 03 ───────────────────────── */
@@ -271,7 +271,7 @@
   border-radius: 999px;
   font-family: var(--font-display);
   font-size: 18px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   margin-bottom: 16px;
 }
 
@@ -313,7 +313,7 @@
   font-size: 12px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaSecTitle {
@@ -348,7 +348,7 @@
   font-size: 11px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 .kaCardName {
@@ -369,7 +369,7 @@
   margin: 0 0 18px;
   font-family: var(--font-display);
   font-size: 22px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* "Boka"-knappen på kortet: kontur som fylls teal vid hover (filen). */
@@ -379,7 +379,7 @@
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: transparent;
   border: 1px solid var(--color-primary);
   border-radius: 6px;
@@ -390,7 +390,7 @@
 
 .kaCardBook:hover {
   background: var(--color-primary);
-  color: #edf2ec;
+  color: var(--tenant-primary-fg, #edf2ec);
 }
 
 /* ─────────────────────────── om källa (tonad platta) ──────────────────────── */
@@ -466,7 +466,7 @@
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 /* ────────────────────── anteckningar (hemmets rad-lista) ──────────────────── */
@@ -521,7 +521,7 @@
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 /* ──────────────────────────── undersidor (skal) ───────────────────────────── */
@@ -610,7 +610,7 @@
   font-size: 12px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaPriceRow {
@@ -659,7 +659,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 .kaPriceValue {
@@ -677,7 +677,7 @@
   font-size: 11.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ─────────────────────────────── om-sidan ─────────────────────────────────── */
@@ -743,7 +743,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: 32px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaStatDark .kaStatValue {
@@ -758,7 +758,7 @@
 }
 
 .kaStatDark .kaStatLabel {
-  color: #a9c4b8;
+  color: var(--tenant-primary-fg, #cddfd6);
 }
 
 /* ───────────────────────────── kontakt-sidan ──────────────────────────────── */
@@ -781,14 +781,14 @@
   font-size: 10.5px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #a9c4b8;
+  color: var(--tenant-primary-fg, #cddfd6);
 }
 
 .kaKontaktValue {
   margin: 0 0 22px;
   font-size: 15.5px;
   line-height: 1.7;
-  color: #edf2ec;
+  color: var(--tenant-primary-fg, #edf2ec);
 }
 
 .kaKontaktValue:last-child {
@@ -796,11 +796,11 @@
 }
 
 .kaKontaktValue a {
-  color: #edf2ec;
+  color: var(--tenant-primary-fg, #edf2ec);
 }
 
 .kaKontaktValue a:hover {
-  color: #a9c4b8;
+  color: var(--tenant-primary-fg, #cddfd6);
 }
 
 .kaKontaktProse {
@@ -843,13 +843,13 @@
 }
 
 .kaFilter:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaFilter[data-active='true'] {
   background: var(--color-primary);
   color: var(--color-primary-fg);
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Kategorin över produktnamnet — filens rad 257 (10.5px, 0.22em spärr, dämpad grågrön). */
@@ -903,7 +903,7 @@
   font-size: 10.5px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 .kaShopName {
@@ -928,7 +928,7 @@
   margin: 0 0 16px;
   font-family: var(--font-display);
   font-size: 19px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaShopBuy {
@@ -965,7 +965,7 @@
 }
 
 .kaBloggCard:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaBloggImg {
@@ -985,7 +985,7 @@
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaBloggTitle {
@@ -1027,13 +1027,13 @@
   font-size: 22px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: #edf2ec;
+  color: var(--tenant-primary-fg, #edf2ec);
 }
 
 .kaFootTagline {
   margin: 0;
   font-size: 13.5px;
-  color: #a9c4b8;
+  color: var(--tenant-primary-fg, #cddfd6);
 }
 
 .kaFootNav {
@@ -1049,7 +1049,7 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #edf2ec;
+  color: var(--tenant-primary-fg, #edf2ec);
   border: 1px solid #4e837b;
   border-radius: 6px;
   padding: 7px 13px;
@@ -1063,7 +1063,7 @@
 
 /* Den FÖRSTA sidfotslänken är fylld ljus i filen (Ritualklubben). */
 .kaFootNav a:first-child {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: #edf2ec;
   border-color: #edf2ec;
   padding: 8px 14px;
@@ -1072,13 +1072,13 @@
 
 .kaFootNav a:first-child:hover {
   background: var(--color-accent-soft);
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaFootMeta {
   margin: 0;
   font-size: 12px;
-  color: #7fa79e;
+  color: var(--tenant-primary-fg, #cddfd6);
 }
 
 /* ───────────────────── mobil — speglar filens egen media query ────────────── */
@@ -1257,7 +1257,7 @@
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 .kaTeamBook {
@@ -1277,7 +1277,7 @@
 
 .kaTeamBook:hover {
   background: var(--color-primary);
-  color: var(--color-accent-soft);
+  color: var(--tenant-primary-fg, var(--color-accent-soft));
 }
 
 .kaGalGrid {
@@ -1300,7 +1300,7 @@
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #93998c;
+  color: #5f6b60;
 }
 
 .kaClubLede {
@@ -1331,7 +1331,7 @@
 /* Den vanligaste nivån på den mörkgröna ytan — filens `tagged`. */
 .kaPlan[data-featured='true'] {
   background: var(--color-primary);
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaPlanTag {
@@ -1345,7 +1345,7 @@
 }
 
 .kaPlan[data-featured='true'] .kaPlanTag {
-  color: #a9c4b8;
+  color: #cddfd6;
 }
 
 .kaPlanName {
@@ -1378,7 +1378,7 @@
 }
 
 .kaPlan[data-featured='true'] .kaPlanPrice {
-  color: #a9c4b8;
+  color: #cddfd6;
 }
 
 .kaPlan[data-featured='true'] .kaPlanPerks p {
@@ -1405,7 +1405,7 @@
   font-family: var(--font-body);
   font-size: 14px;
   background: var(--color-bg);
-  outline-color: var(--color-primary);
+  outline-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .kaPlanJoin button {

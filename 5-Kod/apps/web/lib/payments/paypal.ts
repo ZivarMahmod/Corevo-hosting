@@ -210,26 +210,70 @@ function readOrder(raw: unknown): PaypalCapture {
   }
 }
 
-/** Återbetala en PayPal-capture. `paypal-request-id` gör retries idempotenta. */
-export async function refundPaypalCapture(captureId: string): Promise<boolean> {
+async function requestPaypalRefund(
+  captureId: string,
+  requestId: string,
+): Promise<Response | null> {
   const c = creds()
-  if (!c || !captureId) return false
+  if (!c || !captureId || !requestId) return null
   const token = await accessToken(c)
-  if (!token) return false
+  if (!token) return null
 
-  const res = await paypalFetch(
+  return paypalFetch(
     `${c.base}/v2/payments/captures/${encodeURIComponent(captureId)}/refund`,
     {
       method: 'POST',
       headers: {
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
-        'paypal-request-id': `refund-${captureId}`,
+        'paypal-request-id': requestId,
       },
       body: '{}',
     },
   )
+}
+
+/** Återbetala en PayPal-capture. `paypal-request-id` gör retries idempotenta. */
+export async function refundPaypalCapture(captureId: string): Promise<boolean> {
+  const res = await requestPaypalRefund(captureId, `refund-${captureId}`)
   return res?.ok ?? false
+}
+
+export type PaypalRefundJobResult =
+  | { outcome: 'succeeded'; providerRef: string }
+  | { outcome: 'rejected' | 'unknown'; providerRef: null }
+
+/**
+ * Jobbvarianten skiljer bekräftad providerframgång från avvisat och osäkert
+ * utfall. En timeout/5xx/oklar 2xx får aldrig rapporteras som genomförd.
+ */
+export async function refundPaypalCaptureForJob(
+  captureId: string,
+  requestId: string,
+): Promise<PaypalRefundJobResult> {
+  if (!captureId || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(requestId)) {
+    return { outcome: 'rejected', providerRef: null }
+  }
+
+  const res = await requestPaypalRefund(captureId, requestId)
+  if (!res || res.status >= 500 || res.status === 408 || res.status === 429) {
+    return { outcome: 'unknown', providerRef: null }
+  }
+  if (!res.ok) return { outcome: 'rejected', providerRef: null }
+
+  try {
+    const json = (await res.json()) as { id?: unknown; status?: unknown }
+    if (
+      json.status === 'COMPLETED'
+      && typeof json.id === 'string'
+      && /^[A-Za-z0-9._:-]{1,200}$/.test(json.id)
+    ) {
+      return { outcome: 'succeeded', providerRef: json.id }
+    }
+  } catch {
+    // Ett oläsbart lyckatsvar är provider-osäkert, aldrig bekräftat genomfört.
+  }
+  return { outcome: 'unknown', providerRef: null }
 }
 
 /**

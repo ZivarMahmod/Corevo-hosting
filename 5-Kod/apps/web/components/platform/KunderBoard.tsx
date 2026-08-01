@@ -31,6 +31,8 @@ export type KundCardVM = {
   displayStatus: TenantDisplayStatus
   lastLabel: string
   storefrontUrl: string
+  storefrontHost: string
+  storefrontPublished: boolean
 }
 
 type FilterKey = 'all' | TenantDisplayStatus
@@ -39,25 +41,17 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'Alla' },
   { key: 'active', label: 'Aktiv' },
   { key: 'suspended', label: 'Pausad' },
-  { key: 'onboarding', label: 'Onboarding' },
+  { key: 'onboarding', label: 'Under konfiguration' },
 ]
 
 const STATUS_META: Record<TenantDisplayStatus, { label: string; tone: BadgeTone }> = {
   active: { label: 'Aktiv', tone: 'success' },
   suspended: { label: 'Pausad', tone: 'warning' },
-  onboarding: { label: 'Onboarding', tone: 'info' },
+  onboarding: { label: 'Under konfiguration', tone: 'info' },
 }
 
 function csvEscape(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
-}
-
-function storefrontHost(url: string): string {
-  try {
-    return new URL(url).host
-  } catch {
-    return url
-  }
 }
 
 export function buildKunderCsv(rows: KundCardVM[]): string {
@@ -76,7 +70,7 @@ export function buildKunderCsv(rows: KundCardVM[]): string {
   ]
   const data = rows.map((tenant) => [
     tenant.name,
-    storefrontHost(tenant.storefrontUrl),
+    tenant.storefrontHost,
     tenant.owner ?? '',
     STATUS_META[tenant.displayStatus].label,
     String(tenant.bookings),
@@ -235,7 +229,7 @@ export function KunderBoard({
 
   return (
     <div
-      className={`workbench ${styles.board}`}
+      className={`workbench ${styles.board}${hasSelection ? ` ${styles.boardState}` : ''}`}
       data-mobile-view={hasSelection ? 'card' : 'list'}
       data-create={isCreating || undefined}
       onClickCapture={invalidateDeleteForNavigation}
@@ -249,7 +243,7 @@ export function KunderBoard({
         }
       }}
     >
-      <aside className={styles.list} aria-label="Kunder">
+      {!hasSelection ? <aside className={styles.list} aria-label="Kunder">
         <div className={styles.listHead}>
           <div className={styles.listTitleRow}>
             <div>
@@ -322,7 +316,7 @@ export function KunderBoard({
                           {STATUS_META[tenant.displayStatus].label}
                         </Badge>
                       </span>
-                      <span className={styles.rowSub}>{tenant.slug}.corevo.se</span>
+                      <span className={styles.rowSub}>{tenant.storefrontHost}</span>
                       <span className={styles.rowOwner}>{tenant.owner ?? '—'}</span>
                     </span>
                     <span className={styles.rowMeta}>
@@ -332,15 +326,17 @@ export function KunderBoard({
                   </Link>
 
                   <div className={styles.rowActions}>
-                    <a
-                      href={tenant.storefrontUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.iconButton}
-                      aria-label={`Öppna storefront för ${tenant.name}`}
-                    >
-                      <Icon name="external" size={15} />
-                    </a>
+                    {tenant.storefrontPublished ? (
+                      <a
+                        href={tenant.storefrontUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.iconButton}
+                        aria-label={`Öppna storefront för ${tenant.name}`}
+                      >
+                        <Icon name="external" size={15} />
+                      </a>
+                    ) : null}
                     <button
                       ref={(node) => {
                         if (node) triggerRefs.current.set(tenant.id, node)
@@ -417,7 +413,7 @@ export function KunderBoard({
             })
           )}
         </div>
-      </aside>
+      </aside> : null}
       {children}
     </div>
   )

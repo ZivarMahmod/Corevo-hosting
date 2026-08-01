@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>Corevo · Kundportal (lösenordsfri PWA)</title>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      --ink:#191a17; --ink2:#25261f;
+      --paper:#f3efe6; --card:#fffdf8; --card2:#faf7f0;
+      --tx:#20211d; --muted:#74736b; --muted2:#99968d;
+      --line:#ddd7ca; --line2:#cbbca9;
+      --copper:#a97141; --copper-lt:#deb68d; --copper-soft:#ead5bf;
+      --sage:#466a57; --sage-lt:#dce9e0; --danger:#9d4a42;
+      --serif:'Spectral',Georgia,'Times New Roman',serif;
+      --sans:'Instrument Sans',system-ui,-apple-system,sans-serif;
+      background:#16150f; color:var(--tx); font-family:var(--sans);
+      -webkit-font-smoothing:antialiased;
+    }
+    a { color:var(--copper); text-decoration:none; }
+    a:hover { color:var(--ink); }
+    ::selection { background:var(--copper-soft); color:#2a2014; }
+    @keyframes cpSheet { from { transform:translateY(100%); } to { transform:translateY(0); } }
+    @keyframes cpDialog { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
+    @keyframes cpFade { from { opacity:0; } to { opacity:1; } }
+    @keyframes cpPage { from { opacity:0; transform:translateY(8px); } }
+    @keyframes cpToast { from { opacity:0; transform:translate(-50%,-14px); } to { opacity:1; transform:translate(-50%,0); } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; padding:44px 40px 60px; background:radial-gradient(120% 90% at 15% 0%, #201f16 0%, #16150f 55%); box-sizing:border-box;">
+
+  <!-- Canvas header -->
+  <div style="max-width:1720px; margin:0 auto 30px; display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;">
+    <div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:grid; place-items:center; width:40px; height:40px; border-radius:50%; background:var(--ink); color:var(--copper-lt); font-family:var(--serif); font-size:20px; border:1px solid rgba(255,255,255,.14);">C</span>
+        <div>
+          <div style="font-family:var(--serif); font-size:26px; letter-spacing:-.02em; color:#f4efe4;">Corevo Kundportal</div>
+          <div style="font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#8f8b7d; font-weight:600; margin-top:2px;">Lösenordsfri PWA · slutkund · designriktning v1</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; gap:26px; align-items:center;">
+      <div style="display:flex; align-items:center; gap:8px;"><span style="width:13px; height:13px; border-radius:3px; background:var(--ink); border:1px solid rgba(255,255,255,.15);"></span><span style="font-size:11.5px; color:#a7a294;">Grafit</span></div>
+      <div style="display:flex; align-items:center; gap:8px;"><span style="width:13px; height:13px; border-radius:3px; background:var(--paper);"></span><span style="font-size:11.5px; color:#a7a294;">Benvit</span></div>
+      <div style="display:flex; align-items:center; gap:8px;"><span style="width:13px; height:13px; border-radius:3px; background:var(--copper-lt);"></span><span style="font-size:11.5px; color:#a7a294;">Koppar</span></div>
+      <div style="display:flex; align-items:center; gap:8px;"><span style="width:13px; height:13px; border-radius:3px; background:var(--sage);"></span><span style="font-size:11.5px; color:#a7a294;">Salvia</span></div>
+    </div>
+  </div>
+
+  <div style="max-width:1720px; margin:0 auto; display:flex; gap:56px; align-items:flex-start; flex-wrap:wrap; justify-content:center;">
+
+    <!-- ══════════════════ MOBIL ══════════════════ -->
+    <div>
+      <div style="font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#8f8b7d; font-weight:600; margin:0 0 14px 8px;">Mobil · PWA</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+      <div style="height:100%; box-sizing:border-box; position:relative; display:flex; flex-direction:column; overflow:hidden; background:var(--paper); color:var(--tx); font-family:var(--sans); padding-top:52px;">
+
+        <!-- Topbar -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 18px 12px;">
+          <div style="display:flex; align-items:center; gap:11px;">
+            <span style="position:relative; display:grid; place-items:center; width:38px; height:38px; border-radius:50%; background:var(--ink); color:#f6eee4; font-family:var(--serif); font-size:18px;">C</span>
+            <div>
+              <div style="font-size:16px; font-weight:600; letter-spacing:-.02em;">{{ salong }}</div>
+              <div style="font-size:9px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); margin-top:1px;">Din kundportal</div>
+            </div>
+          </div>
+          <div onClick="{{ openMNotiser }}" style="position:relative; display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--line); border-radius:50%; background:rgba(255,253,248,.8); cursor:pointer;">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+            <sc-if value="{{ harOlast }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:4px; right:4px; width:9px; height:9px; background:var(--copper); border:2px solid var(--paper); border-radius:50%;"></span></sc-if>
+          </div>
+        </div>
+
+        <!-- Scroll area -->
+        <div style="flex:1; overflow:auto; min-height:0; padding:0 18px calc(30px + 78px);">
+
+          <!-- ─── ÖVERSIKT ─── -->
+          <sc-if value="{{ tabO }}" hint-placeholder-val="{{ true }}">
+          <div data-screen-label="Mobil – Översikt" style="animation:cpPage .35s cubic-bezier(.22,1,.36,1);">
+            <div style="padding:14px 2px 4px;">
+              <div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;">{{ idagText }}</div>
+              <div style="font-family:var(--serif); font-size:40px; line-height:1.02; letter-spacing:-.03em; margin-top:6px;">God morgon,<br>{{ fornamn }}.</div>
+              <div style="color:var(--muted); margin-top:8px;">{{ introText }}</div>
+            </div>
+
+            <!-- Nästa bokning — signaturkort -->
+            <sc-if value="{{ harBokning }}" hint-placeholder-val="{{ true }}">
+            <div style="position:relative; overflow:hidden; margin-top:20px; border-radius:24px; color:#f7f2e9; background:radial-gradient(circle at 88% 6%, rgba(222,182,141,.16), transparent 34%), var(--ink); box-shadow:0 20px 55px rgba(24,22,16,.22);">
+              <span style="position:absolute; z-index:2; top:158px; left:-11px; width:22px; height:22px; background:var(--paper); border-radius:50%;"></span>
+              <span style="position:absolute; z-index:2; top:158px; right:-11px; width:22px; height:22px; background:var(--paper); border-radius:50%;"></span>
+              <div style="padding:22px 22px 20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <span style="color:#b8b6ae; font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Nästa bokning</span>
+                  <span style="display:inline-flex; align-items:center; gap:6px; padding:5px 10px; color:#cde1d3; background:rgba(83,127,101,.24); border-radius:999px; font-size:10.5px;"><span style="width:6px; height:6px; background:#7eb08d; border-radius:50%;"></span>Bekräftad</span>
+                </div>
+                <div style="display:grid; grid-template-columns:auto 1px 1fr; gap:18px; align-items:center; margin:18px 0;">
+                  <span style="font-family:var(--serif); font-weight:500; font-size:66px; line-height:.78; letter-spacing:-.05em; color:var(--copper-lt);">{{ bokDatum }}</span>
+                  <span style="width:1px; height:58px; background:rgba(255,255,255,.16);"></span>
+                  <div><strong style="display:block; font-size:17px;">{{ bokDag }}</strong><span style="color:#aeaca5; font-size:13px;">{{ bokTidText }}</span></div>
+                </div>
+                <div style="padding-top:16px; border-top:1px dashed rgba(255,255,255,.18);">
+                  <strong style="display:block; font-size:18px; letter-spacing:-.02em;">{{ bokTjanst }}</strong>
+                  <span style="color:#aaa8a1; font-size:13px;">{{ bokMed }}</span>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1.25fr .75fr; gap:9px; padding:14px; background:rgba(255,255,255,.05);">
+                <span onClick="{{ openMDetaljer }}" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; border-radius:14px; background:var(--copper-lt); color:#201b16; font-weight:600; cursor:pointer;">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v3m10-3v3M4 9h16"/></svg>Visa bokning</span>
+                <span onClick="{{ openMOmboka }}" style="display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:48px; border-radius:14px; border:1px solid rgba(255,255,255,.22); color:#f7f2e9; font-weight:600; cursor:pointer;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 16-1 5 5-1L20 8l-4-4L4 16Z"/><path d="m14 6 4 4"/></svg>Omboka</span>
+              </div>
+            </div>
+            </sc-if>
+            <sc-if value="{{ ingenBokning }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:20px; padding:26px 20px; border:1px solid var(--line); border-radius:22px; background:var(--card); text-align:center;">
+              <div style="font-family:var(--serif); font-size:22px; letter-spacing:-.02em;">Ingen tid inbokad</div>
+              <div style="color:var(--muted); margin-top:6px; font-size:13.5px;">{{ tomText }}</div>
+              <span onClick="{{ openMNyboka }}" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 22px; border-radius:14px; background:var(--ink); color:#fff; font-weight:600; cursor:pointer; margin-top:16px;">Boka en tid</span>
+            </div>
+            </sc-if>
+
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; margin:30px 0 13px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:24px; letter-spacing:-.03em;">Vad vill du göra?</h2></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:11px;">
+              <div onClick="{{ openMNyboka }}" style="min-height:132px; padding:16px; border:1px solid var(--line); border-radius:19px; background:var(--card); cursor:pointer;">
+                <span style="display:grid; place-items:center; width:40px; height:40px; margin-bottom:16px; color:#744924; background:var(--copper-soft); border-radius:13px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+                <strong style="display:block; font-size:14px;">Boka ny tid</strong><span style="color:var(--muted); font-size:11.5px;">Behandling och lediga tider</span>
+              </div>
+              <div onClick="{{ openMPin }}" style="min-height:132px; padding:16px; border:1px solid var(--line); border-radius:19px; background:var(--card); cursor:pointer;">
+                <span style="display:grid; place-items:center; width:40px; height:40px; margin-bottom:16px; color:#744924; background:var(--copper-soft); border-radius:13px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-5"/></svg></span>
+                <strong style="display:block; font-size:14px;">Betrodd enhet</strong><span style="color:var(--muted); font-size:11.5px;">Skyddad med personlig PIN</span>
+              </div>
+            </div>
+
+            <sc-if value="{{ visaInstall }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ openMInstall }}" style="position:relative; overflow:hidden; display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; margin-top:12px; padding:16px; color:#f8f4ec; background:var(--ink2); border-radius:19px; cursor:pointer;">
+              <span style="position:absolute; right:-28px; bottom:-42px; width:100px; height:100px; border:1px solid rgba(222,182,141,.22); border-radius:50%;"></span>
+              <span style="z-index:1; display:grid; place-items:center; width:40px; height:40px; color:#744924; background:var(--copper-soft); border-radius:13px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 21h16"/></svg></span>
+              <div style="z-index:1;"><strong style="display:block;">Lägg Corevo på hemskärmen</strong><span style="color:#aeaca5; font-size:11.5px;">Snabbare åtkomst, precis som en app</span></div>
+              <svg style="z-index:1;" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#c7c2b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+            </sc-if>
+          </div>
+          </sc-if>
+
+          <!-- ─── BOKNINGAR ─── -->
+          <sc-if value="{{ tabB }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Mobil – Bokningar" style="animation:cpPage .35s cubic-bezier(.22,1,.36,1);">
+            <div style="padding:14px 2px 4px;">
+              <div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;">Din kalender</div>
+              <div style="font-family:var(--serif); font-size:40px; line-height:1.02; letter-spacing:-.03em; margin-top:6px;">Bokningar</div>
+              <div style="color:var(--muted); margin-top:8px;">Kommande tider och tidigare besök.</div>
+            </div>
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; margin:28px 0 13px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:22px; letter-spacing:-.03em;">Kommande</h2><span onClick="{{ openMNyboka }}" style="min-height:44px; display:inline-flex; align-items:center; color:var(--copper); font-size:13px; font-weight:600; cursor:pointer;">+ Ny bokning</span></div>
+            <div style="overflow:hidden; border:1px solid var(--line); border-radius:21px; background:var(--card);">
+              <sc-for list="{{ kommande }}" as="b" hint-placeholder-count="2">
+                <div onClick="{{ b.open }}" style="display:grid; grid-template-columns:48px 1fr auto; gap:13px; align-items:center; min-height:79px; padding:14px; border-bottom:1px solid var(--line); cursor:pointer;">
+                  <span style="display:grid; place-items:center; width:48px; height:51px; color:#704824; background:var(--copper-soft); border-radius:14px;"><strong style="font-family:var(--serif); font-size:22px; line-height:1;">{{ b.d }}</strong><small style="font-size:8px; font-weight:700; letter-spacing:.08em;">{{ b.m }}</small></span>
+                  <span><h3 style="margin:0; font-size:15px; letter-spacing:-.01em;">{{ b.title }}</h3><p style="margin:2px 0 0; color:var(--muted); font-size:12px;">{{ b.sub }}</p></span>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#99968d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; margin:28px 0 13px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:22px; letter-spacing:-.03em;">Historik</h2></div>
+            <div style="overflow:hidden; border:1px solid var(--line); border-radius:21px; background:var(--card);">
+              <sc-for list="{{ historik }}" as="h" hint-placeholder-count="2">
+                <div onClick="{{ h.open }}" style="display:grid; grid-template-columns:48px 1fr auto; gap:13px; align-items:center; min-height:79px; padding:14px; border-bottom:1px solid var(--line); cursor:pointer; opacity:.72;">
+                  <span style="display:grid; place-items:center; width:48px; height:51px; color:#6f6c62; background:#efeadf; border-radius:14px;"><strong style="font-family:var(--serif); font-size:22px; line-height:1;">{{ h.d }}</strong><small style="font-size:8px; font-weight:700; letter-spacing:.08em;">{{ h.m }}</small></span>
+                  <span><h3 style="margin:0; font-size:15px; letter-spacing:-.01em;">{{ h.title }}</h3><p style="margin:2px 0 0; color:var(--muted); font-size:12px;">{{ h.sub }}</p></span>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#99968d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+
+          <!-- ─── PROFIL ─── -->
+          <sc-if value="{{ tabP }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Mobil – Profil & säkerhet" style="animation:cpPage .35s cubic-bezier(.22,1,.36,1);">
+            <div style="padding:14px 2px 4px;">
+              <div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;">Ditt konto</div>
+              <div style="font-family:var(--serif); font-size:40px; line-height:1.02; letter-spacing:-.03em; margin-top:6px;">Profil &amp;<br>säkerhet</div>
+            </div>
+            <div style="position:relative; overflow:hidden; display:flex; align-items:center; gap:15px; margin-top:22px; padding:20px; color:#fff; background:var(--ink); border-radius:23px;">
+              <span style="z-index:1; display:grid; place-items:center; width:58px; height:58px; flex:0 0 auto; color:#5f3b1e; background:var(--copper-lt); border-radius:50%; font-family:var(--serif); font-size:21px;">{{ initialer }}</span>
+              <div style="z-index:1; min-width:0;"><h3 style="margin:0; font-size:18px;">{{ kundnamn }}</h3><p style="margin:2px 0 0; color:#aaa8a1; font-size:12px; overflow-wrap:anywhere;">{{ epost }}</p></div>
+            </div>
+            <div style="display:flex; align-items:flex-end; margin:26px 0 12px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:22px; letter-spacing:-.03em;">Inställningar</h2></div>
+            <div style="overflow:hidden; border:1px solid var(--line); border-radius:20px; background:var(--card);">
+              <div onClick="{{ toastKontakt }}" style="display:grid; grid-template-columns:42px 1fr auto; gap:12px; align-items:center; min-height:72px; padding:13px 15px; border-bottom:1px solid var(--line); cursor:pointer;">
+                <span style="display:grid; place-items:center; width:42px; height:42px; color:#6f4a29; background:#eee3d5; border-radius:13px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+                <span><strong style="display:block;">Kontaktuppgifter</strong><span style="color:var(--muted); font-size:11.5px;">Telefon och e-post</span></span>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#99968d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+              <div onClick="{{ openMNotiser }}" style="display:grid; grid-template-columns:42px 1fr auto; gap:12px; align-items:center; min-height:72px; padding:13px 15px; border-bottom:1px solid var(--line); cursor:pointer;">
+                <span style="display:grid; place-items:center; width:42px; height:42px; color:#6f4a29; background:#eee3d5; border-radius:13px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>
+                <span><strong style="display:block;">Notifieringar</strong><span style="color:var(--muted); font-size:11.5px;">Påminnelser och nyheter</span></span>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#99968d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+              <div onClick="{{ openMPin }}" style="display:grid; grid-template-columns:42px 1fr auto; gap:12px; align-items:center; min-height:72px; padding:13px 15px; cursor:pointer;">
+                <span style="display:grid; place-items:center; width:42px; height:42px; color:#6f4a29; background:#eee3d5; border-radius:13px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-5"/></svg></span>
+                <span><strong style="display:block;">Betrodd enhet &amp; PIN</strong><span style="color:var(--sage); font-size:11.5px; font-weight:600;">Aktiv på den här mobilen</span></span>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#99968d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+            </div>
+            <div style="display:flex; gap:11px; margin-top:13px; padding:15px; color:#315643; background:var(--sage-lt); border:1px solid #c7d9cd; border-radius:17px;">
+              <svg style="flex:0 0 auto;" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z"/></svg>
+              <div><strong style="display:block; font-size:13px;">Lösenordsfri och säker</strong><p style="margin:2px 0 0; color:#587164; font-size:11.5px;">Din identitet bekräftas med en engångslänk. PIN-koden lämnar aldrig din enhet.</p></div>
+            </div>
+            <div style="display:flex; align-items:flex-end; margin:26px 0 12px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:22px; letter-spacing:-.03em;">Corevo</h2></div>
+            <div style="overflow:hidden; border:1px solid var(--line); border-radius:20px; background:var(--card);">
+              <div onClick="{{ openMInstall }}" style="display:grid; grid-template-columns:42px 1fr auto; gap:12px; align-items:center; min-height:72px; padding:13px 15px; border-bottom:1px solid var(--line); cursor:pointer;">
+                <span style="display:grid; place-items:center; width:42px; height:42px; color:#6f4a29; background:#eee3d5; border-radius:13px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 21h16"/></svg></span>
+                <span><strong style="display:block;">Installera appen</strong><span style="color:var(--muted); font-size:11.5px;">Lägg Corevo på hemskärmen</span></span>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#99968d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+              <div onClick="{{ toastLoggaUt }}" style="display:grid; grid-template-columns:42px 1fr auto; gap:12px; align-items:center; min-height:72px; padding:13px 15px; cursor:pointer;">
+                <span style="display:grid; place-items:center; width:42px; height:42px; color:var(--danger); background:#f3e2df; border-radius:13px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
+                <span><strong style="display:block;">Logga ut</strong><span style="color:var(--muted); font-size:11.5px;">Avsluta sessionen säkert</span></span>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#99968d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+
+        <!-- Bottom dock -->
+        <div style="position:absolute; left:0; right:0; bottom:0; padding:8px 12px 22px; pointer-events:none;">
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); min-height:64px; padding:7px; background:rgba(25,26,23,.96); border:1px solid rgba(255,255,255,.1); border-radius:22px; box-shadow:0 16px 40px rgba(18,18,16,.34); pointer-events:auto;">
+            <div onClick="{{ goO }}" style="position:relative; display:grid; place-items:center; align-content:center; gap:4px; border-radius:16px; cursor:pointer; color:{{ dockOColor }}; background:{{ dockOBg }};">
+              <sc-if value="{{ tabO }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:4px; width:18px; height:2px; background:var(--copper-lt); border-radius:2px;"></span></sc-if>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+              <span style="font-size:9px; font-weight:600;">Översikt</span>
+            </div>
+            <div onClick="{{ goB }}" style="position:relative; display:grid; place-items:center; align-content:center; gap:4px; border-radius:16px; cursor:pointer; color:{{ dockBColor }}; background:{{ dockBBg }};">
+              <sc-if value="{{ tabB }}" hint-placeholder-val="{{ false }}"><span style="position:absolute; top:4px; width:18px; height:2px; background:var(--copper-lt); border-radius:2px;"></span></sc-if>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v3m10-3v3M4 9h16"/></svg>
+              <span style="font-size:9px; font-weight:600;">Bokningar</span>
+            </div>
+            <div onClick="{{ goP }}" style="position:relative; display:grid; place-items:center; align-content:center; gap:4px; border-radius:16px; cursor:pointer; color:{{ dockPColor }}; background:{{ dockPBg }};">
+              <sc-if value="{{ tabP }}" hint-placeholder-val="{{ false }}"><span style="position:absolute; top:4px; width:18px; height:2px; background:var(--copper-lt); border-radius:2px;"></span></sc-if>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span style="font-size:9px; font-weight:600;">Profil</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ MOBIL SHEETS ══ -->
+        <sc-if value="{{ mSheetOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeM }}" style="position:absolute; inset:0; z-index:40; background:rgba(12,13,11,.58); animation:cpFade .25s ease;"></div>
+        </sc-if>
+
+        <sc-if value="{{ mDetaljer }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Mobil – Bokningsdetaljer" style="position:absolute; left:0; right:0; bottom:0; z-index:41; max-height:88%; overflow:auto; padding:8px 20px 34px; background:var(--card); border-radius:28px 28px 0 0; box-shadow:0 -25px 80px rgba(0,0,0,.2); animation:cpSheet .4s cubic-bezier(.22,1,.36,1);">
+          <div style="width:38px; height:4px; margin:5px auto 18px; background:var(--line); border-radius:99px;"></div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+            <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Bekräftad bokning</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Bokningsdetaljer</h2></div>
+            <div onClick="{{ closeM }}" style="flex:0 0 auto; display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:15px; padding:18px; color:#fff; background:var(--ink); border-radius:19px;"><strong style="font-family:var(--serif); font-weight:500; font-size:38px; line-height:1; color:var(--copper-lt);">{{ bokDatum }}</strong><div><b style="font-size:15px;">{{ bokDag }} {{ bokDatum }} juli</b><span style="display:block; color:#aaa8a1; font-size:12px;">{{ bokTidText }}</span></div></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:11px 0 18px;">
+            <div style="padding:14px; border:1px solid var(--line); border-radius:15px;"><small style="display:block; color:var(--muted); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Behandling</small><strong style="display:block; margin-top:4px; font-size:13px;">{{ bokTjanst }}</strong></div>
+            <div style="padding:14px; border:1px solid var(--line); border-radius:15px;"><small style="display:block; color:var(--muted); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Frisör</small><strong style="display:block; margin-top:4px; font-size:13px;">Sofia Lind</strong></div>
+            <div style="padding:14px; border:1px solid var(--line); border-radius:15px;"><small style="display:block; color:var(--muted); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Salong</small><strong style="display:block; margin-top:4px; font-size:13px;">{{ salong }}</strong></div>
+            <div style="padding:14px; border:1px solid var(--line); border-radius:15px;"><small style="display:block; color:var(--muted); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Pris</small><strong style="display:block; margin-top:4px; font-size:13px;">1 490 kr</strong></div>
+          </div>
+          <span onClick="{{ toastKarta }}" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:48px; border:1px solid var(--line); border-radius:14px; background:var(--card2); color:var(--tx); font-weight:600; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15m6-12v15"/></svg>Nybrogatan 17, Stockholm</span>
+          <div style="height:9px;"></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:9px;">
+            <span onClick="{{ toastKalender }}" style="display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; border-radius:14px; background:var(--ink); color:#fff; font-weight:600; cursor:pointer;">Lägg i kalender</span>
+            <span onClick="{{ openMOmboka }}" style="display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; border-radius:14px; border:1px solid var(--line); color:var(--danger); font-weight:600; cursor:pointer;">Omboka</span>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ mNotiser }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Mobil – Notifieringar" style="position:absolute; left:0; right:0; bottom:0; z-index:41; max-height:88%; overflow:auto; padding:8px 20px 34px; background:var(--card); border-radius:28px 28px 0 0; box-shadow:0 -25px 80px rgba(0,0,0,.2); animation:cpSheet .4s cubic-bezier(.22,1,.36,1);">
+          <div style="width:38px; height:4px; margin:5px auto 18px; background:var(--line); border-radius:99px;"></div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:8px;">
+            <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Senaste nytt</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Notifieringar</h2></div>
+            <div onClick="{{ closeM }}" style="flex:0 0 auto; display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+          </div>
+          <sc-for list="{{ notiser }}" as="n" hint-placeholder-count="3">
+            <div style="display:grid; grid-template-columns:9px 1fr; gap:12px; padding:16px 2px; border-bottom:1px solid var(--line);">
+              <span style="width:8px; height:8px; margin-top:6px; background:{{ n.dot }}; border-radius:50%;"></span>
+              <div><strong style="display:block; font-size:14px;">{{ n.title }}</strong><p style="margin:2px 0; color:var(--muted); font-size:12px;">{{ n.body }}</p><time style="color:var(--muted2); font-size:10px;">{{ n.time }}</time></div>
+            </div>
+          </sc-for>
+          <span onClick="{{ markAll }}" style="display:flex; align-items:center; justify-content:center; width:100%; min-height:48px; margin-top:14px; border:1px solid var(--line); border-radius:14px; background:var(--card2); font-weight:600; cursor:pointer;">Markera alla som lästa</span>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ mPin }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Mobil – PIN" style="position:absolute; left:0; right:0; bottom:0; z-index:41; max-height:92%; overflow:auto; padding:8px 20px 34px; background:var(--card); border-radius:28px 28px 0 0; box-shadow:0 -25px 80px rgba(0,0,0,.2); animation:cpSheet .4s cubic-bezier(.22,1,.36,1);">
+          <div style="width:38px; height:4px; margin:5px auto 18px; background:var(--line); border-radius:99px;"></div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+            <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Betrodd enhet</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Ange din PIN</h2></div>
+            <div onClick="{{ closeM }}" style="flex:0 0 auto; display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+          </div>
+          <p style="color:var(--muted); margin:8px 0 0;">Fyra siffror låser upp portalen på den här mobilen.</p>
+          <div style="display:flex; justify-content:center; gap:13px; margin:26px 0;">
+            <sc-for list="{{ pinDots }}" as="p" hint-placeholder-count="4"><span style="width:13px; height:13px; border:1.5px solid #aaa69d; border-radius:50%; background:{{ p.bg }}; border-color:{{ p.bd }}; transform:scale({{ p.sc }});"></span></sc-for>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:340px; margin:auto;">
+            <sc-for list="{{ pinKeys }}" as="k" hint-placeholder-count="12">
+              <button onClick="{{ k.press }}" style="min-height:58px; border:1px solid {{ k.bd }}; border-radius:16px; background:{{ k.bg }}; color:var(--tx); font-family:{{ k.font }}; font-size:{{ k.fs }}; cursor:pointer;">{{ k.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ mInstall }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Mobil – Installera" style="position:absolute; left:0; right:0; bottom:0; z-index:41; max-height:88%; overflow:auto; padding:8px 20px 34px; background:var(--card); border-radius:28px 28px 0 0; box-shadow:0 -25px 80px rgba(0,0,0,.2); animation:cpSheet .4s cubic-bezier(.22,1,.36,1);">
+          <div style="width:38px; height:4px; margin:5px auto 18px; background:var(--line); border-radius:99px;"></div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:8px;">
+            <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Snabb åtkomst</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Installera Corevo</h2></div>
+            <div onClick="{{ closeM }}" style="flex:0 0 auto; display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:15px; padding:18px; color:#fff; background:var(--ink); border-radius:19px;"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--copper-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 21h16"/></svg><div><b style="font-size:15px;">Som en app, utan App Store</b><span style="display:block; color:#aaa8a1; font-size:12px;">Säker, snabb och alltid uppdaterad</span></div></div>
+          <div style="overflow:hidden; margin:12px 0 18px; border:1px solid var(--line); border-radius:16px;">
+            <div style="display:grid; grid-template-columns:42px 1fr; gap:12px; align-items:center; padding:14px 15px; border-bottom:1px solid var(--line);"><span style="display:grid; place-items:center; width:42px; height:42px; color:#6f4a29; background:#eee3d5; border-radius:13px; font-family:var(--serif); font-size:17px;">1</span><span><strong style="display:block;">Öppna webbläsarens meny</strong><span style="color:var(--muted); font-size:11.5px;">Tryck på dela- eller menyikonen.</span></span></div>
+            <div style="display:grid; grid-template-columns:42px 1fr; gap:12px; align-items:center; padding:14px 15px; border-bottom:1px solid var(--line);"><span style="display:grid; place-items:center; width:42px; height:42px; color:#6f4a29; background:#eee3d5; border-radius:13px; font-family:var(--serif); font-size:17px;">2</span><span><strong style="display:block;">Välj “Lägg till på hemskärmen”</strong><span style="color:var(--muted); font-size:11.5px;">Bekräfta namnet Corevo.</span></span></div>
+            <div style="display:grid; grid-template-columns:42px 1fr; gap:12px; align-items:center; padding:14px 15px;"><span style="display:grid; place-items:center; width:42px; height:42px; color:#6f4a29; background:#eee3d5; border-radius:13px; font-family:var(--serif); font-size:17px;">3</span><span><strong style="display:block;">Klart</strong><span style="color:var(--muted); font-size:11.5px;">Corevo finns nu bland dina appar.</span></span></div>
+          </div>
+          <span onClick="{{ toastInstall }}" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:48px; border-radius:14px; background:var(--ink); color:#fff; font-weight:600; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 21h16"/></svg>Lägg på hemskärmen</span>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ mOmboka }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Mobil – Omboka" style="position:absolute; left:0; right:0; bottom:0; z-index:41; max-height:88%; overflow:auto; padding:8px 20px 34px; background:var(--card); border-radius:28px 28px 0 0; box-shadow:0 -25px 80px rgba(0,0,0,.2); animation:cpSheet .4s cubic-bezier(.22,1,.36,1);">
+          <div style="width:38px; height:4px; margin:5px auto 18px; background:var(--line); border-radius:99px;"></div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+            <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Omboka</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Välj en ny tid</h2></div>
+            <div onClick="{{ closeM }}" style="flex:0 0 auto; display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+          </div>
+          <p style="color:var(--muted); margin:8px 0 0;">Sofia · Klippning &amp; nyansering</p>
+          <h2 style="margin:24px 0 0; font-family:var(--serif); font-weight:500; font-size:20px; letter-spacing:-.02em;">Fredag 7 augusti</h2>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0;">
+            <sc-for list="{{ ombokaTider }}" as="t" hint-placeholder-count="6"><button onClick="{{ t.pick }}" style="min-height:46px; border:1px solid {{ t.bd }}; border-radius:13px; background:{{ t.bg }}; color:{{ t.c }}; font-weight:600; cursor:pointer;">{{ t.label }}</button></sc-for>
+          </div>
+          <span onClick="{{ bekraftaOmboka }}" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:48px; border-radius:14px; background:var(--ink); color:#fff; font-weight:600; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>Bekräfta ny tid</span>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ mNyboka }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Mobil – Ny bokning" style="position:absolute; left:0; right:0; bottom:0; z-index:41; max-height:90%; overflow:auto; padding:8px 20px 34px; background:var(--card); border-radius:28px 28px 0 0; box-shadow:0 -25px 80px rgba(0,0,0,.2); animation:cpSheet .4s cubic-bezier(.22,1,.36,1);">
+          <div style="width:38px; height:4px; margin:5px auto 18px; background:var(--line); border-radius:99px;"></div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+            <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Ny bokning</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Vad önskar du?</h2></div>
+            <div onClick="{{ closeM }}" style="flex:0 0 auto; display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+          </div>
+          <div style="display:grid; gap:9px; margin-top:16px;">
+            <sc-for list="{{ tjanster }}" as="s" hint-placeholder-count="3">
+              <div onClick="{{ s.pick }}" style="display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; min-height:68px; padding:11px 13px; border:1px solid {{ s.bd }}; box-shadow:{{ s.shadow }}; border-radius:16px; background:var(--card2); cursor:pointer;">
+                <span style="display:grid; place-items:center; width:44px; height:44px; color:#6f4a29; background:#eee3d5; border-radius:13px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="m8.5 8.5 11 7.5M8.5 15.5l11-7.5"/></svg></span>
+                <span><strong style="display:block;">{{ s.name }}</strong><span style="color:var(--muted); font-size:11.5px;">{{ s.meta }}</span></span>
+                <span style="font-size:12.5px; font-weight:600;">{{ s.price }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <h2 style="margin:24px 0 0; font-family:var(--serif); font-weight:500; font-size:20px; letter-spacing:-.02em;">Lediga tider</h2>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0;">
+            <sc-for list="{{ nybokaTider }}" as="t" hint-placeholder-count="6"><button onClick="{{ t.pick }}" style="min-height:46px; border:1px solid {{ t.bd }}; border-radius:13px; background:{{ t.bg }}; color:{{ t.c }}; font-weight:600; cursor:pointer;">{{ t.label }}</button></sc-for>
+          </div>
+          <span onClick="{{ bekraftaNyboka }}" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:48px; border-radius:14px; background:var(--ink); color:#fff; font-weight:600; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v3m10-3v3M4 9h16"/></svg>Fortsätt med {{ nybokaValdTid }}</span>
+        </div>
+        </sc-if>
+
+        <!-- Mobil toast -->
+        <sc-if value="{{ mToast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; z-index:60; top:60px; left:50%; display:flex; align-items:center; gap:10px; width:calc(100% - 36px); max-width:420px; min-height:50px; padding:12px 15px; color:#fff; background:var(--ink); border:1px solid rgba(255,255,255,.1); border-radius:16px; box-shadow:0 20px 55px rgba(24,22,16,.32); animation:cpToast .35s cubic-bezier(.22,1,.36,1);">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#9fc0a9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg><span style="font-size:13.5px;">{{ mToastMsg }}</span>
+        </div>
+        </sc-if>
+
+      </div>
+      </x-import>
+    </div>
+
+    <!-- ══════════════════ DESKTOP ══════════════════ -->
+    <div>
+      <div style="font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#8f8b7d; font-weight:600; margin:0 0 14px 8px;">Desktop · ≥ 780 px</div>
+      <x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="1160" height="760" url="mina.corevo.se" hint-size="1160px,760px">
+      <div style="position:relative; height:100%; display:grid; grid-template-columns:250px 1fr; background:var(--paper); color:var(--tx); font-family:var(--sans); overflow:hidden;">
+
+        <!-- Sidebar -->
+        <aside style="display:flex; flex-direction:column; height:100%; padding:28px 22px; background:var(--ink); color:#f7f3eb; box-sizing:border-box;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="display:grid; place-items:center; width:38px; height:38px; border:1px solid rgba(255,255,255,.22); border-radius:50%; color:var(--copper-lt); font-family:var(--serif); font-size:20px;">C</span>
+            <span style="font-size:20px; font-weight:600; letter-spacing:-.03em;">Corevo</span>
+          </div>
+          <div style="margin-top:10px; color:#a7a79f; font-size:11px; letter-spacing:.12em; text-transform:uppercase;">{{ salong }} · Stockholm</div>
+          <nav style="display:grid; gap:7px; margin-top:44px;">
+            <div onClick="{{ goO }}" style="display:flex; align-items:center; gap:13px; padding:13px 14px; border-radius:13px; cursor:pointer; color:{{ sideOColor }}; background:{{ sideOBg }};"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Översikt</div>
+            <div onClick="{{ goB }}" style="display:flex; align-items:center; gap:13px; padding:13px 14px; border-radius:13px; cursor:pointer; color:{{ sideBColor }}; background:{{ sideBBg }};"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v3m10-3v3M4 9h16"/></svg>Mina bokningar</div>
+            <div onClick="{{ goP }}" style="display:flex; align-items:center; gap:13px; padding:13px 14px; border-radius:13px; cursor:pointer; color:{{ sidePColor }}; background:{{ sidePBg }};"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profil &amp; säkerhet</div>
+          </nav>
+          <div style="margin-top:auto; color:#8e8e87; font-size:11.5px; line-height:1.6;">Lösenordsfri inloggning<br>Corevo Portal · v1</div>
+        </aside>
+
+        <!-- Main -->
+        <div style="min-width:0; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+          <header style="display:flex; align-items:center; justify-content:flex-end; padding:20px 34px 14px; flex-shrink:0;">
+            <div onClick="{{ openDNotiser }}" style="position:relative; display:grid; place-items:center; width:42px; height:42px; border:1px solid var(--line); border-radius:50%; background:var(--card); cursor:pointer;">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+              <sc-if value="{{ harOlast }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:-2px; right:-1px; display:grid; place-items:center; width:18px; height:18px; color:#fff; background:var(--danger); border:2px solid var(--paper); border-radius:50%; font-size:9px; font-weight:700;">{{ olastCount }}</span></sc-if>
+            </div>
+          </header>
+
+          <div style="flex:1; overflow:auto; min-height:0; padding:8px 40px 48px;">
+
+            <!-- ÖVERSIKT -->
+            <sc-if value="{{ tabO }}" hint-placeholder-val="{{ true }}">
+            <div data-screen-label="Desktop – Översikt" style="animation:cpPage .3s ease;">
+              <div style="color:var(--copper); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;">{{ idagText }}</div>
+              <h1 style="margin:5px 0 0; font-family:var(--serif); font-weight:500; font-size:46px; letter-spacing:-.035em; line-height:1.04;">Hej, {{ fornamn }}.</h1>
+              <p style="margin:8px 0 0; color:var(--muted);">Här är det viktigaste inför ditt nästa besök.</p>
+
+              <div style="display:grid; grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr); gap:26px; align-items:start; margin-top:26px;">
+                <sc-if value="{{ harBokning }}" hint-placeholder-val="{{ true }}">
+                <article style="position:relative; overflow:hidden; min-height:360px; display:flex; flex-direction:column; justify-content:center; padding:38px; color:#f8f5ed; background:var(--ink); border-radius:26px; box-shadow:0 18px 50px rgba(26,24,19,.14);">
+                  <span style="position:absolute; right:-54px; bottom:-65px; width:190px; height:190px; border:1px solid rgba(214,174,126,.32); border-radius:50%; box-shadow:0 0 0 24px rgba(214,174,126,.055), 0 0 0 48px rgba(214,174,126,.035);"></span>
+                  <span style="color:#bcbab1; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;">Din nästa bokning</span>
+                  <div style="display:flex; align-items:center; gap:18px; margin:17px 0 19px;">
+                    <span style="font-family:var(--serif); font-weight:500; color:var(--copper-lt); font-size:78px; line-height:.82; letter-spacing:-.05em;">{{ bokDatum }}</span>
+                    <div><strong style="display:block; font-size:18px;">{{ bokDag }} i juli</strong><span style="color:#aaa9a0;">{{ bokTidText }}</span></div>
+                  </div>
+                  <div style="position:relative; z-index:1; display:grid; gap:5px; padding-top:18px; border-top:1px solid rgba(255,255,255,.14);">
+                    <strong style="font-size:17px;">{{ bokTjanst }}</strong>
+                    <span style="color:#aaa9a0;">{{ bokMed }}</span>
+                    <span style="color:#aaa9a0;">Nybrogatan 17, Stockholm</span>
+                  </div>
+                  <div style="position:relative; z-index:1; display:flex; gap:10px; margin-top:21px;">
+                    <span onClick="{{ openDDetaljer }}" style="display:inline-flex; align-items:center; justify-content:center; gap:9px; min-height:46px; padding:0 18px; border-radius:13px; background:var(--copper-soft); color:var(--ink); font-weight:600; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v3m10-3v3M4 9h16"/></svg>Visa bokning</span>
+                    <span onClick="{{ toastOmboka }}" style="display:inline-flex; align-items:center; justify-content:center; gap:9px; min-height:46px; padding:0 18px; border-radius:13px; border:1px solid rgba(255,255,255,.22); color:#f7f3eb; font-weight:600; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 16-1 5 5-1L20 8l-4-4L4 16Z"/><path d="m14 6 4 4"/></svg>Omboka</span>
+                  </div>
+                </article>
+                </sc-if>
+
+                <div>
+                  <h2 style="margin:0 0 14px; font-family:var(--serif); font-weight:500; font-size:24px; letter-spacing:-.03em;">Genvägar</h2>
+                  <div style="display:grid; gap:12px;">
+                    <div onClick="{{ goB }}" style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:15px; min-height:100px; padding:18px; border:1px solid var(--line); border-radius:19px; background:var(--card); cursor:pointer;">
+                      <span style="display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:var(--copper-soft); color:#765128;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+                      <span><strong style="display:block; margin-bottom:3px;">Ny bokning</strong><span style="color:var(--muted); font-size:12px;">Hitta behandling och tid</span></span>
+                    </div>
+                    <div onClick="{{ openDPin }}" style="display:grid; grid-template-columns:auto 1fr; align-items:center; gap:15px; min-height:100px; padding:18px; border:1px solid var(--line); border-radius:19px; background:var(--card); cursor:pointer;">
+                      <span style="display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:var(--copper-soft); color:#765128;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg></span>
+                      <span><strong style="display:block; margin-bottom:3px;">Betrodd enhet</strong><span style="color:var(--muted); font-size:12px;">Skyddad med personlig PIN</span></span>
+                    </div>
+                  </div>
+                  <sc-if value="{{ visaInstall }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:grid; grid-template-columns:auto 1fr; gap:15px; align-items:center; margin-top:12px; padding:18px; border:1px solid var(--line2); border-radius:19px; background:#eee5d9;">
+                    <span style="display:grid; place-items:center; width:46px; height:46px; border-radius:14px; background:var(--card);"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#765128" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 21h16"/></svg></span>
+                    <div><strong>Ha Corevo nära till hands</strong><p style="margin:2px 0 0; color:var(--muted); font-size:12px;">Installera portalen på hemskärmen.</p></div>
+                    <span onClick="{{ toastInstall }}" style="grid-column:1 / -1; display:inline-flex; align-items:center; justify-content:center; min-height:46px; border-radius:13px; background:var(--ink); color:#fff; font-weight:600; cursor:pointer;">Installera Corevo</span>
+                  </div>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+            </sc-if>
+
+            <!-- BOKNINGAR -->
+            <sc-if value="{{ tabB }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="Desktop – Mina bokningar" style="animation:cpPage .3s ease;">
+              <div style="color:var(--copper); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;">Din historik</div>
+              <h1 style="margin:5px 0 0; font-family:var(--serif); font-weight:500; font-size:46px; letter-spacing:-.035em; line-height:1.04;">Mina bokningar</h1>
+              <p style="margin:8px 0 0; color:var(--muted);">Kommande tider och tidigare besök på {{ salong }}.</p>
+              <div style="display:flex; align-items:flex-end; justify-content:space-between; margin:32px 0 14px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:24px; letter-spacing:-.03em;">Kommande</h2><span onClick="{{ toastNyboka }}" style="display:inline-flex; align-items:center; min-height:44px; padding:0 18px; border-radius:13px; background:var(--ink); color:#fff; font-weight:600; cursor:pointer;">Boka ny tid</span></div>
+              <div style="max-width:760px; overflow:hidden; border:1px solid var(--line); border-radius:22px; background:var(--card);">
+                <sc-for list="{{ kommande }}" as="b" hint-placeholder-count="2">
+                  <div onClick="{{ b.openD }}" style="display:flex; gap:14px; align-items:center; padding:17px; border-bottom:1px solid var(--line); cursor:pointer;">
+                    <span style="display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:13px; background:var(--copper-soft); color:#75552f;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v3m10-3v3M4 9h16"/></svg></span>
+                    <div style="min-width:0; flex:1;"><strong style="display:block;">{{ b.longDate }}</strong><span style="color:var(--muted); font-size:13px;">{{ b.longSub }}</span></div>
+                    <sc-if value="{{ b.bekraftad }}" hint-placeholder-val="{{ true }}"><span style="padding:5px 10px; color:var(--sage); background:#e3eee8; border-radius:999px; font-size:11px; font-weight:700;">Bekräftad</span></sc-if>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a7a49b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex; align-items:flex-end; margin:32px 0 14px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:24px; letter-spacing:-.03em;">Tidigare</h2></div>
+              <div style="max-width:760px; overflow:hidden; border:1px solid var(--line); border-radius:22px; background:var(--card); opacity:.72;">
+                <sc-for list="{{ historik }}" as="h" hint-placeholder-count="2">
+                  <div onClick="{{ h.openD }}" style="display:flex; gap:14px; align-items:center; padding:17px; border-bottom:1px solid var(--line); cursor:pointer;">
+                    <span style="display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:13px; background:#eee8dd; color:#75552f;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></span>
+                    <div style="min-width:0; flex:1;"><strong style="display:block;">{{ h.longDate }}</strong><span style="color:var(--muted); font-size:13px;">{{ h.longSub }}</span></div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a7a49b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
+            <!-- PROFIL -->
+            <sc-if value="{{ tabP }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="Desktop – Profil & säkerhet" style="animation:cpPage .3s ease; max-width:760px;">
+              <div style="color:var(--copper); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;">Ditt konto</div>
+              <h1 style="margin:5px 0 0; font-family:var(--serif); font-weight:500; font-size:46px; letter-spacing:-.035em; line-height:1.04;">Profil &amp; säkerhet</h1>
+              <div style="display:flex; align-items:center; gap:15px; margin-top:24px; padding:20px; border-radius:22px; color:#fff; background:var(--ink);">
+                <span style="display:grid; place-items:center; width:58px; height:58px; flex:0 0 auto; border-radius:50%; color:#63411f; background:var(--copper-lt); font-family:var(--serif); font-size:22px;">{{ initialer }}</span>
+                <div><h3 style="margin:0; font-size:18px;">{{ kundnamn }}</h3><span style="color:#aaa9a0; font-size:13px;">{{ epost }}</span></div>
+              </div>
+              <div style="display:flex; align-items:flex-end; margin:32px 0 14px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:24px; letter-spacing:-.03em;">Personliga uppgifter</h2></div>
+              <div style="overflow:hidden; border:1px solid var(--line); border-radius:22px; background:var(--card);">
+                <div onClick="{{ toastKontakt }}" style="display:flex; gap:14px; align-items:center; padding:17px; border-bottom:1px solid var(--line); cursor:pointer;"><span style="display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:13px; background:#eee8dd; color:#75552f;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><div style="flex:1;"><strong style="display:block;">Kontaktuppgifter</strong><span style="color:var(--muted); font-size:13px;">Telefon, e-post och adress</span></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a7a49b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+                <div onClick="{{ openDNotiser }}" style="display:flex; gap:14px; align-items:center; padding:17px; cursor:pointer;"><span style="display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:13px; background:#eee8dd; color:#75552f;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div style="flex:1;"><strong style="display:block;">Notifieringar</strong><span style="color:var(--muted); font-size:13px;">Påminnelser via push och e-post</span></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a7a49b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+              </div>
+              <div style="display:flex; align-items:flex-end; margin:32px 0 14px;"><h2 style="margin:0; font-family:var(--serif); font-weight:500; font-size:24px; letter-spacing:-.03em;">Säkerhet</h2></div>
+              <div style="overflow:hidden; border:1px solid var(--line); border-radius:22px; background:var(--card);">
+                <div onClick="{{ openDPin }}" style="display:flex; gap:14px; align-items:center; padding:17px; cursor:pointer;"><span style="display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:13px; background:#eee8dd; color:#75552f;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><div style="flex:1;"><strong style="display:block;">Betrodd enhet &amp; PIN</strong><span style="color:var(--muted); font-size:13px;">Den här enheten är betrodd</span></div><span style="padding:5px 10px; color:var(--sage); background:#e3eee8; border-radius:999px; font-size:11px; font-weight:700;">Aktiv</span></div>
+              </div>
+              <div style="display:flex; gap:12px; margin-top:16px; padding:15px; border:1px solid #cbd9d0; border-radius:16px; color:#285744; background:#e7f0eb;"><svg style="flex:0 0 auto;" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><strong style="display:block;">Lösenordsfri och säker</strong><p style="margin:2px 0 0; color:#4d6c5f; font-size:12px;">Din identitet bekräftas med en säker engångslänk. Din PIN lämnar aldrig enheten.</p></div></div>
+            </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- ══ DESKTOP OVERLAYS ══ -->
+        <sc-if value="{{ dSheetOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeD }}" style="position:absolute; inset:0; z-index:40; display:grid; place-items:center; padding:24px; background:rgba(12,13,11,.5); animation:cpFade .2s ease;">
+
+            <sc-if value="{{ dNotiser }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="Desktop – Notifieringar" onClick="{{ stop }}" style="width:min(100%,460px); max-height:80%; overflow:auto; padding:22px 24px 24px; background:var(--card); border-radius:24px; box-shadow:0 30px 90px rgba(0,0,0,.34); animation:cpDialog .28s cubic-bezier(.22,1,.36,1);">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:6px;">
+                <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Senaste nytt</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Notifieringar</h2></div>
+                <div onClick="{{ closeD }}" style="flex:0 0 auto; display:grid; place-items:center; width:38px; height:38px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+              </div>
+              <sc-for list="{{ notiser }}" as="n" hint-placeholder-count="3">
+                <div style="display:flex; gap:13px; padding:16px 0; border-bottom:1px solid var(--line);"><span style="flex:0 0 auto; width:8px; height:8px; margin-top:7px; border-radius:50%; background:{{ n.dot }};"></span><div><strong style="display:block;">{{ n.title }}</strong><p style="margin:2px 0; color:var(--muted); font-size:13px;">{{ n.body }}</p><span style="color:var(--muted2); font-size:11px;">{{ n.time }}</span></div></div>
+              </sc-for>
+              <span onClick="{{ markAll }}" style="display:flex; align-items:center; justify-content:center; width:100%; min-height:46px; margin-top:14px; border:1px solid var(--line); border-radius:13px; background:var(--card2); font-weight:600; cursor:pointer;">Markera alla som lästa</span>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ dPin }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="Desktop – PIN" onClick="{{ stop }}" style="width:min(100%,420px); padding:22px 24px 26px; background:var(--card); border-radius:24px; box-shadow:0 30px 90px rgba(0,0,0,.34); animation:cpDialog .28s cubic-bezier(.22,1,.36,1);">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+                <div><div style="color:var(--copper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;">Betrodd enhet</div><h2 style="margin:2px 0 0; font-family:var(--serif); font-weight:500; font-size:25px; letter-spacing:-.03em;">Ange din PIN</h2></div>
+                <div onClick="{{ closeD }}" style="flex:0 0 auto; display:grid; place-items:center; width:38px; height:38px; border:1px solid var(--line); border-radius:50%; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a382f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></div>
+              </div>
+              <p style="color:var(--muted); margin:8px 0 0;">PIN-koden låser upp kundportalen på den här enheten.</p>
+              <div style="display:flex; justify-content:center; gap:13px; margin:26px 0;">
+                <sc-for list="{{ pinDots }}" as="p" hint-placeholder-count="4"><span style="width:13px; height:13px; border:1.5px solid #aaa69d; border-radius:50%; background:{{ p.bg }}; border-color:{{ p.bd }}; transform:scale({{ p.sc }});"></span></sc-for>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:320px; margin:auto;">
+                <sc-for list="{{ pinKeys }}" as="k" hint-placeholder-count="12"><button onClick="{{ k.press }}" style="min-height:56px; border:1px solid {{ k.bd }}; border-radius:16px; background:{{ k.bg }}; color:var(--tx); font-family:{{ k.font }}; font-size:{{ k.fs }}; cursor:pointer;">{{ k.label }}</button></sc-for>
+              </div>
+            </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- Desktop toast -->
+        <sc-if value="{{ dToast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; z-index:60; top:20px; left:50%; display:flex; align-items:center; gap:10px; max-width:420px; min-height:48px; padding:12px 16px; color:#fff; background:var(--ink); border:1px solid rgba(255,255,255,.1); border-radius:14px; box-shadow:0 18px 50px rgba(24,22,16,.3); animation:cpToast .35s cubic-bezier(.22,1,.36,1);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9fc0a9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg><span style="font-size:13.5px;">{{ dToastMsg }}</span>
+        </div>
+        </sc-if>
+
+      </div>
+      </x-import>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1720, &quot;height&quot;: 980 },
+  &quot;kundnamn&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Elin Lindberg&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Innehåll&quot; },
+  &quot;salong&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Atelier N°7&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Innehåll&quot; },
+  &quot;harBokning&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Tillstånd&quot; },
+  &quot;visaInstall&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Tillstånd&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    tab: 'oversikt',
+    mSheet: null,   // detaljer | notiser | pin | install | omboka | nyboka
+    dSheet: null,   // notiser | pin
+    pin: 0,
+    pinSurf: 'm',
+    read: false,
+    selService: 1,
+    selOmboka: 3,
+    selNyboka: 1,
+    toastMsg: '', toastSurf: 'm',
+  };
+
+  _toast(msg, surf) {
+    this.setState({ toastMsg: msg, toastSurf: surf });
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => this.setState({ toastMsg: '' }), 2400);
+  }
+
+  _timeChips(list, sel, key) {
+    return list.map((label, i) => ({
+      label,
+      bd: i === sel ? '#191a17' : '#ddd7ca',
+      bg: i === sel ? '#191a17' : '#faf7f0',
+      c: i === sel ? '#ffffff' : '#20211d',
+      pick: () => this.setState({ [key]: i }),
+    }));
+  }
+
+  _pinPush(n) {
+    if (this.state.pin >= 4) return;
+    const np = this.state.pin + 1;
+    this.setState({ pin: np });
+    if (np === 4) {
+      setTimeout(() => {
+        const surf = this.state.pinSurf;
+        this.setState({ pin: 0, mSheet: surf === 'm' ? null : this.state.mSheet, dSheet: surf === 'd' ? null : this.state.dSheet });
+        this._toast('Enheten är verifierad', surf);
+      }, 260);
+    }
+  }
+
+  renderVals() {
+    const st = this.state;
+    const salong = this.props.salong ?? 'Atelier N°7';
+    const kundnamn = this.props.kundnamn ?? 'Elin Lindberg';
+    const fornamn = kundnamn.trim().split(' ')[0];
+    const initialer = kundnamn.trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const harBokning = this.props.harBokning ?? true;
+
+    const dockOn = { c: '#f7f2e9', bg: 'rgba(255,255,255,.08)' };
+    const dockOff = { c: '#8a8980', bg: 'transparent' };
+    const dO = st.tab === 'oversikt' ? dockOn : dockOff;
+    const dB = st.tab === 'bokningar' ? dockOn : dockOff;
+    const dP = st.tab === 'profil' ? dockOn : dockOff;
+
+    const sideOn = { c: '#ffffff', bg: 'rgba(255,255,255,.08)' };
+    const sideOff = { c: '#a9a89f', bg: 'transparent' };
+    const sO = st.tab === 'oversikt' ? sideOn : sideOff;
+    const sB = st.tab === 'bokningar' ? sideOn : sideOff;
+    const sP = st.tab === 'profil' ? sideOn : sideOff;
+
+    const openDet = { open: () => this.setState({ mSheet: 'detaljer' }), openD: () => this.setState({ dSheet: null }) };
+    const komRaw = [
+      { d: '31', m: 'JUL', title: 'Klippning & nyansering', sub: '14:30 · Sofia · ' + salong, longDate: '31 juli · 14:30', longSub: 'Klippning & nyansering · Sofia', bekraftad: true },
+      { d: '18', m: 'SEP', title: 'Klippning', sub: '10:00 · Sofia · ' + salong, longDate: '18 september · 10:00', longSub: 'Klippning · Sofia', bekraftad: false },
+    ];
+    const histRaw = [
+      { d: '12', m: 'JUN', title: 'Klippning & toning', sub: 'Genomförd · Sofia', longDate: '12 juni · 09:30', longSub: 'Klippning & toning · Amir' },
+      { d: '03', m: 'APR', title: 'Klippning', sub: 'Genomförd · Amir', longDate: '3 april · 15:00', longSub: 'Klippning · Sofia' },
+    ];
+
+    const tjRaw = [
+      { name: 'Klippning', meta: '60 minuter · valfri frisör', price: '790 kr' },
+      { name: 'Klippning & nyansering', meta: '90 minuter · valfri frisör', price: '1 490 kr' },
+      { name: 'Färgbehandling', meta: 'Från 120 minuter', price: 'fr. 1 890 kr' },
+    ];
+    const ombokaT = ['09:00', '10:30', '13:00', '14:30', '16:00', '17:30'];
+    const nybokaT = ['09:30', '11:00', '13:30', '15:00', '16:30', '18:00'];
+
+    const notiser = [
+      { title: 'Din tid är bekräftad', body: 'Vi ses den 31 juli kl. 14:30.', time: 'För 2 timmar sedan', unread: true },
+      { title: 'Nya tider hos Sofia', body: 'Septemberkalendern är nu öppen.', time: 'Igår', unread: true },
+      { title: 'Välkommen till Corevo', body: 'Din lösenordsfria kundportal är redo.', time: '14 juli', unread: false },
+    ].map(n => ({ ...n, dot: (st.read || !n.unread) ? '#ddd7ca' : '#a97141' }));
+    const olastCount = st.read ? 0 : 2;
+
+    const pinDots = Array.from({ length: 4 }, (_, i) => ({
+      bg: i < st.pin ? '#191a17' : 'transparent',
+      bd: i < st.pin ? '#191a17' : '#aaa69d',
+      sc: i < st.pin ? 1.12 : 1,
+    }));
+    const pinKeys = ['1','2','3','4','5','6','7','8','9','Rensa','0','Radera'].map(label => {
+      const minor = label === 'Rensa' || label === 'Radera';
+      return {
+        label,
+        bd: minor ? 'transparent' : '#ddd7ca',
+        bg: minor ? 'transparent' : '#f6f2ea',
+        font: minor ? 'var(--sans)' : 'var(--serif)',
+        fs: minor ? '12px' : '22px',
+        press: () => {
+          if (label === 'Rensa') this.setState({ pin: 0 });
+          else if (label === 'Radera') this.setState({ pin: Math.max(0, this.state.pin - 1) });
+          else this._pinPush(label);
+        },
+      };
+    });
+
+    return {
+      salong, kundnamn, fornamn, initialer, epost: 'elin.lindberg@example.se',
+      idagText: 'Torsdag 23 juli',
+      introText: harBokning ? 'Nästa besök är om åtta dagar.' : 'Du har ingen tid inbokad just nu.',
+      harBokning, ingenBokning: !harBokning,
+      tomText: 'Boka en tid när det passar dig.',
+      bokDatum: '31', bokDag: 'Fredag', bokTidText: 'Juli · 14:30–16:00',
+      bokTjanst: 'Klippning & nyansering', bokMed: 'Med Sofia Lind · 90 minuter',
+      visaInstall: this.props.visaInstall ?? true,
+
+      tabO: st.tab === 'oversikt', tabB: st.tab === 'bokningar', tabP: st.tab === 'profil',
+      goO: () => this.setState({ tab: 'oversikt' }),
+      goB: () => this.setState({ tab: 'bokningar' }),
+      goP: () => this.setState({ tab: 'profil' }),
+      dockOColor: dO.c, dockOBg: dO.bg, dockBColor: dB.c, dockBBg: dB.bg, dockPColor: dP.c, dockPBg: dP.bg,
+      sideOColor: sO.c, sideOBg: sO.bg, sideBColor: sB.c, sideBBg: sB.bg, sidePColor: sP.c, sidePBg: sP.bg,
+
+      // mobile sheets
+      mSheetOpen: !!st.mSheet,
+      mDetaljer: st.mSheet === 'detaljer', mNotiser: st.mSheet === 'notiser', mPin: st.mSheet === 'pin',
+      mInstall: st.mSheet === 'install', mOmboka: st.mSheet === 'omboka', mNyboka: st.mSheet === 'nyboka',
+      openMDetaljer: () => this.setState({ mSheet: 'detaljer' }),
+      openMNotiser: () => this.setState({ mSheet: 'notiser' }),
+      openMPin: () => this.setState({ mSheet: 'pin', pin: 0, pinSurf: 'm' }),
+      openMInstall: () => this.setState({ mSheet: 'install' }),
+      openMOmboka: () => this.setState({ mSheet: 'omboka' }),
+      openMNyboka: () => this.setState({ mSheet: 'nyboka' }),
+      closeM: () => this.setState({ mSheet: null, pin: 0 }),
+
+      // desktop overlays
+      dSheetOpen: !!st.dSheet,
+      dNotiser: st.dSheet === 'notiser', dPin: st.dSheet === 'pin',
+      openDNotiser: () => this.setState({ dSheet: 'notiser' }),
+      openDPin: () => this.setState({ dSheet: 'pin', pin: 0, pinSurf: 'd' }),
+      openDDetaljer: () => this._toast('Bokningsdetaljer öppnades', 'd'),
+      closeD: () => this.setState({ dSheet: null, pin: 0 }),
+      stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+
+      // lists
+      kommande: komRaw.map(b => ({ ...b, open: () => this.setState({ mSheet: 'detaljer' }), openD: () => this._toast('Bokningen ' + b.longDate + ' öppnades', 'd') })),
+      historik: histRaw.map(h => ({ ...h, open: () => this._toast('Besöket öppnades', 'm'), openD: () => this._toast('Besöket öppnades', 'd') })),
+      tjanster: tjRaw.map((s, i) => ({ ...s, bd: i === st.selService ? '#a97141' : '#ddd7ca', shadow: i === st.selService ? 'inset 0 0 0 1px #a97141' : 'none', pick: () => this.setState({ selService: i }) })),
+      ombokaTider: this._timeChips(ombokaT, st.selOmboka, 'selOmboka'),
+      nybokaTider: this._timeChips(nybokaT, st.selNyboka, 'selNyboka'),
+      nybokaValdTid: nybokaT[st.selNyboka],
+      bekraftaOmboka: () => { this.setState({ mSheet: null }); this._toast('Bokningen flyttades till 7 augusti kl. ' + ombokaT[st.selOmboka], 'm'); },
+      bekraftaNyboka: () => { this.setState({ mSheet: null }); this._toast('Din nya tid ' + nybokaT[st.selNyboka] + ' är reserverad', 'm'); },
+
+      // notiser + pin
+      notiser, harOlast: olastCount > 0, olastCount,
+      markAll: () => { this.setState({ read: true }); this._toast('Alla notifieringar markerades som lästa', st.dSheet ? 'd' : 'm'); },
+      pinDots, pinKeys,
+
+      // toasts
+      mToast: !!st.toastMsg && st.toastSurf === 'm', mToastMsg: st.toastMsg,
+      dToast: !!st.toastMsg && st.toastSurf === 'd', dToastMsg: st.toastMsg,
+      toastKarta: () => this._toast('Vägbeskrivning öppnades', 'm'),
+      toastKalender: () => { this.setState({ mSheet: null }); this._toast('Bokningen lades till i kalendern', 'm'); },
+      toastInstall: () => { this.setState({ mSheet: null }); this._toast('Installationsförfrågan skickades', st.dSheet ? 'd' : 'm'); },
+      toastKontakt: () => this._toast('Kontaktuppgifter öppnades', st.tab === 'profil' && !st.mSheet ? 'm' : 'm'),
+      toastLoggaUt: () => this._toast('Du har loggats ut', 'm'),
+      toastOmboka: () => this._toast('Ombokningsflödet öppnades', 'd'),
+      toastNyboka: () => this._toast('Nytt bokningsflöde öppnades', 'd'),
+    };
+  }
+}
+</script>
+</body>
+</html>

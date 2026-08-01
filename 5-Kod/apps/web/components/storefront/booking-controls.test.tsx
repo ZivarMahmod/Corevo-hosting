@@ -37,4 +37,85 @@ describe('booking controls fail closed', () => {
     expect(off).not.toContain('href="/boka"')
     expect(off).toContain('aria-disabled="true"')
   })
+
+  it('uses one real external booking link when Corevo booking is unreachable', () => {
+    const cta = renderToStaticMarkup(
+      <BookingProvider
+        tenantName="Test"
+        services={[]}
+        reachable={false}
+        websiteOnly
+        externalUrl="https://www.bokadirekt.se/places/test-123"
+      >
+        <BookCta enabled={false} label="Boka externt" />
+      </BookingProvider>,
+    )
+    const row = renderToStaticMarkup(
+      <BookingProvider
+        tenantName="Test"
+        services={[]}
+        reachable={false}
+        websiteOnly
+        externalUrl="https://www.bokadirekt.se/places/test-123"
+      >
+        <Bookable enabled={false} label="Boka klippning">Klippning</Bookable>
+      </BookingProvider>,
+    )
+
+    for (const html of [cta, row]) {
+      expect(html).toContain('href="https://www.bokadirekt.se/places/test-123"')
+      expect(html).toContain('target="_blank"')
+      expect(html).toContain('rel="noopener noreferrer"')
+      expect(html).not.toContain('aria-disabled="true"')
+      expect(html).not.toContain('href="/boka"')
+    }
+  })
+
+  it('keeps a saved external URL inert unless booking is explicitly off', () => {
+    const cta = renderToStaticMarkup(
+      <BookingProvider
+        tenantName="Test"
+        services={[]}
+        reachable={false}
+        websiteOnly={false}
+        externalUrl="https://www.bokadirekt.se/places/test-123"
+      >
+        <BookCta enabled={false} label="Boka" />
+      </BookingProvider>,
+    )
+    const row = renderToStaticMarkup(
+      <BookingProvider
+        tenantName="Test"
+        services={[]}
+        reachable={false}
+        websiteOnly={false}
+        externalUrl="https://www.bokadirekt.se/places/test-123"
+      >
+        <Bookable enabled={false}>Klippning</Bookable>
+      </BookingProvider>,
+    )
+
+    for (const html of [cta, row]) {
+      expect(html).toContain('aria-disabled="true"')
+      expect(html).not.toContain('bokadirekt.se')
+      expect(html).not.toContain('href="/boka"')
+    }
+  })
+
+  it('keeps paused booking inside Corevo even when an external URL is saved', () => {
+    const html = renderToStaticMarkup(
+      <BookingProvider
+        tenantName="Test"
+        services={[]}
+        reachable
+        websiteOnly={false}
+        externalUrl="https://www.bokadirekt.se/places/test-123"
+      >
+        <BookCta label="Boka" />
+      </BookingProvider>,
+    )
+
+    expect(html).toContain('href="/boka"')
+    expect(html).not.toContain('bokadirekt.se')
+  })
 })

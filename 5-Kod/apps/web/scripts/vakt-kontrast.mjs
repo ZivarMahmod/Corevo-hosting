@@ -109,7 +109,12 @@ function themesFromFlorist() {
 
 // Speglar accentForeground/accentInk i packages/ui/tokens.ts. Skulle de glida isär failar
 // vakten hellre för hårt än för mjukt — men båda härleds ur samma WCAG-räkning.
-const bestFg = (bgColor) => (ratio('#15281f', bgColor) >= ratio('#ffffff', bgColor) ? '#15281f' : '#ffffff')
+const bestFg = (bgColor) => {
+  const ink = ratio('#15281f', bgColor)
+  const paper = ratio('#ffffff', bgColor)
+  if (Math.max(ink, paper) >= MIN_TEXT) return ink >= paper ? '#15281f' : '#ffffff'
+  return ratio('#000000', bgColor) >= MIN_TEXT ? '#000000' : ink >= paper ? '#15281f' : '#ffffff'
+}
 const deriveInk = (primary, worstLight) => {
   if (!worstLight) return primary
   if (ratio(primary, worstLight) >= MIN_TEXT) return primary
@@ -118,7 +123,7 @@ const deriveInk = (primary, worstLight) => {
     const hex = '#' + p.map((v) => Math.round(v * k).toString(16).padStart(2, '0')).join('')
     if (ratio(hex, worstLight) >= MIN_TEXT) return hex
   }
-  return '#15281f'
+  return ratio('#000000', worstLight) >= MIN_TEXT ? '#000000' : '#15281f'
 }
 
 const themes = { ...themesFromTokens(), ...themesFromFlorist() }
@@ -130,7 +135,7 @@ for (const [key, t] of Object.entries(themes)) {
   // Mallens ljusa ytor. Mörk text är svårast på den MÖRKASTE av dem (nästan alltid
   // accent-soft) — mäts den bara mot den vita blir tonen för ljus och texten faller
   // igenom på tonade sektioner. Mörka mallar har inga ljusa ytor → hoppas över.
-  const lights = [t.bg, t.surface, t.accentSoft].filter((c) => c && bestFg(c) === '#15281f')
+  const lights = [t.bg, t.surface, t.accentSoft].filter((c) => c && bestFg(c) !== '#ffffff')
   const worstLight = lights.sort((a, b) => lum(rgb(a)) - lum(rgb(b)))[0] ?? null
 
   const ink = t.ink ?? deriveInk(t.primary, worstLight)

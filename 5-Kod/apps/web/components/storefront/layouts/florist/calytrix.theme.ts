@@ -69,12 +69,11 @@ export const calytrix: FloristTheme = {
     body: 'var(--font-instrumentsans), system-ui, sans-serif',
   },
   radius: '0px',
-  // AVVIKELSE FRÅN MANIFESTET (medvetet, dokumenterad): manifestet säger 68/56px, vilket
-  // är höjden på filens NAV-RAD (66px). NavShell är fixed och reserverar HELA det översta
-  // klustret — och Calytrix kluster är TVÅ våningar: annonsraden (10+10px + 13.5px text
-  // ≈ 38px) OVANPÅ navraden (66px). Sätts 68px lägger navet sig över innehållet (samma
-  // fälla som goal-60 fixade). 104/94px = filens egna mått, summerade.
-  navHeight: { desktop: '104px', mobile: '94px' },
+  // Manifestets navrad är 68/56px. Calytrix har dessutom en egen annonsrad i samma
+  // fixerade toppkluster, så shellOffset reserverar hela 104/94px utan att förvanska
+  // det katalogvärde som Design Center och manifestet jämför.
+  navHeight: { desktop: '68px', mobile: '56px' },
+  shellOffset: { desktop: '104px', mobile: '94px' },
   // COPY: filens egen svenska, verbatim. Evergreen (mallen används av många kunder):
   // ingen adress, inget årtal, inga betyg.
   content: {

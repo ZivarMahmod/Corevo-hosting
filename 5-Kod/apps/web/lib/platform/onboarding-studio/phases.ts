@@ -28,7 +28,7 @@ export type StepId =
   | 'agare'
   | 'live'
 
-/** One step in a phase. `req:true` = required before Lansera (branch/namn/tema/live).
+/** One step in a phase. `req:true` = required before Skapa (branch/namn/tema/ägare/live).
  *  `hint` is verbatim design data (additive over the documented {id,label,icon,req});
  *  it is NOT rendered in the W1 rail but kept so a later wave can surface it. */
 export type StudioStep = {
@@ -60,7 +60,7 @@ export const PHASES: StudioPhase[] = [
     sub: 'Bransch, namn, mall — resten förfylls',
     steps: [
       { id: 'branch', label: 'Bransch', icon: 'building', req: true, hint: 'Förfyller mall, moduler & ord' },
-      { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.corevo.se' },
+      { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.boka.corevo.se' },
       { id: 'tema', label: 'Temamall', icon: 'palette', req: true, hint: 'Förvald av branschen — byt fritt' },
     ],
   },
@@ -77,8 +77,8 @@ export const PHASES: StudioPhase[] = [
     name: 'Klart',
     sub: 'Ägare, sista koll, live',
     steps: [
-      { id: 'agare', label: 'Ägare & inbjudan', icon: 'user', req: false, hint: 'Magic-link → eget lösen' },
-      { id: 'live', label: 'Granska & lansera', icon: 'rocket', req: true, hint: 'Checklista + publicera' },
+      { id: 'agare', label: 'Ägare & inbjudan', icon: 'user', req: true, hint: 'Magic-link → eget lösen' },
+      { id: 'live', label: 'Granska & skapa', icon: 'rocket', req: true, hint: 'Skapa under konfiguration' },
     ],
   },
 ]

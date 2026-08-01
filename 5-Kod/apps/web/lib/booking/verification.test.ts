@@ -33,8 +33,9 @@ afterEach(() => {
 })
 
 describe('booking PIN crypto', () => {
-  it('genererar alltid exakt sex siffror', () => {
-    for (let i = 0; i < 100; i += 1) expect(generateBookingPin()).toMatch(/^\d{6}$/)
+  it('genererar alltid exakt fyra siffror för publik bokning', () => {
+    for (let i = 0; i < 100; i += 1) expect(generateBookingPin()).toMatch(/^\d{4}$/)
+    expect(generateBookingPin(6)).toMatch(/^\d{6}$/)
   })
 
   it('HMAC-binder PIN till session och kontakt till kanal', async () => {
@@ -62,7 +63,7 @@ describe('booking contact', () => {
   })
 
   it('maskerar kontakt utan att lagra den i challenge-metadata', () => {
-    expect(maskBookingContact('sms', '+46701234567')).toBe('+46 ••• •• 67')
+    expect(maskBookingContact('sms', '+46701234567')).toBe('070 ••• •• 67')
     expect(maskBookingContact('email', 'kund@example.com')).toBe('k•••@example.com')
   })
 })
@@ -77,11 +78,13 @@ describe('deliverBookingPin', () => {
       pin: '123456',
       outboxId: 'outbox-1',
       tenantName: 'Demo',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })).resolves.toEqual({ accepted: true, providerRef: 'giada:42' })
     expect(sendGiadaMessage).toHaveBeenCalledWith({
       to: '+46701234567',
       message: 'Demo: Din verifieringskod är 123456. Koden gäller i 5 minuter.',
       idempotencyKey: 'outbox:outbox-1',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })
   })
 
@@ -94,6 +97,7 @@ describe('deliverBookingPin', () => {
       pin: '123456',
       outboxId: 'outbox-2',
       tenantName: 'Demo & Co',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })
 
     expect(result).toEqual({ accepted: true, providerRef: 'email:mail-1' })

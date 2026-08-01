@@ -44,7 +44,7 @@
 .lnSolid {
   display: inline-block;
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   border: none;
   border-radius: 0;
   font-size: 12.5px;
@@ -71,7 +71,7 @@
   font-size: 12.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   cursor: pointer;
   transition: color 0.2s;
 }
@@ -89,7 +89,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   padding: 9px 20px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
@@ -97,7 +97,7 @@
 
 .lnGhost:hover {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 /* ───────────────────────────────── sidhuvud ───────────────────────────────── */
@@ -157,7 +157,7 @@
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   border: none;
   border-radius: 0;
@@ -213,7 +213,7 @@
   font-size: 12px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnHeroTitle {
@@ -277,7 +277,7 @@
   font-size: 14px;
   letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   text-align: center;
 }
 
@@ -294,7 +294,7 @@
   font-size: 13px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ───────────────────────────── urval (produkter) ──────────────────────────── */
@@ -319,7 +319,7 @@
   font-size: 11.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   background: transparent;
   border: 1px solid var(--color-primary);
   padding: 9px 20px;
@@ -349,7 +349,7 @@
 }
 
 .lnCard:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnCardImg {
@@ -390,7 +390,7 @@
   margin: 0 0 14px;
   font-size: 13px;
   letter-spacing: 0.16em;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnMore {
@@ -441,14 +441,14 @@
 }
 
 .lnSalon:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnSalonNo {
   margin: 0 0 14px;
   font-family: var(--font-display);
   font-size: 30px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnSalonTitle {
@@ -472,7 +472,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* ─────────────────────────── krönikan (hem-teaser) ────────────────────────── */
@@ -506,7 +506,7 @@
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnJournalTitle {
@@ -550,7 +550,7 @@
   font-size: 12px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnPageLede {
@@ -577,7 +577,7 @@
   font-size: 12px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnAboutTitle {
@@ -636,7 +636,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: 30px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnStatLabel {
@@ -658,7 +658,7 @@
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnServiceList {
@@ -682,7 +682,7 @@
 }
 
 .lnServiceRow:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Deco-rutan på snedden — filens valmarkör (14px, roterad 45°). */
@@ -716,7 +716,7 @@
 .lnServicePrice {
   font-size: 13px;
   letter-spacing: 0.1em;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
   white-space: nowrap;
 }
 
@@ -737,7 +737,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnFactValue {
@@ -757,8 +757,8 @@
 }
 
 .lnFactValue a:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnContactProse {
@@ -791,7 +791,7 @@
   text-align: center;
   font-size: 13px;
   letter-spacing: 0.12em;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnEmpty {
@@ -824,7 +824,7 @@
 }
 
 .lnPost:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 /* Krönike-raderna är <a> med <span>-barn (en länk får inte innehålla block-element)
@@ -848,7 +848,7 @@
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnPostTitle {
@@ -911,7 +911,7 @@
 }
 
 .lnFootNav a:hover {
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnFootSocial {
@@ -1094,7 +1094,7 @@
   font-size: 24px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnCardLabel {
@@ -1127,14 +1127,14 @@
 }
 
 .lnPerk[data-featured='true'] {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnPerkNo {
   margin: 0 0 8px;
   font-family: var(--font-display);
   font-size: 22px;
-  color: var(--color-primary);
+  color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnPerkText {
@@ -1169,7 +1169,7 @@
   padding: 13px 15px;
   font-family: var(--font-body);
   font-size: 15px;
-  outline-color: var(--color-primary);
+  outline-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .lnClubJoin button {
@@ -1180,7 +1180,7 @@
   font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
   background: var(--color-primary);
   padding: 14px 28px;
   min-height: 44px;

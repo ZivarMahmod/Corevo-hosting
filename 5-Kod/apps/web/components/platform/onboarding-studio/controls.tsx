@@ -5,7 +5,7 @@
 // convention: CreateTenantForm is 100% inline-styled, no *.module.css). These are the
 // W1 "frozen" form primitives — lifted verbatim from CreateTenantForm's inline `Field`
 // + module state-pills so the studio renders identically to the proven wizard.
-import { useState, type CSSProperties } from 'react'
+import { useId, useState, type CSSProperties } from 'react'
 import { type ModuleState } from '@/lib/tenant-modules'
 
 /** Svenska etiketter per modul-läge (mirror of CreateTenantForm's MODULE_STATE_LABELS
@@ -34,6 +34,7 @@ export function Field({
   hint,
   ph,
   type = 'text',
+  required = false,
   value,
   onChange,
 }: {
@@ -41,15 +42,19 @@ export function Field({
   hint?: string
   ph?: string
   type?: string
+  required?: boolean
   value: string
   onChange: (v: string) => void
 }) {
+  const id = useId()
   const [focused, setFocused] = useState(false)
   return (
     <div>
-      <label style={fieldLabel}>{label}</label>
+      <label htmlFor={id} style={fieldLabel}>{label}</label>
       <input
+        id={id}
         type={type}
+        required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}

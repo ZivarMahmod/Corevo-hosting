@@ -190,6 +190,17 @@ describe.each(FLORIST_THEMES.map((t) => [t.key, t.name, t] as const))(
 )
 
 describe('florist-sviten som helhet', () => {
+  it('Ateljé Vinter märker upp alla synliga hemtexter för sidredigeraren', () => {
+    const html = render('ateljevinter', ALL_LIVE)
+    for (const field of [
+      'heroEyebrow', 'heroTitle', 'heroLede', 'shopTitle', 'shopEyebrow',
+      'homeGalleryEyebrow', 'italic',
+      'pillar1Title', 'pillar1Body', 'pillar2Title', 'pillar2Body', 'pillar3Title', 'pillar3Body',
+    ]) {
+      expect(html, field).toContain(`data-corevo-editor-stable-field="${field}"`)
+    }
+  })
+
   it('theme-content-registret är totalt för varje tillåten StorefrontTheme', () => {
     expect(Object.keys(THEME_CONTENT).sort()).toEqual([...STOREFRONT_THEMES].sort())
     for (const theme of STOREFRONT_THEMES) {

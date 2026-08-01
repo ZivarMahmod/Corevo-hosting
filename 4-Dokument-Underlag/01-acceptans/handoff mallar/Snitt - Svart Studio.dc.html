@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="sv">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,7 +19,7 @@
     a:hover { color: #EFEDE6; }
     ::selection { background: #D6F344; color: #141412; }
     input, textarea { background: #1D1D1A; color: #EFEDE6; }
-    input::placeholder, textarea::placeholder { color: #6E6B61; }
+    input::placeholder, textarea::placeholder { color: #88867D; }
 
     /* Corevo-tillägg: fokus, knappsemantik, mobil ≤760px */
     a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #D6F344 !important; outline-offset: 2px; }
@@ -28,7 +28,9 @@
       [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
       h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
       h2 { font-size: clamp(24px, 7vw, 34px) !important; }
-      a[style*="cursor:pointer"], button { min-height: 44px; }
+      a[style*="cursor"] { min-width: 44px !important; min-height: 44px !important; }
+      a[style*="cursor"]:not([style*="display"]) { display: inline-flex; align-items: center; }
+      button { min-width: 44px; min-height: 44px; }
       nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
       section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
     }
@@ -94,7 +96,7 @@
                   <h3 style="margin:0; font-weight:700; font-size:19px; color:#EFEDE6">{{ row.name }}</h3>
                   <p style="margin:5px 0 0; font-size:14px; line-height:1.6; color:#A39F93">{{ row.desc }}</p>
                 </div>
-                <span style="white-space:nowrap; font-weight:600; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">{{ row.tid }}</span>
+                <span style="white-space:nowrap; font-weight:600; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">{{ row.tid }}</span>
                 <span style="white-space:nowrap; font-family:'Anton'; font-size:19px; letter-spacing:0.02em; color:#EFEDE6; min-width:88px; text-align:right">{{ row.price }}</span>
                 <a onClick="{{ row.book }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:11.5px; letter-spacing:0.14em; text-transform:uppercase; color:#D6F344" style-hover="color:#EFEDE6">Boka</a>
               </div>
@@ -122,15 +124,15 @@
             <div style="display:flex; gap:36px; align-items:center">
               <div>
                 <p style="margin:0; font-family:'Anton'; font-size:38px; color:#D6F344">5,0★</p>
-                <p style="margin:4px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">Snittbetyg</p>
+                <p style="margin:4px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">Snittbetyg</p>
               </div>
               <div>
                 <p style="margin:0; font-family:'Anton'; font-size:38px; color:#EFEDE6">132</p>
-                <p style="margin:4px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">Betyg online</p>
+                <p style="margin:4px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">Betyg online</p>
               </div>
               <div>
                 <p style="margin:0; font-family:'Anton'; font-size:38px; color:#EFEDE6">3</p>
-                <p style="margin:4px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">Stolar</p>
+                <p style="margin:4px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">Stolar</p>
               </div>
             </div>
           </div>
@@ -165,15 +167,15 @@
           </div>
           <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px">
             <p style="margin:0 0 10px; font-weight:700; font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#D6F344">Öppettider</p>
-            <p style="margin:0; font-size:15.5px; line-height:1.7; color:#EFEDE6">Mån–Fre 10–19<br>Lördag 10–16<br><span style="color:#6E6B61">Söndag stängt</span></p>
+            <p style="margin:0; font-size:15.5px; line-height:1.7; color:#EFEDE6">Mån–Fre 10–19<br>Lördag 10–16<br><span style="color:#88867D">Söndag stängt</span></p>
           </div>
           <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px">
             <p style="margin:0 0 10px; font-weight:700; font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#D6F344">Kontakt</p>
-            <p style="margin:0; font-size:15.5px; line-height:1.7; color:#EFEDE6">hej@snittstudio.se<br>040-12 84 60<br><span style="color:#6E6B61">@snittstudio</span></p>
+            <p style="margin:0; font-size:15.5px; line-height:1.7; color:#EFEDE6">hej@snittstudio.se<br>040-12 84 60<br><span style="color:#88867D">@snittstudio</span></p>
           </div>
         </div>
         <div style="margin-top:14px; height:180px; background:repeating-linear-gradient(45deg, #1D1D1A 0 14px, #191916 14px 28px); border:1px solid #2C2C27; display:flex; align-items:center; justify-content:center">
-          <p style="margin:0; font-family:monospace; font-size:12.5px; letter-spacing:0.1em; color:#6E6B61">[ karta — Davidshallsgatan 9, Malmö ]</p>
+          <p style="margin:0; font-family:monospace; font-size:12.5px; letter-spacing:0.1em; color:#88867D">[ karta — Davidshallsgatan 9, Malmö ]</p>
         </div>
       </section>
     </div>
@@ -194,7 +196,7 @@
                 <h3 style="margin:0; font-weight:700; font-size:19px; color:#EFEDE6">{{ row.name }}</h3>
                 <p style="margin:5px 0 0; font-size:14px; line-height:1.6; color:#A39F93">{{ row.desc }}</p>
               </div>
-              <span style="white-space:nowrap; font-weight:600; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">{{ row.tid }}</span>
+              <span style="white-space:nowrap; font-weight:600; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">{{ row.tid }}</span>
               <span style="white-space:nowrap; font-family:'Anton'; font-size:19px; letter-spacing:0.02em; color:#EFEDE6; min-width:88px; text-align:right">{{ row.price }}</span>
               <a onClick="{{ row.book }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:11.5px; letter-spacing:0.14em; text-transform:uppercase; color:#D6F344" style-hover="color:#EFEDE6">Boka</a>
             </div>
@@ -260,7 +262,7 @@
               <h2 style="margin:0 0 4px; font-family:'Anton'; font-size:26px; letter-spacing:0.02em; text-transform:uppercase; color:#EFEDE6">{{ st.name }}</h2>
               <p style="margin:0 0 12px; font-weight:600; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:#D6F344">{{ st.roll }}</p>
               <p style="margin:0 0 12px; font-size:14px; line-height:1.65; color:#A39F93">{{ st.bio }}</p>
-              <p style="margin:0 0 18px; font-weight:600; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6E6B61">{{ st.spec }}</p>
+              <p style="margin:0 0 18px; font-weight:600; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#88867D">{{ st.spec }}</p>
               <a onClick="{{ st.book }}" style="cursor:pointer; display:inline-block; font-weight:700; font-size:11.5px; letter-spacing:0.14em; text-transform:uppercase; color:#141412; background:#D6F344; padding:11px 20px" style-hover="background:#EFEDE6">Boka {{ st.name }}</a>
             </div>
           </div>
@@ -317,7 +319,7 @@
                 <div style="width:58px; height:58px; background:url('{{ ci.img }}') center/cover; flex-shrink:0"></div>
                 <div style="flex:1">
                   <p style="margin:0 0 2px; font-weight:700; font-size:16px; color:#EFEDE6">{{ ci.name }}</p>
-                  <p style="margin:0; font-size:13px; color:#6E6B61">{{ ci.unit }} / st</p>
+                  <p style="margin:0; font-size:13px; color:#88867D">{{ ci.unit }} / st</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; border:1px solid #3A3A33; padding:5px 12px">
                   <button onClick="{{ ci.dec }}" style="background:transparent; border:none; cursor:pointer; font-weight:700; font-size:16px; color:#D6F344" style-hover="color:#EFEDE6">−</button>
@@ -325,7 +327,7 @@
                   <button onClick="{{ ci.inc }}" style="background:transparent; border:none; cursor:pointer; font-weight:700; font-size:16px; color:#D6F344" style-hover="color:#EFEDE6">+</button>
                 </div>
                 <span style="font-weight:700; font-size:15px; color:#EFEDE6; min-width:82px; text-align:right; white-space:nowrap">{{ ci.lineTotal }}</span>
-                <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-size:12.5px; color:#6E6B61; white-space:nowrap" style-hover="color:#D6F344">Ta bort</button>
+                <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-size:12.5px; color:#88867D; white-space:nowrap" style-hover="color:#D6F344">Ta bort</button>
               </div>
             </sc-for>
             <div style="display:flex; justify-content:space-between; align-items:baseline; padding:20px 0">
@@ -376,11 +378,11 @@
             <button onClick="{{ m.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:13px; color:{{ m.fg }}; background:{{ m.bg }}; border:1px solid {{ m.border }}; padding:11px 20px" style-hover="border-color:#D6F344">{{ m.name }}</button>
           </sc-for>
         </div>
-        <p style="margin:16px 0 0; font-size:13.5px; color:#6E6B61; line-height:1.6">{{ payHint }}</p>
+        <p style="margin:16px 0 0; font-size:13.5px; color:#88867D; line-height:1.6">{{ payHint }}</p>
       </div>
 
       <button onClick="{{ placeOrder }}" style="border:none; cursor:pointer; display:block; text-align:center; font-weight:700; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#141412; background:#D6F344; padding:18px 0" style-hover="background:#EFEDE6">Betala {{ kassaTotal }}</button>
-      <p style="margin:14px 0 0; text-align:center; font-size:12.5px; color:#6E6B61">Trygg betalning · Hämta fraktfritt i studion</p>
+      <p style="margin:14px 0 0; text-align:center; font-size:12.5px; color:#88867D">Trygg betalning · Hämta fraktfritt i studion</p>
     </section>
   </sc-if>
 
@@ -403,7 +405,7 @@
         <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6">
           <div>
             <div style="aspect-ratio:4/5; background:url('{{ g.img }}') center/cover"></div>
-            <p style="margin:10px 0 0; font-weight:600; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#6E6B61"><span style="color:#D6F344">/</span> {{ g.tag }}</p>
+            <p style="margin:10px 0 0; font-weight:600; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#88867D"><span style="color:#D6F344">/</span> {{ g.tag }}</p>
           </div>
         </sc-for>
       </div>
@@ -472,9 +474,9 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:center">
         <div style="background:#1D1D1A; border:1px solid #3A3A33; padding:48px 32px; text-align:center">
           <p style="margin:0 0 4px; font-family:'Anton'; font-size:24px; letter-spacing:0.06em; text-transform:uppercase; color:#EFEDE6">Snitt<span style="color:#D6F344">.</span></p>
-          <p style="margin:0 0 34px; font-weight:700; font-size:10.5px; letter-spacing:0.3em; text-transform:uppercase; color:#6E6B61">Presentkort</p>
+          <p style="margin:0 0 34px; font-weight:700; font-size:10.5px; letter-spacing:0.3em; text-transform:uppercase; color:#88867D">Presentkort</p>
           <p style="margin:0; font-family:'Anton'; font-size:58px; color:#D6F344">{{ giftAmount }}</p>
-          <p style="margin:26px 0 0; font-size:12.5px; color:#6E6B61">Giltigt 12 månader · Gäller allt i studion</p>
+          <p style="margin:26px 0 0; font-size:12.5px; color:#88867D">Giltigt 12 månader · Gäller allt i studion</p>
         </div>
         <div>
           <p style="margin:0 0 14px; font-weight:700; font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#EFEDE6">Välj belopp</p>
@@ -526,9 +528,9 @@
         <div style="aspect-ratio:4/5; background:url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80&auto=format&fit=crop') center/cover"></div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px">
-        <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px"><p style="margin:0; font-family:'Anton'; font-size:38px; color:#D6F344">2020</p><p style="margin:6px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">Grundat</p></div>
-        <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px"><p style="margin:0; font-family:'Anton'; font-size:38px; color:#EFEDE6">75 min</p><p style="margin:6px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">Snitt per besök</p></div>
-        <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px"><p style="margin:0; font-family:'Anton'; font-size:38px; color:#EFEDE6">5,0★</p><p style="margin:6px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#6E6B61">132 betyg</p></div>
+        <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px"><p style="margin:0; font-family:'Anton'; font-size:38px; color:#D6F344">2020</p><p style="margin:6px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">Grundat</p></div>
+        <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px"><p style="margin:0; font-family:'Anton'; font-size:38px; color:#EFEDE6">75 min</p><p style="margin:6px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">Snitt per besök</p></div>
+        <div style="background:#1D1D1A; border:1px solid #2C2C27; padding:28px"><p style="margin:0; font-family:'Anton'; font-size:38px; color:#EFEDE6">5,0★</p><p style="margin:6px 0 0; font-weight:600; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#88867D">132 betyg</p></div>
       </div>
     </section>
   </sc-if>
@@ -563,7 +565,7 @@
     <div style="max-width:1240px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap">
       <div>
         <p style="margin:0 0 4px; font-family:'Anton'; font-size:24px; letter-spacing:0.06em; text-transform:uppercase; color:#EFEDE6">Snitt<span style="color:#D6F344">.</span></p>
-        <p style="margin:0; font-size:13px; color:#6E6B61">Frisörstudio med hantverk · Davidshallsgatan 9, Malmö</p>
+        <p style="margin:0; font-size:13px; color:#88867D">Frisörstudio med hantverk · Davidshallsgatan 9, Malmö</p>
       </div>
       <nav style="display:flex; gap:10px; flex-wrap:wrap">
         <a onClick="{{ goKlubb }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:#141412; background:#D6F344; padding:8px 14px" style-hover="background:#EFEDE6">Insidan</a>
@@ -571,7 +573,7 @@
         <a onClick="{{ goEvent }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:#EFEDE6; border:1px solid #3A3A33; padding:7px 13px" style-hover="border-color:#D6F344">Grupp &amp; event</a>
         <a onClick="{{ goKontakt }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:#EFEDE6; border:1px solid #3A3A33; padding:7px 13px" style-hover="border-color:#D6F344">Kontakt</a>
       </nav>
-      <p style="margin:0; font-size:12px; color:#6E6B61">© 2026 Snitt · Byggd med Corevo</p>
+      <p style="margin:0; font-size:12px; color:#88867D">© 2026 Snitt · Byggd med Corevo</p>
     </div>
   </footer>
 </div>
@@ -734,7 +736,7 @@ class Component extends DCLogic {
       border: st.delivery === d.id ? '#D6F344' : '#3A3A33',
       bg: st.delivery === d.id ? '#26260F' : 'transparent',
       fg: '#EFEDE6',
-      priceColor: st.delivery === d.id ? '#D6F344' : '#6E6B61',
+      priceColor: st.delivery === d.id ? '#D6F344' : '#88867D',
     }));
     const shipCost = (delOpts.find((d) => d.id === st.delivery) || delOpts[0]).cost;
 
@@ -854,7 +856,7 @@ class Component extends DCLogic {
     "fg": "#EFEDE6",
     "fg2": "#A39F93",
     "line": "#2C2C27",
-    "accentSoft": "#6E6B61"
+    "accentSoft": "#88867D"
   },
   "fonts": {
     "heading": "Anton",

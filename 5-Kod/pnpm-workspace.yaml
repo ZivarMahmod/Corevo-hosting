@@ -1,3 +1,13 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+  - sharp
+  - unrs-resolver
+  - workerd
+
+ignoredBuiltDependencies:
+  - electron-winstaller

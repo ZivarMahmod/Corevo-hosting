@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <title>Kundportal v1 · responsiv testharness</title>
+  <style>
+    body { margin: 0; background: #222; color: #fff; font: 14px system-ui, sans-serif; }
+    section { margin: 16px; }
+    h1, h2 { margin: 0 0 8px; }
+    iframe { display: block; border: 2px solid #fff; background: #121210; }
+  </style>
+</head>
+<body>
+  <h1>Kundportal v1 · sex bindande viewports</h1>
+  <section><h2>320×568</h2><iframe data-viewport="320x568" width="320" height="568" src="/4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pwa-v1/Kundportal%20Passwordless%20Mobil.dc.html?vp=320x568#mina"></iframe></section>
+  <section><h2>390×844</h2><iframe data-viewport="390x844" width="390" height="844" src="/4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pwa-v1/Kundportal%20Passwordless%20Mobil.dc.html?vp=390x844#mina"></iframe></section>
+  <section><h2>430×932</h2><iframe data-viewport="430x932" width="430" height="932" src="/4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pwa-v1/Kundportal%20Passwordless%20Mobil.dc.html?vp=430x932#mina"></iframe></section>
+  <section><h2>768×1024</h2><iframe data-viewport="768x1024" width="768" height="1024" src="/4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pwa-v1/Kundportal%20Passwordless%20Desktop.dc.html?vp=768x1024#mina"></iframe></section>
+  <section><h2>1024×768</h2><iframe data-viewport="1024x768" width="1024" height="768" src="/4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pwa-v1/Kundportal%20Passwordless%20Desktop.dc.html?vp=1024x768#mina"></iframe></section>
+  <section><h2>1440×900</h2><iframe data-viewport="1440x900" width="1440" height="900" src="/4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pwa-v1/Kundportal%20Passwordless%20Desktop.dc.html?vp=1440x900#mina"></iframe></section>
+  <pre id="results">pending</pre>
+  <script>
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+    const isVisible = (win, element) => Boolean(
+      element && !element.hidden && element.getClientRects().length > 0 && win.getComputedStyle(element).display !== 'none' &&
+      win.getComputedStyle(element).visibility !== 'hidden',
+    )
+
+    async function auditFrame(frame) {
+      const win = frame.contentWindow
+      const doc = frame.contentDocument
+      const visible = (element) => isVisible(win, element)
+      const interactive = [...doc.querySelectorAll('button,a[href],input,select,textarea')]
+        .filter(visible)
+        .map((element) => ({
+          tag: element.tagName,
+          text: (element.innerText || element.getAttribute('aria-label') || '').trim().slice(0, 40),
+          width: Math.round(element.getBoundingClientRect().width),
+          height: Math.round(element.getBoundingClientRect().height),
+        }))
+      const main = doc.querySelector('main')
+      const nextBooking = doc.querySelector('#nextBooking')
+      const result = {
+        requested: frame.dataset.viewport,
+        actual: [win.innerWidth, win.innerHeight],
+        title: doc.title,
+        overflowX: doc.documentElement.scrollWidth > doc.documentElement.clientWidth,
+        widths: [doc.documentElement.scrollWidth, doc.documentElement.clientWidth],
+        shell: {
+          top: visible(doc.querySelector('.topbar')),
+          bottom: visible(doc.querySelector('.bottomnav')),
+          side: visible(doc.querySelector('.sidenav')),
+          layout: win.getComputedStyle(doc.querySelector('.layout')).display,
+        },
+        h1: [...doc.querySelectorAll('h1')].filter(visible).map((element) => ({
+          text: element.textContent.trim(),
+          font: win.getComputedStyle(element).fontSize,
+          line: win.getComputedStyle(element).lineHeight,
+        })),
+        typography: Object.fromEntries([
+          ['body', doc.body],
+          ['h2', doc.querySelector('#nextBooking h2')],
+          ['h3', doc.querySelector('#nextBooking h3')],
+          ['compact', doc.querySelector('#homeService')],
+          ['meta', doc.querySelector('#tenantOrigin')],
+        ].map(([name, element]) => [name, {
+          font: win.getComputedStyle(element).fontSize,
+          line: win.getComputedStyle(element).lineHeight,
+        }])),
+        main: {
+          x: Math.round(main.getBoundingClientRect().x),
+          width: Math.round(main.getBoundingClientRect().width),
+        },
+        nextBooking: {
+          top: Math.round(nextBooking.getBoundingClientRect().top),
+          bottom: Math.round(nextBooking.getBoundingClientRect().bottom),
+        },
+        bad44: interactive.filter((element) => element.width < 44 || element.height < 44),
+        bad24: interactive.filter((element) => element.width < 24 || element.height < 24),
+        interactiveCount: interactive.length,
+      }
+
+      result.routeOverflow = {}
+      for (const route of ['mina', 'historik', 'detalj', 'profil', 'sakerhet', 'installera', 'integritet', 'hjalp', 'aterhamta']) {
+        const link = doc.querySelector(`[data-route="${route}"]`)
+        if (!link) continue
+        link.click()
+        result.routeOverflow[route] = doc.documentElement.scrollWidth > doc.documentElement.clientWidth
+      }
+      doc.querySelector('[data-route="mina"]').click()
+
+      if (frame.dataset.viewport === '390x844' || frame.dataset.viewport === '1440x900') {
+        doc.querySelector('[data-route="aterhamta"]').click()
+        result.recovery = {
+          shell: doc.querySelector('.shell').classList.contains('recovery-shell'),
+          portalBrand: visible(doc.querySelector('#portalBrand')),
+          recoveryBrand: visible(doc.querySelector('#recoveryBrand')),
+          desktopUser: visible(doc.querySelector('.desktop-user')),
+          side: visible(doc.querySelector('.sidenav')),
+          bottom: visible(doc.querySelector('.bottomnav')),
+          layout: win.getComputedStyle(doc.querySelector('.layout')).display,
+          maxWidth: win.getComputedStyle(doc.querySelector('.layout')).maxWidth,
+          mainWidth: Math.round(main.getBoundingClientRect().width),
+        }
+
+        doc.querySelector('[data-route="profil"]').click()
+        const profile = doc.querySelector('nav[aria-label="Profilmeny"]')
+        result.profile = {
+          lists: profile.querySelectorAll(':scope > ul').length,
+          items: profile.querySelectorAll(':scope > ul > li').length,
+          links: profile.querySelectorAll(':scope > ul > li > a').length,
+          buttons: profile.querySelectorAll(':scope > ul > li > button').length,
+        }
+
+        doc.querySelector('[data-route="detalj"]').click()
+        doc.querySelector('#protoCancelOutcome').value = 'network'
+        doc.querySelector('#detailCancel').click()
+        const close = doc.querySelector('#cancelClose')
+        result.cancel = {
+          visible: visible(doc.querySelector('#cancelOverlay')),
+          closeTag: close.tagName,
+          closeLabel: close.getAttribute('aria-label'),
+          closeWidth: Math.round(close.getBoundingClientRect().width),
+          closeHeight: Math.round(close.getBoundingClientRect().height),
+          initialFocus: doc.activeElement.id,
+        }
+        doc.querySelector('#confirmCancel').click()
+        result.cancelPending = {
+          closeDisabled: close.disabled,
+          keepDisabled: doc.querySelector('#keepBooking').disabled,
+          confirmDisabled: doc.querySelector('#confirmCancel').disabled,
+        }
+
+        await delay(220)
+        result.cancelNetwork = {
+          state: doc.querySelector('[data-screen="detalj"]').dataset.state,
+          confirmHidden: doc.querySelector('#confirmCancel').hidden,
+          retryVisible: visible(doc.querySelector('#cancelRetry')),
+          retryFocus: doc.activeElement.id,
+          error: doc.querySelector('#cancelError').textContent.trim(),
+        }
+        doc.querySelector('#keepBooking').click()
+
+        const platform = doc.querySelector('#protoPlatform')
+        win.localStorage.setItem('corevo-pwa-offers-v1', '0')
+        win.offerRenderedThisVisit = false
+        platform.value = 'ios'
+        platform.dispatchEvent(new win.Event('change', { bubbles: true }))
+        doc.querySelector('[data-route="mina"]').click()
+        doc.querySelector('#autoInstallBtn').click()
+        result.pwa = {
+          screen: [...doc.querySelectorAll('[data-screen]')].find(visible)?.id,
+          guideVisible: visible(doc.querySelector('#iosGuide')),
+          triggerHidden: doc.querySelector('#showIosGuide').hidden,
+          focus: doc.activeElement.id,
+          manualHelp: doc.querySelector('#manualInstallHelp').href,
+        }
+
+        doc.querySelector('[data-route="mina"]').click()
+        platform.value = 'in_app'
+        platform.dispatchEvent(new win.Event('change', { bubbles: true }))
+        doc.querySelector('#autoInstallBtn').click()
+        await delay(100)
+        result.pwaInApp = {
+          screen: [...doc.querySelectorAll('[data-screen]')].find(visible)?.id,
+          stepsVisible: visible(doc.querySelector('#installInApp')),
+          statusVisible: visible(doc.querySelector('#copyStatus')),
+          errorVisible: visible(doc.querySelector('#copyError')),
+          manualVisible: visible(doc.querySelector('#manualPortalUrl')),
+        }
+
+        doc.querySelector('[data-route="mina"]').click()
+        win.localStorage.setItem('corevo-pwa-offers-v1', '0')
+        win.offerRenderedThisVisit = false
+        platform.value = 'ios'
+        platform.dispatchEvent(new win.Event('change', { bubbles: true }))
+        doc.querySelector('#autoInstallDismiss').click()
+        result.pwaDismiss = {
+          cardHidden: doc.querySelector('#autoInstall').hidden,
+          focus: doc.activeElement.id,
+          focusTag: doc.activeElement.tagName,
+          focusText: doc.activeElement.textContent.trim(),
+          focusVisible: visible(doc.activeElement),
+        }
+
+        const tenant = doc.querySelector('#protoTenant')
+        tenant.value = 'nordverk'
+        tenant.dispatchEvent(new win.Event('change', { bubbles: true }))
+        const currentRebook = doc.querySelector('[data-rebook-context="current"]')
+        const historicRebook = doc.querySelector('[data-rebook-context="historic"]')
+        result.rebookContext = {
+          currentHost: new URL(currentRebook.href).hostname,
+          currentService: new URL(currentRebook.href).searchParams.get('service'),
+          currentLocation: new URL(currentRebook.href).searchParams.get('location'),
+          historicHost: new URL(historicRebook.href).hostname,
+          historicService: new URL(historicRebook.href).searchParams.get('service'),
+          historicLocation: new URL(historicRebook.href).searchParams.get('location'),
+        }
+      }
+      return result
+    }
+
+    window.addEventListener('load', async () => {
+      await delay(300)
+      const output = []
+      for (const frame of document.querySelectorAll('iframe[data-viewport]')) {
+        try { output.push(await auditFrame(frame)) }
+        catch (error) { output.push({ requested: frame.dataset.viewport, error: String(error) }) }
+      }
+      document.querySelector('#results').textContent = JSON.stringify(output)
+      document.documentElement.dataset.auditReady = 'true'
+    })
+  </script>
+</body>
+</html>

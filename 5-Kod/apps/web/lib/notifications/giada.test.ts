@@ -19,6 +19,20 @@ afterEach(() => {
 })
 
 describe('getBookingContactMode', () => {
+  it('följer tenantens kanalpolicy utan att lova förbjuden fallback', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: 'ok',
+      modem_online: false,
+      time: '2026-07-21T11:59:30.000Z',
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getBookingContactMode('sms_only')).resolves.toBe('unavailable')
+    await expect(getBookingContactMode('sms_with_email_fallback')).resolves.toBe('email')
+    await expect(getBookingContactMode('email_only')).resolves.toBe('email')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('väljer sms endast när health är ok, modemet online och svaret färskt', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       status: 'ok',
@@ -61,6 +75,7 @@ describe('sendGiadaMessage', () => {
       to: '+46701234567',
       message: 'Din kod är 123456',
       idempotencyKey: 'pin:challenge-1',
+      expiresAt: '2026-07-21T12:05:00.000Z',
     })).resolves.toEqual({ ok: true, id: 42, created: true })
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
@@ -71,6 +86,7 @@ describe('sendGiadaMessage', () => {
       message: 'Din kod är 123456',
       idempotency_key: 'pin:challenge-1',
       require_online: true,
+      expires_at: '2026-07-21T12:05:00.000Z',
     })
     expect(String(init.body)).not.toContain('test-secret')
     expect(init.signal).toBeDefined()

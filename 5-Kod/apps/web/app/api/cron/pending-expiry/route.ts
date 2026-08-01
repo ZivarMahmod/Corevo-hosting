@@ -29,17 +29,19 @@ async function run(req: Request): Promise<Response> {
     })
   }
 
-  const [bookings, shop, slotHolds, contactRetention] = await Promise.all([
+  const [bookings, shop, slotHolds, contactRetention, portalContactChanges] = await Promise.all([
     admin.rpc('expire_abandoned_pending_bookings', { p_ttl_min: 30 }),
     admin.rpc('prune_expired_shop_reserves'),
     admin.rpc('prune_expired_slot_holds'),
     admin.rpc('prune_contact_messages', { p_months: 18 }),
+    admin.rpc('sweep_customer_portal_contact_changes'),
   ])
   const failed = [
     bookings.error ? 'bookings' : null,
     shop.error ? 'shop_reservations' : null,
     slotHolds.error ? 'slot_holds' : null,
     contactRetention.error ? 'contact_messages' : null,
+    portalContactChanges.error ? 'portal_contact_changes' : null,
   ].filter((value): value is string => value !== null)
   if (failed.length > 0) {
     return new Response(JSON.stringify({ error: 'cron_degraded', failed }), {
@@ -53,6 +55,7 @@ async function run(req: Request): Promise<Response> {
     shopReservationsPruned: shop.data ?? 0,
     slotHoldsPruned: slotHolds.data ?? 0,
     contactMessagesPruned: contactRetention.data ?? 0,
+    portalContactChangesScrubbed: portalContactChanges.data ?? 0,
   }), {
     status: 200,
     headers: { 'content-type': 'application/json' },

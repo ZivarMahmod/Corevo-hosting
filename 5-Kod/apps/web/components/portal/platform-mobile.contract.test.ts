@@ -7,11 +7,15 @@ const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const read = (relative: string) => fs.readFileSync(path.join(WEB_ROOT, relative), 'utf8')
 
 describe('goal-72 S5: superadminens mobilkontrakt', () => {
-  it('kopplar in plattformens mobilnavigation utan att ändra adminens gren', () => {
+  it('kopplar in plattformens mobilnavigation och behåller admin-FAB:en behörighetsstyrd', () => {
     const shell = read('components/portal/PortalShell.tsx')
 
     expect(shell).toContain('platformMobileNavigation(topAreas)')
-    expect(shell).toContain('adminMobileNavigation(topAreas)')
+    expect(shell).toMatch(
+      /adminMobileNavigation\(\s*topAreas,\s*canMutateBookings\s*\)/,
+    )
+    expect(shell).toContain("memberPermissions?.operationalRole === 'manager'")
+    expect(shell).toContain('const canMutateBookings = !tenantReadOnly && canManageBookings')
     expect(shell).not.toContain('isPlatform ? undefined : adminMobileNavigation(topAreas)')
   })
 

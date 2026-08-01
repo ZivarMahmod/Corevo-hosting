@@ -60,7 +60,7 @@ function UpcomingCard({ b }: { b: KundBooking }) {
         {isActive ? (
           <div className={styles.bookingActions}>
             {/* Inline reuse of the shipped controls (NOT reimplemented). */}
-            <RebookPanel bookingId={b.id} serviceId={b.serviceId} />
+            <RebookPanel bookingId={b.id} serviceId={b.serviceId} locationId={b.locationId} />
             <CancelButton bookingId={b.id} />
           </div>
         ) : null}

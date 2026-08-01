@@ -10,6 +10,7 @@ import { Nav } from '@/components/brand/Nav'
 import { NavShell } from '@/components/brand/NavShell'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
+import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
@@ -17,11 +18,12 @@ import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { branschBokning } from '@/components/storefront/bransch-copy'
 import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
+import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
+import { canonicalModuleHref, moduleNavigationLinks, moduleRouteReachable } from '@/components/storefront/layouts/module-navigation'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
-import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
-import { loadTeamMembers } from '@/lib/storefront/team/load-team'
+import { countTeamMembers } from '@/lib/storefront/team/load-team'
 import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
-import { commerceReleaseGate } from '@/lib/release/commerce'
+import { freshCutNavigationLinks } from '@/components/storefront/layouts/FreshCutChrome'
 import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
 import storefront from '@/components/storefront/storefront.module.css'
 
@@ -44,6 +46,12 @@ export function resolvePreviewTheme(bundle: TenantBundle, themeParam: string | u
   return typeof themeParam === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(themeParam)
     ? (themeParam as StorefrontTheme)
     : bundle.settings.theme
+}
+
+export type PreviewCopyMode = 'keep' | 'template' | null
+
+export function resolvePreviewCopyMode(copyParam: string | undefined): PreviewCopyMode {
+  return copyParam === 'keep' || copyParam === 'template' ? copyParam : null
 }
 
 /** goal-61 preview-parity: ärligt besked när en modulsida previewas men modulen är AV —
@@ -94,10 +102,12 @@ export async function loadPreviewBundle(slug: string): Promise<TenantBundle> {
 export async function PreviewShell({
   bundle,
   theme,
+  copyMode,
   children,
 }: {
   bundle: TenantBundle
   theme: StorefrontTheme
+  copyMode: PreviewCopyMode
   children: ReactNode
 }) {
   const { tenant, settings, location } = bundle
@@ -107,13 +117,17 @@ export async function PreviewShell({
   // Riktig bokning i previewen — samma gating som (public)/layout: bara en LIVE
   // bokningsmodul får riktiga tjänster; annars renderar CTA:erna inert.
   const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
-  const bookingLive = moduleState(moduleStates, 'booking') === 'live'
-  const [allWizardServices, wizardLocations, staffNoun, bookingPrefs, teamMembers] = await Promise.all([
+  const layoutModules = await loadLayoutModuleTeasers(tenant.id, tenant.slug)
+  const bookingState = moduleState(moduleStates, 'booking')
+  const bookingLive = bookingState === 'live'
+  const bookingPaused = bookingState === 'paused'
+  const bookingReachable = bookingLive || bookingState === 'paused'
+  const [allWizardServices, wizardLocations, staffNoun, bookingPrefs, teamCount] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
     resolveStaffNoun(tenant.vertical_id),
     getBookingPrefs(tenant.id, tenant.slug),
-    loadTeamMembers(tenant.id, tenant.slug),
+    countTeamMembers(tenant.id, tenant.slug),
   ])
   const wizardServices = bookingLive ? allWizardServices : []
 
@@ -121,7 +135,13 @@ export async function PreviewShell({
   // kontrakt som (public)/layout.
   // BRANSCH-REGELN: bokningens verb ur bransch-lagret (se (public)/layout.tsx).
   const bokning = branschBokning(tenant.vertical_id)
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
+  const copy = await getTenantCopy(
+    tenant.id,
+    tenant.slug,
+    tenant.vertical_id ?? null,
+    theme,
+    copyMode,
+  )
   const tagline = resolveTenantCopy(theme, copy).tagline
 
   // goal-61 preview-parity: previewn bar tidigare ALLTID den delade Nav/Footer —
@@ -130,61 +150,22 @@ export async function PreviewShell({
   // Nu exakt samma chrome-dispatch + modul-gatade länklista + bransch-CTA som
   // app/(public)/layout.tsx. OBS: chromen följer ?theme= (previewens hela poäng).
   const chrome = themeChrome(theme)
-  const commerceRelease = commerceReleaseGate(tenant.id)
-  const shopState = moduleState(moduleStates, 'shop')
-  const cartEnabled = commerceRelease.shop && (shopState === 'live' || shopState === 'paused')
+  const moduleLinks = moduleNavigationLinks(layoutModules)
   const navLinks = [
     { href: '/', label: 'Hem' },
-    ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
+    ...moduleLinks.filter((link) => link.href === '/shop'),
     ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
-    ...(moduleState(moduleStates, 'kurser') === 'live' &&
-    (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
-      ? [{ href: '/kurser', label: 'Kurser' }]
-      : []),
-    ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
-      ? [{ href: '/blogg', label: 'Blogg' }]
-      : []),
-    ...(moduleState(moduleStates, 'offert') === 'live' || moduleState(moduleStates, 'offert') === 'paused'
-      ? [{ href: '/offert', label: 'Offert' }]
-      : []),
-    ...(commerceRelease.presentkort &&
-    (moduleState(moduleStates, 'presentkort') === 'live' ||
-    moduleState(moduleStates, 'presentkort') === 'paused')
-      ? [{ href: '/presentkort', label: 'Presentkort' }]
-      : []),
-    // goal-64: klubben (/klubb) — samma modul-gate som publika layouten, annars visar
-    // previewn en meny som inte är kundens.
-    ...(moduleState(moduleStates, 'lojalitet') === 'live' ||
-    moduleState(moduleStates, 'lojalitet') === 'paused'
-      ? [{ href: '/klubb', label: 'Klubben' }]
-      : []),
-    ...(moduleState(moduleStates, 'galleri') === 'live' ||
-    moduleState(moduleStates, 'galleri') === 'paused'
-      ? [{ href: '/galleri', label: 'Galleri' }]
-      : []),
-    ...(teamMembers.length > 0 ? [{ href: '/team', label: 'Team' }] : []),
+    ...moduleLinks.filter((link) => link.href !== '/shop'),
+    ...(teamCount > 0 ? [{ href: '/team', label: 'Team' }] : []),
     { href: '/om', label: 'Om oss' },
     { href: '/kontakt', label: 'Kontakt' },
   ]
+  const shellNavLinks = theme === 'freshcut' ? freshCutNavigationLinks(navLinks) : navLinks
   // Bransch-CTA med samma modul-gate som layouten (peka aldrig på en död modulsida).
   const rawPrimaryCta = await resolvePrimaryCta(tenant.vertical_id)
-  const CTA_HREF_MODULE: Record<string, string> = {
-    '/shop': 'shop',
-    '/blogg': 'blogg',
-    '/offert': 'offert',
-    '/presentkort': 'presentkort',
-    '/boka': 'booking',
-    '/kurser': 'kurser',
-  }
-  const ctaModule = rawPrimaryCta
-    ? CTA_HREF_MODULE[`/${rawPrimaryCta.href.split('/')[1] ?? ''}`]
-    : undefined
   const primaryCta =
-    rawPrimaryCta &&
-    !(ctaModule === 'shop' && !commerceRelease.shop) &&
-    !(ctaModule === 'presentkort' && !commerceRelease.presentkort) &&
-    (!ctaModule || moduleState(moduleStates, ctaModule) === 'live')
-      ? rawPrimaryCta
+    rawPrimaryCta && moduleRouteReachable(rawPrimaryCta.href, layoutModules, bookingReachable)
+      ? { ...rawPrimaryCta, href: canonicalModuleHref(rawPrimaryCta.href) }
       : null
 
   return (
@@ -197,6 +178,9 @@ export async function PreviewShell({
     >
       <SidaPreviewBridge />
       <BookingProvider
+        reachable={bookingReachable}
+        websiteOnly={bookingState === 'off'}
+        externalUrl={settings.bookingExternalUrl}
         services={wizardServices}
         locations={wizardLocations}
         tenantName={tenant.name}
@@ -205,6 +189,10 @@ export async function PreviewShell({
         variant={settings.bookingVariant}
         pickerMode={bookingPrefs.pickerMode}
         staffAvatarMode={bookingPrefs.staffAvatarMode}
+        countryCode={settings.countryCode}
+        locale={settings.locale}
+        currency={settings.currency}
+        defaultTimeZone={settings.defaultTimeZone}
       >
         {/* CartProvider omsluter nav+main+footer (navens korg-knapp använder useCart) —
             samma ordning som (public)/layout. */}
@@ -212,20 +200,22 @@ export async function PreviewShell({
         {chrome.Nav ? (
           <NavShell
             customerAccountsEnabled={settings.customerAccountsEnabled}
-            cartEnabled={cartEnabled}
+            cartEnabled={layoutModules.shopReachable}
             utilityText={themeBase.utility}
             hideUtility={chrome.ownsUtility}
-            links={navLinks}
+            links={shellNavLinks}
             primaryCta={primaryCta}
           >
             <chrome.Nav
               tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
               branding={settings.branding}
-              links={navLinks}
+              links={shellNavLinks}
               primaryCta={primaryCta}
-              cartEnabled={cartEnabled}
+              cartEnabled={layoutModules.shopReachable}
               customerAccountsEnabled={settings.customerAccountsEnabled}
               utilityText={themeBase.utility}
+              location={location}
+              contact={settings.contact}
             />
           </NavShell>
         ) : (
@@ -233,13 +223,14 @@ export async function PreviewShell({
             tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
             branding={settings.branding}
             customerAccountsEnabled={settings.customerAccountsEnabled}
-            cartEnabled={cartEnabled}
+            cartEnabled={layoutModules.shopReachable}
             utilityText={themeBase.utility}
             primaryCta={primaryCta}
-            links={navLinks}
+            links={shellNavLinks}
           />
         )}
         <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
+        {bookingPaused ? <ModulePausedBanner /> : null}
         {wizardServices.length > 0 ? (
           <InlineBooking
             services={wizardServices}
@@ -250,6 +241,10 @@ export async function PreviewShell({
             bokaOnline={bokning.online}
             pickerMode={bookingPrefs.pickerMode}
             staffAvatarMode={bookingPrefs.staffAvatarMode}
+            countryCode={settings.countryCode}
+            locale={settings.locale}
+            currency={settings.currency}
+            defaultTimeZone={settings.defaultTimeZone}
             previewControlled
           />
         ) : null}
@@ -260,7 +255,7 @@ export async function PreviewShell({
             location={location}
             contact={settings.contact}
             social={settings.social}
-            links={navLinks}
+            links={shellNavLinks}
           />
         ) : isFullFooter ? (
           <FooterFull

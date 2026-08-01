@@ -11,13 +11,14 @@
 -- e2e-prefix. Teardown kan därför radera EXAKT det här och inget annat — inga
 -- efterlämnade rader i kundens databas. Se e2e-teardown.sql.
 --
--- Fixturen matchar e2e/helpers.ts: slug frisor1, admin@frisor1.se (salon_admin),
--- klippare@frisor1.se (staff), e2e-platform@corevo.se (super_admin).
+-- Fixturen matchar e2e/helpers.ts: slug frisor1, e2e-admin@frisor1.test
+-- (salon_admin), e2e-staff@frisor1.test (staff), e2e-platform@corevo.se
+-- (super_admin).
 -- Idempotent (on conflict do nothing) — kör om den fritt.
 
 -- ── tenant ──
-insert into public.tenants (id, slug, name)
-values ('e2e00000-0000-0000-0000-000000000001', 'frisor1', 'Frisör Ett (E2E)')
+insert into public.tenants (id, slug, name, status)
+values ('e2e00000-0000-0000-0000-000000000001', 'frisor1', 'Frisör Ett (E2E)', 'provisioning')
 on conflict (slug) do nothing;
 
 insert into public.tenant_settings
@@ -32,6 +33,108 @@ values (
   'fixed', 500
 )
 on conflict (tenant_id) do nothing;
+
+-- ── Goal 92: aktiva commerce-moduler + en verklig storefrontprodukt ──
+-- Guardens lagliga väg används även i fixturen: off → draft → live.
+insert into public.tenant_modules (tenant_id, module_key, state, config) values
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'media_library',
+    'off',
+    '{"quota_bytes":524288000}'::jsonb
+  ),
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'offert',
+    'off',
+    '{"mode":"estimate_form","response_days":2}'::jsonb
+  ),
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'shop',
+    'off',
+    '{"fulfilment":"ship","currency":"SEK","payment_methods":["card"]}'::jsonb
+  ),
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'blogg',
+    'off',
+    '{}'::jsonb
+  ),
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'kurser',
+    'off',
+    '{}'::jsonb
+  ),
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'galleri',
+    'off',
+    '{}'::jsonb
+  ),
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'lojalitet',
+    'off',
+    '{}'::jsonb
+  ),
+  (
+    'e2e00000-0000-0000-0000-000000000001',
+    'presentkort',
+    'off',
+    '{}'::jsonb
+  )
+on conflict (tenant_id, module_key) do nothing;
+
+update public.tenant_modules
+   set state = 'draft'
+ where tenant_id = 'e2e00000-0000-0000-0000-000000000001'
+   and module_key in (
+     'media_library', 'offert', 'shop', 'blogg', 'kurser', 'galleri',
+     'lojalitet', 'presentkort'
+   )
+   and state = 'off';
+
+update public.tenant_modules
+   set state = 'live'
+ where tenant_id = 'e2e00000-0000-0000-0000-000000000001'
+   and module_key in (
+     'media_library', 'offert', 'shop', 'blogg', 'kurser', 'galleri',
+     'lojalitet', 'presentkort'
+   )
+   and state = 'draft';
+
+insert into public.shop_products
+  (id, tenant_id, name, description, price_cents, currency, stock, active, sort_order)
+values (
+  'e2e92000-0000-0000-0000-000000000001',
+  'e2e00000-0000-0000-0000-000000000001',
+  'Goal 92 testprodukt',
+  'Tillfällig acceptansprodukt som försvinner med E2E-tenanten.',
+  12900,
+  'SEK',
+  10,
+  true,
+  0
+)
+on conflict (id) do nothing;
+
+insert into public.shop_product_variants
+  (id, tenant_id, product_id, name, price_cents, currency, stock, reserved_qty, active, sort_order)
+values (
+  'e2e92000-0000-0000-0000-000000000002',
+  'e2e00000-0000-0000-0000-000000000001',
+  'e2e92000-0000-0000-0000-000000000001',
+  'Standard',
+  12900,
+  'SEK',
+  10,
+  0,
+  true,
+  0
+)
+on conflict (id) do nothing;
 
 -- ── roller (tenant-lokala) ──
 insert into public.roles (id, tenant_id, name, level) values
@@ -52,12 +155,12 @@ insert into auth.users (
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 ) values
   ('e2e00000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-000000000000',
-   'authenticated', 'authenticated', 'admin@frisor1.se',
+   'authenticated', 'authenticated', 'e2e-admin@frisor1.test',
    crypt('__E2E_PASSWORD__', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"],"tenant_id":"e2e00000-0000-0000-0000-000000000001","platform_admin":false}'::jsonb,
    '{}'::jsonb, now(), now()),
   ('e2e00000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-000000000000',
-   'authenticated', 'authenticated', 'klippare@frisor1.se',
+   'authenticated', 'authenticated', 'e2e-staff@frisor1.test',
    crypt('__E2E_PASSWORD__', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"],"tenant_id":"e2e00000-0000-0000-0000-000000000001","platform_admin":false}'::jsonb,
    '{}'::jsonb, now(), now()),
@@ -66,7 +169,7 @@ insert into auth.users (
   ('e2e00000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'e2e-platform@corevo.se',
    crypt('__E2E_PASSWORD__', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"],"tenant_id":"e2e00000-0000-0000-0000-000000000001","platform_admin":true}'::jsonb,
+   '{"provider":"email","providers":["email"],"tenant_id":null,"platform_admin":true}'::jsonb,
    '{}'::jsonb, now(), now())
 on conflict (id) do nothing;
 
@@ -84,13 +187,15 @@ update auth.users set
 where id::text like 'e2e00000%';
 
 -- ── public.users ──
-insert into public.users (id, tenant_id, email, role_id, status) values
+-- Ägaren måste ha organisationsscope. Standardvärdet "locations" är avsiktligt
+-- fail-closed och får därför inte läsa tenantens privata moduldata.
+insert into public.users (id, tenant_id, email, role_id, status, access_scope) values
   ('e2e00000-0000-0000-0000-0000000000a1', 'e2e00000-0000-0000-0000-000000000001',
-   'admin@frisor1.se', 'e2e00000-0000-0000-0000-000000000061', 'active'),
+   'e2e-admin@frisor1.test', 'e2e00000-0000-0000-0000-000000000061', 'active', 'organization'),
   ('e2e00000-0000-0000-0000-0000000000a2', 'e2e00000-0000-0000-0000-000000000001',
-   'klippare@frisor1.se', 'e2e00000-0000-0000-0000-000000000031', 'active'),
-  ('e2e00000-0000-0000-0000-0000000000a3', 'e2e00000-0000-0000-0000-000000000001',
-   'e2e-platform@corevo.se', 'e2e00000-0000-0000-0000-000000000088', 'active')
+   'e2e-staff@frisor1.test', 'e2e00000-0000-0000-0000-000000000031', 'active', 'locations'),
+  ('e2e00000-0000-0000-0000-0000000000a3', null,
+   'e2e-platform@corevo.se', 'e2e00000-0000-0000-0000-000000000088', 'active', 'locations')
 on conflict (id) do nothing;
 
 -- ── plats ──
@@ -99,10 +204,23 @@ insert into public.locations (id, tenant_id, name, timezone, is_primary) values
    'Frisör Ett', 'Europe/Stockholm', true)
 on conflict (id) do nothing;
 
+insert into public.location_opening_hours
+  (tenant_id, location_id, weekday, start_time, end_time, source, confirmed_at)
+select
+  'e2e00000-0000-0000-0000-000000000001',
+  'e2e00000-0000-0000-0000-000000000071',
+  d,
+  time '09:00',
+  time '17:00',
+  'confirmed',
+  now()
+from generate_series(1, 5) as d
+on conflict (location_id, weekday, start_time, end_time) do nothing;
+
 -- ── personal (kopplad till klippar-användaren) ──
 insert into public.staff (id, tenant_id, profile_id, title, active, location_id) values
   ('e2e00000-0000-0000-0000-000000000041', 'e2e00000-0000-0000-0000-000000000001',
-   'e2e00000-0000-0000-0000-0000000000a2', 'Frisör', true,
+   'e2e00000-0000-0000-0000-0000000000a2', 'Frisör', false,
    'e2e00000-0000-0000-0000-000000000071')
 on conflict (id) do nothing;
 
@@ -156,3 +274,15 @@ where not exists (
     and weekday = d
     and start_time = (time '09:00' + (n || ' minutes')::interval)::time
 );
+
+-- Aktivering sker först när plats, tjänstkoppling och öppettider finns.
+update public.staff
+   set active = true
+ where id = 'e2e00000-0000-0000-0000-000000000041';
+
+-- Publish only through the Goal 76 readiness boundary.
+select pg_catalog.set_config('request.jwt.claim.role', 'service_role', false);
+select pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', false);
+select public.publish_tenant('e2e00000-0000-0000-0000-000000000001');
+select pg_catalog.set_config('request.jwt.claim.role', '', false);
+select pg_catalog.set_config('request.jwt.claims', '', false);

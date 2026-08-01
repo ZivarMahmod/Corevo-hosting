@@ -186,7 +186,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-primary, #7d1f46);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
   font-weight: 700;
   font-size: 15px;
   padding: 16px 34px;
@@ -457,7 +457,7 @@
 
 .cxDeliveryBtn:hover {
   background: var(--color-primary, #7d1f46);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
 }
 
 /* (5) OM — 1fr/1fr, foto 5:4 vänster. */
@@ -776,7 +776,7 @@
   justify-content: center;
   text-align: center;
   background: var(--color-primary, #7d1f46);
-  color: #fff;
+  color: var(--tenant-primary-fg, #fff);
   font-weight: 700;
   font-size: 15px;
   padding: 15px 0;
@@ -893,7 +893,7 @@
 .cxFooterBottom {
   max-width: 1280px;
   margin: 28px auto 0;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.46);
   font-size: 13px;
 }
 

@@ -1,6 +1,8 @@
 import 'server-only'
+import type { BookingVerificationMode } from '@/lib/platform/booking-variant'
 
 export type BookingContactMode = 'sms' | 'email'
+export type BookingContactAvailability = BookingContactMode | 'unavailable'
 
 type HealthBody = {
   status?: unknown
@@ -12,6 +14,7 @@ type SendInput = {
   to: string
   message: string
   idempotencyKey: string
+  expiresAt?: string
   senderId?: string
 }
 
@@ -27,27 +30,32 @@ function positiveInt(value: string | undefined, fallback: number): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
 }
 
-export async function getBookingContactMode(): Promise<BookingContactMode> {
+export async function getBookingContactMode(
+  mode: BookingVerificationMode = 'sms_with_email_fallback',
+): Promise<BookingContactAvailability> {
+  if (mode === 'email_only') return 'email'
+  const unavailable: BookingContactAvailability =
+    mode === 'sms_only' ? 'unavailable' : 'email'
   const base = baseUrl()
-  if (!base || !apiKey()) return 'email'
+  if (!base || !apiKey()) return unavailable
 
   try {
     const response = await fetch(`${base}/health`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(positiveInt(process.env.GIADA_HEALTH_TIMEOUT_MS, 1500)),
     })
-    if (!response.ok) return 'email'
+    if (!response.ok) return unavailable
     const body = await response.json() as HealthBody
     if (body.status !== 'ok' || body.modem_online !== true || typeof body.time !== 'string') {
-      return 'email'
+      return unavailable
     }
     const healthTime = Date.parse(body.time)
-    if (!Number.isFinite(healthTime)) return 'email'
+    if (!Number.isFinite(healthTime)) return unavailable
     const ageMs = Date.now() - healthTime
     const maxAgeMs = positiveInt(process.env.GIADA_HEALTH_MAX_AGE_SECONDS, 90) * 1000
-    return ageMs >= -10_000 && ageMs <= maxAgeMs ? 'sms' : 'email'
+    return ageMs >= -10_000 && ageMs <= maxAgeMs ? 'sms' : unavailable
   } catch {
-    return 'email'
+    return unavailable
   }
 }
 
@@ -68,6 +76,7 @@ export async function sendGiadaMessage(input: SendInput): Promise<GiadaSendResul
         message: input.message,
         idempotency_key: input.idempotencyKey,
         require_online: true,
+        ...(input.expiresAt ? { expires_at: input.expiresAt } : {}),
         ...(input.senderId ? { sender_id: input.senderId } : {}),
       }),
       signal: AbortSignal.timeout(positiveInt(process.env.GIADA_SEND_TIMEOUT_MS, 4000)),

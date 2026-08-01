@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   revalidatePath: vi.fn(),
   revalidateTenant: vi.fn(),
+  requireActiveTenantMutation: vi.fn(async () => undefined),
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
@@ -19,6 +20,7 @@ vi.mock('@/lib/admin/tenant', () => ({
     slug: 'demo',
     timeZone: 'Europe/Stockholm',
   })),
+  requireActiveTenantMutation: mocks.requireActiveTenantMutation,
   revalidateTenant: mocks.revalidateTenant,
 }))
 
@@ -103,6 +105,10 @@ describe('saveLocationBookingSettings', () => {
       '/boka',
     ])
     expect(mocks.revalidateTenant).toHaveBeenCalledWith('demo')
+    expect(mocks.requireActiveTenantMutation).toHaveBeenCalledWith(
+      { id: 'user-1' },
+      'tenant-1',
+    )
     expect(state).toEqual({ success: 'Öppettider och bokningsregler sparade.' })
   })
 })

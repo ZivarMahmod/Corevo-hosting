@@ -179,7 +179,11 @@ export function formatPlanPrice(cents: number): string {
 }
 
 /** Formstate för "GÅ MED" (useActionState-kontraktet, samma form som OffertSubmitState). */
-export type JoinClubState = { phase: 'idle' | 'done' | 'error'; message?: string }
+export type JoinClubState = {
+  phase: 'idle' | 'done' | 'error'
+  message?: string
+  pendingPayment?: boolean
+}
 
 /** Human label for a variant (Swedish). Pure — used by the server section and any
  *  admin reuse. */

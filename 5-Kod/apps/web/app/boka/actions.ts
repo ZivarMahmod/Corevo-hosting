@@ -24,8 +24,13 @@ import { bookingModuleAccess } from '@/components/storefront/layouts/booking-acc
 import { commerceReleaseGate } from '@/lib/release/commerce'
 import {
   getBookingContactMode,
+  type BookingContactAvailability,
   type BookingContactMode,
 } from '@/lib/notifications/giada'
+import {
+  readBookingVerificationMode,
+  type BookingVerificationMode,
+} from '@/lib/platform/booking-variant'
 import {
   bookingContactDigest,
   bookingPinDigest,
@@ -37,6 +42,7 @@ import {
 import { dispatchNotificationOutboxById } from '@/lib/notifications/outbox'
 import { deliverImmediateBookingOutbox } from '@/lib/notifications/booking-immediate'
 import { logger } from '@/lib/observability'
+import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
 // Public reads run as anon. Proposed starts are filtered through
 // get_public_bookable_starts (never raw busy intervals). The rate-limited server
@@ -126,6 +132,10 @@ type TenantContext = {
   tenantId: string
   slug: string
   name: string
+  countryCode: string
+  locale: string
+  currency: string
+  defaultTimeZone: string
   timeZone: string
   /** Primary active location — the default scope when a caller omits a location
    *  (single-location tenants, /boka back-compat, rebok-flödet). May be null on
@@ -148,18 +158,35 @@ async function getTenantContext(): Promise<TenantContext | null> {
   if (!tenant) return null
   // Primär aktiv plats: ger både tidszon (oförändrat) OCH default-scope (id) som
   // location-aware availability faller tillbaka på när ingen plats valts.
-  const { data: loc } = await supabase
-    .from('locations')
-    .select('id, timezone')
-    .eq('tenant_id', tenant.id)
-    .eq('is_primary', true)
-    .eq('active', true)
-    .maybeSingle()
+  const [{ data: loc }, { data: region }] = await Promise.all([
+    supabase
+      .from('locations')
+      .select('id, timezone')
+      .eq('tenant_id', tenant.id)
+      .eq('is_primary', true)
+      .eq('active', true)
+      .maybeSingle(),
+    supabase
+      .from('tenant_settings')
+      .select('country_code, locale, currency, default_timezone')
+      .eq('tenant_id', tenant.id)
+      .maybeSingle(),
+  ])
+  if (
+    !region
+    || region.country_code !== DEFAULT_TENANT_REGION.countryCode
+    || region.locale !== DEFAULT_TENANT_REGION.locale
+    || region.currency !== DEFAULT_TENANT_REGION.currency
+  ) return null
   return {
     tenantId: tenant.id,
     slug: tenant.slug,
     name: tenant.name,
-    timeZone: loc?.timezone ?? 'Europe/Stockholm',
+    countryCode: region.country_code,
+    locale: region.locale,
+    currency: region.currency,
+    defaultTimeZone: region.default_timezone,
+    timeZone: loc?.timezone ?? region.default_timezone,
     locationId: loc?.id ?? null,
   }
 }
@@ -523,9 +550,25 @@ async function safeReleaseSlotHold(
   }
 }
 
+async function getTenantBookingVerificationMode(
+  tenantId: string,
+): Promise<BookingVerificationMode | null> {
+  const reader = createServiceClient()
+  if (!reader) return null
+  const { data, error } = await reader
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  return error ? null : readBookingVerificationMode(data?.settings)
+}
+
 /** The UI asks this before rendering its one allowed contact field. */
-export async function getBookingContactModeAction(): Promise<{ mode: BookingContactMode }> {
-  return { mode: await getBookingContactMode() }
+export async function getBookingContactModeAction(): Promise<{ mode: BookingContactAvailability }> {
+  const ctx = await getTenantContext()
+  if (!ctx) return { mode: 'unavailable' }
+  const policy = await getTenantBookingVerificationMode(ctx.tenantId)
+  return { mode: policy ? await getBookingContactMode(policy) : 'unavailable' }
 }
 
 async function startBookingVerificationInternal(
@@ -541,19 +584,41 @@ async function startBookingVerificationInternal(
     return { ok: false, reason: 'invalid', message: 'Ofullständig bokning. Börja om.' }
   }
 
-  const channel = previous?.channel ?? await getBookingContactMode()
-  // A challenge is locked to one contact channel. If SMS died after the first
-  // send, the customer starts a fresh email challenge instead of silently
-  // changing identity under an existing challenge.
-  if (previous?.channel === 'sms' && await getBookingContactMode() !== 'sms') {
+  const policy = await getTenantBookingVerificationMode(ctx.tenantId)
+  if (!policy) {
+    return { ok: false, reason: 'error', message: 'Verifieringen är inte tillgänglig just nu.' }
+  }
+  const liveMode = await getBookingContactMode(policy)
+  if (!previous && liveMode === 'unavailable') {
     return {
       ok: false,
       reason: 'delivery_unavailable',
-      message: 'SMS är tillfälligt nere. Gå tillbaka och fortsätt med e-post i stället.',
+      message: 'SMS är tillfälligt nere. Försök igen om en stund.',
+    }
+  }
+  const channel = previous?.channel ?? liveMode
+  if (channel === 'unavailable') {
+    return {
+      ok: false,
+      reason: 'delivery_unavailable',
+      message: 'SMS är tillfälligt nere. Försök igen om en stund.',
+    }
+  }
+  // A challenge is locked to one contact channel. If SMS died after the first
+  // send, the customer starts a fresh email challenge instead of silently
+  // changing identity under an existing challenge.
+  if (previous?.channel === 'sms' && liveMode !== 'sms') {
+    return {
+      ok: false,
+      reason: 'delivery_unavailable',
+      ...(liveMode === 'email' ? { channel: 'email' as const } : {}),
+      message: liveMode === 'email'
+        ? 'SMS är tillfälligt nere. Gå tillbaka och fortsätt med e-post i stället.'
+        : 'SMS är tillfälligt nere. Försök igen om en stund.',
     }
   }
 
-  const contact = normalizeBookingContact(channel, input.contact)
+  const contact = normalizeBookingContact(channel, input.contact, ctx.countryCode)
   if (!contact) {
     return {
       ok: false,
@@ -600,7 +665,7 @@ async function startBookingVerificationInternal(
       p_session_token: sessionToken,
       p_channel: channel,
       p_contact_digest: contactDigest,
-      p_contact_masked: maskBookingContact(channel, contact),
+      p_contact_masked: maskBookingContact(channel, contact, ctx.countryCode),
       p_pin_digest: pinDigest,
       ...(previous ? { p_previous_challenge: previous.challengeId } : {}),
     })
@@ -639,6 +704,7 @@ async function startBookingVerificationInternal(
         pin,
         outboxId: claimed.id,
         tenantName: ctx.name,
+        expiresAt: row.expires_at,
       })
       if (delivery.accepted) {
         return { status: 'sent', providerRef: delivery.providerRef }
@@ -682,8 +748,13 @@ async function startBookingVerificationInternal(
     return {
       ok: false,
       reason: 'delivery_unavailable',
+      ...(channel === 'sms' && policy === 'sms_with_email_fallback'
+        ? { channel: 'email' as const }
+        : {}),
       message: channel === 'sms'
-        ? 'SMS kunde inte skickas. Försök igen eller fortsätt med e-post.'
+        ? policy === 'sms_with_email_fallback'
+          ? 'SMS kunde inte skickas. Fortsätt med e-post i stället.'
+          : 'SMS kunde inte skickas. Försök igen om en stund.'
         : 'Mejlet kunde inte skickas. Kontrollera adressen och försök igen.',
     }
   }
@@ -693,7 +764,7 @@ async function startBookingVerificationInternal(
     channel,
     challengeId: row.challenge_id,
     sessionToken,
-    maskedContact: maskBookingContact(channel, contact),
+    maskedContact: maskBookingContact(channel, contact, ctx.countryCode),
     expiresAt: row.expires_at,
     resendAt: row.resend_after,
   }
@@ -764,9 +835,9 @@ export async function verifyAndCreateBooking(
     return { ok: false, reason: 'invalid', message: 'Onlinebokningen är inte öppen just nu.' }
   }
   const name = input.name.trim()
-  const contact = normalizeBookingContact(input.channel, input.contact)
-  if (!validSelection(input) || !name || name.length > 200 || !contact || !/^\d{6}$/.test(input.pin)) {
-    return { ok: false, reason: 'invalid', message: 'Kontrollera uppgifterna och den sexsiffriga koden.' }
+  const contact = normalizeBookingContact(input.channel, input.contact, ctx.countryCode)
+  if (!validSelection(input) || !name || name.length > 200 || !contact || !/^\d{4}$/.test(input.pin)) {
+    return { ok: false, reason: 'invalid', message: 'Kontrollera uppgifterna och den fyrsiffriga koden.' }
   }
 
   const ip = await getClientIp()
@@ -836,7 +907,12 @@ export async function verifyAndCreateBooking(
     }
   }
   if (row.outcome === 'attempts_exhausted') {
-    return { ok: false, reason: 'expired', message: 'För många felaktiga försök. Skicka en ny kod.' }
+    return {
+      ok: false,
+      reason: 'invalid_pin',
+      message: 'För många felaktiga försök. Skicka en ny kod.',
+      attemptsRemaining: 0,
+    }
   }
   if (row.outcome === 'expired' || row.outcome === 'hold_expired') {
     return { ok: false, reason: 'expired', message: 'Koden eller reservationen har gått ut. Börja om.' }
@@ -925,7 +1001,11 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
         line_items: [
           {
             quantity: 1,
-            price_data: { currency: 'sek', unit_amount: amount, product_data: { name: serviceName } },
+            price_data: {
+              currency: ctx.currency.toLowerCase(),
+              unit_amount: amount,
+              product_data: { name: serviceName },
+            },
           },
         ],
         // application_fee_amount UTELÄMNAS medvetet ⇒ fee = 0.
@@ -934,7 +1014,10 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
         success_url: `${origin}/boka/bekraftelse/${bookingId}?betald=1`,
         cancel_url: `${origin}/boka/bekraftelse/${bookingId}?avbruten=1`,
       },
-      { stripeAccount: tenant.stripe_account_id }, // DIRECT charge på salongens konto
+      {
+        stripeAccount: tenant.stripe_account_id,
+        idempotencyKey: `booking_checkout_${bookingId}`,
+      }, // DIRECT charge på salongens konto
     )
   } catch {
     return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
@@ -947,16 +1030,22 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
   // svepet (0018) matchar booking.pending + payments.pending och skulle annars
   // avboka en bokning kunden fått bekräftad som betala-på-plats. En payment-rad
   // per bokning (UNIQUE(booking_id) → idempotensgrund för webhooken).
-  const { error: payErr } = await admin.from('payments').upsert(
+  const { data: paymentPrepared, error: payErr } = await admin.rpc(
+    'prepare_booking_checkout_payment',
     {
-      tenant_id: ctx.tenantId, booking_id: bookingId, amount_cents: amount, currency: 'sek',
-      status: 'pending', stripe_checkout_session_id: session.id,
+      p_booking: bookingId,
+      p_tenant: ctx.tenantId,
+      p_amount_cents: amount,
+      p_currency: ctx.currency.toLowerCase(),
+      p_checkout_session: session.id,
+      p_connected_account: tenant.stripe_account_id,
     },
-    { onConflict: 'booking_id' },
   )
   // Utan payment-rad ska kunden inte skickas till Stripe (webhooken skulle sakna
   // sin rad) — degradera till betala-på-plats; sessionen självdör hos Stripe.
-  if (payErr) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  if (payErr || paymentPrepared !== true) {
+    return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  }
 
   return { ok: true, url: session.url }
 }

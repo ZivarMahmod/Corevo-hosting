@@ -1,41 +1,41 @@
 import { describe, it, expect } from 'vitest'
 import { buildRoutes, fetchActiveSlugs, validateDomains, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
+import { RESERVED } from './domain-routes.mjs'
 
 // The fixed infra routes as they appear in wrangler.jsonc (the generator's base).
 const BASE = [
   { pattern: 'booking.corevo.se', custom_domain: true },
   { pattern: 'superbooking.corevo.se', custom_domain: true },
   { pattern: 'minbooking.corevo.se', custom_domain: true },
+  { pattern: 'mina.corevo.se', custom_domain: true },
   { pattern: '*.boka.corevo.se/*', zone_name: 'corevo.se' },
 ]
 
 describe('buildRoutes', () => {
-  it('keeps the 3 fixed hosts + wildcard and appends one custom_domain per active slug', () => {
+  it('keeps the fixed hosts + wildcard without minting one domain per active slug', () => {
     const routes = buildRoutes(BASE, ['test-barber', 'klippstudio'])
     const patterns = routes.map((r) => r.pattern)
     for (const h of REQUIRED_FIXED_HOSTS) expect(patterns).toContain(h)
     expect(patterns).toContain('*.boka.corevo.se/*')
-    expect(patterns).toContain('test-barber.corevo.se')
-    expect(patterns).toContain('klippstudio.corevo.se')
-    // customer routes are custom_domain
-    const cust = routes.find((r) => r.pattern === 'test-barber.corevo.se')
-    expect(cust.custom_domain).toBe(true)
+    expect(patterns).not.toContain('test-barber.corevo.se')
+    expect(patterns).not.toContain('klippstudio.corevo.se')
+    expect(routes).toHaveLength(BASE.length)
   })
 
-  it('lowercases/trims slugs and dedupes by pattern', () => {
+  it('does not let duplicate slug input alter the canonical wildcard routes', () => {
     const routes = buildRoutes(BASE, ['  Test-Barber ', 'test-barber'])
-    const occurrences = routes.filter((r) => r.pattern === 'test-barber.corevo.se')
-    expect(occurrences).toHaveLength(1)
+    expect(routes).toEqual(BASE)
   })
 
   it('NEVER mints a reserved/POS label as a tenant domain', () => {
-    const routes = buildRoutes(BASE, ['booking', 'admin', 'kiosk', 'superbooking', 'boka', 'realsalon'])
+    const routes = buildRoutes(BASE, [...RESERVED, 'realsalon'])
     const patterns = routes.map((r) => r.pattern)
-    expect(patterns).toContain('realsalon.corevo.se')
-    // none of the reserved labels become a NEW <label>.corevo.se customer route
-    expect(patterns.filter((p) => p === 'admin.corevo.se')).toHaveLength(0)
-    expect(patterns.filter((p) => p === 'kiosk.corevo.se')).toHaveLength(0)
-    expect(patterns.filter((p) => p === 'boka.corevo.se')).toHaveLength(0)
+    expect(patterns).not.toContain('realsalon.corevo.se')
+    // Reserved fixed hosts survive exactly once; every other reserved label is absent.
+    for (const label of RESERVED) {
+      const expected = BASE.some((route) => route.pattern === `${label}.corevo.se`) ? 1 : 0
+      expect(patterns.filter((p) => p === `${label}.corevo.se`)).toHaveLength(expected)
+    }
   })
 
   it('handles an empty slug list — just the fixed infra survives', () => {
@@ -78,15 +78,24 @@ describe('fetchActiveSlugs', () => {
 })
 
 describe('validateDomains', () => {
-  const FILE = ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'test-barber.corevo.se']
+  const FILE = ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se', 'test-barber.corevo.se']
 
-  it('passes when committed ⊇ live + active', () => {
+  it('passes when committed ⊇ live; active tenants ride the canonical wildcard', () => {
     const out = validateDomains({
       committedPatterns: FILE,
       liveDomains: ['booking.corevo.se', 'test-barber.corevo.se'],
       activeSlugs: ['test-barber'],
     })
     expect(out.missingLive).toEqual([])
+    expect(out.missingActive).toEqual([])
+  })
+
+  it('does not require a root-domain route for an active tenant', () => {
+    const out = validateDomains({
+      committedPatterns: REQUIRED_FIXED_HOSTS,
+      liveDomains: [],
+      activeSlugs: ['new-salon'],
+    })
     expect(out.missingActive).toEqual([])
   })
 
@@ -102,8 +111,8 @@ describe('validateDomains', () => {
   it('ignores the 3 fixed hosts and reserved labels', () => {
     const out = validateDomains({
       committedPatterns: FILE,
-      liveDomains: ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se'],
-      activeSlugs: ['booking', 'admin', 'boka'], // reserved → never required
+      liveDomains: ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se'],
+      activeSlugs: ['booking', 'admin', 'boka', 'mina'], // reserved → never required
     })
     expect(out.missingLive).toEqual([])
     expect(out.missingActive).toEqual([])
@@ -130,6 +139,7 @@ describe('validateDomains', () => {
       'booking.corevo.se',
       'superbooking.corevo.se',
       'minbooking.corevo.se',
+      'mina.corevo.se',
       'test-barber.corevo.se',
     ]
     const anonOnly = validateDomains({

@@ -15,7 +15,20 @@ import {
   type BookingVerificationStarted,
   type SlotOption,
 } from '@/app/boka/actions'
+import type { BookingContactAvailability } from '@/lib/notifications/giada'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
+import { normalizeBookingContact } from '@/lib/booking/contact-normalization'
+import { bookingDateWindow } from '@/lib/booking/tz'
+import {
+  DEFAULT_TENANT_REGION,
+  formatTenantMoney,
+} from '@/lib/tenant-region'
+import {
+  buildTenantBookingPath,
+  resolveLocationSelection,
+  serviceAvailableAtLocation,
+  servicesAvailableAtLocation,
+} from '@/lib/booking/preselection'
 import styles from './booking.module.css'
 
 type WizardStaff = {
@@ -27,6 +40,8 @@ type WizardStaff = {
 }
 export type WizardService = {
   id: string
+  /** null/undefined = tenant-global; UUID = only bookable at that active location. */
+  locationId?: string | null
   name: string
   description: string | null
   durationMin: number
@@ -40,13 +55,9 @@ export type WizardLocation = {
   id: string
   name: string
   isPrimary: boolean
+  timeZone: string
+  maxAdvanceDays: number
 }
-
-const kr = new Intl.NumberFormat('sv-SE', {
-  style: 'currency',
-  currency: 'SEK',
-  maximumFractionDigits: 0,
-})
 
 // Initialer-discfärger (designpaketet): round-robin per medarbetare i listan.
 const DISC_COLORS = ['#BC4A1C', '#2E5A46', '#B07A1E', '#7A4A2E'] as const
@@ -98,6 +109,11 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function calendarDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year!, month! - 1, day!, 12)
+}
+
 /** Presentation variant.
  *  - `wizard`  → Variant 3: steg-för-steg, one decision per screen, top progress
  *    bar + bottom action bar (DEFAULT).
@@ -116,6 +132,11 @@ export function BookingWizard({
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   brandName,
+  countryCode = DEFAULT_TENANT_REGION.countryCode,
+  locale = DEFAULT_TENANT_REGION.locale,
+  currency = DEFAULT_TENANT_REGION.currency,
+  defaultTimeZone = DEFAULT_TENANT_REGION.defaultTimeZone,
+  preselectLocationId = null,
   preselectServiceId = null,
   preselectStaffId = null,
 }: {
@@ -154,6 +175,13 @@ export function BookingWizard({
   /** Salongens wordmark på biljettens huvudrad (steg 5). OPTIONAL — mounts som
    *  inte skickar den får den neutrala fallbacken 'Bokning'. */
   brandName?: string
+  /** Server-resolved tenant region. Locations still own calendar timezone. */
+  countryCode?: string
+  locale?: string
+  currency?: string
+  defaultTimeZone?: string
+  /** Aktiv same-tenant plats ur /boka?plats=<locationId>. Okänt id ignoreras. */
+  preselectLocationId?: string | null
   /** goal-64: förvald tjänst ur /boka?tjanst=<serviceId> (prisraden vet sin tjänst).
    *  Okänt id ignoreras tyst. */
   preselectServiceId?: string | null
@@ -174,13 +202,20 @@ export function BookingWizard({
     () => locations.find((l) => l.isPrimary)?.id ?? locations[0]?.id ?? null,
     [locations],
   )
+  const validPreselectLocationId = useMemo(
+    () => locations.find((location) => location.id === preselectLocationId)?.id ?? null,
+    [locations, preselectLocationId],
+  )
+  const initialLocationId = validPreselectLocationId ?? (
+    multiLocation && !compact ? null : defaultLocationId
+  )
   // Startval:
   //  • ≤1 plats → auto-väljs (eller null vid 0 platser → servern tar primär).
   //  • >1 i WIZARD → null, så grind-skärmen tvingar ett aktivt platsval först.
   //  • >1 i COMPACT → default förvald (single-screen ska vara användbar direkt;
   //    chip-raden låter kunden byta).
   const [locationId, setLocationId] = useState<string | null>(
-    multiLocation && !compact ? null : defaultLocationId,
+    initialLocationId,
   )
   // Picker-grinden (BARA wizard): visa platsvalet före steg-maskinen tills en plats
   // är vald. ≤1 plats eller compact → alltid false → ingen grind.
@@ -197,8 +232,13 @@ export function BookingWizard({
   // aldrig låsa eller krascha bokningen. Servern validerar ändå allt igen vid submit;
   // detta är ren UI-förifyllnad.
   const preService = useMemo(
-    () => services.find((s) => s.id === preselectServiceId) ?? null,
-    [services, preselectServiceId],
+    () => {
+      const candidate = services.find((s) => s.id === preselectServiceId) ?? null
+      return candidate && serviceAvailableAtLocation(candidate, initialLocationId)
+        ? candidate
+        : null
+    },
+    [services, preselectServiceId, initialLocationId],
   )
   // Personalen förväljs bara när hen FAKTISKT kan utföra den valda tjänsten. Utan
   // tjänst i länken hålls valet kvar och appliceras när kunden väljer tjänst (se
@@ -214,11 +254,11 @@ export function BookingWizard({
   ) // 'any' | staffId
   const [date, setDate] = useState<string | null>(null)
   const [slots, setSlots] = useState<SlotOption[]>([])
-  const [timeZone, setTimeZone] = useState('Europe/Stockholm')
+  const [timeZone, setTimeZone] = useState(defaultTimeZone)
   const [slot, setSlot] = useState<SlotOption | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
   const [error, setError] = useState<string | null>(null)
-  const [contactMode, setContactMode] = useState<'sms' | 'email' | null>(null)
+  const [contactMode, setContactMode] = useState<BookingContactAvailability | null>(null)
   const [verification, setVerification] = useState<BookingVerificationStarted | null>(null)
   const [pin, setPin] = useState('')
   const [clock, setClock] = useState(() => Date.now())
@@ -233,6 +273,7 @@ export function BookingWizard({
   const [slotTakenNotice, setSlotTakenNotice] = useState<string | null>(null)
   // Kalender-vyns månadsmarkör: index i calMonths (månader som bokningsfönstret rör).
   const [calCursor, setCalCursor] = useState(0)
+  const slotRequestRef = useRef(0)
 
   // Giada-health bestämmer vilket ENDA kontaktfält som visas. Servern gör om
   // kontrollen när koden skickas; ett modem som dör mellan render och klick kan
@@ -244,7 +285,7 @@ export function BookingWizard({
         if (active) setContactMode(liveMode)
       })
       .catch(() => {
-        if (active) setContactMode('email')
+        if (active) setContactMode('unavailable')
       })
     return () => { active = false }
   }, [])
@@ -256,21 +297,18 @@ export function BookingWizard({
     return () => window.clearInterval(timer)
   }, [verification])
 
-  // Bokningsfönstret (Zivar 2026-07-09: "borde kunna väljas månadsvis …
-  // åtminstone några månader fram"): 90 dagar ≈ 3 månader. Tiderna hämtas
-  // per vald dag (getAvailableSlots), så fönstret kostar inget förrän en dag
-  // klickas — motorn räknar godtyckligt långt fram ur veckoschema-mallen.
-  const BOOKING_WINDOW_DAYS = 90
+  const selectedLocation = locations.find((location) => location.id === locationId)
+    ?? locations.find((location) => location.id === defaultLocationId)
   const days = useMemo(() => {
-    const out: Date[] = []
-    const base = new Date()
-    for (let i = 0; i < BOOKING_WINDOW_DAYS; i++) {
-      const d = new Date(base)
-      d.setDate(base.getDate() + i)
-      out.push(d)
-    }
-    return out
-  }, [])
+    const keys = selectedLocation
+      ? bookingDateWindow(
+          new Date(),
+          selectedLocation.timeZone,
+          selectedLocation.maxAdvanceDays,
+        )
+      : bookingDateWindow(new Date(), defaultTimeZone, 90)
+    return keys.map(calendarDate)
+  }, [defaultTimeZone, selectedLocation])
 
   // Månader som bokningsfönstret (days) täcker — kalenderbläddringen begränsas hit.
   const calMonths = useMemo(() => {
@@ -284,16 +322,16 @@ export function BookingWizard({
   }, [days])
 
   const fmtTime = (iso: string) =>
-    new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone }).format(
+    new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone }).format(
       new Date(iso),
     )
   const fmtDow = (d: Date) =>
-    new Intl.DateTimeFormat('sv-SE', { weekday: 'short' }).format(d).replace('.', '')
+    new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d).replace('.', '')
   const fmtMon = (d: Date) =>
-    new Intl.DateTimeFormat('sv-SE', { month: 'short' }).format(d).replace('.', '')
+    new Intl.DateTimeFormat(locale, { month: 'short' }).format(d).replace('.', '')
   // Lång datum-rad till biljetten (steg 5) — speglar /boka/bekraftelse-rutten.
   const fmtLongDate = (iso: string) =>
-    new Intl.DateTimeFormat('sv-SE', {
+    new Intl.DateTimeFormat(locale, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -304,6 +342,7 @@ export function BookingWizard({
   // variants: the wizard's day handler (per service+staff+day) and compact's
   // effect (refetch whenever service OR staff OR day changes).
   function fetchSlots(serviceId: string, choice: string, d: string, locId: string | null) {
+    const request = ++slotRequestRef.current
     setSlot(null)
     setError(null)
     setSlotsError(null)
@@ -311,6 +350,7 @@ export function BookingWizard({
       // locId vidarebefordras → location-aware availability. null (en-plats/saknat
       // val) → servern faller tillbaka på tenantens primära plats.
       const res = await getAvailableSlots(serviceId, choice === 'any' ? null : choice, d, locId)
+      if (request !== slotRequestRef.current) return
       if (res.ok) {
         setSlots(res.slots)
         setTimeZone(res.timeZone)
@@ -325,10 +365,24 @@ export function BookingWizard({
   // dag/tid) nollställs så inget val släpar med från en annan plats. Anropas bara
   // i flerplatsläget; i en-plats-läget rörs detta aldrig.
   function pickLocation(id: string) {
+    slotRequestRef.current += 1
     setLocationId(id)
-    setService(compact && services.length > 0 ? services[0]! : null)
+    const next = resolveLocationSelection({
+      services,
+      currentService: service,
+      locationId: id,
+      compact,
+    })
+    setService(next.service)
+    // If a new location invalidates the current/deep-linked service, return to
+    // service selection. Keeping step=2 with service=null produces a blank,
+    // impossible-to-advance wizard.
+    if (!compact) setStep(next.step)
     setStaffChoice('any')
-    setDate(compact ? ymd(days[0]!) : null)
+    const pickedLocation = locations.find((location) => location.id === id)
+    setDate(compact && pickedLocation
+      ? bookingDateWindow(new Date(), pickedLocation.timeZone, pickedLocation.maxAdvanceDays)[0]!
+      : null)
     setSlots([])
     setSlot(null)
     setSlotsError(null)
@@ -341,6 +395,7 @@ export function BookingWizard({
   // explicit "Fortsätt"). Each picker only sets state; the bottom action bar
   // advances. Selecting a service/staff still RESETS downstream choices.
   function pickService(s: WizardService) {
+    slotRequestRef.current += 1
     setService(s)
     // goal-64: kom besökaren via /boka?personal=… utan tjänst i länken, appliceras
     // personal-förvalet nu — men BARA om hen kan utföra just den valda tjänsten.
@@ -354,6 +409,7 @@ export function BookingWizard({
   }
 
   function pickStaff(choice: string) {
+    slotRequestRef.current += 1
     setStaffChoice(choice)
     setDate(null)
     setSlots([])
@@ -392,10 +448,11 @@ export function BookingWizard({
     // Seed defaults on first compact mount: first service + today, like the
     // handoff VCompact. (Re-seeding after a confirmation is handled directly in
     // resetWizard, since this effect won't re-run on that render.)
-    if (!service && services.length > 0) setService(services[0]!)
+    const compatible = servicesAvailableAtLocation(services, locationId)
+    if (!service && compatible.length > 0) setService(compatible[0]!)
     if (!date) setDate(ymd(days[0]!))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compact, services])
+  }, [compact, services, locationId])
 
   useEffect(() => {
     if (!compact || !service || !date) return
@@ -415,7 +472,9 @@ export function BookingWizard({
   }, [slot])
 
   function selectedContact(): string {
-    return contactMode === 'sms' ? form.phone : form.email
+    if (contactMode === 'sms') return form.phone
+    if (contactMode === 'email') return form.email
+    return ''
   }
 
   async function finishCreatedBooking(res: Extract<Awaited<ReturnType<typeof verifyAndCreateBooking>>, { ok: true }>) {
@@ -447,6 +506,17 @@ export function BookingWizard({
       setError('Vänta ett ögonblick medan vi kontrollerar hur koden ska skickas.')
       return
     }
+    if (contactMode === 'unavailable') {
+      setError('SMS är tillfälligt nere. Försök igen om en stund.')
+      return
+    }
+    const contact = normalizeBookingContact(contactMode, selectedContact(), countryCode)
+    if (!contact) {
+      setError(contactMode === 'sms'
+        ? 'Skriv ett giltigt mobilnummer.'
+        : 'Skriv en giltig e-postadress.')
+      return
+    }
     setError(null)
     if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID()
     startTransition(async () => {
@@ -456,7 +526,7 @@ export function BookingWizard({
           serviceId: service.id,
           staffId: slot.staffId,
           startISO: slot.start,
-          contact: selectedContact(),
+          contact,
           locationId,
         })
       } catch {
@@ -469,11 +539,13 @@ export function BookingWizard({
         setPin('')
       } else {
         if (res.channel) setContactMode(res.channel)
-        if (res.reason === 'delivery_unavailable' && contactMode === 'sms') {
+        if (res.reason === 'delivery_unavailable' && res.channel === 'email') {
           // The hold has already been released server-side. Switch the single
           // visible contact field immediately so the customer can continue via
           // e-mail without reloading after a modem/send failure.
           setContactMode('email')
+        } else if (res.reason === 'delivery_unavailable') {
+          setContactMode('unavailable')
         }
         if (res.reason === 'slot_taken' && date) {
           setStep(3)
@@ -487,7 +559,7 @@ export function BookingWizard({
   }
 
   function verifyPin() {
-    if (!service || !slot || !verification || pin.length !== 6) return
+    if (!service || !slot || !verification || pin.length !== 4) return
     setError(null)
     startTransition(async () => {
       let res: Awaited<ReturnType<typeof verifyAndCreateBooking>>
@@ -555,23 +627,27 @@ export function BookingWizard({
         setPin('')
         return
       }
-      if (res.reason === 'delivery_unavailable' && verification.channel === 'sms') {
+      if (res.reason === 'delivery_unavailable') {
         setVerification(null)
         setPin('')
-        setContactMode('email')
+        setContactMode(res.channel === 'email' ? 'email' : 'unavailable')
       }
       setError(res.message)
     })
   }
 
   // Nollställ hela wizarden till steg 1. Körs på en stängd→öppen flank EFTER en
-  // klar bokning (se effekten nedan) och av biljettens "Boka en till tid".
+  // klar bokning (se effekten nedan). Steg 5 navigerar i stället med en riktig
+  // tenantbunden bokningslänk enligt kundportalkontraktet.
   function resetWizard() {
+    slotRequestRef.current += 1
+    const resetLocationId = multiLocation && !compact ? null : defaultLocationId
+    const resetServices = servicesAvailableAtLocation(services, resetLocationId)
     setStep(1)
     // Compact reopens straight back into the one-page form, so re-seed its
     // defaults (first service + today) here rather than clearing to null — the
     // seed effect won't re-run on the post-reset render (its deps are unchanged).
-    setService(compact && services.length > 0 ? services[0]! : null)
+    setService(compact ? (resetServices[0] ?? null) : null)
     setStaffChoice('any')
     setDate(compact ? ymd(days[0]!) : null)
     setSlots([])
@@ -587,7 +663,7 @@ export function BookingWizard({
     setCalCursor(0)
     // Platsval nollställs till sitt utgångsläge (≤1 plats → auto; >1 wizard → grind;
     // >1 compact → default förvald).
-    setLocationId(multiLocation && !compact ? null : defaultLocationId)
+    setLocationId(resetLocationId)
   }
 
   // Reset på ÅTERÖPPNING (inte på stängning): så att drawern glider ut med
@@ -616,7 +692,7 @@ export function BookingWizard({
           ? !!slot
           : step === 4
             ? verification
-              ? pin.length === 6
+              ? pin.length === 4
               : !!(form.name && contactMode && selectedContact())
             : true
 
@@ -629,12 +705,14 @@ export function BookingWizard({
         ? 'Välj en tid'
         : step === 4
           ? verification
-            ? 'Fyll i den sexsiffriga koden'
+            ? 'Fyll i den fyrsiffriga koden'
             : contactMode === 'sms'
               ? 'Fyll i namn och telefon'
               : contactMode === 'email'
                 ? 'Fyll i namn och e-post'
-                : 'Kontrollerar kontaktväg…'
+                : contactMode === 'unavailable'
+                  ? 'SMS är tillfälligt nere'
+                  : 'Kontrollerar kontaktväg…'
           : ''
 
   function goNext() {
@@ -690,7 +768,9 @@ export function BookingWizard({
     if (!compactReady) {
       setError(contactMode === 'email'
         ? 'Fyll i tjänst, tid, namn och e-post.'
-        : 'Fyll i tjänst, tid, namn och telefon.')
+        : contactMode === 'unavailable'
+          ? 'SMS är tillfälligt nere. Försök igen om en stund.'
+          : 'Fyll i tjänst, tid, namn och telefon.')
       return
     }
     beginVerification()
@@ -709,6 +789,11 @@ export function BookingWizard({
   // identisk (filtret släpper igenom alla). Beräknas en gång, används i båda
   // render-lägena (compact + wizard). OBS: staffChoice nollställs redan i
   // pickLocation (→ 'any'), så ett gammalt fel-plats-val kan aldrig släpa med.
+  const servicesHere = servicesAvailableAtLocation(services, locationId)
+  const bookAgainPath = buildTenantBookingPath({
+    locationId,
+    serviceId: service?.id ?? null,
+  })
   const staffHere = (service?.staff ?? []).filter(
     (m) => !locationId || m.locationIds.includes(locationId),
   )
@@ -796,7 +881,7 @@ export function BookingWizard({
         <span className="fc-summary-price" aria-hidden>✓</span>
       </div>
       <p className="wizard-muted" style={{ marginTop: 0 }}>
-        Skriv in den sexsiffriga koden. Tiden bokas först när koden är godkänd.
+        Skriv in den fyrsiffriga koden. Tiden bokas först när koden är godkänd.
       </p>
       <label className="fc-field">
         <span>Verifieringskod</span>
@@ -806,11 +891,11 @@ export function BookingWizard({
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          placeholder="000000"
+          pattern="[0-9]{4}"
+          maxLength={4}
+          placeholder="0000"
           value={pin}
-          onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))}
+          onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
         />
       </label>
       <button
@@ -851,11 +936,11 @@ export function BookingWizard({
           <button
             type="button"
             className="wizard-cta"
-            disabled={pin.length !== 6 || pending}
+            disabled={pin.length !== 4 || pending}
             onClick={verifyPin}
           >
             <span className="wizard-cta-label">{pending ? 'Verifierar…' : 'Verifiera & boka'}</span>
-            {pin.length !== 6 && !pending ? <span className="wizard-cta-sub">Fyll i 6 siffror</span> : null}
+            {pin.length !== 4 && !pending ? <span className="wizard-cta-sub">Fyll i 4 siffror</span> : null}
           </button>
           <ConsentLine />
         </div>
@@ -872,7 +957,7 @@ export function BookingWizard({
         </div>
 
         <div className="wizard-stepbody">
-          {services.length === 0 ? (
+          {servicesHere.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyIcon} aria-hidden>
                 ✂️
@@ -912,7 +997,7 @@ export function BookingWizard({
               {/* Tjänst — chip row (namn + mono-pris) */}
               <div className="ckompakt-label">Tjänst</div>
               <div className="ckompakt-chiprow" role="group" aria-label="Välj tjänst">
-                {services.map((s) => {
+                {servicesHere.map((s) => {
                   const on = service?.id === s.id
                   return (
                     <button
@@ -921,14 +1006,18 @@ export function BookingWizard({
                       className={`ckompakt-chip${on ? ' selected' : ''}`}
                       aria-pressed={on}
                       onClick={() => {
+                        slotRequestRef.current += 1
                         setService(s)
                         setStaffChoice('any')
+                        setSlots([])
                         setSlot(null)
                         setError(null)
                       }}
                     >
                       <span>{s.name.length > 18 ? `${s.name.slice(0, 17)}…` : s.name}</span>
-                      <span className="ckompakt-chip-meta">{kr.format(s.priceCents / 100)}</span>
+                      <span className="ckompakt-chip-meta">
+                        {formatTenantMoney(s.priceCents, { locale, currency })}
+                      </span>
                     </button>
                   )
                 })}
@@ -946,7 +1035,12 @@ export function BookingWizard({
                   type="button"
                   className={`ckompakt-chip${staffChoice === 'any' ? ' selected' : ''}`}
                   aria-pressed={staffChoice === 'any'}
-                  onClick={() => setStaffChoice('any')}
+                  onClick={() => {
+                    slotRequestRef.current += 1
+                    setStaffChoice('any')
+                    setSlots([])
+                    setSlot(null)
+                  }}
                 >
                   Alla
                 </button>
@@ -958,7 +1052,12 @@ export function BookingWizard({
                       type="button"
                       className={`ckompakt-chip${on ? ' selected' : ''}`}
                       aria-pressed={on}
-                      onClick={() => setStaffChoice(m.id)}
+                      onClick={() => {
+                        slotRequestRef.current += 1
+                        setStaffChoice(m.id)
+                        setSlots([])
+                        setSlot(null)
+                      }}
                     >
                       {m.title ?? staffNoun}
                     </button>
@@ -979,7 +1078,10 @@ export function BookingWizard({
                       className={`wizard-day${isSel ? ' selected' : ''}`}
                       aria-pressed={isSel}
                       onClick={() => {
+                        slotRequestRef.current += 1
                         setSlotTakenNotice(null)
+                        setSlots([])
+                        setSlot(null)
                         setDate(key)
                       }}
                     >
@@ -1039,7 +1141,11 @@ export function BookingWizard({
                     />
                   </label>
                 ) : (
-                  <p className="wizard-muted">Kontrollerar kontaktväg…</p>
+                  <p className={contactMode === 'unavailable' ? 'fc-alert' : 'wizard-muted'}>
+                    {contactMode === 'unavailable'
+                      ? 'SMS är tillfälligt nere. Försök igen om en stund.'
+                      : 'Kontrollerar kontaktväg…'}
+                  </p>
                 )}
               </div>
 
@@ -1058,7 +1164,7 @@ export function BookingWizard({
         </div>
 
         {/* Single bottom CTA — thumb reach, with a live mono summary sub-line. */}
-        {services.length > 0 && (
+        {servicesHere.length > 0 && (
           <div className="wizard-actionbar">
             <button
               type="button"
@@ -1073,7 +1179,9 @@ export function BookingWizard({
                 </span>
               ) : (
                 <span className="wizard-cta-sub">
-                  Välj tjänst, tid &amp; fyll i namn + {contactMode === 'email' ? 'e-post' : 'telefon'}
+                  {contactMode === 'unavailable'
+                    ? 'SMS är tillfälligt nere'
+                    : <>Välj tjänst, tid &amp; fyll i namn + {contactMode === 'email' ? 'e-post' : 'telefon'}</>}
                 </span>
               )}
             </button>
@@ -1135,9 +1243,9 @@ export function BookingWizard({
   const firstOfMonth = new Date(cal.y, cal.m, 1)
   const startCol = (firstOfMonth.getDay() + 6) % 7 // Mån-först
   const daysInMonth = new Date(cal.y, cal.m + 1, 0).getDate()
-  const monthName = new Intl.DateTimeFormat('sv-SE', { month: 'long' }).format(firstOfMonth)
+  const monthName = new Intl.DateTimeFormat(locale, { month: 'long' }).format(firstOfMonth)
   const calTitle = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${cal.y}`
-  const ariaDay = new Intl.DateTimeFormat('sv-SE', {
+  const ariaDay = new Intl.DateTimeFormat(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -1182,7 +1290,7 @@ export function BookingWizard({
       <div className={`wizard-stepbody${step === 5 ? ' fc-stepbody--ticket' : ''}`}>
         {/* Step 1 — service */}
         {step === 1 &&
-          (services.length === 0 ? (
+          (servicesHere.length === 0 ? (
             <div className={styles.empty}>
               <div className={styles.emptyIcon} aria-hidden>
                 ✂️
@@ -1195,7 +1303,7 @@ export function BookingWizard({
           ) : (
             <div className="fc-step">
               <ul className="wizard-list">
-                {services.map((s) => (
+                {servicesHere.map((s) => (
                   <li key={s.id}>
                     <button
                       type="button"
@@ -1213,7 +1321,9 @@ export function BookingWizard({
                         ) : null}
                       </span>
                       <span className="wizard-card-meta">
-                        <span className="fc-price">{kr.format(s.priceCents / 100)}</span>
+                        <span className="fc-price">
+                          {formatTenantMoney(s.priceCents, { locale, currency })}
+                        </span>
                         <span className="fc-dur">{s.durationMin} min</span>
                       </span>
                       {service?.id === s.id ? <span className="fc-ring" aria-hidden /> : null}
@@ -1434,7 +1544,9 @@ export function BookingWizard({
                   {service.durationMin} min
                 </span>
               </span>
-              <span className="fc-summary-price">{kr.format(service.priceCents / 100)}</span>
+              <span className="fc-summary-price">
+                {formatTenantMoney(service.priceCents, { locale, currency })}
+              </span>
             </div>
             <form
               ref={formRef}
@@ -1483,7 +1595,11 @@ export function BookingWizard({
                   />
                 </label>
               ) : (
-                <p className="wizard-muted">Kontrollerar kontaktväg…</p>
+                <p className={contactMode === 'unavailable' ? 'fc-alert' : 'wizard-muted'}>
+                  {contactMode === 'unavailable'
+                    ? 'SMS är tillfälligt nere. Försök igen om en stund.'
+                    : 'Kontrollerar kontaktväg…'}
+                </p>
               )}
               <div className="fc-label" style={{ marginTop: 4 }}>
                 Något vi bör veta?
@@ -1569,7 +1685,9 @@ export function BookingWizard({
                 <span className="fc-ticket-footlabel">
                   {bookingStatus === 'pending' ? 'Pris om tiden bekräftas' : 'Att betala på plats'}
                 </span>
-                <span className="fc-ticket-price">{kr.format(service.priceCents / 100)}</span>
+                <span className="fc-ticket-price">
+                  {formatTenantMoney(service.priceCents, { locale, currency })}
+                </span>
               </div>
             </div>
 
@@ -1580,9 +1698,9 @@ export function BookingWizard({
                   Lägg till i kalender
                 </Link>
               ) : null}
-              <button type="button" className="fc-btn-outline" onClick={resetWizard}>
-                Boka en till tid
-              </button>
+              <Link href={bookAgainPath} className="fc-btn-outline">
+                Boka en tid till
+              </Link>
               {/* "Avboka eller boka om"-länken kräver den token-signerade avboka-URL:en
                   (cancel-token, finns bara i mejlet) — ingen giltig länk kan byggas här,
                   och en död länk är förbjuden. Mejlet bär avboka-vägen. */}

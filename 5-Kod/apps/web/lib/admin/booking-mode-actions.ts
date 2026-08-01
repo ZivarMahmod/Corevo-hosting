@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminArea } from '@/lib/auth/session'
-import { getAdminTenant, revalidateTenant } from './tenant'
+import { getAdminTenant, requireActiveTenantMutation, revalidateTenant } from './tenant'
 import { getAdminModuleStates, moduleAdminState } from './modules'
 import { bookingModeFromState, canSwitch, parseBookingMode, stateForMode } from './booking-mode'
 
@@ -23,6 +23,7 @@ export async function setBookingMode(
   const user = await requireAdminArea('installningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
+  await requireActiveTenantMutation(user, tenant.id)
 
   const next = parseBookingMode(fd.get('mode'))
   if (!next) return { error: GENERIC }

@@ -29,6 +29,7 @@ import { SectionHeader, SubpageHero } from './sections'
 import s from './blogg-section.module.css'
 import { bloggLayoutLabel, type BloggData, type BloggPost } from '@/lib/storefront/blogg/types'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
+import { BloggPagination } from './blogg/BloggPagination'
 
 /** Format an ISO timestamp as a Swedish post date ("3 juni 2026"). Pure, locale-
  *  aware; returns null when there is no date so the caller can omit the line. */
@@ -159,6 +160,8 @@ export async function BloggSection({
   limit,
   moreHref,
   pageHero = false,
+  page = 1,
+  data,
 }: {
   tenantId: string
   slug: string
@@ -170,11 +173,15 @@ export async function BloggSection({
   moreHref?: string
   /** Modulens EGEN sida: hero-bandet i stället för SectionHeader (goal-57). */
   pageHero?: boolean
+  /** Publik listsida. Teasers använder alltid sida 1. */
+  page?: number
+  /** Redan laddad data när routen också behöver totalen. */
+  data?: BloggData | null
 }) {
-  const data: BloggData | null = await loadBloggData(tenantId, slug)
-  if (!data) return null
+  const resolvedData = data === undefined ? await loadBloggData(tenantId, slug, page) : data
+  if (!resolvedData) return null
 
-  const { config, posts: allPosts } = data
+  const { config, posts: allPosts, pagination } = resolvedData
   const posts = typeof limit === 'number' ? allPosts.slice(0, limit) : allPosts
   // Teaser på startsidan + noll publicerade inlägg → rendera inget (S12).
   if (typeof limit === 'number' && allPosts.length === 0) return null
@@ -237,6 +244,9 @@ export async function BloggSection({
               Läs hela bloggen →
             </a>
           </p>
+        ) : null}
+        {typeof limit !== 'number' ? (
+          <BloggPagination page={pagination.page} totalPages={pagination.totalPages} />
         ) : null}
       </div>
     </section>

@@ -17,6 +17,13 @@ import {
 import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
 
 type StaffMember = { id: string; title: string | null; locationIds: string[]; avatarUrl: string | null }
+type WizardLocationRow = {
+  id: string
+  name: string
+  is_primary: boolean
+  timezone: string
+  max_advance_days: number
+}
 
 const loadStaffByService = (tenantId: string, slug: string) =>
   unstable_cache(
@@ -87,6 +94,7 @@ export async function getWizardServices(
   ])
   return services.map((s) => ({
     id: s.id,
+    locationId: s.location_id,
     name: s.name,
     description: s.description,
     durationMin: s.duration_min,
@@ -107,12 +115,18 @@ export async function getWizardLocations(
       const supabase = createPublicClient()
       const { data } = await supabase
         .from('locations')
-        .select('id, name, is_primary')
+        .select('id, name, is_primary, timezone, max_advance_days')
         .eq('tenant_id', tenantId)
         .eq('active', true)
         .order('is_primary', { ascending: false })
         .order('name', { ascending: true })
-      return (data ?? []).map((l) => ({ id: l.id, name: l.name, isPrimary: l.is_primary }))
+      return ((data ?? []) as unknown as WizardLocationRow[]).map((l) => ({
+        id: l.id,
+        name: l.name,
+        isPrimary: l.is_primary,
+        timeZone: l.timezone,
+        maxAdvanceDays: l.max_advance_days,
+      }))
     },
     ['wizard-locations', tenantId],
     { tags: [`tenant:${slug.trim().toLowerCase()}`], revalidate: 300 },

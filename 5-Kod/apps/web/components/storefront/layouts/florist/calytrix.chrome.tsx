@@ -130,9 +130,6 @@ export function CalytrixFooter({ tenant, tagline, contact, links }: ThemeFooterP
                 <Link href={l.href}>{l.label}</Link>
               </li>
             ))}
-            <li>
-              <Link href="/kontakt">Kontakt</Link>
-            </li>
           </ul>
         </div>
 

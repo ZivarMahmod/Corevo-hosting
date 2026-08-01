@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requirePortal } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
+import { requireActiveTenantMutation } from '@/lib/admin/tenant'
 
 export type NotificationPreferenceState = { success?: string; error?: string }
 
@@ -10,7 +11,8 @@ export async function saveNotificationPreferences(
   _previous: NotificationPreferenceState,
   formData: FormData,
 ): Promise<NotificationPreferenceState> {
-  await requirePortal('personal')
+  const user = await requirePortal('personal')
+  await requireActiveTenantMutation(user, user.tenantId ?? '')
   const supabase = await createClient()
   const { error } = await supabase.rpc('set_my_notification_preferences', {
     p_notify_new_booking: formData.get('notify_new_booking') === 'true',

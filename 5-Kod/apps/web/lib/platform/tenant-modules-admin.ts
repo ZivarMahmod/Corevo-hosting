@@ -18,7 +18,11 @@ import { revalidatePath } from 'next/cache'
 import { platformCtx } from './guard'
 import { logPlatformAction } from './audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
-import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
+import {
+  MODULE_STATES,
+  canTransitionModuleState,
+  type ModuleState,
+} from '@/lib/tenant-modules'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -79,12 +83,11 @@ export async function listTenantModules(tenantId: string): Promise<TenantModuleR
 }
 
 /**
- * Set a module's state for a tenant (super-admin write). Upserts on
- * (tenant_id, module_key): updates an existing row, or inserts one when the module is
- * being ACTIVATED for the first time (off→draft). The DB state-guard admits the write
- * because platformCtx carries platform_admin; activated_at is stamped by the guard the
- * first time state leaves 'off'. Selecting 'off' is allowed too (it parks the module
- * but keeps the row + history — build-once-never-delete; we never .delete()).
+ * Set a module's state for a tenant (super-admin write). Existing rows are updated.
+ * First activation inserts the DB-required `off` row before the legal off→draft
+ * transition. activated_at is stamped by the guard the first time state leaves 'off'.
+ * Returning draft/live to 'off' parks the module but keeps the row + history —
+ * build-once-never-delete; we never .delete().
  *
  * Form fields: tenantId, moduleKey, state.
  */
@@ -113,14 +116,39 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
     .single()
   if (tErr || !tenant) return { error: GENERIC }
 
-  // Upsert on the (tenant_id, module_key) unique index: insert on first activation,
-  // update otherwise. on_conflict targets the unique constraint so a re-pick of the
-  // same module updates state in place instead of erroring. The state-guard (0026 §9)
-  // admits this because platformCtx carries platform_admin.
-  const { error: wErr } = await supabase
+  const { data: currentRow, error: currentErr } = await supabase
     .from('tenant_modules')
-    .upsert({ tenant_id: tenantId, module_key: moduleKey, state }, { onConflict: 'tenant_id,module_key' })
-  if (wErr) return { error: GENERIC }
+    .select('state')
+    .eq('tenant_id', tenantId)
+    .eq('module_key', moduleKey)
+    .maybeSingle()
+  if (currentErr) return { error: GENERIC }
+  const currentState =
+    currentRow && isState(currentRow.state) ? currentRow.state : 'off'
+  if (!canTransitionModuleState(currentState, state, true)) {
+    return { error: 'Otillåten ändring av modul-läge.' }
+  }
+
+  if (currentRow) {
+    const { error } = await supabase
+      .from('tenant_modules')
+      .update({ state })
+      .eq('tenant_id', tenantId)
+      .eq('module_key', moduleKey)
+    if (error) return { error: GENERIC }
+  } else if (state !== 'off') {
+    const { error: insertError } = await supabase
+      .from('tenant_modules')
+      .insert({ tenant_id: tenantId, module_key: moduleKey, state: 'off' })
+    if (insertError) return { error: GENERIC }
+
+    const { error: updateError } = await supabase
+      .from('tenant_modules')
+      .update({ state })
+      .eq('tenant_id', tenantId)
+      .eq('module_key', moduleKey)
+    if (updateError) return { error: GENERIC }
+  }
 
   // Bust the per-tenant storefront cache (module gating reads tenant_modules, tagged
   // tenant:<slug>) + the platform detail/list pages.

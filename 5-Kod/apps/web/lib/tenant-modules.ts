@@ -10,8 +10,8 @@
 // BACKWARD COMPATIBILITY (the FreshCut guarantee): a tenant with NO tenant_modules
 // row for a module falls back to the historical default `booking:live`. Every tenant
 // that existed before this layer either was backfilled to booking:live (migration
-// 0028) OR — if the read ever races/fails — still renders booking, so the public
-// storefront never regresses. Only an EXPLICIT non-live row hides/pauses booking.
+// 0028) or still gets that default when the RPC succeeds with no row. Read failures
+// fail closed; only a proven missing row receives the compatibility default.
 //
 // CRITICAL (same fence as tenant-data.ts): the `anon` role carries no tenant_id
 // claim, so RLS does not isolate tenants for the public client — every query here
@@ -59,14 +59,54 @@ export function isModulePaused(states: TenantModuleStates, key: ModuleKey): bool
   return moduleState(states, key) === 'paused'
 }
 
+/** Public surfaces may show live content or a paused module's closed/read-only view. */
+export function isModulePublicReadable(
+  states: TenantModuleStates,
+  key: ModuleKey,
+): boolean {
+  const state = moduleState(states, key)
+  return state === 'live' || state === 'paused'
+}
+
+/** Customer module tools may mutate draft/live data; paused is deliberately read-only. */
+export function isModuleAdminWritable(
+  states: TenantModuleStates,
+  key: ModuleKey,
+): boolean {
+  const state = moduleState(states, key)
+  return state === 'draft' || state === 'live'
+}
+
+/** Friendly app mirror of the DB-owned lifecycle; the DB guard remains authoritative. */
+export function canTransitionModuleState(
+  from: ModuleState,
+  to: ModuleState,
+  platformOperator: boolean,
+): boolean {
+  if (from === to) return true
+  if (from === 'off' && to === 'draft') return platformOperator
+  if ((from === 'draft' || from === 'live') && to === 'off') {
+    return platformOperator
+  }
+  return (
+    (from === 'draft' && to === 'live') ||
+    (from === 'live' && to === 'paused') ||
+    (from === 'paused' && to === 'live')
+  )
+}
+
 /**
  * Load a tenant's module states by tenant id. Cached per-tenant and tagged with the
  * SAME `tenant:<slug>` tag getTenantBySlug uses, so a platform module-toggle that
  * busts that tag refreshes the storefront's module gating too. Read via the anon
  * public client; scoped by tenant_id app-side (RLS does NOT isolate anon).
  *
- * Returns an empty map on any error — callers then fall back to the per-module
- * default (booking:live), preserving the FreshCut-unchanged guarantee.
+ * The narrow RPC is required because the table's anon policy intentionally hides
+ * off/draft rows. Direct table reads would therefore mistake an explicit
+ * website-only booking=off for a missing legacy row and incorrectly enable booking.
+ * A successful empty result keeps the legacy booking default. RPC errors return an
+ * explicit booking=off map so callers cannot mistake infrastructure failure for a
+ * legacy tenant.
  */
 export async function getTenantModuleStates(
   tenantId: string,
@@ -77,10 +117,8 @@ export async function getTenantModuleStates(
     async (): Promise<TenantModuleStates> => {
       const supabase = createPublicClient()
       const { data, error } = await supabase
-        .from('tenant_modules')
-        .select('module_key, state')
-        .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
-      if (error || !data) return {}
+        .rpc('get_public_tenant_module_states', { p_tenant: tenantId })
+      if (error || !data) return { booking: 'off' }
       const out: TenantModuleStates = {}
       for (const row of data) {
         const st = parseState(row.state)

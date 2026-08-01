@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { tenantStorefrontHost } from '@/lib/storefront-url'
 import Link from 'next/link'
 import { platformOverview, bookingTrend } from '@/lib/platform/metrics'
 import { listTenants } from '@/lib/platform/tenants'
@@ -233,7 +234,7 @@ export default async function PlatformOverviewPage() {
                   <span className={styles.tenantName}>{t.name}</span>
                 </Link>,
                 <span key={`${t.id}-sub`} className={styles.sub}>
-                  {t.slug}.corevo.se
+                  {tenantStorefrontHost(t.slug)}
                 </span>,
                 // #14 — real tenants.city (listTenants returns it); honest "—" when
                 // the salon has no city yet (empty = honest, not hardcoded).

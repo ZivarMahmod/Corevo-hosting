@@ -4,38 +4,57 @@ begin;
 
 select set_config('request.jwt.claim.role', 'service_role', true);
 
-insert into public.tenants (id, slug, name) values
-  ('96000000-0000-0000-0000-000000000001', 'claim-0096-a', 'Claim A'),
-  ('96000000-0000-0000-0000-000000000002', 'claim-0096-b', 'Claim B');
+insert into public.tenants (id, slug, name, status) values
+  ('96000000-0000-0000-0000-000000000001', 'claim-0096-a', 'Claim A', 'provisioning'),
+  ('96000000-0000-0000-0000-000000000002', 'claim-0096-b', 'Claim B', 'provisioning');
+select set_config('request.jwt.claim.role', '', true);
+select set_config('request.jwt.claims', '{}', true);
+insert into public.tenant_settings (tenant_id) values
+  ('96000000-0000-0000-0000-000000000001'),
+  ('96000000-0000-0000-0000-000000000002');
+insert into public.tenant_modules (tenant_id, module_key, state) values
+  ('96000000-0000-0000-0000-000000000001', 'booking', 'off'),
+  ('96000000-0000-0000-0000-000000000002', 'booking', 'off');
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 insert into public.roles (id, tenant_id, name, level) values
   ('96000000-0000-0000-0000-000000000011', '96000000-0000-0000-0000-000000000001', 'kund-0096-a', 2),
-  ('96000000-0000-0000-0000-000000000012', '96000000-0000-0000-0000-000000000002', 'kund-0096-b', 2);
+  ('96000000-0000-0000-0000-000000000012', '96000000-0000-0000-0000-000000000002', 'kund-0096-b', 2),
+  ('96000000-0000-0000-0000-000000000013', '96000000-0000-0000-0000-000000000001', 'salon_admin', 6),
+  ('96000000-0000-0000-0000-000000000014', '96000000-0000-0000-0000-000000000002', 'salon_admin', 6);
 insert into auth.users (id, email) values
   ('96000000-0000-0000-0000-000000000021', 'claim-a@example.test'),
   ('96000000-0000-0000-0000-000000000022', 'claim-b@example.test'),
   ('96000000-0000-0000-0000-000000000023', 'claim-new@example.test'),
-  ('96000000-0000-0000-0000-000000000024', 'claim-provisional-b@example.test');
+  ('96000000-0000-0000-0000-000000000024', 'claim-provisional-b@example.test'),
+  ('96000000-0000-0000-0000-000000000025', 'claim-owner-a@example.test'),
+  ('96000000-0000-0000-0000-000000000026', 'claim-owner-b@example.test');
 insert into public.users (id, tenant_id, email, role_id, status) values
   ('96000000-0000-0000-0000-000000000021', '96000000-0000-0000-0000-000000000001', 'claim-a@example.test', '96000000-0000-0000-0000-000000000011', 'active'),
   ('96000000-0000-0000-0000-000000000022', '96000000-0000-0000-0000-000000000002', 'claim-b@example.test', '96000000-0000-0000-0000-000000000012', 'active'),
   ('96000000-0000-0000-0000-000000000023', '96000000-0000-0000-0000-000000000001', 'claim-new@example.test', '96000000-0000-0000-0000-000000000011', 'pending_claim'),
-  ('96000000-0000-0000-0000-000000000024', '96000000-0000-0000-0000-000000000002', 'claim-provisional-b@example.test', '96000000-0000-0000-0000-000000000012', 'pending_claim');
+  ('96000000-0000-0000-0000-000000000024', '96000000-0000-0000-0000-000000000002', 'claim-provisional-b@example.test', '96000000-0000-0000-0000-000000000012', 'pending_claim'),
+  ('96000000-0000-0000-0000-000000000025', '96000000-0000-0000-0000-000000000001', 'claim-owner-a@example.test', '96000000-0000-0000-0000-000000000013', 'active'),
+  ('96000000-0000-0000-0000-000000000026', '96000000-0000-0000-0000-000000000002', 'claim-owner-b@example.test', '96000000-0000-0000-0000-000000000014', 'active');
 
 insert into public.locations (id, tenant_id, name, timezone, is_primary) values
   ('96000000-0000-0000-0000-000000000031', '96000000-0000-0000-0000-000000000001', 'A', 'Europe/Stockholm', true),
-  ('96000000-0000-0000-0000-000000000032', '96000000-0000-0000-0000-000000000001', 'B', 'Europe/Stockholm', false);
+  ('96000000-0000-0000-0000-000000000032', '96000000-0000-0000-0000-000000000001', 'B', 'Europe/Stockholm', false),
+  ('96000000-0000-0000-0000-000000000033', '96000000-0000-0000-0000-000000000002', 'C', 'Europe/Stockholm', true);
+select public.publish_tenant('96000000-0000-0000-0000-000000000001');
+select public.publish_tenant('96000000-0000-0000-0000-000000000002');
 insert into public.staff (id, tenant_id, location_id, title, active) values
   ('96000000-0000-0000-0000-000000000041', '96000000-0000-0000-0000-000000000001', '96000000-0000-0000-0000-000000000031', 'Staff', false);
 insert into public.services (id, tenant_id, location_id, name, duration_min, price_cents) values
   ('96000000-0000-0000-0000-000000000051', '96000000-0000-0000-0000-000000000001', '96000000-0000-0000-0000-000000000031', 'Service', 30, 10000);
 
--- Canonical authenticated card, claim target and an unrelated same-phone card.
+-- Canonical authenticated card, claim target and an unrelated customer card.
 insert into public.customers (
   id, tenant_id, auth_user_id, full_name, email, phone, created_at
 ) values
   ('96000000-0000-0000-0000-000000000061', '96000000-0000-0000-0000-000000000001', '96000000-0000-0000-0000-000000000021', 'Canonical', 'claim-a@example.test', null, now() - interval '2 days'),
-  ('96000000-0000-0000-0000-000000000062', '96000000-0000-0000-0000-000000000001', null, 'Guest', 'guest@example.test', '+46700000000', now() - interval '1 day'),
-  ('96000000-0000-0000-0000-000000000063', '96000000-0000-0000-0000-000000000001', null, 'Other person', 'other@example.test', '+46700000000', now()),
+  ('96000000-0000-0000-0000-000000000062', '96000000-0000-0000-0000-000000000001', null, 'Guest', 'guest@example.test', null, now() - interval '1 day'),
+  ('96000000-0000-0000-0000-000000000063', '96000000-0000-0000-0000-000000000001', null, 'Other person', 'other@example.test', '+46700000009', now()),
   ('96000000-0000-0000-0000-000000000064', '96000000-0000-0000-0000-000000000002', null, 'Tenant B guest', 'bguest@example.test', '+46700000001', now()),
   ('96000000-0000-0000-0000-000000000065', '96000000-0000-0000-0000-000000000001', null, 'New bind', 'new@example.test', '+46700000002', now()),
   ('96000000-0000-0000-0000-000000000066', '96000000-0000-0000-0000-000000000001', null, 'Tier conflict', 'tier@example.test', '+46700000003', now());
@@ -56,11 +75,15 @@ insert into public.shop_orders (id, tenant_id, customer_id) values (
   '96000000-0000-0000-0000-000000000001',
   '96000000-0000-0000-0000-000000000062'
 );
+select set_config('request.jwt.claim.role', '', true);
+select set_config('request.jwt.claims', '{}', true);
 insert into public.offert_requests (id, tenant_id, customer_id) values (
   '96000000-0000-0000-0000-000000000085',
   '96000000-0000-0000-0000-000000000001',
   '96000000-0000-0000-0000-000000000062'
 );
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
 insert into public.bookings (
   id, tenant_id, location_id, staff_id, service_id, customer_id,
@@ -227,8 +250,8 @@ begin
     '96000000-0000-0000-0000-000000000001', repeat('a',64),
     '96000000-0000-0000-0000-000000000021', 'customer_account'
   ) then raise exception 'merged_claim_not_reconciled'; end if;
-  -- Same phone/different email was never part of the strong claim and stays separate.
-  if not exists (select 1 from public.customers where id='96000000-0000-0000-0000-000000000063' and status='active' and auth_user_id is null) then raise exception 'weak_phone_signal_auto_merged'; end if;
+  -- An unrelated customer was never part of the token claim and stays separate.
+  if not exists (select 1 from public.customers where id='96000000-0000-0000-0000-000000000063' and status='active' and auth_user_id is null) then raise exception 'unrelated_customer_auto_merged'; end if;
 end $$;
 
 -- Replay/second waiter gets no winner and changes nothing.
@@ -257,11 +280,16 @@ insert into public.shop_orders (id, tenant_id, customer_id) values (
   '96000000-0000-0000-0000-000000000001',
   '96000000-0000-0000-0000-000000000066'
 );
+select set_config('request.jwt.claim.role', '', true);
+select set_config('request.jwt.claims', '{}', true);
 insert into public.offert_requests (id, tenant_id, customer_id) values (
   '96000000-0000-0000-0000-000000000088',
   '96000000-0000-0000-0000-000000000001',
   '96000000-0000-0000-0000-000000000066'
 );
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims',
+  '{"sub":"96000000-0000-0000-0000-000000000021","role":"authenticated","app_metadata":{"tenant_id":"96000000-0000-0000-0000-000000000001","platform_admin":false}}', true);
 insert into public.loyalty_ledger (
   id, tenant_id, customer_id, points_delta, reason
 ) values

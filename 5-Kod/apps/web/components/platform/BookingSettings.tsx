@@ -5,7 +5,12 @@ import type { CSSProperties } from 'react'
 import { accentForeground, type TenantBranding } from '@corevo/ui'
 import { updateBookingSettings } from '@/lib/platform/actions'
 import type { ActionState } from '@/lib/platform/actions'
-import type { BookingVariant, PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
+import type {
+  BookingVariant,
+  BookingVerificationMode,
+  PickerMode,
+  StaffAvatarMode,
+} from '@/lib/platform/booking-variant'
 import { themePalette } from '@/lib/platform/theme-palettes'
 import studio from './SidaStudio.module.css'
 import pform from './platform.module.css'
@@ -103,6 +108,8 @@ export function BookingPanel({
   variant,
   pickerMode,
   staffAvatars,
+  verificationMode,
+  externalUrl,
   hasStaffPhoto,
   onSaved,
 }: {
@@ -113,6 +120,8 @@ export function BookingPanel({
   variant: BookingVariant
   pickerMode: PickerMode
   staffAvatars: StaffAvatarMode
+  verificationMode: BookingVerificationMode
+  externalUrl: string | null
   /** true när minst en AKTIV medarbetare har avatar_url — annars är Foto-läget
    *  avstängt med hint (design-kanon: "disable Foto with a hint"). */
   hasStaffPhoto: boolean
@@ -241,6 +250,39 @@ export function BookingPanel({
             bild visas alltid som initialer.
           </p>
         ) : null}
+      </section>
+
+      <section className={studio.card}>
+        <h3 className={studio.cardHead}>Verifieringskod</h3>
+        <p className={studio.note}>
+          Välj kanal efter kundens avtal. Mejlreserv används bara när SMS-tjänsten är nere.
+        </p>
+        <label className={pform.field}>
+          <span>Kanal</span>
+          <select name="booking_verification_mode" defaultValue={verificationMode}>
+            <option value="sms_only">Endast SMS</option>
+            <option value="sms_with_email_fallback">SMS med mejlreserv</option>
+            <option value="email_only">Endast mejl</option>
+          </select>
+        </label>
+      </section>
+
+      <section className={studio.card}>
+        <h3 className={studio.cardHead}>Extern bokning</h3>
+        <p className={studio.note}>
+          Används när bokningsmodulen står på Av. Då går alla Boka-knappar till den
+          externa tjänsten i en ny flik. Corevo-bokningen vinner alltid när den är live.
+        </p>
+        <label className={pform.field}>
+          <span>Extern https-länk</span>
+          <input
+            name="booking_external_url"
+            type="url"
+            inputMode="url"
+            placeholder="https://www.bokadirekt.se/..."
+            defaultValue={externalUrl ?? ''}
+          />
+        </label>
       </section>
 
       <section className={studio.card}>

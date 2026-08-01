@@ -3,13 +3,16 @@
 import { revalidatePath } from 'next/cache'
 import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
-import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
+import {
+  managedUploadErrorMessage,
+  retireManagedImages,
+  uploadManagedImage,
+} from '@/lib/media/lifecycle'
 import { mergeBranding } from '@/lib/branding/merge'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import type { TenantBranding } from '@corevo/ui'
 import { type ActionState, GENERIC, HEX_RE } from './shared'
 import { reportActionError } from './observe'
-import { recordMediaAsset } from './media-record'
 
 // ── Step 2: branding (platform edits a chosen tenant) ───────────────────────────
 function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
@@ -52,14 +55,19 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
 
   let logoUrl = prev.logo_url ?? null
   let warning: string | null = null
+  let uploadedNew = false
   if (removeLogo) logoUrl = null
-  let uploadedLogo: { file: File; url: string; key: string } | null = null
   if (logo instanceof File && logo.size > 0) {
-    const res = await uploadImage(logo, `tenants/${tenantId}/branding`)
+    const res = await uploadManagedImage(
+      supabase,
+      tenantId,
+      logo,
+      'branding',
+    )
     if (res.ok) {
       logoUrl = res.url
-      uploadedLogo = { file: logo, url: res.url, key: res.key }
-    } else warning = uploadErrorMessage(res.reason)
+      uploadedNew = !res.duplicate
+    } else warning = managedUploadErrorMessage(res.reason)
   }
 
   // M7 owns ONLY colours (primary/bg/fg/accent) + font + logo. Merge them onto prev so
@@ -79,6 +87,9 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, branding }, { onConflict: 'tenant_id' })
   if (error) {
+    if (uploadedNew && logoUrl && logoUrl !== prev.logo_url) {
+      await retireManagedImages(supabase, tenantId, [logoUrl])
+    }
     await reportActionError('savePlatformBranding.upsert', error, { tenantId })
     return { error: GENERIC }
   }
@@ -86,12 +97,7 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
   // FX-14: drop the previous logo object when replaced/removed. Logo-only — a
   // platform branding-save must not touch owner storefront media, and now that the
   // DB clobber is gone `prev` keeps all media so it can never appear in this set.
-  await pruneRemovedImages([prev.logo_url], [branding.logo_url])
-
-  // A9: gör loggan synlig i kundens Bildbibliotek (best-effort, fäller aldrig save).
-  if (uploadedLogo) {
-    await recordMediaAsset(supabase, tenantId, uploadedLogo.file, uploadedLogo, 'branding')
-  }
+  await retireManagedImages(supabase, tenantId, [prev.logo_url], [branding.logo_url])
 
   // CRITICAL: bust the cached public bundle so branding shows immediately (M2/M3).
   revalidateTenant(tenant.slug)

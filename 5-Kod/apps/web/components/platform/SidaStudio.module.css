@@ -3,7 +3,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  grid-template-columns: minmax(400px, 1fr) minmax(480px, 1.15fr);
   gap: 16px;
   align-items: start;
 }
@@ -14,7 +14,7 @@
 }
 .right {
   position: sticky;
-  top: 16px;
+  top: 78px;
   align-self: start;
   display: flex;
   flex-direction: column;
@@ -71,6 +71,28 @@
   align-items: center;
   gap: 8px;
 }
+.deviceSwitch {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--c-line, #e5e2da);
+  border-radius: 8px;
+}
+.deviceSwitch button {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  background: var(--c-paper, #fff);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  font: 600 11.5px var(--font-ui);
+}
+.deviceSwitch button + button {
+  border-left: 1px solid var(--c-line, #e5e2da);
+}
+.deviceSwitch button[aria-pressed='true'] {
+  background: var(--c-paper-2, #f7f5f0);
+  color: var(--c-ink, #1c1a16);
+}
 .host {
   font-size: 13px;
   font-weight: 600;
@@ -104,12 +126,20 @@
 
 /* ── preview stage ── */
 .stage {
+  position: relative;
   border: 1px solid var(--c-line, #e5e2da);
   border-radius: 9px;
-  overflow: hidden;
+  overflow: auto;
   background: var(--c-paper-2, #f7f5f0);
-  height: calc(100vh - 150px);
-  min-height: 520px;
+  height: calc(100vh - 220px);
+  min-height: 420px;
+}
+.previewViewport {
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+  background: #fff;
+  transform-origin: top left;
 }
 .frame {
   width: 100%;
@@ -138,7 +168,10 @@
   margin: 0;
 }
 
-@media (max-width: 1024px) {
+/* 896px är studions verkliga minsta innehållsbredd (400 + 16 + 480).
+   Superadminens två 24px-insets ligger utanför griden, därför staplar viewporten
+   vid 991px i stället för att låta minimikolumnerna skapa sidledes overflow. */
+@media (max-width: 991px) {
   .grid {
     grid-template-columns: 1fr;
   }

@@ -1,9 +1,14 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { layerCopy, type CopyOverride } from './theme-content'
+import { layerCopy, materializeThemeCopy, type CopyOverride } from './theme-content'
 import { getVerticalCopy } from './vertical-copy'
 import { themeOwnsCopy } from '@/lib/platform/theme-capabilities'
+import {
+  DEFAULT_STOREFRONT_THEME,
+  STOREFRONT_THEMES,
+  type StorefrontTheme,
+} from '@/lib/tenant-data'
 
 /**
  * Owner-editable storefront COPY reader (M2 side of the M2↔M6 copy contract).
@@ -36,6 +41,8 @@ export async function getTenantCopy(
    *  som kan rendera en ANNAN mall än den sparade (?theme= i SidaStudio) — annars skulle
    *  previewen gata bransch-lagret på fel mall och visa något live aldrig visar. */
   themeOverride: string | null = null,
+  /** Mallväljarens uttryckliga previewläge. null = vanlig publicerad läsning. */
+  copyMode: 'keep' | 'template' | null = null,
 ): Promise<CopyOverride | null> {
   const norm = slug.trim().toLowerCase()
   const load = unstable_cache(
@@ -59,6 +66,16 @@ export async function getTenantCopy(
     { tags: [`tenant:${norm}`], revalidate: 300 },
   )
   const stored = await load()
+  if (themeOverride && copyMode === 'template') return null
+  if (themeOverride && copyMode === 'keep') {
+    const currentTheme = STOREFRONT_THEMES.includes(stored.theme as StorefrontTheme)
+      ? stored.theme as StorefrontTheme
+      : DEFAULT_STOREFRONT_THEME
+    const effective = themeOwnsCopy(currentTheme)
+      ? stored.copy
+      : layerCopy(await getVerticalCopy(verticalId), stored.copy)
+    return materializeThemeCopy(currentTheme, effective)
+  }
   // goal-64: äger mallen sin text finns ingen bransch-nivå — vi slipper DB-rundan helt.
   const theme = themeOverride ?? stored.theme
   if (theme && themeOwnsCopy(theme)) return stored.copy

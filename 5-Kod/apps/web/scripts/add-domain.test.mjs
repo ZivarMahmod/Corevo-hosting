@@ -11,6 +11,7 @@ const WR = `{
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
     { "pattern": "minbooking.corevo.se", "custom_domain": true },
+    { "pattern": "mina.corevo.se", "custom_domain": true },
     { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" }
   ]
 }
@@ -42,7 +43,7 @@ describe('addDomain', () => {
   })
 
   it('refuses a reserved slug BEFORE writing anything', async () => {
-    await expect(addDomain({ wranglerPath, slug: 'admin' })).rejects.toThrow(/reserved\/POS/)
+    await expect(addDomain({ wranglerPath, slug: 'mina' })).rejects.toThrow(/reserved\/POS/)
     expect(readFileSync(wranglerPath, 'utf8')).toBe(WR) // file untouched
   })
 

@@ -93,6 +93,29 @@ afterEach(async () => {
 })
 
 describe('goal-72 S3/2d: platform mutation arms', () => {
+  it('shows a disabled publish action while provisioning is incomplete', async () => {
+    await render(
+      <StatusControl tenantId="tenant-1" status="provisioning" canActivate={false} />,
+    )
+
+    const publish = button(container, 'Publicera kund')
+    expect(publish.disabled).toBe(true)
+    expect(mocks.setTenantStatus).not.toHaveBeenCalled()
+  })
+
+  it('publishes a ready provisioning tenant without a destructive confirmation step', async () => {
+    await render(
+      <StatusControl tenantId="tenant-1" status="provisioning" canActivate />,
+    )
+
+    await act(async () => button(container, 'Publicera kund').click())
+
+    expect(mocks.setTenantStatus).toHaveBeenCalledTimes(1)
+    const form = mocks.setTenantStatus.mock.calls[0]?.[1] as FormData
+    expect(form.get('tenantId')).toBe('tenant-1')
+    expect(form.get('status')).toBe('active')
+  })
+
   it('submits suspension only on the second click and does not restore focus after the result', async () => {
     await render(<StatusControl tenantId="tenant-1" status="active" />)
 

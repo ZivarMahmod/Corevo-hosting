@@ -37,6 +37,10 @@ export type BookingMode = 'wizard' | 'compact'
 type BookingContextValue = {
   /** Route-level module gate; false for off/draft, true for live/paused. */
   reachable: boolean
+  /** Explicit website-only mode. Only an actual module state `off` may enable it. */
+  websiteOnly: boolean
+  /** External destination used only when websiteOnly is true. */
+  externalUrl: string | null
   /** True when the salon has bookable services AND a provider is mounted. */
   available: boolean
   /** Active presentation, including iframe-only editor preview changes. */
@@ -72,6 +76,12 @@ export function BookingProvider({
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   reachable = true,
+  websiteOnly = false,
+  externalUrl = null,
+  countryCode,
+  locale,
+  currency,
+  defaultTimeZone,
   children,
 }: {
   services: WizardService[]
@@ -99,6 +109,14 @@ export function BookingProvider({
   staffAvatarMode?: StaffAvatarMode
   /** Whether /boka may be reached (live/paused). Off/draft must stay inert. */
   reachable?: boolean
+  /** True only when the persisted booking module state is explicitly `off`. */
+  websiteOnly?: boolean
+  /** Validated HTTPS destination for website-only tenants. */
+  externalUrl?: string | null
+  countryCode?: string
+  locale?: string
+  currency?: string
+  defaultTimeZone?: string
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -215,6 +233,8 @@ export function BookingProvider({
   const value = useMemo<BookingContextValue>(
     () => ({
       reachable,
+      websiteOnly,
+      externalUrl,
       available,
       variant: previewPrefs.variant,
       pickerMode: previewPrefs.pickerMode,
@@ -223,7 +243,7 @@ export function BookingProvider({
       open: openDrawer,
       openQuickBook,
     }),
-    [available, openDrawer, openQuickBook, previewPrefs, previewTenantName, reachable],
+    [available, externalUrl, openDrawer, openQuickBook, previewPrefs, previewTenantName, reachable, websiteOnly],
   )
 
   return (
@@ -242,6 +262,10 @@ export function BookingProvider({
           presentation={presentation}
           pickerMode={previewPrefs.pickerMode}
           staffAvatarMode={previewPrefs.staffAvatarMode}
+          countryCode={countryCode}
+          locale={locale}
+          currency={currency}
+          defaultTimeZone={defaultTimeZone}
         />
       ) : null}
     </BookingContext.Provider>

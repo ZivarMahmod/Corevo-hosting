@@ -82,7 +82,9 @@ describe('loadGalleriData', () => {
         tag: 'Klipp',
         year_label: 'juni 2026',
         aspect_ratio: '3/2',
-        media_assets: { url: 'https://cdn/1.jpg', alt: 'ranunkel' },
+        alt_override: 'ranunkel i vas',
+        decorative: false,
+        media_assets: { url: 'https://cdn/1.jpg' },
       },
       // Array-formen (Supabase typar relationen olika beroende på FK-kardinalitet) +
       // helt tomma presentationsfält.
@@ -92,14 +94,17 @@ describe('loadGalleriData', () => {
         tag: null,
         year_label: null,
         aspect_ratio: null,
-        media_assets: [{ url: 'https://cdn/2.jpg', alt: null }],
+        alt_override: null,
+        decorative: true,
+        media_assets: [{ url: 'https://cdn/2.jpg' }],
       },
     ]
     const data = await loadGalleriData('t1', 'salong')
     expect(data!.items[0]).toEqual({
       id: 'g1',
       imageUrl: 'https://cdn/1.jpg',
-      imageAlt: 'ranunkel',
+      imageAlt: 'ranunkel i vas',
+      decorative: false,
       caption: 'samling nr 13',
       tag: 'Klipp',
       yearLabel: 'juni 2026',
@@ -108,7 +113,8 @@ describe('loadGalleriData', () => {
     expect(data!.items[1]).toEqual({
       id: 'g2',
       imageUrl: 'https://cdn/2.jpg',
-      imageAlt: null,
+      imageAlt: '',
+      decorative: true,
       caption: null,
       tag: null,
       yearLabel: null,

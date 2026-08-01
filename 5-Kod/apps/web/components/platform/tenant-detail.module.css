@@ -69,11 +69,11 @@
 /* ── SubTabs — underline rail (reskin: gold-underline active, ej pill) ── */
 .subtabs {
   display: flex;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
   border-bottom: 1px solid var(--c-line);
   max-width: 100%;
   margin-bottom: 24px;
-  overflow-x: auto;
 }
 .subtab {
   display: inline-flex;
@@ -112,16 +112,83 @@
   opacity: 1;
 }
 
+.tabPanel {
+  min-width: 0;
+}
+
+.editorTabs {
+  min-height: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.editorTabs .subtabs {
+  flex: none;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.editorTabs .subtab {
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+
+.editorTabs .tabPanel {
+  min-height: 0;
+  display: flex;
+  flex: 1;
+}
+
+@media (min-width: 1200px) {
+  .crumb {
+    position: absolute;
+    z-index: 62;
+    top: 14px;
+    left: 24px;
+    margin: 0;
+  }
+
+  .head {
+    position: absolute;
+    z-index: 62;
+    top: 14px;
+    right: 24px;
+    margin: 0;
+  }
+
+  .head .ident {
+    display: none;
+  }
+
+  .subtabs {
+    gap: 2px;
+    margin-bottom: 14px;
+  }
+
+  .subtab {
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+
+  .editorTabs .subtabs {
+    margin-bottom: 4px;
+  }
+}
+
 /* ── two-column översikt + section grids ── */
 .twoCol {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 .col {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 /* Full-width single column (tables/large forms use the whole screen — no 760px
    pinned-left "blog" column, no dead right half). */

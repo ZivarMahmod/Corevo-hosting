@@ -26,13 +26,28 @@ describe('commerceReleaseGate', () => {
     ).toBe(false)
   })
 
-  it('releases shop and presentkort only for an exactly allowlisted tenant after settlement acceptance', () => {
+  it('releases shop only for an exactly allowlisted tenant after settlement acceptance', () => {
     const env = {
       COREVO_COMMERCE_RELEASE: 'settlement-v1-verified',
       COREVO_COMMERCE_TENANT_IDS: `other, ${TENANT.toUpperCase()} `,
     }
-    expect(commerceReleaseGate(TENANT, env)).toMatchObject({ shop: true, presentkort: true })
+    expect(commerceReleaseGate(TENANT, env)).toMatchObject({ shop: true, presentkort: false })
     expect(commerceReleaseGate('22222222-2222-4222-8222-222222222222', env).shop).toBe(false)
+  })
+
+  it('keeps presentkort behind its own reviewed value rail and tenant allowlist', () => {
+    const commerce = {
+      COREVO_COMMERCE_RELEASE: 'settlement-v1-verified',
+      COREVO_COMMERCE_TENANT_IDS: TENANT,
+      COREVO_GIFT_CARD_TENANT_IDS: TENANT,
+    }
+    expect(commerceReleaseGate(TENANT, commerce).presentkort).toBe(false)
+    expect(
+      commerceReleaseGate(TENANT, {
+        ...commerce,
+        COREVO_GIFT_CARD_VALUE_RELEASE: 'gift-value-v1-verified',
+      }).presentkort,
+    ).toBe(true)
   })
 
   it('keeps PayPal behind its own reviewed rail in addition to the commerce gate', () => {

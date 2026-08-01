@@ -124,3 +124,22 @@ export function readStaffAvatarMode(settings: unknown): StaffAvatarMode {
     ? (v as StaffAvatarMode)
     : 'initialer'
 }
+
+export const BOOKING_VERIFICATION_MODES = [
+  'sms_only',
+  'sms_with_email_fallback',
+  'email_only',
+] as const
+export type BookingVerificationMode = (typeof BOOKING_VERIFICATION_MODES)[number]
+export const DEFAULT_BOOKING_VERIFICATION_MODE: BookingVerificationMode =
+  'sms_with_email_fallback'
+
+export function isBookingVerificationMode(value: unknown): value is BookingVerificationMode {
+  return typeof value === 'string'
+    && (BOOKING_VERIFICATION_MODES as readonly string[]).includes(value)
+}
+
+export function readBookingVerificationMode(settings: unknown): BookingVerificationMode {
+  const value = readBookingPref(settings, 'verificationMode')
+  return isBookingVerificationMode(value) ? value : DEFAULT_BOOKING_VERIFICATION_MODE
+}

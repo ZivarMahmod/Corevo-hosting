@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-21.
+Senast uppdaterad: 2026-07-29.
 
 ## Läsordning
 
@@ -17,6 +17,102 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nuläge
 
+- Lokal Git-topologi konsoliderades 2026-07-28: lokal `main` är exakt
+  `origin/main` (`9a4ccdc`) och allt ännu ej produktionssatt arbete ligger samlat
+  på `codex/launch-inventory-customer-design`, som även innehåller aktuell
+  `main`. Endast dessa två lokala brancher/worktrees återstår. Ingen push,
+  produktionsmerge, deploy eller databasskrivning gjordes vid konsolideringen.
+- Den samlade kodacceptansen genom Goal 89 är körd på final-head:
+  `376` testfiler och `2 909` tester passerar tillsammans. Atomfixens
+  fokussvit är separat grön med `5` testfiler/`44` tester. Goal 74–84 och
+  87–89 är lokalt låsta i samma arbetsyta.
+  Produktionsmigration, domän/HTTPS, kvarvarande
+  extern e-postleverans och deploy är fortsatt releasegrindar och ska göras
+  tillsammans med Zivar. Protokoll finns i
+  `6-Testing/samlad-localhostacceptans-goal-74-80.md` samt Goal 81–84:s
+  och Goal 87–88:s testlistor i `6-Testing/`. Produktion är orörd.
+- Goal 88 är kodklar lokalt på
+  `codex/launch-inventory-customer-design`. Kundadmin och superadmin monterar
+  samma revisionsägda `SidaStudioV2`, manifest, utkast och historik; root-only
+  mallbyte är fail-closed och embedded-ytan behåller Goal 80:s exakta geometri.
+  Semantiskt “Välj på sidan”, revisionsmutex, konfliktläge, säkra
+  restore/leave-flöden och browser-back under bilduppladdning är låsta. De två
+  gamla routade assembly-filerna är pensionerade medan verkliga leaf-callers
+  och delad boknings-CSS är kvar. Autentiserad read-only browserparitet 1/1,
+  source-kontrakt 5/5, 376/2 909 tester, typecheck, lint med 0 fel/7 befintliga
+  varningar, produktionsbuild och två oberoende slutreviews är gröna på
+  final-head.
+  Slutreviewn hittade därefter theme/draft-racet och krävde **1 ny append-only
+  lokal migration**, `20260728021500_goal88_atomic_theme_switch.sql`.
+  Klient-, action- och SQL-kontrakten är fokuserat gröna. Mallpublicering
+  låser synkront redan vid submit och förblir låst genom refresh/remount;
+  databasen använder samma tenantlås, text-vertical-CAS och kanoniska theme-
+  jämförelse för mallbyte, save och restore. Migrationen är
+  inte applicerad på preview eller produktion och dess rollbackade runtime-SQL
+  återstår därför före release. Deploy och produktionsdata är orörda. Protokoll:
+  `6-Testing/goal-88-gemensam-kundarbetsyta-sidmotor-testlista.md`.
+- Goal 87 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Alla nio moduler använder nu samma
+  DB-ägda stateflöde `off → draft → live ↔ paused`, med laglig avstängning,
+  första default-config, bevarad data och fail-closed readiness. Publik läsning
+  kräver `live|paused`; nya publika boknings-, butik- och offertactions kräver
+  `live` och grön readiness. Tre append-only Goal 87-migrationer är applicerade
+  endast på `localhost-acceptance`; de låser även RLS-bypassande publika RPC:er
+  och shopkvittots token-fence före modulstate-beslutet. Fem rollbackade
+  SQL-runtimeprov, katalog-/policy-/grantbevis, advisors, 72 fokuserade tester,
+  full webbsvit 366/2 857,
+  typecheck, lint utan fel, produktionsbuild och oberoende DB-/kodreview är
+  gröna. Produktion är orörd. Protokoll:
+  `6-Testing/goal-87-modulstate-readiness-db-sakerhet-testlista.md`.
+- Goal 84 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Ett färskt browserlås från tomma
+  fixtures skapade och publicerade både webbplatsläge och komplett
+  bokningsgrund, genomförde en fyrsiffrigt PIN-verifierad bokning, avbokade den
+  genom produktflödet och avslutade
+  `goal84: preview-browseracceptans LOCK OK`. Migration `0133` bryter
+  ägarprofilens RLS-rekursion och tillåter endast behörig tenantskopad global
+  operatör att bekräfta öppettider. Runtimeprov, advisors, mobilsmoke, full
+  testsvit, typecheck, lint/build och oberoende säkerhets-/selectorgranskning är
+  gröna. Testmejlhooken är borttagen, normal rate limit återställd, FreshCut är
+  oförändrad och produktion orörd. Protokoll:
+  `6-Testing/goal-84-komplett-onboarding-till-forsta-bokning-testlista.md`.
+- Goal 83 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. `tenant_settings` äger nu
+  `SE`/`sv-SE`/`SEK` och en portabel IANA-standardtidszon, medan platsens
+  tidszon fortsatt äger bokningskalendern. Bokning, notifiering, prisformat,
+  onboarding och kundportal läser samma kontrakt. Endast PTS-öppna svenska
+  mobilserier normaliseras till E.164; gamla `+46`-maskbevis förblir säkert
+  kompatibla men visas lokalt. Previewmigration `0131`, rollback, RLS/grants,
+  advisors, full webbsvit, typecheck, lint/build, desktop/mobil och tre
+  oberoende reviews är gröna. Full i18n, skatt och ett andra land är uttryckligen
+  senare delar. Produktion är orörd.
+- Goal 82 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Tenantägda mutationer kräver nu
+  aktiv tenant i server- och DB-lagret, medan pausade tenants behåller
+  behöriga läsvyer. `can_edit_site`, ägare/manager/personal, platsgränser,
+  adminens genvägar och branschneutral personalcopy är låsta utan redesign.
+  Previewmigration `0130_tenant_mutation_lifecycle.sql` och dess rollbackade
+  runtimeprov är gröna; helper-grants och tom `search_path` är verifierade.
+  Full websvit, typecheck, lint utan fel, Next-build och oberoende
+  `SPEC PASS — CLEAN` är gröna. `/admin` är konsolfri och utan horisontell
+  overflow på desktop och mobil; sessionen saknade tenantkoppling, så writes
+  täcks av testerna och preview-SQL. Produktion är orörd.
+- Goal 80 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`. Superadminens valda kundkort är nu
+  en egen fullbreddsyta enligt 1320px-kanon i stället för att pressas bredvid
+  masterlistan. Kundflikarna radbryts och Sida-studion följer exakt 400/480-
+  delningen, sticky 78px och 420px-minimihöjden. Previewn växlar mellan en
+  verklig skalad 1360px-desktop och en centrerad 390px-mobil. Browseracceptans
+  vid 1280px, 111 plattformstester, typkontroll, lint utan fel, preview-build
+  och Fable 5-review (`NO P0/P1`) är gröna. Den tillfälliga previewoperatören
+  är borttagen; produktion är orörd.
+- Goal 79 är verifierat klart lokalt på
+  `codex/launch-inventory-customer-design`: FreshCuts kundlåsta webb använder
+  den godkända 2026-designen, lokala originalbilder, verklig tenant-/servicedata
+  och säkert externt Bokadirekt-flöde när Corevo-bokning är avstängd. Desktop,
+  mobil, 211 riktade tester, typkontroll, lint, preview-build och oberoende
+  Fable-granskning är gröna. Förhandsdata finns endast på Supabase-branchen
+  `localhost-acceptance`; inget är deployat till produktion.
 - Produktionens boknings-, schema- och personalgrund är live. Inställningar v2 och
   Frisöradmin PWA driftsattes 2026-07-17. Produktionsdatabasen är numeriskt
   avstämd och runtime-verifierad genom migration `0119`; checkpoint och bevis
@@ -88,30 +184,115 @@ tenant och ett testfall, aldrig produktdefinitionen.
   eller avslutskö; Genomförd/Uteblev är frivilliga val inne i bokningen. Goal-73
   innehåller även keyboard-safe kalenderträffar och explicit Ja/Nej till
   kundmeddelande vid flytt. Goal-73 arkiveras inte förrän Zivar godkänt den live.
-- Goal-74 är den aktiva byggdelen och är driftsatt från `main`-SHA `645ae7b`
-  (deploy-run `29840569825`, Worker `0d440c6f-fbfa-433a-b8f5-c5f39f72d3da`):
-  publik bokning kräver PIN via direkt SMS när
-  Giada/modemet är friskt och faller annars tillbaka till e-post före kontaktsteget.
-  Challenge + hold + anonym PIN-outbox samt PIN-verifierad bokning +
-  bekräftelse-outbox är atomiska; de exakta raderna CAS-claimas och dispatchas
-  direkt, överlappande holds serialiseras per tenant/personal och den gamla
-  overifierade create-vägen är borttagen. Web 2 197 tester, typecheck, lint utan
-  fel, produktionsbuild, SQL-parser och gateway 77 tester är gröna. Migrationerna
-  `0118–0119` och Worker är produktionsverifierade. `0119` rättar den omedelbara
-  PIN-outbox-claimen som tidigare stannade före Giada. Efter fysisk RM550V-kallstart nådde ett
-  liveprov FreshCuts verkliga lediga tider den 22 juli. Före aktivering visades
-  Namn + E-post. Efter mottagen SIM-canary och aktiverad sändgrind visar en ny
-  bokningssession Namn + Telefon. Ett Demo-prov skickade därefter PIN genom DB,
-  outbox och Giada, visade PIN-fältet och avslutades utan bokning; gatewayen
-  bekräftade `sent`. En riktig e-postleverans och en fullständig PIN-finalisering
-  till skapad bokning återstår.
+- Goal-74:s grundleverans är driftsatt från `main`-SHA
+  `645ae7b` (deploy-run `29840569825`, Worker
+  `0d440c6f-fbfa-433a-b8f5-c5f39f72d3da`): challenge + hold + anonym
+  PIN-outbox samt PIN-verifierad bokning + bekräftelse-outbox är atomiska och
+  migrationerna `0118–0119` är produktionsverifierade. Fysisk SIM-canary,
+  själv-SIM-loopback och en full Demo-kedja till skapad bokning godkändes
+  2026-07-22; testbokningen avbokades direkt efter beviset.
+  Tilläggsrevisionen är lokalt låst på
+  `codex/launch-inventory-customer-design`: publik boknings-PIN är fyra siffror
+  med tre försök och tenantens kundadmin/superadminkort väljer endast SMS, SMS
+  med mejlreserv eller endast mejl. SMS skapar inte längre en oanvänd
+  konto-claim och alla durabla bokningslänkar använder den kanoniska
+  `<slug>.boka.corevo.se`-hosten. Full web 350 testfiler/2 737 tester,
+  typecheck, lint utan fel och produktionsbuild är gröna. Migration
+  `0125_booking_pin_three_attempts.sql` och dess grants/hostkontrakt är
+  runtimeverifierade på `localhost-acceptance`. En riktig e-postfallback-canary,
+  produktionsmigration och browserkontroll av kanalvalen återstår i den samlade
+  releasefasen; de blockerar inte nästa lokala goal. Goal-74 är därför arkiverad
+  som lokalt verifierad under `2-Byggplan/klart/02-ytor/bokningsmotor/`.
   Design/exekveringsplan finns i `1-Planering/18-sms-direktoperator/`; aktivering
   och manuellt prov finns i `5-Kod/docs/ops/pin-booking-activation.md` och
   `6-Testing/goal-74-pin-bokning-testlista.md`.
+- Goal-75 är lokalt låst på `codex/launch-inventory-customer-design`.
+  Magic-länk och portalsession, bokningsöversikt/historik/detalj, säker
+  avbokning, kalender, Boka igen, profil/kontaktbyte, recovery,
+  säkerhet/enheter och neutral PWA är byggda i premiumskalet. En enkel Corevo
+  C-ikon har ersatts av den fastställda Kopparfolie-ikonen; manifest, Apple-
+  touch-ikon, portalhostens firewall och redirect-säkert PWA-scope är verifierade.
+  Kundsynlig copy beskriver inte den interna inloggningsmetoden.
+  Localhostacceptans mot den isolerade Supabase-previewbranchen
+  `localhost-acceptance` gick igenom på desktop och mobil. Den fångade en
+  PostgreSQL-regexgräns i portalsnapshoten; `0120` är rättad och
+  `0128_customer_portal_postgres_regex_fix.sql` reparerar redan
+  migrerade preview-/stagingdatabaser. Portalens 56 testfiler/413 tester,
+  Goal-75-proben 5/5, typecheck, lint utan fel och produktionsbuild är gröna.
+  Ingen produktionsdeploy är gjord; Goal-75 ligger kvar i `goals/` tills den
+  gemensamma migrations-/host-/HTTPS-releasen är genomförd.
+- Goal-76 är lokalt låst på samma branch. Nya kunder skapas nu alltid **Under
+  konfiguration**; en DB-ägd, modulstyrd readinessgrind är ensam väg till
+  `active`. Kundkortet visar exakta blockerare och standardadressen är
+  `<slug>.boka.corevo.se` via wildcard, utan ny Cloudflare-domän per kund.
+  Migration `0127_tenant_launch_readiness.sql` är applicerad och
+  runtimeverifierad på `localhost-acceptance`: publicering, idempotens, nekad
+  för tidig publicering och nekad direkt statusbypass är gröna med rollback.
+  Seedad superadmin är rättad till global identitet. Full websvit 344
+  testfiler/2 716 tester, typecheck, lint och produktionsbuild är gröna;
+  seedregressionen är 6/6 grön. Gemensam skrivande localhostbrowseracceptans är
+  parkerad eftersom den redan körande port 3000 pekar på produktionens
+  `.env.production`; den ska startas mot preview ihop med Goal-74/75.
+- Goal-77 är lokalt verifierad på samma branch. Mallbyte kräver nu ett explicit
+  val mellan **Behåll nuvarande innehåll** och **Använd mallens innehåll**;
+  preview och publicerat resultat delar samma copy-kontrakt. Ett opublicerat
+  utkast blockerar mallbyte och en återställd revision från en annan mall kan
+  inte publiceras över den nya mallen. `83/83` angränsande tester, typecheck,
+  riktad lint och lokal browseracceptans med två verkliga mallbyten är gröna mot
+  `localhost-acceptance`. Produktion är orörd.
+- Goal-78 är lokalt låst på samma branch. En explicit `booking=off`-rad betyder
+  nu webbplatsläge och en valfri extern HTTPS-länk ersätter alla delade
+  boknings-CTA:er; saknad rad behåller den äldre säkra Corevo-standarden och
+  `booking=live` vinner alltid. Kundadmin och superadmin kan spara länken och
+  onboarding erbjuder Live/Pausad/Av. Den smala publika modulstatusfunktionen i
+  `0129_public_module_state_read.sql` är applicerad enbart på
+  `localhost-acceptance`. Browseracceptansen verifierade åtta externa CTA:er,
+  säker ny flik, nekad HTTP-länk, stängd `/boka`, inert `draft`, intern
+  Corevo-hantering för `paused` samt återgång till Corevos femstegsdialog.
+  Extern länk används endast vid explicit `off`, aldrig vid okänt tillstånd
+  eller läsfel. 24/24 riktade tester, typecheck och lint är gröna.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
 ## Nästa del
+
+Goal-74–84, Goal 87–91 och Goal 93 är lokalt tekniskt verifierade. Goal 92:s
+interna kod-, SQL-, concurrency- och browsergrindar är gröna, men fyra externa
+sandbox-/runtimeprov återstår. Den samlade kodacceptansen är grön.
+Goal 88 låste en gemensam revisionsägd kundarbetsyta och sidmotor för
+kundadmin och superadmin. Goal 89 låser den gemensamma storefront-/previewytan
+och mallslottsgaten. Zivar aktiverade Goal 90–93 före den samlade
+localhostacceptansen den 2026-07-29. Goal 90 är KODKLAR: blogg-, event- och
+galleri/media-kontrakten är runtimeverifierade i preview, hela kodbasen är grön
+och slutlig oberoende omgranskning gav 0 fynd över 81 filer. Produktion är
+orörd. Goal 91 är KODKLAR I PREVIEW: manuella presentkorts- och
+lojalitetskommandon, kodskydd, ledger, reconciliation och konkurrerande
+värdeskrivningar är verifierade. En privat DB-release per tenant gör att
+presentkortens issue/redeem/adjustment inte kan öppnas genom ett direkt
+admin-RPC. Goal 92 har nu en gemensam media-, offert-, settlement- och
+refundkedja som är internt runtimeverifierad i preview. Verklig Stripe-sandbox,
+PayPal-sandbox, R2 Worker-bindning och mottagande e-postsink är fortsatt
+blockerade och får inte räknas som godkända. Goal 93:s kodägda katalog matchar
+design och preview-DB för 12 nyvalbara teman; 376/376 matrisfall och 12/12
+verkliga previewteman är gröna. Användarauditen rättade gemensamt mobilnav,
+Calytrix-footern och E2E-teardownen. Zivar kan nu starta den lokalt testbara
+Goal 86-acceptansen. Goal 85 och de externa Goal 92-proven återstår före samlad
+release.
+Goal-74:s kvarvarande e-postprov samt Goal-75/76:s
+produktionsmigration/host/HTTPS-prov är releasecheckar och blockerar inte det
+lokala bygget. Ingen ny deldeploy ska göras innan de lokala byggdelarna är klara.
+Den godkända ordningen finns i `2-Byggplan/ROADMAP.md`.
+Den persistenta Supabase-previewbranchen `localhost-acceptance`
+(`cwnhpesrgolflkmyjbrm`) är den isolerade databasen för detta arbete. Den
+innehåller inga kopierade produktionsdata. Readiness `0132` och RLS-/öppettidsfix
+`0133`, Goal 87:s tre modulmigrationer, Goal 90:s sju migrationer, Goal 91:s
+värdeflödesmigrationer samt Goal 92–93:s migrationer är runtimeverifierade där.
+Previewns migrationshistorik innehåller även
+äldre timestampade korrektionsposter och ska inte repareras i denna låsning:
+`tenant_mutation_lifecycle_claim_guard`,
+`tenant_regional_phone_and_cascade_correction` och
+`tenant_regional_runtime_compatibility_correction`.
+Produktion `clylvowtowbtotrahuad` är orörd.
 
 Relationspaketet är publicerat från den verifierade leveransen och produktionen
 svarar på boknings- och tenantdörrarna. Zivars autentiserade manuella acceptans av

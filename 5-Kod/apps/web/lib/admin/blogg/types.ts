@@ -4,7 +4,7 @@
 export type BlogPostRow = {
   id: string
   title: string
-  slug: string | null
+  slug: string
   excerpt: string | null
   body: string | null
   cover_asset_id: string | null

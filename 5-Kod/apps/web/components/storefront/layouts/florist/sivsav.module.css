@@ -3,7 +3,7 @@
  *
  * EXAKT KOPIA av "Siv & Säv - Skandinaviskt.dc.html". Varje px, hex, letter-spacing och
  * line-height är LYFT ur filen — inget re-härlett, inget "nästan". Mallens grammatik:
- * varmvitt (#F4F1EA) mot salvia (#7C8B6B), luftiga sektioner (72–88px mellan band),
+ * varmvitt (#F4F1EA) mot tillgänglig salvia (#5D6A4E), luftiga sektioner (72–88px mellan band),
  * PILL-knappar överallt (border-radius:999px) och mjuka 24px-hörn på alla ytor. Heron och
  * om-fotot har filens signatur: 200px-rundning UPPTILL, 24px nedtill — en portalform som
  * ingen syskonmall har.
@@ -11,7 +11,7 @@
  * Två hex ligger som literaler i stället för tokens, för att de INTE finns bland
  * manifestets 8 palett-nycklar och därför inte får re-härledas ur dem:
  *   #C9C6B4 — pill-konturen (nav-korgen, "Lägg i korg", val-pillren)
- *   #8A8B7C / #A7A594 — de två svagaste metatext-nivåerna (kvitton, footer-meta)
+ *   #6B6D60 / #6B6D60 — de två svagaste metatext-nivåerna (kvitton, footer-meta)
  *
  * Mobil (≤760px) speglar filens EGET /* Corevo-tillägg *​/-block: grid → 1 kolumn,
  * H1/H2 clampas, sektionspadding 20px, tap-targets ≥44px.
@@ -78,7 +78,7 @@
 
 .ssSolid:hover {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--tenant-primary-fg, var(--color-bg));
 }
 
 /* Den KONTURADE pillen: "Lägg i korg", korg-etiketten i navet. Hover → fylls mörk. */
@@ -365,7 +365,7 @@
   margin: 0 0 16px;
   font-size: 16px;
   line-height: 1.8;
-  color: var(--color-fg-2);
+  color: var(--tenant-primary-ink, var(--color-primary-ink, var(--color-fg)));
 }
 
 .ssAboutPhoto {
@@ -532,7 +532,7 @@
 }
 
 .ssServiceRow:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .ssServiceName {
@@ -640,7 +640,7 @@
   transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 .ssFilter:hover {
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 .ssFilter[data-active='true'] {
   background: var(--color-fg);
@@ -797,7 +797,7 @@
 .ssFootSub {
   margin: 0;
   font-size: 13.5px;
-  color: #8a8b7c;
+  color: #6b6d60;
 }
 
 .ssFootNav {
@@ -821,7 +821,7 @@
 .ssFootMeta {
   margin: 0;
   font-size: 12.5px;
-  color: #a7a594;
+  color: #6b6d60;
 }
 
 .ssSrOnly {
@@ -988,7 +988,7 @@
 /* Den vanligaste nivån ligger på den gröna ytan — filens "Mellan". */
 .ssPlan[data-featured='true'] {
   background: var(--color-accent-soft);
-  border-color: var(--color-primary);
+  border-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .ssPlanTag {
@@ -1011,7 +1011,7 @@
 .ssPlanPer {
   margin: 0 0 16px;
   font-size: 13.5px;
-  color: var(--color-fg-2);
+  color: #626458;
 }
 
 .ssPlanDesc {
@@ -1045,7 +1045,7 @@
   padding: 13px 15px;
   font-family: var(--font-body);
   font-size: 15px;
-  outline-color: var(--color-primary);
+  outline-color: var(--tenant-primary-ink, var(--color-primary));
 }
 
 .ssClubJoin button {

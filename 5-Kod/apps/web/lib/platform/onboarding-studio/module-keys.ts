@@ -4,14 +4,14 @@
 // the server (symptom: `ALL_PREVIEW_MODULES.includes is not a function` → 500).
 // preview-modules.tsx re-exports these so existing client importers are unaffected.
 
-// The 5 BUILT main sections — the real *Section set (app/(public)/page.tsx), in the
+// The 7 BUILT main sections — the real *Section set (app/(public)/page.tsx), in the
 // real composition order. booking is covered by the look/layout, never a section.
-export const BUILT_MAIN = ['shop', 'offert', 'blogg', 'lojalitet', 'presentkort'] as const
+export const BUILT_MAIN = ['shop', 'kurser', 'blogg', 'offert', 'presentkort', 'lojalitet', 'galleri'] as const
 // Roadmap modules that live in the public main flow → the honest dashed card.
 export const ROADMAP_MAIN = ['portfolio', 'meny', 'recurring', 'deposit', 'inlamning'] as const
 // defaultPos:"konto" modules → the separate inloggad-kundportal panel.
 export const KONTO_KEYS = ['husdjur', 'fordon', 'intag', 'orderstatus'] as const
 
-/** Every module key the preview can render (5 built mains + roadmap + konto), EXCLUDING
+/** Every module key the preview can render (7 built mains + roadmap + konto), EXCLUDING
  *  booking (woven into the look/layout itself, never a separate section). */
 export const ALL_PREVIEW_MODULES: string[] = [...BUILT_MAIN, ...ROADMAP_MAIN, ...KONTO_KEYS]

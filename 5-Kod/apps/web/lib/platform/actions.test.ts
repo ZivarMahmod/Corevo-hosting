@@ -16,7 +16,11 @@ function makeSupabase(results: Record<string, { data?: unknown; error?: unknown 
   }
   const from = (table: string) => {
     const r = results[table] ??
-      (table === 'locations' ? { data: { id: 'location-1' }, error: null } : { data: null, error: null })
+      (table === 'locations'
+        ? { data: { id: 'location-1' }, error: null }
+        : table === 'modules'
+          ? { data: [{ key: 'booking' }], error: null }
+          : { data: null, error: null })
     const chain: Record<string, unknown> = {
       insert: (p: unknown) => (push(table, p), chain),
       upsert: (p: unknown) => (push(`${table}.upsert`, p), chain),
@@ -80,11 +84,23 @@ vi.mock('@/lib/cloudflare/custom-hostnames', () => ({
 }))
 // Top-level imports in actions.ts that pull server-only/cloudflare deps — never
 // exercised by createTenant without a logo File, but must import cleanly.
-vi.mock('@/lib/admin/tenant', () => ({ revalidateTenant: vi.fn() }))
+vi.mock('@/lib/admin/tenant', () => ({
+  revalidateTenant: vi.fn(),
+  revalidateTenantById: vi.fn(),
+}))
 vi.mock('@/lib/r2/upload', () => ({
   uploadImage: vi.fn(async () => ({ ok: false })),
   uploadErrorMessage: () => '',
   pruneRemovedImages: vi.fn(async () => {}),
+}))
+const managedMediaMocks = vi.hoisted(() => ({
+  uploadManagedImage: vi.fn(),
+  retireManagedImages: vi.fn(),
+}))
+vi.mock('@/lib/media/lifecycle', () => ({
+  uploadManagedImage: managedMediaMocks.uploadManagedImage,
+  retireManagedImages: managedMediaMocks.retireManagedImages,
+  managedUploadErrorMessage: () => '',
 }))
 
 import {
@@ -94,6 +110,9 @@ import {
   addCustomDomain,
   verifyCustomDomain,
   removeCustomDomain,
+  setTenantStatus,
+  setServiceStaff,
+  uploadServiceImage,
 } from './actions'
 import { resolveOwnerRole } from './owner-role'
 
@@ -156,6 +175,56 @@ describe('resolveOwnerRole (#11 owner-role seam)', () => {
   })
 })
 
+describe('setServiceStaff', () => {
+  it('describes an empty staff selection without claiming everyone can perform the service', async () => {
+    const { client } = makeSupabase({
+      services: { data: { id: 'service-1' }, error: null },
+      staff: { data: [], error: null },
+    })
+    platformCtxMock.mockResolvedValue({ user: { id: 'admin-1' }, supabase: client })
+    const formData = fd({ tenantId: 'tenant-1', serviceId: 'service-1' })
+
+    await expect(setServiceStaff({}, formData)).resolves.toEqual({
+      success: 'Ingen personal är kopplad till tjänsten.',
+    })
+  })
+})
+
+describe('uploadServiceImage', () => {
+  it('reads and retires the previously stored image_url after the replacement commits', async () => {
+    const previousUrl = 'https://cdn.example.test/media/tenant-1/old'
+    const nextUrl = 'https://cdn.example.test/media/tenant-1/new'
+    const { client, captured } = makeSupabase({
+      services: {
+        data: { id: 'service-1', image_url: previousUrl },
+        error: null,
+      },
+    })
+    platformCtxMock.mockResolvedValue({ user: { id: 'admin-1' }, supabase: client })
+    managedMediaMocks.uploadManagedImage.mockResolvedValue({
+      ok: true,
+      assetId: 'asset-new',
+      key: 'media/tenant-1/asset-new',
+      url: nextUrl,
+      duplicate: false,
+    })
+    const formData = fd({ tenantId: 'tenant-1', serviceId: 'service-1' })
+    formData.set('image', new File(['image'], 'service.webp', { type: 'image/webp' }))
+
+    await expect(uploadServiceImage({}, formData)).resolves.toEqual({
+      success: 'Bild uppladdad. Syns på tjänsten.',
+    })
+
+    expect(captured['services.select']).toContain('id, image_url')
+    expect(managedMediaMocks.retireManagedImages).toHaveBeenCalledWith(
+      client,
+      'tenant-1',
+      [previousUrl],
+      [nextUrl],
+    )
+  })
+})
+
 // ── createTenant write-path: city + full_name + resolved role_id ──────────────────
 describe('createTenant writes the goal-20 columns', () => {
   function seedCtx(
@@ -171,49 +240,65 @@ describe('createTenant writes the goal-20 columns', () => {
     platformCtxMock.mockReturnValue(
       Promise.resolve({ user: { id: 'admin-1' }, supabase: client, scope }),
     )
+    createServiceClientMock.mockReturnValue(fakeSvc())
     return captured
   }
 
+  const tenantFd = (entries: Record<string, string>) =>
+    fd({ owner_email: 'owner@example.test', ...entries })
+
   it('rejects a template outside the 12 approved handoff themes', async () => {
     seedCtx()
-    const res = await createTenant({}, fd({ name: 'K', slug: 'kx', theme: 'leander' }))
+    const res = await createTenant({}, tenantFd({ name: 'K', slug: 'kx', theme: 'leander' }))
     expect(res.error).toBe('Välj en av de 12 godkända mallarna.')
   })
 
   it('includes city in the tenants insert (#14)', async () => {
     const captured = seedCtx()
-    createServiceClientMock.mockReturnValue(null) // no invite path needed for this assert
-    const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket', city: 'Göteborg' }))
+    const res = await createTenant({}, tenantFd({ name: 'Klippoteket', slug: 'klippoteket', city: 'Göteborg' }))
     expect(res.error).toBeUndefined()
     expect(captured.tenants?.[0]).toMatchObject({ slug: 'klippoteket', name: 'Klippoteket', city: 'Göteborg' })
   })
 
-  it('binds a partner-created tenant to that partner and activates only after provisioning', async () => {
+  it('binds a partner-created tenant and leaves it under configuration', async () => {
     const captured = seedCtx({ kind: 'partner', partnerId: 'partner-a' })
-    createServiceClientMock.mockReturnValue(null)
 
-    const res = await createTenant({}, fd({ name: 'Partnerkund', slug: 'partnerkund' }))
+    const res = await createTenant({}, tenantFd({ name: 'Partnerkund', slug: 'partnerkund' }))
 
     expect(res.error).toBeUndefined()
     expect(captured.tenants?.[0]).toMatchObject({
       partner_id: 'partner-a',
       status: 'provisioning',
     })
-    expect(captured['tenants.update']?.at(-1)).toMatchObject({ status: 'active' })
+    expect(captured['tenants.update']).toBeUndefined()
+    expect(res.success).toContain('under konfiguration')
   })
 
   it('writes null city (never empty string) when no city is given (#14)', async () => {
     const captured = seedCtx()
-    createServiceClientMock.mockReturnValue(null)
-    await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
+    await createTenant({}, tenantFd({ name: 'Klippoteket', slug: 'klippoteket' }))
     expect((captured.tenants?.[0] as { city: unknown }).city).toBeNull()
+  })
+
+  it('writes the Swedish regional contract and the same primary timezone', async () => {
+    const captured = seedCtx()
+
+    const res = await createTenant({}, tenantFd({ name: 'Klippoteket', slug: 'klippoteket' }))
+
+    expect(res.error).toBeUndefined()
+    expect(captured.tenant_settings?.[0]).toMatchObject({
+      country_code: 'SE',
+      locale: 'sv-SE',
+      currency: 'SEK',
+      default_timezone: 'Europe/Stockholm',
+    })
+    expect(captured.locations?.[0]).toMatchObject({ timezone: 'Europe/Stockholm' })
   })
 
   it('invalidates the persistent customer layout after a successful create', async () => {
     seedCtx()
-    createServiceClientMock.mockReturnValue(null)
 
-    const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
+    const res = await createTenant({}, tenantFd({ name: 'Klippoteket', slug: 'klippoteket' }))
 
     expect(res.error).toBeUndefined()
     expect(revalidatePathMock).toHaveBeenCalledWith('/kunder', 'layout')
@@ -221,15 +306,13 @@ describe('createTenant writes the goal-20 columns', () => {
 
   it('creates the role from the resolved seam — default salon_admin/6 (#11)', async () => {
     const captured = seedCtx()
-    createServiceClientMock.mockReturnValue(null)
-    await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
+    await createTenant({}, tenantFd({ name: 'Klippoteket', slug: 'klippoteket' }))
     expect(captured.roles?.[0]).toEqual({ tenant_id: 't1', name: 'salon_admin', level: 6 })
   })
 
   it('passing owner_role=salon_admin (the form hidden input) is byte-identical (#11)', async () => {
     const captured = seedCtx()
-    createServiceClientMock.mockReturnValue(null)
-    await createTenant({}, fd({ name: 'K', slug: 'kx', owner_role: 'salon_admin' }))
+    await createTenant({}, tenantFd({ name: 'K', slug: 'kx', owner_role: 'salon_admin' }))
     expect(captured.roles?.[0]).toEqual({ tenant_id: 't1', name: 'salon_admin', level: 6 })
   })
 
@@ -306,14 +389,13 @@ describe('createTenant rolls back on owner-creation failure (no ghost salons)', 
     expect(svc.auth.admin.deleteUser).toHaveBeenCalledWith('auth-9') // orphan auth identity cleaned
   })
 
-  it('owner-LESS onboarding still creates the salon (guard never trips without an email)', async () => {
+  it('rejects ownerless onboarding before the tenant insert', async () => {
     const captured = seed()
     createServiceClientMock.mockReturnValue(null)
     const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
-    expect(res.error).toBeUndefined()
-    expect(res.success).toBeDefined()
-    expect(captured['tenants.delete']).toBeUndefined() // no invite attempted → no rollback
-    expect(captured.tenants?.[0]).toMatchObject({ slug: 'klippoteket' })
+    expect(res).toEqual({ error: 'Ange ägarens e-postadress.' })
+    expect(captured.tenants).toBeUndefined()
+    expect(captured['tenants.delete']).toBeUndefined()
   })
 })
 
@@ -613,5 +695,51 @@ describe('sendPasswordReset partner scope', () => {
 
     expect(res.error).toBeTruthy()
     expect(generateLink).not.toHaveBeenCalled()
+  })
+})
+
+describe('setTenantStatus readiness publication', () => {
+  it('uses publish_tenant instead of a direct active update', async () => {
+    const { client, captured } = makeSupabase({
+      tenants: { data: { slug: 'freshcut' }, error: null },
+      'rpc.publish_tenant': {
+        data: {
+          ready: true,
+          tenant_status: 'active',
+          transitioned: true,
+          canonical_host: 'freshcut.boka.corevo.se',
+          missing: [],
+        },
+        error: null,
+      },
+    })
+    platformCtxMock.mockResolvedValue({ user: { id: 'admin-1' }, supabase: client })
+
+    const res = await setTenantStatus(
+      {},
+      fd({ tenantId: 'tenant-1', status: 'active' }),
+    )
+
+    expect(res.success).toContain('aktiv')
+    expect(captured['rpc.publish_tenant']).toEqual([{ p_tenant: 'tenant-1' }])
+    expect(captured['tenants.update']).toBeUndefined()
+  })
+
+  it('keeps provisioning unchanged when the DB readiness gate rejects', async () => {
+    const { client, captured } = makeSupabase({
+      'rpc.publish_tenant': {
+        data: null,
+        error: { code: '55000', message: 'tenant_not_ready' },
+      },
+    })
+    platformCtxMock.mockResolvedValue({ user: { id: 'admin-1' }, supabase: client })
+
+    const res = await setTenantStatus(
+      {},
+      fd({ tenantId: 'tenant-1', status: 'active' }),
+    )
+
+    expect(res.error).toContain('inte redo')
+    expect(captured['tenants.update']).toBeUndefined()
   })
 })

@@ -14,7 +14,7 @@
   --editor-danger: var(--c-danger);
   --editor-info: var(--c-info);
   width: 100%;
-  height: calc(100dvh - 60px);
+  height: 100dvh;
   min-height: 0;
   display: flex;
   flex: 1;
@@ -23,6 +23,11 @@
   background: var(--editor-bg);
   color: var(--editor-text);
   font-family: var(--font-instrumentsans), 'Instrument Sans', system-ui, sans-serif;
+}
+
+.embedded {
+  height: 100%;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -121,6 +126,11 @@
   padding-inline: 17px !important;
 }
 .secondary { background: var(--editor-card) !important; }
+.pickButton[aria-pressed='true'] {
+  border-color: #D6AC6A;
+  box-shadow: inset 0 -2px 0 #D6AC6A;
+  color: var(--editor-text);
+}
 .danger { color: var(--editor-danger) !important; }
 
 .deviceButtons {
@@ -169,12 +179,20 @@
   grid-template-columns: 470px minmax(0, 1fr);
   flex: 1;
 }
+.embedded .workspace {
+  grid-template-columns: 470px minmax(0, 1fr);
+}
 .panel {
   min-width: 0;
+  margin: 0;
   padding: 16px 18px 40px;
   overflow-y: auto;
+  border: 0;
   border-right: 1px solid var(--editor-line);
   background: var(--editor-panel);
+}
+.embedded .panel {
+  overflow-y: auto;
 }
 .card {
   margin: 0 0 14px;
@@ -313,6 +331,14 @@
   overflow: hidden;
   background: #0c0c0b;
 }
+.embedded .preview {
+  position: relative;
+  top: auto;
+  align-self: stretch;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
 .previewUrl {
   display: none;
   align-items: center;
@@ -361,10 +387,38 @@
 .dialog p { margin: 0 0 7px; color: var(--editor-text-2); font-size: 13px; line-height: 1.55; }
 .dialog button { min-height: 42px; }
 
+@media (min-width: 768px) and (max-width: 1600px) {
+  .toolbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .tabs {
+    overflow: visible;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .toolbarActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 @media (max-width: 1180px) {
   .identity { min-width: 140px; }
   .toolbarActions .status,
   .toolbarActions > a { display: none; }
+}
+
+@media (max-width: 991px) {
+  .embedded .workspace {
+    grid-template-columns: 1fr;
+  }
+  .embedded .preview {
+    position: relative;
+    top: auto;
+  }
 }
 
 @media (max-width: 767px) {
@@ -434,6 +488,7 @@
   .previewDevice,
   .mobileDevice { width: 100%; border: 0; }
   .mobileHidden { display: none; }
+  .embedded .mobileHidden { display: none; }
   .mobilePublish {
     position: fixed;
     right: 12px;

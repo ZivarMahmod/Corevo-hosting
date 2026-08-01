@@ -11,10 +11,13 @@ import {
   type BookingVariant,
   type PickerMode,
   type StaffAvatarMode,
+  isBookingVerificationMode,
+  type BookingVerificationMode,
 } from '../booking-variant'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
+import { normalizeBookingExternalUrl } from '../booking-external-url'
 
 // ── §2.1B Operativ data-kontroll ("Supabase med mitt UI", no-code) ──────────────
 
@@ -216,6 +219,9 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
   const variantRaw = String(fd.get('booking_variant') ?? '')
   const pickerRaw = String(fd.get('picker_mode') ?? '')
   const avatarsRaw = String(fd.get('staff_avatars') ?? '')
+  const verificationModeRaw = String(fd.get('booking_verification_mode') ?? '')
+  const externalUrlRaw = String(fd.get('booking_external_url') ?? '').trim()
+  const externalUrl = normalizeBookingExternalUrl(externalUrlRaw)
   // Okänt/saknat värde → samma defaults som läs-seamen (readPickerMode/
   // readStaffAvatarMode) så spar aldrig kan landa på ett odefinierat läge.
   const variant: BookingVariant = isBookingVariant(variantRaw) ? variantRaw : DEFAULT_BOOKING_VARIANT
@@ -225,6 +231,13 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
   const staffAvatars: StaffAvatarMode = (STAFF_AVATAR_MODES as readonly string[]).includes(avatarsRaw)
     ? (avatarsRaw as StaffAvatarMode)
     : 'initialer'
+  if (!isBookingVerificationMode(verificationModeRaw)) {
+    return { error: 'Ogiltigt kanalval för bokningskoder.' }
+  }
+  if (externalUrlRaw && !externalUrl) {
+    return { error: 'Extern bokningslänk måste vara en fullständig https-länk.' }
+  }
+  const verificationMode = verificationModeRaw as BookingVerificationMode
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd kund.' }
@@ -236,7 +249,17 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
     .maybeSingle()
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
   const prevBooking = (prev.booking ?? {}) as Record<string, unknown>
-  const settings = { ...prev, booking: { ...prevBooking, variant, pickerMode, staffAvatars } }
+  const settings = {
+    ...prev,
+    booking: {
+      ...prevBooking,
+      variant,
+      pickerMode,
+      staffAvatars,
+      verificationMode,
+      external_url: externalUrl,
+    },
+  }
 
   const { error } = await supabase
     .from('tenant_settings')
@@ -254,7 +277,13 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
     action: 'tenant.update',
     tenantId,
     actorId: user.id,
-    meta: { booking_variant: variant, picker_mode: pickerMode, staff_avatars: staffAvatars },
+    meta: {
+      booking_variant: variant,
+      picker_mode: pickerMode,
+      staff_avatars: staffAvatars,
+      booking_verification_mode: verificationMode,
+      booking_external_url: externalUrl,
+    },
   })
   return { success: 'Bokningsinställningar sparade. Publika sajten uppdaterad.' }
 }

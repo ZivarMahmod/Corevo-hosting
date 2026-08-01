@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { platformCtx } from '../guard'
 import { kronorToCents } from '../billing'
 import { logPlatformAction } from '../audit'
-import { uploadImage, deleteByPublicUrl } from '@/lib/r2/upload'
+import {
+  managedUploadErrorMessage,
+  retireManagedImages,
+  uploadManagedImage,
+} from '@/lib/media/lifecycle'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
 import { revalidateTenantById } from '@/lib/admin/tenant'
@@ -231,7 +235,7 @@ export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<Ac
   // Service must belong to the tenant (never trust the client ids).
   const { data: svc } = await supabase
     .from('services')
-    .select('id')
+    .select('id, image_url')
     .eq('id', serviceId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
@@ -261,7 +265,7 @@ export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<Ac
     success:
       staffIds.length > 0
         ? `${staffIds.length} i personalen kan utföra tjänsten.`
-        : 'Ingen personal kopplad — alla kan utföra tjänsten (ingen begränsning).',
+        : 'Ingen personal är kopplad till tjänsten.',
   }
 }
 
@@ -279,25 +283,15 @@ export async function uploadServiceImage(_p: ActionState, fd: FormData): Promise
 
   const { data: svc } = await supabase
     .from('services')
-    .select('id')
+    .select('id, image_url')
     .eq('id', serviceId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
   if (!svc) return { error: 'Tjänsten finns inte.' }
+  const previousUrl = (svc as unknown as { image_url?: string | null }).image_url ?? null
 
-  const res = await uploadImage(image, `tenants/${tenantId}/services`)
-  if (!res.ok) {
-    return {
-      error:
-        res.reason === 'too_large'
-          ? 'Bilden är för stor (max 8 MB).'
-          : res.reason === 'bad_type'
-            ? 'Bilden måste vara PNG, JPG, WEBP eller GIF.'
-            : res.reason === 'no_public_base' || res.reason === 'no_binding'
-              ? 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2).'
-              : 'Uppladdningen misslyckades. Försök igen.',
-    }
-  }
+  const res = await uploadManagedImage(supabase, tenantId, image, 'sajtbyggare')
+  if (!res.ok) return { error: managedUploadErrorMessage(res.reason) }
 
   const { error } = await supabase
     .from('services')
@@ -305,9 +299,12 @@ export async function uploadServiceImage(_p: ActionState, fd: FormData): Promise
     .eq('id', serviceId)
     .eq('tenant_id', tenantId)
   if (error) {
+    if (!res.duplicate) await retireManagedImages(supabase, tenantId, [res.url])
     await reportActionError('uploadServiceImage.update', error, { tenantId })
     return { error: GENERIC }
   }
+
+  await retireManagedImages(supabase, tenantId, [previousUrl], [res.url])
 
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
@@ -350,7 +347,7 @@ export async function removeServiceImage(_p: ActionState, fd: FormData): Promise
     return { error: GENERIC }
   }
 
-  if (url) await deleteByPublicUrl(url)
+  await retireManagedImages(supabase, tenantId, [url])
 
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.

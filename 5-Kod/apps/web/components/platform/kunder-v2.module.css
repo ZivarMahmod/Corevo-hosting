@@ -1,4 +1,4 @@
-/* Exakt bärande Kunder v2-skelett: två permanenta paneler med egen scroll. */
+/* Kunder v2: listläge med två paneler, vald kund som fullbreddsarbetsyta. */
 .board {
   display: grid;
   grid-template-columns: 400px 1fr;
@@ -15,6 +15,15 @@
 }
 .boardState {
   grid-template-columns: 1fr;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.boardState .back {
+  display: inline-flex;
+}
+.boardState .paneInner {
+  max-width: none;
 }
 
 .list {
@@ -284,11 +293,25 @@
 .pane {
   overflow-y: auto;
   min-height: 0;
+  min-width: 0;
 }
 .paneInner {
-  max-width: 880px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 28px 36px 56px;
+  padding: 26px 24px 90px;
+}
+.pane:has(:global(.sida-studio-host)) {
+  overflow: hidden;
+}
+.paneInner:has(:global(.sida-studio-host)) {
+  height: 100%;
+  max-width: none;
+  padding-top: 12px;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
 .paneInnerWide {
   display: flex;
@@ -320,6 +343,18 @@
   }
   .rowMeta {
     display: none;
+  }
+}
+
+@media (min-width: 1200px) {
+  .board {
+    height: calc(100dvh - 28px);
+  }
+
+  .paneInner,
+  .paneInner:has(:global(.sida-studio-host)) {
+    position: relative;
+    padding-top: 70px;
   }
 }
 

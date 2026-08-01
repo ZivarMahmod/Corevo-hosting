@@ -2,19 +2,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   requirePortal: vi.fn(),
+  requireAdminArea: vi.fn(),
   requirePlatformOperator: vi.fn(),
   requirePlatformAdmin: vi.fn(),
+  requireActiveTenantMutation: vi.fn(),
   createClient: vi.fn(),
 }))
 
 vi.mock('@/lib/auth/session', () => ({
   requirePortal: mocks.requirePortal,
+  requireAdminArea: mocks.requireAdminArea,
   requirePlatformOperator: mocks.requirePlatformOperator,
   requirePlatformAdmin: mocks.requirePlatformAdmin,
 }))
+vi.mock('@/lib/admin/tenant', () => ({
+  requireActiveTenantMutation: mocks.requireActiveTenantMutation,
+}))
 vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.createClient }))
 
-import { platformAdminCtx, platformCtx, siteRevisionCtx } from './guard'
+import { platformAdminCtx, platformCtx, sidaCtx, siteRevisionCtx } from './guard'
 
 function tenantLookupClient(result: { data: { id: string } | null; error: unknown }) {
   const maybeSingle = vi.fn(async () => result)
@@ -27,6 +33,7 @@ function tenantLookupClient(result: { data: { id: string } | null; error: unknow
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.createClient.mockResolvedValue({ marker: 'cookie-client' })
+  mocks.requireActiveTenantMutation.mockResolvedValue(undefined)
 })
 
 describe('platformCtx', () => {
@@ -86,18 +93,38 @@ describe('siteRevisionCtx', () => {
       partnerId: null,
       tenantId: null,
     })
+    mocks.requireAdminArea.mockResolvedValue({
+      id: 'platform-1',
+      platformAdmin: true,
+      partnerAdmin: false,
+      partnerId: null,
+      tenantId: null,
+    })
 
     await expect(siteRevisionCtx({ tenantId: 'tenant-requested' })).resolves.toMatchObject({
       tenantId: 'tenant-requested',
     })
     expect(lookup.from).toHaveBeenCalledWith('tenants')
     expect(lookup.eq).toHaveBeenCalledWith('id', 'tenant-requested')
+    expect(mocks.requireAdminArea).toHaveBeenCalledWith('sida')
+    expect(mocks.requireActiveTenantMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'platform-1' }),
+      'tenant-requested',
+      lookup.client,
+    )
   })
 
   it('allows a partner only when the cookie client can read the requested tenant', async () => {
     const lookup = tenantLookupClient({ data: { id: 'tenant-a' }, error: null })
     mocks.createClient.mockResolvedValue(lookup.client)
     mocks.requirePortal.mockResolvedValue({
+      id: 'partner-user-1',
+      platformAdmin: false,
+      partnerAdmin: true,
+      partnerId: 'partner-a',
+      tenantId: null,
+    })
+    mocks.requireAdminArea.mockResolvedValue({
       id: 'partner-user-1',
       platformAdmin: false,
       partnerAdmin: true,
@@ -120,6 +147,13 @@ describe('siteRevisionCtx', () => {
       partnerId: 'partner-a',
       tenantId: null,
     })
+    mocks.requireAdminArea.mockResolvedValue({
+      id: 'partner-user-1',
+      platformAdmin: false,
+      partnerAdmin: true,
+      partnerId: 'partner-a',
+      tenantId: null,
+    })
 
     await expect(siteRevisionCtx({ tenantId: 'tenant-b' })).rejects.toThrow(
       'Tenant is outside the verified platform scope',
@@ -134,10 +168,46 @@ describe('siteRevisionCtx', () => {
       partnerId: null,
       tenantId: 'tenant-session',
     })
+    mocks.requireAdminArea.mockResolvedValue({
+      id: 'salon-1',
+      platformAdmin: false,
+      partnerAdmin: false,
+      partnerId: null,
+      tenantId: 'tenant-session',
+    })
 
     await expect(siteRevisionCtx({ tenantId: 'tenant-attacker' })).resolves.toMatchObject({
       tenantId: 'tenant-session',
     })
     expect(mocks.createClient).toHaveBeenCalledTimes(1)
+    expect(mocks.requireAdminArea).toHaveBeenCalledWith('sida')
+    expect(mocks.requireActiveTenantMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'salon-1' }),
+      'tenant-session',
+      { marker: 'cookie-client' },
+    )
+  })
+})
+
+describe('sidaCtx', () => {
+  it('keeps legacy cross-table Sida actions behind the organization-admin portal guard', async () => {
+    mocks.requirePortal.mockResolvedValue({
+      id: 'owner-1',
+      platformAdmin: false,
+      partnerAdmin: false,
+      partnerId: null,
+      tenantId: 'tenant-session',
+    })
+    const fd = new FormData()
+    fd.set('tenantId', 'tenant-attacker')
+
+    await expect(sidaCtx(fd)).resolves.toMatchObject({ tenantId: 'tenant-session' })
+    expect(mocks.requirePortal).toHaveBeenCalledWith('admin')
+    expect(mocks.requireAdminArea).not.toHaveBeenCalled()
+    expect(mocks.requireActiveTenantMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'owner-1' }),
+      'tenant-session',
+      { marker: 'cookie-client' },
+    )
   })
 })

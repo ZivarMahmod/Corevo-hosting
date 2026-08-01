@@ -1,34 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
 
 const componentPath = path.resolve(__dirname, 'SidaStudioV2.tsx')
 const cssPath = path.resolve(__dirname, 'SidaStudioV2.module.css')
 const component = existsSync(componentPath) ? readFileSync(componentPath, 'utf8') : ''
 const css = existsSync(cssPath) ? readFileSync(cssPath, 'utf8') : ''
 
-type TabResolver = (
-  tabs: ReadonlyArray<{ id: string }>,
-  requestedTabId: string | null | undefined,
-) => string
-type TabHrefBuilder = (tabId: string, currentSearch: string) => string
-
 describe('SidaStudioV2 acceptance shell', () => {
-  it('resolves valid deep-linked tabs and preserves the URL contract', async () => {
-    const studio = await import('./SidaStudioV2') as unknown as {
-      resolveSiteEditorTabId?: TabResolver
-      siteEditorTabHref?: TabHrefBuilder
-    }
-    expect(studio.resolveSiteEditorTabId).toBeTypeOf('function')
-    expect(studio.siteEditorTabHref).toBeTypeOf('function')
-
+  it('resolves valid deep-linked tabs and preserves the URL contract', () => {
     const tabs = [{ id: 'allmant' }, { id: 'kontakt' }, { id: 'bokning' }]
-    expect(studio.resolveSiteEditorTabId!(tabs, 'bokning')).toBe('bokning')
-    expect(studio.resolveSiteEditorTabId!(tabs, 'kontakt')).toBe('kontakt')
-    expect(studio.resolveSiteEditorTabId!(tabs, 'saknas')).toBe('allmant')
-    expect(studio.resolveSiteEditorTabId!(tabs, null)).toBe('allmant')
-    expect(studio.siteEditorTabHref!('bokning', 'kampanj=sommar&flik=kontakt'))
+    expect(resolveSiteEditorTabId(tabs, 'bokning')).toBe('bokning')
+    expect(resolveSiteEditorTabId(tabs, 'kontakt')).toBe('kontakt')
+    expect(resolveSiteEditorTabId(tabs, 'saknas')).toBe('allmant')
+    expect(resolveSiteEditorTabId(tabs, null)).toBe('allmant')
+    expect(siteEditorTabHref('/admin/sida', 'bokning', 'kampanj=sommar&flik=kontakt'))
       .toBe('/admin/sida?kampanj=sommar&flik=bokning')
+    expect(siteEditorTabHref('/kunder/tenant-1', 'bokning', 'kundflik=sida&flik=kontakt'))
+      .toBe('/kunder/tenant-1?kundflik=sida&flik=bokning')
   })
 
   it('synchronizes tab clicks and browser URL navigation without a second editor', () => {
@@ -36,7 +26,8 @@ describe('SidaStudioV2 acceptance shell', () => {
     expect(component).toContain("useSearchParams")
     expect(component).toContain("searchParams.get('flik')")
     expect(component).toContain('setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))')
-    expect(component).toContain('router.push(siteEditorTabHref(nextTabId, searchParams.toString())')
+    expect(component).toContain('usePathname')
+    expect(component).toContain('router.replace(siteEditorTabHref(pathname, nextTabId, searchParams.toString())')
   })
 
   it('owns one aggregate working snapshot and all four revision actions', () => {
@@ -135,6 +126,7 @@ describe('SidaStudioV2 acceptance shell', () => {
   it('keeps iframe navigation, active tab and editor field scan on one route', () => {
     expect(component).toContain("data.type === 'preview-route'")
     expect(component).toContain('selectTab(target.id)')
+    expect(component).toContain('setPreviewRoute(data.path)')
   })
 
   it('shows only module tabs backed by active modules', () => {
@@ -143,8 +135,8 @@ describe('SidaStudioV2 acceptance shell', () => {
   })
 
   it('renders the booking route with a slash in the visible tenant URL', () => {
-    expect(component).toContain("const displayPath = activeTab?.path.startsWith('?')")
-    expect(component).toContain("`/${activeTab.path}`")
+    expect(component).toContain("const displayPath = activePreviewPath.startsWith('?')")
+    expect(component).toContain("`/${activePreviewPath}`")
     expect(component).toContain('{storefrontHost}{displayPath}')
   })
 
@@ -183,6 +175,9 @@ describe('SidaStudioV2 acceptance shell', () => {
 
   it('locks canonical geometry, shared theme tokens and mobile controls in CSS', () => {
     expect(css).toMatch(/grid-template-columns:\s*470px\s+minmax\(0,\s*1fr\)/)
+    expect(css).toMatch(/\.embedded\s*\{[^}]*height:\s*100%[^}]*overflow:\s*hidden/is)
+    expect(css).toMatch(/\.embedded \.panel\s*\{[^}]*overflow-y:\s*auto/is)
+    expect(css).toMatch(/\.embedded \.preview\s*\{[^}]*position:\s*relative[^}]*overflow:\s*hidden/is)
     expect(css).toMatch(/--editor-bg:\s*var\(--c-cream\)/i)
     expect(css).toMatch(/--editor-panel:\s*var\(--c-paper\)/i)
     expect(css).toMatch(/--editor-card:\s*var\(--c-paper-2\)/i)
