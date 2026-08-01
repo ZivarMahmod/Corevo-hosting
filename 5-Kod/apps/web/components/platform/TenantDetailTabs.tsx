@@ -72,7 +72,7 @@ export function TenantDetailTabs({
   const active = resolveTenantTabKey(available, searchParams.get('kundflik'))
 
   return (
-    <div>
+    <div className={active === 'Sida' ? styles.editorTabs : undefined}>
       <div className={styles.subtabs} role="tablist" aria-label="Kund-detalj">
         {TABS.filter((t) => t.key in tabs).map((t) => {
           const isActive = active === t.key
@@ -90,7 +90,7 @@ export function TenantDetailTabs({
           )
         })}
       </div>
-      <div role="tabpanel">{tabs[active]}</div>
+      <div className={styles.tabPanel} role="tabpanel">{tabs[active]}</div>
     </div>
   )
 }

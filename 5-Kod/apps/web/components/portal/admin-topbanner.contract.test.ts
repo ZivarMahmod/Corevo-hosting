@@ -73,14 +73,17 @@ function quickActionsFromPortalShell(source: string): {
 
 describe('del 02: universal toppbanner v2', () => {
   it('behåller en gemensam toppbanner men matchar kundadminens desktopordning', () => {
-    // v3 (2026-07-18): sök är en cirkulär ikonknapp — ingen textetikett, ingen kbd-bricka.
-    // ⌘K/Ctrl+K lever kvar som global genväg och annonseras i title-attributet.
+    // Sökknappen är tillfälligt borttagen ur desktopskalet. Genvägen och
+    // mobilens riktiga sökåtgärd finns kvar utan en tom desktopyta.
     expect(topnav).toContain('aria-label="Sök kund, bokning eller sida"')
     expect(topnav).not.toContain('<kbd>')
-    expect(topnav).toContain("title={`Sök (${isMac ? '⌘' : 'Ctrl'} K)`}")
+    expect(topnav).not.toContain('styles.primaryTools')
+    expect(topnav).toContain("event.key.toLowerCase() === 'k'")
     expect(topnav.indexOf('{extra ?')).toBeLessThan(topnav.indexOf('{contextLink ?'))
     expect(topnav).toContain('<ThemeSwitch variant={themeVariant} />')
     expect(topnav).toContain('name="external"')
+    expect(css).toMatch(/\.shell\[data-portal='admin'\] \.theme\s*\{[^}]*width:\s*44px/is)
+    expect(css).toMatch(/\.shell\[data-portal='admin'\] \.account\s*\{[^}]*grid-column:\s*2/is)
   })
 
   it('bär genvägsraden som cirkulära ikonknappar i bannern, inte som dashboardkort', () => {

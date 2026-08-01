@@ -114,10 +114,27 @@ function mobileNavIcon(areaId: string): IconName {
   if (areaId === 'oversikt' || areaId === 'overview') return 'grid'
   if (areaId === 'kalender') return 'calendar'
   if (areaId === 'kunder' || areaId === 'customers') return 'users'
+  if (areaId === 'finance') return 'dollar'
   if (areaId === 'profil') return 'user'
   if (areaId === 'insight') return 'chartBars'
+  if (areaId === 'platform') return 'layers'
+  if (areaId === 'sida') return 'palette'
+  if (areaId === 'installningar') return 'settings'
   if (areaId === 'drift') return 'alert'
   return 'menu'
+}
+
+function desktopSubnavIcon(href: string): IconName {
+  if (href === '/slutkunder') return 'users'
+  if (href === '/personal-plattform') return 'scissors'
+  if (href === '/utskick') return 'message'
+  if (href === '/drift-och-logg') return 'alert'
+  if (href === '/partners') return 'building'
+  if (href === '/branscher') return 'layers'
+  if (href === '/integrationer') return 'link'
+  if (href === '/domaner') return 'globe'
+  if (href === '/roller') return 'shield'
+  return 'settings'
 }
 
 function AccountLinks({
@@ -214,8 +231,8 @@ export function Topnav({
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const [mobileAccountOpen, setMobileAccountOpen] = useState(false)
   const [mobileHelpOpen, setMobileHelpOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [calendarMeta, setCalendarMeta] = useState<MobileCalendarMeta | null>(null)
-  const [isMac, setIsMac] = useState(false)
   const accountRef = useRef<HTMLDetailsElement>(null)
   const onAccountToggle = useDismissibleDetails(accountRef)
   const initial = (userLabel.charAt(0) || email.charAt(0) || 'C').toUpperCase()
@@ -243,10 +260,6 @@ export function Topnav({
     setCommandOpen(false)
     setMobileMoreOpen(false)
     setMobileAccountOpen(true)
-  }, [])
-
-  useEffect(() => {
-    setIsMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || ''))
   }, [])
 
   useEffect(() => {
@@ -322,7 +335,7 @@ export function Topnav({
   return (
     <>
       <header
-        className={`${styles.header}${mobileNavigation ? ` ${styles.mobileAdmin}` : ''}${adminMobileChrome ? ` ${styles.adminMobileChrome}` : ''}`}
+        className={`${styles.header}${mobileNavigation ? ` ${styles.mobileAdmin}` : ''}${adminMobileChrome ? ` ${styles.adminMobileChrome}` : ''}${sidebarCollapsed ? ` ${styles.headerCollapsed}` : ''}`}
       >
         <div className={styles.bar}>
           <Link href={brandHref} className={styles.brand} aria-label={brandLabel}>
@@ -342,6 +355,15 @@ export function Topnav({
               </span>
             </span>
           </Link>
+          <button
+            type="button"
+            className={styles.sidebarToggle}
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            aria-label={sidebarCollapsed ? 'Öppna sidobannern' : 'Komprimera sidobannern'}
+            aria-expanded={!sidebarCollapsed}
+          >
+            <Icon name={sidebarCollapsed ? 'chevronRight' : 'chevronLeft'} size={18} />
+          </button>
           {adminMobileChrome ? (
             isCalendar ? (
               <button
@@ -365,29 +387,51 @@ export function Topnav({
 
           <nav className={styles.nav} aria-label="Huvudnavigering">
             {areas.map((area) => {
-              if (area.locked) {
-                return (
+              const active = area.id === activeArea?.id
+              const areaSubnav = area.subnav ?? subnavByArea?.[area.id]
+              const areaActiveSubitem = areaSubnav
+                ? activeTopnavSubitem(pathname, areaSubnav)
+                : undefined
+              return (
+                <div key={area.id} className={styles.navArea}>
+                  {area.locked ? (
                   <span
-                    key={area.id}
                     className={`${styles.navLink} ${styles.navLinkLocked}`}
                     aria-disabled="true"
                     title="Kräver behörighet från ägaren"
                   >
                     <Icon name="lock" size={11} />
-                    {area.label}
+                    <span className={styles.navLabel}>{area.label}</span>
                   </span>
-                )
-              }
-              const active = area.id === activeArea?.id
-              return (
-                <Link
-                  key={area.id}
-                  href={area.href}
-                  className={`${styles.navLink}${active ? ` ${styles.navLinkActive}` : ''}`}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  {area.label}
-                </Link>
+                  ) : (
+                    <Link
+                      href={area.href}
+                      className={`${styles.navLink}${active ? ` ${styles.navLinkActive}` : ''}`}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <Icon className={styles.navIcon} name={mobileNavIcon(area.id)} size={17} />
+                      <span className={styles.navLabel}>{area.label}</span>
+                    </Link>
+                  )}
+                  {areaSubnav?.length ? (
+                    <nav className={styles.desktopSubnav} aria-label={`${area.label} – undersidor`}>
+                      {areaSubnav.map((item) => {
+                        const itemActive = areaActiveSubitem?.href === item.href
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`${styles.desktopSubnavLink}${itemActive ? ` ${styles.desktopSubnavLinkActive}` : ''}`}
+                            aria-current={itemActive ? 'page' : undefined}
+                          >
+                            <Icon name={desktopSubnavIcon(item.href)} size={14} />
+                            {item.label}
+                          </Link>
+                        )
+                      })}
+                    </nav>
+                  ) : null}
+                </div>
               )
             })}
           </nav>
@@ -407,22 +451,6 @@ export function Topnav({
                   </Link>
                 ))}
               </nav>
-            ) : null}
-            <button
-              type="button"
-              className={`${styles.search}${mobileNavigation ? ` ${adminStyles.search}` : ''}`}
-              onClick={openCommandPalette}
-              aria-label="Sök kund, bokning eller sida"
-              aria-haspopup="dialog"
-              title={`Sök (${isMac ? '⌘' : 'Ctrl'} K)`}
-            >
-              <Icon name="search" size={16} />
-            </button>
-            {primaryAction ? (
-              <Link href={primaryAction.href} className={styles.newCustomer}>
-                <Icon name={primaryAction.icon} size={15} />
-                <span>{primaryAction.label}</span>
-              </Link>
             ) : null}
             {extra ? <div className={styles.extra}>{extra}</div> : null}
             {contextLink ? (

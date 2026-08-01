@@ -68,15 +68,19 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
         {/* (1) HERO — text | ett verk */}
         <section className={styles.avHero}>
           <Reveal>
-            <p className={styles.avEyebrow}>{content.heroEyebrow}</p>
-            <h1 className={styles.avHeroTitle}>{content.heroTitle}</h1>
-            <p className={styles.avHeroLede}>{content.heroLede}</p>
+            <p className={styles.avEyebrow} data-corevo-editor-field="heroEyebrow"
+              data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+            <h1 className={styles.avHeroTitle} data-corevo-editor-field="heroTitle"
+              data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+            <p className={styles.avHeroLede} data-corevo-editor-field="heroLede"
+              data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
             <Link href={shopReachable ? '/shop' : '/tjanster'} className={styles.avUnderline}>
               se samlingen
             </Link>
           </Reveal>
           <Reveal delay={140}>
-            <div className={styles.avHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />
+            <div className={styles.avHeroPhoto} data-corevo-editor-field="hero_images.0"
+              data-corevo-editor-stable-field="hero_images.0" style={{ backgroundImage: `url(${heroPhoto})` }} />
             {heroWork ? (
               <div className={styles.avHeroCaption}>
                 <p className={styles.avMeta}>{heroWork.name}</p>
@@ -94,8 +98,10 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
             <div className={styles.avRule} />
             <section className={styles.avSection}>
               <Reveal className={styles.avSecHead}>
-                <h2 className={styles.avSecTitle}>{content.shopTitle ?? 'ur samlingen'}</h2>
-                <p className={styles.avSecCount}>{content.shopEyebrow ?? '01 — 06'}</p>
+                <h2 className={styles.avSecTitle} data-corevo-editor-field="shopTitle"
+                  data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'ur samlingen'}</h2>
+                <p className={styles.avSecCount} data-corevo-editor-field="shopEyebrow"
+                  data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? '01 — 06'}</p>
               </Reveal>
               <ul className={styles.avWorkGrid}>
                 {works.map((p, i) => (
@@ -130,8 +136,10 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
         <div className={styles.avRule} />
         <section className={styles.avStatement}>
           <Reveal>
-            <p className={styles.avEyebrow}>{content.homeGalleryEyebrow ?? 'ateljéns hållning'}</p>
-            <p className={styles.avStatementText}>{content.italic}</p>
+            <p className={styles.avEyebrow} data-corevo-editor-field="homeGalleryEyebrow"
+              data-corevo-editor-stable-field="homeGalleryEyebrow">{content.homeGalleryEyebrow ?? 'ateljéns hållning'}</p>
+            <p className={styles.avStatementText} data-corevo-editor-field="italic"
+              data-corevo-editor-stable-field="italic">{content.italic}</p>
           </Reveal>
         </section>
 
@@ -143,15 +151,19 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
               {r.href ? (
                 <Link href={r.href} className={styles.avRoom}>
                   <p className={styles.avRoomNum}>{r.num}</p>
-                  <h3 className={styles.avRoomTitle}>{r.title}</h3>
-                  <p className={styles.avRoomDesc}>{r.desc}</p>
+                  <h3 className={styles.avRoomTitle} data-corevo-editor-field={`pillar${i + 1}Title`}
+                    data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{r.title}</h3>
+                  <p className={styles.avRoomDesc} data-corevo-editor-field={`pillar${i + 1}Body`}
+                    data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{r.desc}</p>
                   <span className={styles.avUnderline}>gå in →</span>
                 </Link>
               ) : (
                 <div className={styles.avRoom}>
                   <p className={styles.avRoomNum}>{r.num}</p>
-                  <h3 className={styles.avRoomTitle}>{r.title}</h3>
-                  <p className={styles.avRoomDesc}>{r.desc}</p>
+                  <h3 className={styles.avRoomTitle} data-corevo-editor-field={`pillar${i + 1}Title`}
+                    data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{r.title}</h3>
+                  <p className={styles.avRoomDesc} data-corevo-editor-field={`pillar${i + 1}Body`}
+                    data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{r.desc}</p>
                 </div>
               )}
             </Reveal>

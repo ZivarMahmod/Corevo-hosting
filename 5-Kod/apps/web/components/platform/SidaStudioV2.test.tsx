@@ -175,6 +175,9 @@ describe('SidaStudioV2 acceptance shell', () => {
 
   it('locks canonical geometry, shared theme tokens and mobile controls in CSS', () => {
     expect(css).toMatch(/grid-template-columns:\s*470px\s+minmax\(0,\s*1fr\)/)
+    expect(css).toMatch(/\.embedded\s*\{[^}]*height:\s*100%[^}]*overflow:\s*hidden/is)
+    expect(css).toMatch(/\.embedded \.panel\s*\{[^}]*overflow-y:\s*auto/is)
+    expect(css).toMatch(/\.embedded \.preview\s*\{[^}]*position:\s*relative[^}]*overflow:\s*hidden/is)
     expect(css).toMatch(/--editor-bg:\s*var\(--c-cream\)/i)
     expect(css).toMatch(/--editor-panel:\s*var\(--c-paper\)/i)
     expect(css).toMatch(/--editor-card:\s*var\(--c-paper-2\)/i)

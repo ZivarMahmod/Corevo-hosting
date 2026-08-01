@@ -96,6 +96,8 @@ describe('goal-72/80 customer master–detail and full-width workspace contract'
   it('changes only the detail shell while preserving all 14 tab keys and module gates', () => {
     const page = readWeb('app/(platform)/kunder/(board)/[id]/page.tsx')
     const tabs = readWeb('components/platform/TenantDetailTabs.tsx')
+    const detailCss = readWeb('components/platform/tenant-detail.module.css')
+    const boardCss = readWeb('components/platform/kunder-v2.module.css')
     const keys = [...tabs.matchAll(/\| '([^']+)'/g)].map((match) => match[1])
 
     expect(keys).toEqual([
@@ -118,6 +120,11 @@ describe('goal-72/80 customer master–detail and full-width workspace contract'
     expect(page).toContain('className={boardStyles.paneInner}')
     expect(page).not.toContain('<main className={boardStyles.pane}>')
     expect(page).toContain('<TenantDetailTabs tabs={tabs} />')
+    expect(tabs).toContain("active === 'Sida' ? styles.editorTabs : undefined")
+    expect(detailCss).toMatch(/\.crumb\s*\{[^}]*position:\s*absolute/is)
+    expect(detailCss).toMatch(/\.head \.ident\s*\{[^}]*display:\s*none/is)
+    expect(detailCss).toMatch(/\.editorTabs \.subtabs\s*\{[^}]*margin-bottom:\s*4px/is)
+    expect(boardCss).toMatch(/\.paneInner:has\(:global\(\.sida-studio-host\)\)\s*\{[^}]*padding-top:\s*70px/is)
     expect(page).toContain('...(shopOn && {')
     expect(page).toContain('...(bloggOn && {')
     expect(page).toContain('...(kurserOn && {')

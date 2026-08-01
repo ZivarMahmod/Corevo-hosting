@@ -222,6 +222,22 @@
   flex: none;
 }
 
+.navArea {
+  display: contents;
+}
+
+.navIcon {
+  flex: none;
+}
+
+.desktopSubnav {
+  display: none;
+}
+
+.sidebarToggle {
+  display: none;
+}
+
 .mobileAdmin .nav {
   min-width: 0;
   gap: 4px;
@@ -708,6 +724,336 @@
   margin: 0 auto;
   padding: 26px 24px 90px;
   box-sizing: border-box;
+}
+
+/* Desktop: samma delade banner, kontroller och routes — endast omplacerade
+   från en horisontell topprad till en fast vänsterkolumn. */
+@media (min-width: 1200px) {
+  .shell[data-world='backoffice'] {
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: start;
+    display: grid;
+  }
+
+  .header {
+    grid-column: 1;
+    grid-row: 1;
+    width: 220px;
+    height: 100dvh;
+    min-height: 100vh;
+    display: flex;
+    overflow: visible;
+    flex-direction: column;
+    border-right: 1px solid var(--c-line);
+    border-bottom: 0;
+  }
+
+  .sidebarToggle {
+    position: absolute;
+    top: 17px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--c-ink-3);
+    cursor: pointer;
+  }
+
+  .sidebarToggle:hover {
+    background: var(--c-paper-2);
+    color: var(--c-ink);
+  }
+
+  .bar,
+  .mobileAdmin .bar {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 18px 14px;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .brand {
+    min-height: 42px;
+    padding: 0 8px;
+  }
+
+  .nav,
+  .mobileAdmin .nav {
+    width: 100%;
+    min-width: 0;
+    margin: 8px 0 0;
+    display: flex;
+    overflow-x: hidden;
+    overflow-y: auto;
+    flex: 1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    scrollbar-width: thin;
+  }
+
+  .navArea {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .navLink,
+  .mobileAdmin .navLink {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    justify-content: flex-start;
+    gap: 10px;
+    box-sizing: border-box;
+  }
+
+  .desktopSubnav {
+    margin: 2px 0 6px 18px;
+    padding: 2px 0 2px 10px;
+    display: grid;
+    gap: 1px;
+    border-left: 1px solid var(--c-line);
+  }
+
+  .desktopSubnavLink {
+    min-height: 32px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 7px;
+    color: var(--c-ink-3);
+    font-size: 12px;
+    text-decoration: none;
+  }
+
+  .desktopSubnavLink:hover,
+  .desktopSubnavLinkActive {
+    background: var(--c-paper-2);
+    color: var(--c-ink);
+  }
+
+  .desktopSubnavLinkActive {
+    font-weight: 650;
+  }
+
+  .actions {
+    width: 100%;
+    margin: 0;
+    padding-top: 16px;
+    display: grid;
+    flex: none;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px;
+    border-top: 1px solid var(--c-line);
+  }
+
+  .quickGroup {
+    grid-column: 1 / -1;
+    display: none;
+  }
+
+  .search {
+    grid-column: 1;
+    width: 44px;
+    min-width: 44px;
+    border-radius: 10px;
+  }
+
+  .newCustomer {
+    grid-column: 2;
+    width: 100%;
+    justify-content: center;
+    border-radius: 10px;
+    box-sizing: border-box;
+  }
+
+  .shell[data-portal='platform'] .actions {
+    grid-template-columns: minmax(0, 1fr) 42px;
+    align-items: center;
+  }
+
+  .context {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .extra,
+  .theme {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .theme :global(.bo-theme) {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.2fr 0.9fr 0.9fr;
+    border-radius: 10px;
+  }
+
+  .theme :global(.bo-theme--compact) {
+    grid-template-columns: 1fr;
+  }
+
+  .theme :global(.bo-theme button) {
+    width: 100%;
+    padding-inline: 8px;
+    justify-content: center;
+  }
+
+  .account {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .account > summary {
+    width: 42px;
+    min-height: 42px;
+  }
+
+  .shell[data-portal='platform'] .theme {
+    grid-column: 1;
+  }
+
+  .shell[data-portal='platform'] .account {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .shell[data-portal='admin'] .theme {
+    grid-column: 1;
+    width: 44px;
+  }
+
+  .shell[data-portal='admin'] .theme :global(.bo-theme),
+  .shell[data-portal='admin'] .theme :global(.bo-theme--compact) {
+    width: 44px;
+    height: 44px;
+  }
+
+  .shell[data-portal='admin'] .account {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .accountMenu,
+  .mobileAdmin .accountMenu {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: calc(100% + 10px);
+    z-index: 80;
+  }
+
+  .subnavWrap {
+    display: none;
+  }
+
+  .subnav {
+    width: 100%;
+    margin: 0;
+    padding: 10px 14px 18px;
+    overflow: visible;
+    flex-direction: column;
+  }
+
+  .subnavLink {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+
+  .subnavLinkActive::after {
+    top: 8px;
+    right: auto;
+    bottom: 8px;
+    left: 0;
+    width: 2px;
+    height: auto;
+  }
+
+  .shell[data-world='backoffice'] .main {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .shell[data-world='backoffice']:has(.headerCollapsed) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .headerCollapsed {
+    width: 72px;
+  }
+
+  .headerCollapsed .bar,
+  .headerCollapsed.mobileAdmin .bar {
+    padding-inline: 10px;
+  }
+
+  .headerCollapsed .brand {
+    padding: 0;
+    justify-content: center;
+  }
+
+  .headerCollapsed .brandText,
+  .headerCollapsed .navLabel,
+  .headerCollapsed .desktopSubnav,
+  .headerCollapsed .theme {
+    display: none;
+  }
+
+  .headerCollapsed .sidebarToggle {
+    position: static;
+    margin: 0 auto;
+    flex: none;
+  }
+
+  .headerCollapsed .nav,
+  .headerCollapsed.mobileAdmin .nav {
+    margin-top: 0;
+  }
+
+  .headerCollapsed .navLink,
+  .headerCollapsed.mobileAdmin .navLink {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .headerCollapsed .actions,
+  .shell[data-portal='platform'] .headerCollapsed .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .headerCollapsed .account,
+  .shell[data-portal='platform'] .headerCollapsed .account {
+    grid-column: 1;
+    justify-self: center;
+  }
+
+  .shell[data-world='backoffice']:has(.main > :global(.onboarding-host)) .main,
+  .shell[data-world='backoffice']:has(.main > :global(.sida-studio-host)) .main,
+  .shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
+    min-height: 100dvh;
+  }
 }
 
 .shell[data-world='backoffice'] :global(.pbtn--primary) {

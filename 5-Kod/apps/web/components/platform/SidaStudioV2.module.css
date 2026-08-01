@@ -14,7 +14,7 @@
   --editor-danger: var(--c-danger);
   --editor-info: var(--c-info);
   width: 100%;
-  height: calc(100dvh - 60px);
+  height: 100dvh;
   min-height: 0;
   display: flex;
   flex: 1;
@@ -26,8 +26,8 @@
 }
 
 .embedded {
-  height: auto;
-  overflow: visible;
+  height: 100%;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -180,9 +180,7 @@
   flex: 1;
 }
 .embedded .workspace {
-  grid-template-columns: minmax(400px, 1fr) minmax(480px, 1.15fr);
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: 470px minmax(0, 1fr);
 }
 .panel {
   min-width: 0;
@@ -194,7 +192,7 @@
   background: var(--editor-panel);
 }
 .embedded .panel {
-  overflow: visible;
+  overflow-y: auto;
 }
 .card {
   margin: 0 0 14px;
@@ -334,12 +332,12 @@
   background: #0c0c0b;
 }
 .embedded .preview {
-  position: sticky;
-  top: 78px;
-  align-self: start;
-  height: calc(100vh - 220px);
-  min-height: 420px;
-  overflow: auto;
+  position: relative;
+  top: auto;
+  align-self: stretch;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
 }
 .previewUrl {
   display: none;
@@ -388,6 +386,24 @@
 .dialog h2 { margin: 0; font-size: 17px; }
 .dialog p { margin: 0 0 7px; color: var(--editor-text-2); font-size: 13px; line-height: 1.55; }
 .dialog button { min-height: 42px; }
+
+@media (min-width: 768px) and (max-width: 1600px) {
+  .toolbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .tabs {
+    overflow: visible;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .toolbarActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
 
 @media (max-width: 1180px) {
   .identity { min-width: 140px; }
