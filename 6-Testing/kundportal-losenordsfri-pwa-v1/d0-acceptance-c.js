@@ -735,7 +735,7 @@ pass("ACC-C-039", () => {
 
 pass("ACC-C-040", () => {
   for (const [label, source] of [["mobile", text.mobile], ["desktop", text.desktop]]) {
-    const fixture = source.match(/nordverk:\{([\s\S]*?)\}\n\s*\};/)?.[1] || "";
+    const fixture = source.match(/nordverk:\{([\s\S]*?)\}\r?\n\s*\};/)?.[1] || "";
     containsAll(fixture, [
       'channel:"email"', 'masked:"a•••@e•••.se"', 'price:""',
       'bookingPlace:{name:"Hälla"', 'upcomingPlace:"Erikslund',
@@ -752,7 +752,7 @@ skip(
 
 pass("ACC-C-042", () => {
   for (const [label, source] of [["mobile", text.mobile], ["desktop", text.desktop]]) {
-    const fixture = source.match(/freshcut:\{([\s\S]*?)\},\n\s*nordverk:/)?.[1] || "";
+    const fixture = source.match(/freshcut:\{([\s\S]*?)\},\r?\n\s*nordverk:/)?.[1] || "";
     containsAll(fixture, [
       'channel:"sms"', 'masked:"•••• •• 00 00"', 'price:"329 kr"',
       'bookingPlace:{name:"FreshCut Linköping"', 'canBookAgain:true',

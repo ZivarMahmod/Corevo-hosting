@@ -2,27 +2,22 @@
 
 ## Överordnad lag
 
-`00-VISUELL-KANON-PREMIUM.md` är överordnad integrationsregel efter Zivars
-designbeslut 2026-07-23. `premium-v1/` ersätter den tidigare visuella riktningen
-men inför inte nya produktfunktioner. Designspecifikationen
-`4-Dokument-Underlag/02-design-brief/kundportal-losenordsfri-pwa-v1-designspec.md`
-och filerna nedan fortsätter vara lag för funktion, routes, säkerhet, copy och
-states. Inga egna tolkningar eller improvisationer.
+`4-Dokument-Underlag/02-design-brief/kundportal-losenordsfri-pwa-v1-designspec.md` är **överordnad lag**.
+Filerna nedan är lag för funktion, routes, säkerhet, copy och states. Inga egna
+tolkningar eller improvisationer.
 
 ## Paketets kanoniska filer (i ordning)
 
 1. `README.md` — denna fil: hur paketet öppnas och vilka filer som är kanon.
-2. `00-VISUELL-KANON-PREMIUM.md` — konfliktordning mellan ny look och verklig funktion.
-3. `premium-v1/` — bindande premiumlook och responsiv layout.
-4. `SPEC.md` — skärm- och komponentindex som spårar varje krav i briefen.
-5. `Kundportal Passwordless Mobil.dc.html` — tidigare prototyp, fortsatt state-/funktionsreferens.
-6. `Kundportal Passwordless Desktop.dc.html` — tidigare prototyp, fortsatt state-/funktionsreferens.
-7. `Kundportal Passwordless States.dc.html` — obligatoriskt tillståndsgalleri.
-8. `TOKENS.md` — äldre tokens; visuella konflikter vinns av `premium-v1/`.
-9. `COMPONENTS.md` — exakt komponentanatomi, variants och interaktioner.
-10. `COPY.md` — svensk UI- och feltext, med borttag enligt den visuella kanonfilen.
-11. `FEATURE-MATRIX.md` — varje verklig funktion spårad till briefavsnitt.
-12. `ACCEPTANCE-MATRIX.md` — krav-ID:n och kontrollmetod för oberoende granskning.
+2. `SPEC.md` — skärm- och komponentindex som spårar varje krav i briefen.
+3. `Kundportal Passwordless Mobil.dc.html` — tidigare prototyp, fortsatt state-/funktionsreferens.
+4. `Kundportal Passwordless Desktop.dc.html` — tidigare prototyp, fortsatt state-/funktionsreferens.
+5. `Kundportal Passwordless States.dc.html` — obligatoriskt tillståndsgalleri.
+6. `TOKENS.md` — äldre tokens.
+7. `COMPONENTS.md` — exakt komponentanatomi, variants och interaktioner.
+8. `COPY.md` — svensk UI- och feltext.
+9. `FEATURE-MATRIX.md` — varje verklig funktion spårad till briefavsnitt.
+10. `ACCEPTANCE-MATRIX.md` — krav-ID:n och kontrollmetod för oberoende granskning.
 
 Inga andra filer är kanon. OLD-mappar och utkast utanför paketet ignoreras.
 

@@ -324,7 +324,7 @@ pass("ACC-A-001", () => {
   const actual = fs.readdirSync(canonDir).filter((name) => fs.statSync(path.join(canonDir, name)).isFile());
   must(actual.length === 10, `paketet har ${actual.length}/10 filer`);
   must(actual.slice().sort().join("\n") === canonNames.slice().sort().join("\n"), "filnamnen avviker från kanonlistan");
-  const packageSection = canon["README.md"].split("## Paketets tio kanoniska filer (i ordning)")[1].split("## Öppna prototyperna")[0];
+  const packageSection = canon["README.md"].split("## Paketets kanoniska filer (i ordning)")[1].split("## Öppna prototyperna")[0];
   const listed = [...packageSection.matchAll(/^\d+\. `([^`]+)`/gm)].map((match) => match[1]);
   must(listed.join("\n") === canonNames.join("\n"), "README:s filordning avviker");
 });
