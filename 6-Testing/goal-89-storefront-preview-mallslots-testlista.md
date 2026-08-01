@@ -1,5 +1,9 @@
 # Goal 89 — acceptanslista
 
+Status 2026-08-02: **kodkontroller gröna; aktuell inloggad browseracceptans
+återstår i Goal 86**. Den dubbla klar-filen är borttagen; den aktiva goal-filen
+är enda statuskälla tills browserkontrollen är godkänd.
+
 ## Förutsättningar
 
 - Testa i isolerad localhost/previewmiljö.
@@ -10,12 +14,12 @@
 
 ## A. Katalog och routekontrakt
 
-- [ ] Katalogen är React-fri och kan läsas av både preview och publik layout.
-- [ ] `booking`, `shop`, `blogg`, `kurser`, `offert`, `presentkort`,
+- [x] Katalogen är React-fri och kan läsas av både preview och publik layout.
+- [x] `booking`, `shop`, `blogg`, `kurser`, `offert`, `presentkort`,
   `lojalitet` och `galleri` har definierad route, etikett och fallbackregel.
-- [ ] Okänd modul eller ogiltig route ger ingen exception och ingen död länk.
-- [ ] En modul i `draft` eller `off` exponeras inte publikt.
-- [ ] En modul i `paused` kan exponeras som stängd men kan inte utföra ny
+- [x] Okänd modul eller ogiltig route ger ingen exception och ingen död länk.
+- [x] En modul i `draft` eller `off` exponeras inte publikt.
+- [x] En modul i `paused` kan exponeras som stängd men kan inte utföra ny
   affärsåtgärd.
 
 ## B. Samma data i preview och publik storefront
@@ -46,7 +50,7 @@
 
 ## E. Mallbyte och kompatibilitet
 
-- [ ] Kompatibilitetsdiffen visar skillnad mellan aktiv mall, vald mall och
+- [x] Kompatibilitetsdiffen visar skillnad mellan aktiv mall, vald mall och
   tenantens befintliga slots.
 - [ ] `Behåll nuvarande innehåll` behåller tenantens publicerade copy och
   mediareferenser.
@@ -60,16 +64,28 @@
 
 ## F. Mekaniska tester
 
-- [ ] Fokuserade Vitest-tester för katalog, states, navigation, CTA och fallback.
-- [ ] Fokuserade tester för mallbyte/kompatibilitetsdiff.
+- [x] Fokuserade Vitest-tester för katalog, states, navigation, CTA och fallback.
+- [x] Fokuserade tester för mallbyte/kompatibilitetsdiff.
 - [ ] Relevant read-only browseracceptans för preview/publik paritet.
-- [ ] Full webbtest från `5-Kod/`.
-- [ ] Typecheck från `5-Kod/`.
-- [ ] Lint från `5-Kod/`.
-- [ ] Produktionsbuild från `5-Kod/`.
+- [x] Full webbtest från `5-Kod/`.
+- [x] Typecheck från `5-Kod/`.
+- [x] Lint från `5-Kod/`.
+- [x] Produktionsbuild från `5-Kod/`.
 
 ## Godkännande
 
 Goal 89 är inte klart förrän alla blockerande punkter ovan är gröna och
 resultaten är inskrivna här med datum, branch och testkommandon. Därefter kan
 goal-filen flyttas till `2-Byggplan/klart/02-ytor/storefront/`.
+
+## Senaste automatiska kontroll
+
+- Datum: 2026-08-02.
+- Riktad frontend- och kontraktssvit: **8 filer / 177 tester gröna**.
+- Typkontroll: **grön**.
+- Full webbsvit: **398 filer / 3 024 tester gröna**.
+- Lint: **0 fel / 7 befintliga varningar**.
+- Produktionsbuild: **grön**, inklusive typkontroll och 11 statiska sidor.
+- Verklig läsande FreshCut-smoke: startsida, tjänster, team och kontakt gav
+  HTTP 200 på både 1360 och 390 px, utan overflow, browserfel eller dolda
+  menyknappar. Inloggad preview/publik-paritet återstår i Goal 86.

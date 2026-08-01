@@ -3,11 +3,9 @@ import { createHash } from 'node:crypto'
 import { basename, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-// Corevo keeps one readable, monotonically increasing four-digit series.
-// Supabase also accepts timestamp versions, but mixing the two formats is what
-// caused production history drift in July 2026. Keep timestamp metadata out of
-// filenames; the remote applied-at time is operational evidence, not identity.
-const VERSION_PATTERN = /^(\d{4})_[a-z0-9][a-z0-9_]*\.sql$/
+// Historical migrations use four digits; newer Supabase migrations use UTC
+// timestamps. Both are persistent remote identities and must remain stable.
+const VERSION_PATTERN = /^(\d{4}|\d{14})_[a-z0-9][a-z0-9_]*\.sql$/
 const ANSI_PATTERN = /\u001b\[[0-9;]*m/g
 
 function uniqueSorted(values) {
@@ -26,7 +24,7 @@ export function verifyInventory({
     const match = basename(file).match(VERSION_PATTERN)
     if (!match) {
       throw new Error(
-        `invalid migration filename ${basename(file)}; expected NNNN_lowercase_name.sql`,
+        `invalid migration filename ${basename(file)}; expected NNNN_lowercase_name.sql or YYYYMMDDHHMMSS_lowercase_name.sql`,
       )
     }
     const version = match[1]

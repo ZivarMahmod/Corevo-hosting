@@ -3,6 +3,7 @@
 import { useActionState, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { setTenantTheme, type ActionState } from '@/lib/platform/actions'
 import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
+import { themeContentCompatibility } from '@/lib/platform/theme-capabilities'
 import { ThemeGallery } from './ThemeGallery'
 import styles from './platform.module.css'
 
@@ -22,6 +23,7 @@ export function ThemePicker({
   onPreview,
   onPublished,
   onPublishingChange,
+  contentSlotKeys = [],
 }: {
   tenantId: string
   current: string
@@ -31,6 +33,7 @@ export function ThemePicker({
   onPublished?: () => void
   /** Hela publiceringslivscykeln, så den gemensamma editorn kan låsa alla mutationer. */
   onPublishingChange?: (pending: boolean) => void
+  contentSlotKeys?: readonly string[]
 }) {
   const [selected, setSelected] = useState(current)
   const [copyMode, setCopyMode] = useState<ThemeCopyMode | null>(null)
@@ -100,6 +103,9 @@ export function ThemePicker({
 
   const previewing = selected !== current
   const selName = THEME_PALETTES.find((t) => t.key === selected)?.name ?? selected
+  const hiddenContent = previewing
+    ? themeContentCompatibility(current, selected, contentSlotKeys)
+    : []
 
   function pick(key: string) {
     setSelected(key)
@@ -136,6 +142,12 @@ export function ThemePicker({
         <div className={styles.dirtyRow} style={{ marginTop: 14, flexWrap: 'wrap' }} role="status">
           <span className={styles.dirtyDot} aria-hidden="true" />
           Förhandsvisar <strong>{selName}</strong> — ännu ej live.
+          <span style={{ width: '100%', lineHeight: 1.45 }}>
+            <strong>Kontroll före mallbyte:</strong>{' '}
+            {hiddenContent.length
+              ? `${hiddenContent.join(', ')} visas inte i den valda mallen. Innehållet sparas och finns kvar om kunden byter tillbaka.`
+              : 'Inga befintliga mallspecifika innehållsfält blir dolda.'}
+          </span>
           <fieldset style={{ display: 'flex', gap: 12, margin: 0, padding: 0, border: 0 }}>
             <legend className="sr-only">Innehåll vid mallbyte</legend>
             <label>

@@ -857,6 +857,11 @@ export function SidaStudioV2({
                   <ThemePicker
                     tenantId={tenantId}
                     current={published.settings.theme}
+                    contentSlotKeys={[
+                      ...Object.keys(published.settings.copy),
+                      ...(published.branding.stats?.length ? ['stats'] : []),
+                      ...(published.branding.gallery_images?.length ? ['gallery_images'] : []),
+                    ]}
                     onPublishingChange={handleThemePublishingChange}
                     onPreview={(theme, copyMode) => {
                       setPreviewTheme(theme === published.settings.theme ? null : theme)
@@ -958,7 +963,10 @@ export function SidaStudioV2({
         </div>
       </div>
 
-      <button type="button" className={styles.mobilePublish} disabled={(!dirty && !hasDraft) || editorLocked} onClick={runPublish}>Publicera</button>
+      <div className={styles.mobileActions}>
+        <button type="button" className={styles.mobileSave} disabled={!dirty || editorLocked} onClick={runSave}>Spara utkast</button>
+        <button type="button" className={styles.mobilePublish} disabled={(!dirty && !hasDraft) || editorLocked} onClick={runPublish}>Publicera</button>
+      </div>
 
       {leaveHref ? <Modal title="Lämna redigeraren?" size="sm" onClose={closeLeaveDialog}
         footer={<>

@@ -256,7 +256,7 @@ function LoyaltySpendCard({ members }: { members: LoyaltyMemberRow[] }) {
           action={action}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(180px, 1fr) minmax(120px, 180px) minmax(180px, 1fr) auto',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
             gap: 10,
             alignItems: 'end',
             marginTop: 12,

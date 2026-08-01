@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { themeContentCompatibility } from '@/lib/platform/theme-capabilities'
 
 const WEB_ROOT = path.resolve(__dirname, '..', '..')
 const read = (relative: string) => fs.readFileSync(path.join(WEB_ROOT, relative), 'utf8')
@@ -16,6 +17,8 @@ describe('safe storefront template switch', () => {
     expect(picker).toContain('value="template"')
     expect(picker).toContain('useState<ThemeCopyMode | null>(null)')
     expect(picker).toContain('disabled={pending || copyMode === null}')
+    expect(picker).toContain('Kontroll före mallbyte:')
+    expect(studio).toContain('contentSlotKeys={[')
     expect(picker).toContain("onPreview?.(key, 'keep')")
     expect(picker).toContain('onClick={() => pick(current)}')
     expect(studio).toContain("q.set('copy', previewCopyMode)")
@@ -36,5 +39,16 @@ describe('safe storefront template switch', () => {
         /getTenantCopy\([^)]*theme,\s*copyMode,?\s*\)/,
       )
     }
+  })
+
+  it('reports current content that the selected theme hides without deleting it', () => {
+    const hidden = themeContentCompatibility(
+      'freshcut',
+      'snitt',
+      ['heroTitle', 'gallery_images', 'homeSecondTitle'],
+    )
+    expect(hidden).toContain('galleri på startsidan')
+    expect(hidden).toContain('Rubrik, mittensektionen')
+    expect(hidden).not.toContain('heroTitle')
   })
 })

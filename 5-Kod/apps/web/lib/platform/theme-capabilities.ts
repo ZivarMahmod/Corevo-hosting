@@ -58,6 +58,35 @@ export function themeCaps(key: string): ThemeCaps {
   return THEME_CAPS[key] ?? DEFAULT_CAPS
 }
 
+const CONDITIONAL_CONTENT_SLOTS = [
+  { key: 'heroEyebrow', cap: 'heroEyebrow', label: 'liten rubrik på startsidan' },
+  { key: 'stats', cap: 'homeStats', label: 'fakta på startsidan' },
+  { key: 'gallery_images', cap: 'homeGallery', label: 'galleri på startsidan' },
+  { key: 'aboutCopyHome', cap: 'homeAbout', label: 'om oss-text på startsidan' },
+] as const
+
+function declaredContentSlots(theme: string): Map<string, string> {
+  const caps = themeCaps(theme)
+  return new Map([
+    ...CONDITIONAL_CONTENT_SLOTS
+      .filter((slot) => caps[slot.cap])
+      .map((slot) => [slot.key, slot.label] as const),
+    ...(THEME_EXTRA_HOME[theme] ?? []).map((slot) => [slot.name, slot.label] as const),
+  ])
+}
+
+export function themeContentCompatibility(
+  currentTheme: string,
+  selectedTheme: string,
+  existingSlots: readonly string[],
+): string[] {
+  const current = declaredContentSlots(currentTheme)
+  const selected = declaredContentSlots(selectedTheme)
+  return [...new Set(existingSlots)]
+    .filter((slot) => current.has(slot) && !selected.has(slot))
+    .map((slot) => current.get(slot)!)
+}
+
 /**
  * goal-64 — MALLEN ÄGER SIN TEXT.
  *

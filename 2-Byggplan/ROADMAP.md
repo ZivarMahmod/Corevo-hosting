@@ -50,13 +50,13 @@ arkiverat som lokalt klart. Goal 75–76 väntar på den gemensamma releasen; Go
 18. **Goal 93 — katalog och mekanisk mallacceptans — TEKNISKT GRÖN**
     12 teman, 174 rutter, 376/376 matrisfall och 12/12 verkliga previewteman är
     gröna. Samlad användaracceptans återstår i Goal 86.
-19. **Goal 86 — en gemensam localhostacceptans — NÄSTA**
+19. **Goal 85 — fail-closed lokal releaseövning — NÄSTA**
+    Lås migrations-, säkerhets-, host-, scheduler-, rollback- och
+    deploykontrakt utan att deploya produktion, före den samlade releasen.
+20. **Goal 86 — en gemensam localhostacceptans**
     Testa hela den byggda lokala produkten, inklusive Goal 74–93. Zivar testar
     en gång; godkända delar fryses och inga nya funktioner läggs till före
     samlad release.
-20. **Goal 85 — fail-closed lokal releaseövning**
-    Lås migrations-, säkerhets-, host-, scheduler-, rollback- och
-    deploykontrakt utan att deploya produktion, före den samlade releasen.
 
 Full exekveringsplan finns i
 `1-Planering/22-modulprogram/01-lokal-fardigstallandeplan.md`.

@@ -19,6 +19,10 @@ const intake = readFileSync(
   new URL('../../storefront/lojalitet/intake.ts', import.meta.url),
   'utf8',
 )
+const admin = readFileSync(
+  new URL('../../../components/admin/LojalitetAdmin.tsx', import.meta.url),
+  'utf8',
+)
 
 describe('Goal 91 lojalitet contract', () => {
   it('adds command identity, source and exact reversal links to the existing ledger', () => {
@@ -63,5 +67,10 @@ describe('Goal 91 lojalitet contract', () => {
   it('provides tenant reconciliation without a speculative repair engine', () => {
     expect(migration).toContain('function public.loyalty_reconciliation')
     expect(migration).not.toContain('repair_loyalty')
+  })
+
+  it('wraps the spend form instead of overflowing a 390 px admin viewport', () => {
+    expect(admin).toContain("repeat(auto-fit, minmax(min(100%, 180px), 1fr))")
+    expect(admin).not.toContain("minmax(180px, 1fr) minmax(120px, 180px)")
   })
 })

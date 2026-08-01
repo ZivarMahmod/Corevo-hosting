@@ -79,16 +79,18 @@ describe('database release verification', () => {
     }), /missing pgTAP test for migration 0102/)
   })
 
-  it('rejects timestamp and malformed migration filenames', () => {
-    assert.throws(() => verifyInventory({
-      migrationFiles: ['20260718120000_wrong_series.sql'],
+  it('accepts stable timestamp migrations and rejects malformed filenames', () => {
+    const result = verifyInventory({
+      migrationFiles: ['0133_user_role_read_recursion.sql', '20260718120000_goal87_module_lifecycle.sql'],
       testFiles: [],
-    }), /expected NNNN_lowercase_name\.sql/)
+      expectedLatest: '20260718120000',
+    })
+    assert.equal(result.latest, '20260718120000')
 
     assert.throws(() => verifyInventory({
       migrationFiles: ['0105-Mixed Name.sql'],
       testFiles: [],
-    }), /expected NNNN_lowercase_name\.sql/)
+    }), /expected NNNN_lowercase_name\.sql or YYYYMMDDHHMMSS_lowercase_name\.sql/)
   })
 
   it('parses Supabase CLI migration tables and detects local/remote drift', () => {

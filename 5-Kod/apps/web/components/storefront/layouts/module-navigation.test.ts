@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LayoutModuleTeasers } from './types'
-import { canonicalModuleHref, moduleNavigationLinks, moduleRouteReachable } from './module-navigation'
+import { canonicalModuleHref, MODULE_SURFACES, moduleNavigationLinks, moduleRouteReachable } from './module-navigation'
 
 const NONE = {
   shopTeasers: [],
@@ -16,6 +16,13 @@ const NONE = {
 } as LayoutModuleTeasers
 
 describe('module navigation uses the same reachability as target routes', () => {
+  it('declares every module surface and its fallback in one React-free catalog', () => {
+    expect(MODULE_SURFACES.map((surface) => surface.key)).toEqual([
+      'booking', 'shop', 'kurser', 'blogg', 'offert', 'presentkort', 'klubb', 'galleri',
+    ])
+    expect(MODULE_SURFACES.every((surface) => surface.href && surface.label && surface.fallback)).toBe(true)
+  })
+
   it('does not emit module links when their state or required data is missing', () => {
     expect(moduleNavigationLinks(NONE)).toEqual([])
   })

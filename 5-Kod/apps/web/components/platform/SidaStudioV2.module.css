@@ -100,6 +100,7 @@
 .deviceButtons button,
 .draftBanner button,
 .dialog button,
+.mobileSave,
 .mobilePublish,
 .textButton {
   min-height: 36px;
@@ -118,6 +119,7 @@
   text-decoration: none;
 }
 .toolbarActions button:disabled,
+.mobileSave:disabled,
 .mobilePublish:disabled { cursor: default; opacity: .42; }
 .primary {
   border-color: var(--editor-green) !important;
@@ -364,7 +366,7 @@
 .blocked p { max-width: 38ch; }
 
 .mobileSwitch,
-.mobilePublish { display: none; }
+.mobileActions { display: none; }
 .dialogBackdrop {
   position: fixed;
   inset: 0;
@@ -491,19 +493,31 @@
   .mobileDevice { width: 100%; border: 0; }
   .mobileHidden { display: none; }
   .embedded .mobileHidden { display: none; }
-  .mobilePublish {
+  .mobileActions {
     position: fixed;
     right: 12px;
     bottom: calc(82px + env(safe-area-inset-bottom));
     left: 12px;
     z-index: 40;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mobileSave,
+  .mobilePublish {
     min-height: 48px;
-    display: flex;
-    border: 1px solid var(--editor-green);
     border-radius: 10px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+  }
+  .mobileSave {
+    border: 1px solid var(--editor-line-strong);
+    background: var(--editor-card);
+    color: var(--editor-text);
+  }
+  .mobilePublish {
+    border: 1px solid var(--editor-green);
     background: var(--editor-green);
     color: #fff;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
   }
   .hours { grid-template-columns: 1fr; }
 }
