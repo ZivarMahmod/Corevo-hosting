@@ -45,17 +45,3 @@ Ny del planeras → ny mapp `1-Planering/0N-<delen>/`. Planering för en specifi
 
 ## Övrigt
 - Projektets hårda regler (POS-guardrail på corevo.se, `private.tenant_id()`, `staff`/`staff_id`, build-once-never-delete, en goal i taget → verifiera → `_klart/`) ligger i `HANDOFF.md`. Följ dem.
-- Lokal Open Design finns på `http://localhost:7456/` och får användas vid framtida designarbete. När ett Codex Design-acceptanspaket finns är paketet fortfarande kanon och Open Design är ett arbetsverktyg, inte en ersättande specifikation.
-
-## Graphify
-- Den lokala kodgrafen för denna worktree finns i `5-Kod/graphify-out/graph.json`. Skapa aldrig en extra `graphify-out/` i repo-roten.
-- Open Design-klonen i `4-Dokument-Underlag/08-externa-verktyg/open-design/` är en Git-ignorerad och skrivskyddad referens i arbetssättet. Ändra aldrig dess filer från Corevo-arbetet.
-- Dess separata, genererade referensgraf finns i `5-Kod/graphify-references/open-design/` och uppdateras med `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graphify-open-design.ps1` från `5-Kod/`.
-- Vid arbetsstart: kör `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graphify-live.ps1` från `5-Kod/`. Kommandot är idempotent och startar watchern, grafvyerna samt de två lokala MCP-servrarna. Zivar Graph Studio finns på `http://127.0.0.1:8768/`.
-- Vid frågor om kodbasen: använd MCP-servern `graphify-corevo` med explicit `project="corevo"` när den finns. Annars kör `graphify query`, `graphify path` eller `graphify explain` från `5-Kod/` innan bred filsökning. Översätt svenska frågor till termer som faktiskt finns i grafen.
-- För Open Design-frågor används samma MCP-server med `project="open-design"`; starta aldrig en andra MCP-server. Använd `query_projects` med båda ID:na endast när uppgiften faktiskt är en jämförelse.
-- Före grafarbete: kör `graphify reflect --if-stale` från `5-Kod/` och använd `graphify-out/reflections/LESSONS.md` om den finns.
-- Watchern samlar verkliga kodändringar i vågor och uppdaterar `graph.json`, `graph.html` och MCP-underlaget utan LLM/API-kostnad. Om watchern varit avstängd: kör `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graphify-update-changed.ps1` från `5-Kod/`.
-- Kör `graphify update .` efter branchbyte eller om ändringarna redan har committats; använd `--force` bara efter avsiktliga större borttagningar/refaktoreringar när grafens shrink-guard stoppar uppdateringen.
-- Grafen hjälper till att hitta rätt flöde och beroenden; verifiera alltid ändringen mot de verkliga källfilerna och testerna.
-- `zivar-graph-studio` på `http://127.0.0.1:8767/mcp` styr desktop- och localhostvyn samt registrerar strukturell agentaktivitet. Använd `studio_focus` när en relevant nod eller fil öppnas, `studio_set_view` för en riktad vy och `studio_record_change` eller `studio_record_error` efter utfört arbete. Skicka aldrig prompts, dolda resonemang, hemligheter eller kunddata till aktivitetslagret.
