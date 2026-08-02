@@ -175,7 +175,8 @@ do $$ begin
     '95000000-0000-0000-0000-000000000031',
     '95000000-0000-0000-0000-000000000021',
     '95000000-0000-0000-0000-000000000041',
-    current_timestamp + interval '1 day', current_timestamp + interval '1 day 30 minutes',
+    date_trunc('day', current_timestamp) + interval '1 day 12 hours',
+    date_trunc('day', current_timestamp) + interval '1 day 12 hours 30 minutes',
     'completed', 10000
   );
   raise exception 'service_future_outcome_insert_succeeded';
@@ -197,7 +198,8 @@ do $$ begin
     '95000000-0000-0000-0000-000000000031',
     '95000000-0000-0000-0000-000000000021',
     '95000000-0000-0000-0000-000000000041',
-    current_timestamp + interval '1 day', current_timestamp + interval '1 day 30 minutes',
+    date_trunc('day', current_timestamp) + interval '1 day 12 hours',
+    date_trunc('day', current_timestamp) + interval '1 day 12 hours 30 minutes',
     'no_show', 10000
   );
   raise exception 'authenticated_future_outcome_insert_succeeded';
@@ -294,7 +296,8 @@ insert into public.bookings (
     '95000000-0000-0000-0000-000000000031',
     '95000000-0000-0000-0000-000000000021',
     '95000000-0000-0000-0000-000000000041',
-    current_timestamp + interval '2 days', current_timestamp + interval '2 days 30 minutes',
+    date_trunc('day', current_timestamp) + interval '2 days 12 hours',
+    date_trunc('day', current_timestamp) + interval '2 days 12 hours 30 minutes',
     'cancelled', 10000, current_timestamp, 'business'
   ),
   (
