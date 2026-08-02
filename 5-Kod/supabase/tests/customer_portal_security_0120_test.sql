@@ -462,6 +462,7 @@ begin
     raise exception 'portal_generic_fifth_attempt_not_locked:%', row_to_json(v_result);
   end if;
 
+  perform pg_catalog.set_config('session_replication_role', 'replica', true);
   for v_i in 1..20 loop
     insert into public.bookings (
       id, tenant_id, location_id, staff_id, service_id, customer_id,
@@ -473,6 +474,7 @@ begin
       'completed', 10000
     );
   end loop;
+  perform pg_catalog.set_config('session_replication_role', 'origin', true);
 
   select public.customer_portal_list_bookings(
     v_session, repeat('b', 64), 'history', null, null, 20
