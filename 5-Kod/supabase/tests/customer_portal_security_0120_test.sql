@@ -311,8 +311,7 @@ begin
   select count(*) into v_count from private.customer_portal_sessions ps where ps.public_id = v_recovery_session;
   if v_count <> 0 then raise exception 'portal_recovery_failed_delivery_session_created'; end if;
 
-  -- Resend is credential-bound and queues before resolving a recipient. A
-  -- changed contact is rejected inside the leased worker CAS, before transport.
+  -- Changing the contact revokes the open recovery challenge immediately.
   update private.customer_portal_challenges set created_at = statement_timestamp() - interval '1 minute'
   where public_id = v_failed_delivery_public;
   v_resend_public := gen_random_uuid();
@@ -330,17 +329,9 @@ begin
     v_resend_public, repeat('4', 64), v_resend_new_public,
     repeat('7', 64), repeat('0', 64), 1, statement_timestamp() + interval '5 minutes'
   );
-  if v_result.outcome <> 'accepted' or not v_result.created or v_result.outbox_id is null then
+  if v_result.outcome <> 'invalid' or v_result.created or v_result.outbox_id is not null then
     raise exception 'portal_recovery_changed_contact_resend_invalid:%', row_to_json(v_result);
   end if;
-  v_outbox_id := v_result.outbox_id;
-  v_lease_token := gen_random_uuid();
-  perform public.claim_notification_outbox_by_id(v_outbox_id, v_lease_token, statement_timestamp(), 120);
-  perform public.begin_notification_delivery(v_outbox_id, v_lease_token);
-  if public.customer_portal_prepare_recovery_delivery(
-    v_outbox_id, v_lease_token, '+46700000009', repeat('9', 64), repeat('9', 64), repeat('8', 64)
-  ) <> 'invalid' then raise exception 'portal_recovery_changed_contact_not_rejected'; end if;
-  perform public.customer_portal_record_recovery_outbox_delivery(v_outbox_id, v_lease_token, false);
   update public.customers set phone = '+46700000001' where id = v_customer_a;
 
   -- A missing customer/evidence match is queued identically, traverses the same
