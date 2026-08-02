@@ -852,6 +852,7 @@ export function SidaStudioV2({
                   <ThemePicker
                     tenantId={tenantId}
                     current={published.settings.theme}
+                    additionalThemeKeys={storefrontHost.split('.')[0] === 'freshcut' ? ['freshcut'] : []}
                     contentSlotKeys={[
                       ...Object.keys(published.settings.copy),
                       ...(published.branding.stats?.length ? ['stats'] : []),

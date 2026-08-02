@@ -127,7 +127,7 @@ export function FreshCutLayout({
               <BookCta
                 enabled={bookingReachable}
                 className={`${fc.button} ${fc.buttonSignal}`}
-                label="Boka på Bokadirekt ↗"
+                label="Boka direkt ↗"
               />
               <a className={`${fc.button} ${fc.buttonGhost}`} href="#tjanster">
                 Se behandlingar
@@ -313,7 +313,7 @@ export function FreshCutLayout({
         <BookCta
           enabled={bookingReachable}
           className={fc.finalCtaLink}
-          label="Boka på Bokadirekt ↗"
+          label="Boka direkt ↗"
         />
       </section>
 
@@ -372,7 +372,7 @@ export function FreshCutLayout({
       <BookCta
         enabled={bookingReachable}
         className={fc.mobileBooking}
-        label="Boka på Bokadirekt ↗"
+        label="Boka direkt ↗"
       />
     </div>
   )

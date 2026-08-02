@@ -20,6 +20,8 @@ describe('safe storefront template switch', () => {
     expect(picker).toContain('disabled={pending || copyMode === null}')
     expect(picker).toContain('Kontroll före mallbyte:')
     expect(studio).toContain('contentSlotKeys={[')
+    expect(studio).toContain("storefrontHost.split('.')[0] === 'freshcut' ? ['freshcut'] : []")
+    expect(picker).toContain('additionalThemeKeys={additionalThemeKeys}')
     expect(picker).toContain("onPreview?.(key, 'keep')")
     expect(picker).toContain('onClick={() => pick(current)}')
     expect(studio).toContain('siteEditorPreviewSrc(previewPath')

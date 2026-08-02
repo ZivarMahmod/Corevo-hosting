@@ -32,7 +32,6 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
   if (!user.platformAdmin) return { error: 'Mallen byts av Corevo — hör av dig så hjälper vi dig.' }
 
   const theme = String(fd.get('theme') ?? '') as StorefrontTheme
-  if (!isSelectableTheme(theme)) return { error: 'Mallen ingår inte i de 12 godkända handoff-mallarna.' }
   const copyMode = String(fd.get('copyMode') ?? '')
   if (copyMode !== 'keep' && copyMode !== 'template') {
     return { error: 'Välj om kundens nuvarande innehåll eller mallens innehåll ska användas.' }
@@ -48,6 +47,9 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
     return { error: GENERIC }
   }
   if (!tenant) return { error: 'Okänd kund.' }
+  if (!isSelectableTheme(theme) && !(tenant.slug === 'freshcut' && theme === 'freshcut')) {
+    return { error: 'Mallen är inte tillgänglig för den här kunden.' }
+  }
 
   const { data: existing, error: settingsError } = await supabase
     .from('tenant_settings')

@@ -130,11 +130,11 @@ export const THEME_PALETTES: ThemePalette[] = [
   {
     key: 'freshcut',
     name: 'FreshCut',
-    desc: 'Vit & guld · skarp och ljus',
-    primary: '#B59775',
-    bg: '#FFFFFF',
-    fg: '#252525',
-    accent: '#B59775',
+    desc: 'Svart & guld · skarp barbershop',
+    primary: '#A78F6D',
+    bg: '#171918',
+    fg: '#D8D6CF',
+    accent: '#A78F6D',
     // Kundens EGEN mall (freshcut.se-kopian) — erbjuds aldrig nya kunder. Ligger i en egen
     // kategori istället för att filtreras bort i fem olika listor.
     category: 'kund',

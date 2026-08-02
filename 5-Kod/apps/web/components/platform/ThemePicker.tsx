@@ -24,6 +24,7 @@ export function ThemePicker({
   onPublished,
   onPublishingChange,
   contentSlotKeys = [],
+  additionalThemeKeys = [],
 }: {
   tenantId: string
   current: string
@@ -34,6 +35,7 @@ export function ThemePicker({
   /** Hela publiceringslivscykeln, så den gemensamma editorn kan låsa alla mutationer. */
   onPublishingChange?: (pending: boolean) => void
   contentSlotKeys?: readonly string[]
+  additionalThemeKeys?: readonly string[]
 }) {
   const [selected, setSelected] = useState(current)
   const [copyMode, setCopyMode] = useState<ThemeCopyMode | null>(null)
@@ -136,7 +138,12 @@ export function ThemePicker({
       <input type="hidden" name="tenantId" value={tenantId} />
       <input type="hidden" name="theme" value={selected} />
 
-      <ThemeGallery value={selected} currentKey={current} onChange={pick} />
+      <ThemeGallery
+        value={selected}
+        currentKey={current}
+        onChange={pick}
+        additionalThemeKeys={additionalThemeKeys}
+      />
 
       {previewing ? (
         <div className={styles.dirtyRow} style={{ marginTop: 14, flexWrap: 'wrap' }} role="status">

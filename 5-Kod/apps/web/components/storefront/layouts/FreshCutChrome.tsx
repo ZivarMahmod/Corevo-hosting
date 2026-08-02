@@ -77,7 +77,7 @@ export function FreshCutNav(p: ThemeNavProps) {
               {p.primaryCta.label} <span aria-hidden="true">→</span>
             </Link>
           ) : (
-            <BookCta className={fc.headerBooking} label="Bokadirekt →" />
+            <BookCta className={fc.headerBooking} label="Boka direkt →" />
           )}
         </div>
       </header>

@@ -17,18 +17,21 @@ vi.mock('@/components/storefront/vertical-copy', () => ({ getVerticalCopy: vi.fn
 
 import { setTenantTheme } from './theme'
 
-function formData() {
+function formData(theme = 'kalla') {
   const data = new FormData()
   data.set('tenantId', 'tenant-1')
-  data.set('theme', 'kalla')
+  data.set('theme', theme)
   data.set('copyMode', 'keep')
   return data
 }
 
-function supabaseClient(rpcResult: { data: unknown; error: unknown }) {
+function supabaseClient(
+  rpcResult: { data: unknown; error: unknown },
+  tenantSlug = 'studio-norr',
+) {
   const from = vi.fn((table: string) => {
     const result = table === 'tenants'
-      ? { data: { slug: 'studio-norr', vertical_id: null }, error: null }
+      ? { data: { slug: tenantSlug, vertical_id: null }, error: null }
       : { data: { settings: { theme: 'siluett', copy: { heroTitle: 'Hej' }, keep: true } }, error: null }
     const builder = {
       select: vi.fn(),
@@ -49,6 +52,33 @@ beforeEach(() => {
 })
 
 describe('setTenantTheme atomic boundary', () => {
+  it('allows the customer-locked FreshCut theme only for FreshCut', async () => {
+    const freshcut = supabaseClient({ data: null, error: null }, 'freshcut')
+    mocks.sidaCtx.mockResolvedValue({
+      user: { id: 'root-1', platformAdmin: true },
+      supabase: freshcut,
+      tenantId: 'tenant-1',
+    })
+
+    expect((await setTenantTheme({}, formData('freshcut'))).success).toBeTruthy()
+    expect(freshcut.rpc).toHaveBeenCalledWith(
+      'switch_tenant_theme',
+      expect.objectContaining({ p_theme: 'freshcut' }),
+    )
+
+    const otherTenant = supabaseClient({ data: null, error: null })
+    mocks.sidaCtx.mockResolvedValue({
+      user: { id: 'root-1', platformAdmin: true },
+      supabase: otherTenant,
+      tenantId: 'tenant-1',
+    })
+
+    expect((await setTenantTheme({}, formData('freshcut'))).error).toContain(
+      'inte tillgänglig för den här kunden',
+    )
+    expect(otherTenant.rpc).not.toHaveBeenCalled()
+  })
+
   it('uses one atomic RPC instead of a separate draft check and settings upsert', async () => {
     const supabase = supabaseClient({ data: null, error: null })
     mocks.sidaCtx.mockResolvedValue({

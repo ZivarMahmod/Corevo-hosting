@@ -28,6 +28,7 @@ export function ThemeGallery({
   onChange,
   currentKey,
   defaultKey,
+  additionalThemeKeys = [],
   compact = false,
 }: {
   /** Vald mall (förhandsvisas). */
@@ -37,6 +38,8 @@ export function ThemeGallery({
   currentKey?: string
   /** Branschens förval (onboarding) — får "Branschens förval"-märket. */
   defaultKey?: string | null
+  /** Kundlåsta mallar som bara ska visas för den aktuella kunden. */
+  additionalThemeKeys?: readonly string[]
   /** Smalare kort (studions panel är en smal kolumn). */
   compact?: boolean
 }) {
@@ -45,11 +48,15 @@ export function ThemeGallery({
 
   const valueTheme = THEME_PALETTES.find((t) => t.key === value)
   const availableThemes = useMemo(
-    () =>
-      valueTheme && !SELECTABLE_THEMES.some((t) => t.key === valueTheme.key)
-        ? [...SELECTABLE_THEMES, valueTheme]
-        : SELECTABLE_THEMES,
-    [valueTheme],
+    () => {
+      const themes = [
+        ...SELECTABLE_THEMES,
+        ...THEME_PALETTES.filter((theme) => additionalThemeKeys.includes(theme.key)),
+      ]
+      if (valueTheme && !themes.some((theme) => theme.key === valueTheme.key)) themes.push(valueTheme)
+      return [...new Map(themes.map((theme) => [theme.key, theme])).values()]
+    },
+    [additionalThemeKeys, valueTheme],
   )
   // Visa bara kategorier som faktiskt innehåller någon av handoffens 12 mallar.
   // En legacy-/kundegen kategori följer bara med när kunden redan kör den mallen.
