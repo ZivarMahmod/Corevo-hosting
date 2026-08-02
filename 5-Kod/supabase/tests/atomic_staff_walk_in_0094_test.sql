@@ -7,8 +7,8 @@ select set_config(
   (
     case
       when (date_trunc('minute', statement_timestamp()) at time zone 'UTC')::time
-           >= time '23:58'
-        then date_trunc('minute', statement_timestamp()) - interval '2 minutes'
+           >= time '23:29'
+        then date_trunc('day', statement_timestamp()) + interval '23 hours'
       else date_trunc('minute', statement_timestamp())
     end
   )::text,
