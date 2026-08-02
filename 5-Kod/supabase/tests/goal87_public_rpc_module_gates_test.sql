@@ -180,6 +180,7 @@ insert into public.shop_orders (
   status,
   fulfilment,
   session_token,
+  subtotal_cents,
   total_cents,
   currency,
   payment_status
@@ -189,6 +190,7 @@ insert into public.shop_orders (
   'reserved',
   'ship',
   'goal87-rpc-token',
+  25000,
   25000,
   'SEK',
   'unpaid'

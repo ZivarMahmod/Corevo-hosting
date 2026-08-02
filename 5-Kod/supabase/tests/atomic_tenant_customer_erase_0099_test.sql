@@ -185,13 +185,13 @@ insert into private.customer_account_claims (
 );
 insert into public.shop_orders (
   id, tenant_id, customer_id, customer_name, customer_email, customer_phone,
-  ship_address, session_token, tracking_number, total_cents, payment_status, note
+  ship_address, session_token, tracking_number, subtotal_cents, total_cents, payment_status, note
 ) values (
   '99000000-0000-0000-0000-000000000081',
   '99000000-0000-0000-0000-000000000001',
   '99000000-0000-0000-0000-000000000061', 'Target Person',
   'target@example.test', '+46711111111', 'Private street 1', 'private-bearer',
-  'private-tracking', 12345, 'paid', 'private order note'
+  'private-tracking', 12345, 12345, 'paid', 'private order note'
 );
 insert into public.tenant_events (
   id, tenant_id, title, starts_at, capacity, price_cents
@@ -243,12 +243,12 @@ insert into public.event_registrations (
 
 -- Same-shaped child PII in another tenant must remain byte-for-byte untouched.
 insert into public.shop_orders (
-  id, tenant_id, customer_id, customer_name, customer_email, total_cents
+  id, tenant_id, customer_id, customer_name, customer_email, subtotal_cents, total_cents
 ) values (
   '99000000-0000-0000-0000-000000000088',
   '99000000-0000-0000-0000-000000000002',
   '99000000-0000-0000-0000-000000000062', 'Other Tenant',
-  'other@example.test', 70000
+  'other@example.test', 70000, 70000
 );
 insert into public.shop_order_items (
   id, tenant_id, order_id, product_name, unit_price_cents, item_type,

@@ -112,12 +112,13 @@ insert into public.event_registrations (
   ('90900000-0000-0000-0000-000000000206', '90900000-0000-0000-0000-000000000001', '90900000-0000-0000-0000-000000000104', 'Inställd två', 'cancel-two@example.test', 2);
 
 insert into public.shop_orders (
-  id, tenant_id, customer_name, customer_email, total_cents, payment_status
+  id, tenant_id, customer_name, customer_email, subtotal_cents, total_cents, payment_status
 ) values (
   '90900000-0000-0000-0000-000000000401',
   '90900000-0000-0000-0000-000000000001',
   'Betald deltagare',
   'paid@example.test',
+  10000,
   10000,
   'paid'
 );

@@ -121,10 +121,10 @@ insert into public.shop_product_variants (
   'a1140000-0000-0000-0000-000000000111', 'Standard', 1000, 10, 1, true
 );
 insert into public.shop_orders (
-  id, tenant_id, status, fulfilment, total_cents, currency, payment_status
+  id, tenant_id, status, fulfilment, subtotal_cents, total_cents, currency, payment_status
 ) values (
   'a1140000-0000-0000-0000-000000000113', 'a1140000-0000-0000-0000-000000000031',
-  'reserved', 'ship', 1000, 'SEK', 'unpaid'
+  'reserved', 'ship', 1000, 1000, 'SEK', 'unpaid'
 );
 insert into public.shop_order_items (
   id, tenant_id, order_id, product_id, variant_id, product_name, unit_price_cents, quantity, item_type
