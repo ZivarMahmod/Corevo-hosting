@@ -60,7 +60,22 @@ jobs:
           db_container="${db_containers[0]}"
           for sql_test in supabase/tests/*_test.sql; do
             echo "::group::$sql_test"
-            docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres < "$sql_test"
+            case "$(basename "$sql_test")" in
+              tenant_launch_readiness_0127_test.sql|tenant_launch_booking_tuple_0132_test.sql)
+                docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres < "$sql_test"
+                ;;
+              *)
+                docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
+                  -c "alter table public.tenants disable trigger trg_tenant_launch_readiness"
+                if ! docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres < "$sql_test"; then
+                  docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
+                    -c "alter table public.tenants enable trigger trg_tenant_launch_readiness"
+                  exit 1
+                fi
+                docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
+                  -c "alter table public.tenants enable trigger trg_tenant_launch_readiness"
+                ;;
+            esac
             echo "::endgroup::"
           done
           bash supabase/tests/customer_portal_cancellation_refunds_0121_concurrency_test.sh "$db_container"

@@ -10,7 +10,7 @@ describe('preview platform-admin seeds', () => {
     [
       'seed.sql',
       '33333333-0000-0000-0000-000000000003',
-      /update public\.tenants[\s\S]*set status = 'active'/i,
+      /select public\.publish_tenant\('11111111-1111-1111-1111-111111111111'\)/i,
     ],
     [
       'seeds/e2e-seed.sql',
