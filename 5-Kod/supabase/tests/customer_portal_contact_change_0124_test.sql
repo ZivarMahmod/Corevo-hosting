@@ -107,7 +107,7 @@ begin
   if v_text <> 'ok' then raise exception 'contact_change_current_delivery_record_invalid'; end if;
   select * into v_result from public.customer_portal_resend_contact_change(
     v_session, repeat('e', 64), v_flow, repeat('2', 64), 'current',
-    repeat('5', 64), repeat('a', 64), '+46700000001',
+    repeat('a', 64), '+46700000001', repeat('5', 64),
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'cooldown' then
@@ -159,7 +159,7 @@ begin
   end loop;
   select * into v_result from public.customer_portal_resend_contact_change(
     v_other_session, repeat('f', 64), v_locked_flow, repeat('8', 64), 'current',
-    repeat('a', 64), repeat('a', 64), '+46700000001',
+    repeat('a', 64), '+46700000001', repeat('a', 64),
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'max_attempts' then raise exception 'contact_change_locked_resend_invalid'; end if;
