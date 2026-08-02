@@ -221,11 +221,15 @@ insert into public.shop_order_items (
   '99000000-0000-0000-0000-000000000083'
 );
 insert into public.gift_cards (
-  id, tenant_id, code, initial_amount_cents, balance_cents, status,
+  id, tenant_id, code, code_hash, code_last_four, code_version,
+  initial_amount_cents, balance_cents, status,
   recipient_name, recipient_email, message, order_id, order_item_id
 ) values (
   '99000000-0000-0000-0000-000000000086',
-  '99000000-0000-0000-0000-000000000001', 'GDPR-A-0099',
+  '99000000-0000-0000-0000-000000000001',
+  'redacted:99000000-0000-0000-0000-000000000086',
+  encode(extensions.digest(convert_to('GDPRA0099', 'UTF8'), 'sha256'), 'hex'),
+  '0099', 'legacy-v1',
   50000, 40000, 'active', 'Private Recipient', 'recipient@example.test',
   'Private card message', '99000000-0000-0000-0000-000000000081',
   '99000000-0000-0000-0000-000000000084'
@@ -260,11 +264,15 @@ insert into public.shop_order_items (
   'Other Recipient', 'other-recipient@example.test', 'Other private message'
 );
 insert into public.gift_cards (
-  id, tenant_id, code, initial_amount_cents, balance_cents, status,
+  id, tenant_id, code, code_hash, code_last_four, code_version,
+  initial_amount_cents, balance_cents, status,
   recipient_name, recipient_email, message, order_id, order_item_id
 ) values (
   '99000000-0000-0000-0000-000000000090',
-  '99000000-0000-0000-0000-000000000002', 'GDPR-B-0099',
+  '99000000-0000-0000-0000-000000000002',
+  'redacted:99000000-0000-0000-0000-000000000090',
+  encode(extensions.digest(convert_to('GDPRB0099', 'UTF8'), 'sha256'), 'hex'),
+  '0099', 'legacy-v1',
   70000, 60000, 'active', 'Other Recipient', 'other-recipient@example.test',
   'Other card message', '99000000-0000-0000-0000-000000000088',
   '99000000-0000-0000-0000-000000000089'
