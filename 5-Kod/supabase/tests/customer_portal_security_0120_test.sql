@@ -262,7 +262,7 @@ begin
   v_recovery_session := gen_random_uuid();
   select * into v_result from public.customer_portal_verify_recovery_and_mint_session(
     v_recovery_public, repeat('e', 64), repeat('a', 64),
-    v_recovery_session, repeat('b', 64), 1
+    v_recovery_session, repeat('7', 64), 1
   );
   if v_result.outcome <> 'verified' or v_result.tenant_slug <> 'portal-test-a' then
     raise exception 'portal_recovery_verify_failed:%', row_to_json(v_result);
