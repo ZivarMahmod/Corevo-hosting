@@ -10,6 +10,7 @@ import { SubpageHero } from '@/components/storefront/sections'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { pageMetadata } from '@/components/storefront/seo'
 import s from './kurser.module.css'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ export default async function KurserPage() {
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'kurser')
+  const checkoutLive = isModuleLive(states, 'shop') && commerceReleaseGate(tenant.id).shop
   if (!isModuleLive(states, 'kurser') && !paused) notFound()
 
   const [events, kurserConfig] = await Promise.all([
@@ -42,7 +44,7 @@ export default async function KurserPage() {
   // formen är mallens. Ingen vy → den delade sidan nedan, byte-identiskt.
   const View = themeModuleViews(settings.theme).kurser
   if (View) {
-    return <View events={events} config={kurserConfig} paused={paused} />
+    return <View events={events} config={kurserConfig} paused={paused || (köpIKassan && !checkoutLive)} />
   }
 
   return (
@@ -54,9 +56,11 @@ export default async function KurserPage() {
         // plats" ovanför en kassa-knapp är precis den sortens lilla lögn som gör att
         // ingen litar på resten av sidan.
         lede={
-          köpIKassan
+          köpIKassan && checkoutLive
             ? 'Boka din plats direkt — kursplatsen läggs i varukorgen och betalas i kassan.'
-            : 'Anmäl dig och ditt sällskap — avgiften betalas på plats.'
+            : köpIKassan
+              ? 'Onlineköp av kursplatser är inte öppet just nu.'
+              : 'Anmäl dig och ditt sällskap — avgiften betalas på plats.'
         }
       />
     <section className="section" data-module="kurser">
@@ -110,16 +114,16 @@ export default async function KurserPage() {
                       är betald. 'onsite' (default) → anmälningsformuläret, ORÖRT: avgiften
                       visas och betalas på plats, precis som förut. */}
                   {!paused && !full ? (
-                    kurserConfig.payment === 'checkout' ? (
+                    kurserConfig.payment === 'checkout' && checkoutLive ? (
                       <EventSeatBuy
                         eventId={ev.id}
                         title={ev.title}
                         priceCents={ev.priceCents}
                         seatsLeft={seatsLeft}
                       />
-                    ) : (
+                    ) : kurserConfig.payment === 'onsite' ? (
                       <KursAnmalanForm eventId={ev.id} maxParty={left != null ? Math.min(8, left) : 8} />
-                    )
+                    ) : null
                   ) : null}
                 </li>
               )

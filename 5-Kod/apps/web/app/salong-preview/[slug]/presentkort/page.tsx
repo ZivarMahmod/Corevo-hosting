@@ -3,6 +3,7 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { PresentkortSection } from '@/components/storefront/PresentkortSection'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { loadPresentkortData } from '@/lib/storefront/presentkort/load-presentkort'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
 
 // goal-64 (regression, preview-parity): presentkortets preview-tvilling anropade den
@@ -27,6 +28,7 @@ export default async function PreviewPresentkortPage({
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'presentkort')
+  const checkoutLive = isModuleLive(states, 'shop') && commerceReleaseGate(tenant.id).shop
   const off = !isModuleLive(states, 'presentkort') && !paused
   const View = themeModuleViews(theme).presentkort
   const data = View && !off ? await loadPresentkortData(tenant.id, tenant.slug) : null
@@ -36,9 +38,9 @@ export default async function PreviewPresentkortPage({
       {off ? (
         <PreviewModuleOff moduleLabel="Presentkort" />
       ) : View && data ? (
-        <View config={data.config} paused={paused} tenantName={tenant.name} />
+        <View config={data.config} paused={paused || !checkoutLive} tenantName={tenant.name} />
       ) : (
-        <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={paused} />
+        <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={paused} checkoutLive={checkoutLive} />
       )}
     </PreviewShell>
   )

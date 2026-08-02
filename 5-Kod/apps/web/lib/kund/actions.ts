@@ -8,7 +8,6 @@ import { createAdminClient } from './admin'
 import { currentKundTenant } from './tenant'
 import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
-import { refundBookingPayment } from '@/lib/stripe/refund'
 import { finalizeCustomerRebookSafely } from './rebook-finalization'
 import { queueBookingEvent } from '@/lib/notifications/booking-events'
 import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'
@@ -348,7 +347,7 @@ export async function cancelBooking(
   // skrivningen sker först efter ägarskap + cutoff ovan, på servern.
   const admin = createAdminClient()
   const cancelledAt = new Date().toISOString()
-  const { error } = await admin
+  const { data: cancelled, error } = await admin
     .from('bookings')
     // cancelled_by: 'customer' — salongens ångralogg ska kunna svara "kunden avbokade
     // själv" utan att gissa. Skriver vi bara status här blir loggen en lista över
@@ -362,11 +361,10 @@ export async function cancelBooking(
         : `customer_profile_id.eq.${user.id}`,
     )
     .in('status', ACTIVE_STATUSES)
+    .select('id')
+    .maybeSingle()
   if (error) return { error: 'Kunde inte avboka. Försök igen.' }
-
-  // Avbokning inom regeln (kontrollerad ovan) → refund om bokningen var betald.
-  // No-op när ingen lyckad betalning finns / Stripe ej konfigurerat.
-  await refundBookingPayment(bookingId, tenantId)
+  if (!cancelled) return { error: 'Bokningen ändrades av någon annan. Ladda om och försök igen.' }
 
   const notification = await queueBookingEvent({
     tenantId,

@@ -6,7 +6,6 @@ const mocks = vi.hoisted(() => ({
   constructEventAsync: vi.fn(),
   createServiceClient: vi.fn(),
   captureException: vi.fn(),
-  refundBookingPayment: vi.fn(),
   refundShopOrder: vi.fn(),
   settleShopOrderPaid: vi.fn(),
   settleShopPaymentEvent: vi.fn(),
@@ -27,7 +26,6 @@ vi.mock('@/lib/notifications/booking', () => ({
   sendPaymentReceipt: vi.fn(),
 }))
 vi.mock('@/lib/stripe/refund', () => ({
-  refundBookingPayment: mocks.refundBookingPayment,
   refundShopOrder: mocks.refundShopOrder,
 }))
 vi.mock('@/lib/payments/refund-outbox', () => ({
@@ -415,7 +413,6 @@ describe('Stripe webhook DB-fel', () => {
     expect(rpc).toHaveBeenCalledWith('confirm_booking_payment', expect.objectContaining({
       p_connected_account: 'acct_t1',
     }))
-    expect(mocks.refundBookingPayment).not.toHaveBeenCalled()
     expect(mocks.after).toHaveBeenCalledOnce()
     expect(mocks.dispatchPaymentRefundJobById).toHaveBeenCalledWith(
       '123e4567-e89b-42d3-a456-426614174000',

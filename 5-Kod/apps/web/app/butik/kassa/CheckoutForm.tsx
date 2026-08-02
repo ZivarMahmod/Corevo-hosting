@@ -146,7 +146,7 @@ export function CheckoutForm({
       ) : null}
 
       {/* Gäst-checkout (konto efter köp). ≤8 fält. */}
-      <form onSubmit={onSubmit} className={s.form} noValidate>
+      <form onSubmit={onSubmit} className={s.form}>
         {/* goal-62 E5: fem fält låg i EN oavbruten radda — kassan läste som ett formulär
             att beta av, inte som två frågor ("vem är du?" / "vart ska det?"). Grupperade
             i fieldset+legend: samma fält, samma ordning, men steg-känslan kommer gratis
@@ -234,6 +234,7 @@ export function CheckoutForm({
         <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, margin: '12px 0' }}>
           <input
             type="checkbox"
+            required
             checked={acceptTerms}
             onChange={(e) => setAcceptTerms(e.target.checked)}
             style={{ marginTop: 2 }}

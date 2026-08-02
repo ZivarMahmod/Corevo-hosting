@@ -276,6 +276,34 @@ begin
     null;
   end;
 
+  begin
+    update public.shop_orders
+    set total_cents = 0, payment_method = 'card', status = 'awaiting_payment'
+    where id = v_order;
+    raise exception 'goal92_zero_total_payment_accepted';
+  exception when sqlstate '22023' then
+    if sqlerrm <> 'zero_total_payment_not_required' then raise; end if;
+  end;
+
+  begin
+    perform public.confirm_shop_order(
+      v_order,
+      'goal92-token',
+      null,
+      'Goal 92 Köpare',
+      'buyer@example.test',
+      '+46700000000',
+      null,
+      null,
+      null,
+      null,
+      null
+    );
+    raise exception 'goal92_missing_payment_method_accepted';
+  exception when sqlstate '22023' then
+    if sqlerrm <> 'payment_method_required' then raise; end if;
+  end;
+
   select * into v_confirm
   from public.confirm_shop_order(
     v_order,

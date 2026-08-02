@@ -9,6 +9,7 @@ import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-mo
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
+import { resolveStorefrontSkinContent } from '@/lib/storefront/skin/content'
 import {
   loadPreviewBundle,
   resolvePreviewCopyMode,
@@ -41,8 +42,14 @@ export default async function SalongPreviewPage({
 
   const Layout = STOREFRONT_LAYOUTS[theme]
   const ownsModules = THEME_OWNS_MODULES.has(theme)
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
-  const content = resolveThemeContent(theme, settings.branding, copy)
+  const baseCopy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
+  const { copy, branding } = await resolveStorefrontSkinContent(
+    tenant.id,
+    theme,
+    baseCopy as Record<string, unknown> | null,
+    settings.branding as unknown as Record<string, unknown>,
+  )
+  const content = resolveThemeContent(theme, branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
   const modules = THEME_LOADS_LAYOUT_MODULES.has(theme)
     ? await loadLayoutModuleTeasers(tenant.id, tenant.slug)

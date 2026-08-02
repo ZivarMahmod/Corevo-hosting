@@ -10,6 +10,7 @@ import { createServiceClient } from '@/lib/platform/service'
 import { verifyCancelToken } from '@/lib/booking/cancel-token'
 import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund/settings'
 import { cancelByToken } from '../actions'
+import { SubmitCancelButton } from './SubmitCancelButton'
 import storefront from '@/components/storefront/storefront.module.css'
 import '../../ticket.css'
 
@@ -203,9 +204,7 @@ export default async function AvbokaPage({
             Vill du avboka?{cutoff > 0 ? ` Du kan avboka senast ${cutoff} timmar innan besöket.` : null}
           </p>
           <form action={submitCancel}>
-            <button type="submit" className="tkt-btn-accent">
-              Avboka tid
-            </button>
+            <SubmitCancelButton />
           </form>
         </>
       ) : outcome === 'done' ? (

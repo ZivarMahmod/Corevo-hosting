@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
@@ -11,6 +12,7 @@ import { freshCutNavigationLinks } from './FreshCutChrome'
 import { FreshCutLayout } from './FreshCutLayout'
 
 const EXTERNAL_URL = 'https://www.bokadirekt.se/places/freshcut-123'
+const css = readFileSync(new URL('./freshcut.module.css', import.meta.url), 'utf8')
 
 const SERVICES = [
   ['Herrklippning', 'Klippning, styling och finish.', 30, 36900],
@@ -126,6 +128,12 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).not.toContain('href="/boka"')
     expect(html).toContain('target="_blank"')
     expect(html).toContain('rel="noopener noreferrer"')
+  })
+
+  it('reserves mobile page space for the fixed booking row', () => {
+    expect(css).toMatch(
+      /@media \(max-width: 780px\) {[\s\S]*?\.page {[^}]*padding-bottom: calc\(84px \+ env\(safe-area-inset-bottom\)\)/,
+    )
   })
 
   it('keeps owner copy above the customer template default', () => {

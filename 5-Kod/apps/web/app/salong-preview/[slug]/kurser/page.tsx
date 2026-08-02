@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
-import KurserPage from '@/app/(public)/kurser/page'
 import { loadUpcomingEvents, loadKurserConfig } from '@/lib/storefront/kurser/load-kurser'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { KurserSection } from '@/components/storefront/kurser/KurserSection'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
 
 // goal-61 preview-parity, uppdaterad goal-64 (regression): kurssidan HAR numera
@@ -32,6 +33,7 @@ export default async function PreviewKurserPage({
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'kurser')
+  const checkoutLive = isModuleLive(states, 'shop') && commerceReleaseGate(tenant.id).shop
   const off = !isModuleLive(states, 'kurser') && !paused
 
   const View = themeModuleViews(theme).kurser
@@ -45,9 +47,9 @@ export default async function PreviewKurserPage({
       {off ? (
         <PreviewModuleOff moduleLabel="Kurser & event" />
       ) : View && data ? (
-        <View events={data[0]} config={data[1]} paused={paused} />
+        <View events={data[0]} config={data[1]} paused={paused || (data[1].payment === 'checkout' && !checkoutLive)} />
       ) : (
-        <KurserPage />
+        <KurserSection tenantId={tenant.id} slug={tenant.slug} paused={paused} checkoutLive={checkoutLive} pageHero />
       )}
     </PreviewShell>
   )

@@ -32,6 +32,7 @@ export function BookingStatusActions({
     {},
   )
   const [showRebook, setShowRebook] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [outcomeReady, setOutcomeReady] = useState(false)
 
   useEffect(() => {
@@ -81,12 +82,23 @@ export function BookingStatusActions({
               Omboka
             </button>
 
-            <form action={cancelAction} style={{ display: 'contents' }}>
-              <input type="hidden" name="bookingId" value={bookingId} />
-              <button type="submit" className={`${styles.btn} ${styles.btnDanger}`} disabled={cancelPending}>
-                {cancelPending ? 'Avbokar…' : 'Avboka'}
+            {confirmCancel ? (
+              <>
+                <form action={cancelAction} style={{ display: 'contents' }}>
+                  <input type="hidden" name="bookingId" value={bookingId} />
+                  <button type="submit" className={`${styles.btn} ${styles.btnDanger}`} disabled={cancelPending} autoFocus>
+                    {cancelPending ? 'Avbokar…' : 'Ja, avboka'}
+                  </button>
+                </form>
+                <button type="button" className={styles.btn} onClick={() => setConfirmCancel(false)} disabled={cancelPending}>
+                  Behåll tiden
+                </button>
+              </>
+            ) : (
+              <button type="button" className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setConfirmCancel(true)}>
+                Avboka
               </button>
-            </form>
+            )}
           </>
         ) : null}
       </div>

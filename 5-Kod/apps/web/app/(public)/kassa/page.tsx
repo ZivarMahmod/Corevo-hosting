@@ -62,6 +62,20 @@ export default async function KassaPage() {
     ? await loadCheckoutOptions(tenant.id, tenant.slug, shop.config)
     : { shippingOptions: [], paymentMethods: [] }
 
+  if (shop && shop.config.paymentMethods.length > 0 && checkout.paymentMethods.length === 0) {
+    return (
+      <section className={`section ${s.closed}`}>
+        <h1 className={s.closedTitle}>Betalningen är tillfälligt stängd</h1>
+        <p className={s.closedText}>
+          Inget aktiverat betalsätt går att använda just nu. Din varukorg finns kvar.
+        </p>
+        <Link href="/shop" className={s.link}>
+          Tillbaka till butiken
+        </Link>
+      </section>
+    )
+  }
+
   // Mallens egen kassa vinner; den delade är bara fallback (samma mönster som korgen).
   const OwnCheckout = themeModuleViews(bundle.settings.theme).checkout
 

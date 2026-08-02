@@ -23,7 +23,6 @@ import {
 import { mergeBranding } from '@/lib/branding/merge'
 import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
 import { canWrite } from '@/lib/platform/catalog-shared'
-import { refundBookingPayment } from '@/lib/stripe/refund'
 import { BOOKING_STATUSES, restoreBlockedByRefund } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
@@ -2166,8 +2165,8 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // No-op: the admin <select> defaults to the booking's CURRENT status, so the
   // most trivial interaction (open a booking, click Spara without changing the
   // dropdown) submits the same status. Treat that as a success without writing —
-  // and without re-firing the refund side-effect below. Completion-eventet skapas
-  // atomiskt av DB-triggern i samma transaktion som den första statusövergången.
+  // and without re-firing transition-owned side effects. Completion-eventet och
+  // eventuell refundkö skapas atomiskt av DB-triggerar vid den första övergången.
   const { data: current } = await supabase
     .from('bookings')
     .select('status, start_ts, end_ts, customer_id, staff_id')
@@ -2270,10 +2269,6 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
     typeof statusResult === 'object' &&
     statusResult !== null &&
     (statusResult as { changed?: unknown }).changed === true
-  // Avbokning → återbetala ev. lyckad betalning. No-op om ingen 'succeeded'
-  // betalning finns; refundBookingPayment sväljer egna fel (kastar aldrig).
-  if (changed && status === 'cancelled') await refundBookingPayment(bookingId, ctx.tenant.id)
-
   let notificationMessage = ''
   if (changed && status === 'cancelled') {
     const notification = await queueBookingEvent({

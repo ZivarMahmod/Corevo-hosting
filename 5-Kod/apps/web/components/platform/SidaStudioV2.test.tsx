@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
+import { resolveSiteEditorTabId, siteEditorPreviewSrc, siteEditorTabHref } from './SidaStudioV2.tabs'
 
 const componentPath = path.resolve(__dirname, 'SidaStudioV2.tsx')
 const cssPath = path.resolve(__dirname, 'SidaStudioV2.module.css')
@@ -28,6 +28,17 @@ describe('SidaStudioV2 acceptance shell', () => {
     expect(component).toContain('setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))')
     expect(component).toContain('usePathname')
     expect(component).toContain('router.replace(siteEditorTabHref(pathname, nextTabId, searchParams.toString())')
+  })
+
+  it('keeps preview anchor routes on the current editor tab', () => {
+    expect(component).toContain("data.path.split(/[?#]/)[0]")
+    expect(component).toContain('setPreviewRoute(data.path)')
+    expect(siteEditorPreviewSrc(
+      '/salong-preview/freshcut',
+      '#kontakt',
+      'freshcut',
+      'keep',
+    )).toBe('/salong-preview/freshcut?theme=freshcut&copy=keep#kontakt')
   })
 
   it('owns one aggregate working snapshot and all four revision actions', () => {
@@ -189,6 +200,8 @@ describe('SidaStudioV2 acceptance shell', () => {
     expect(css).toMatch(/\.mobileActions[^}]*grid-template-columns:\s*1fr\s+1fr/is)
     expect(css).toMatch(/\.mobileSave[^}]*min-height:\s*(?:4[4-9]|[5-9]\d)px/is)
     expect(css).toMatch(/\.mobilePublish[^}]*min-height:\s*(?:4[4-9]|[5-9]\d)px/is)
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.panel \{ padding:\s*12px 12px 142px;/is)
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.preview \{[^}]*padding-bottom:\s*142px;[^}]*box-sizing:\s*border-box;/is)
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.tabs button[^}]*min-height:\s*44px/is)
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.draftBanner button,[\s\S]*?\.showButton[^}]*min-height:\s*44px/is)
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.imageRow button:not\(\.showButton\),[\s\S]*?\.info a[^}]*min-height:\s*44px/is)

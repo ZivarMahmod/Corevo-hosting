@@ -52,10 +52,12 @@ declare
   v_staff_a uuid := gen_random_uuid(); v_staff_b uuid := gen_random_uuid();
   v_service_a uuid := gen_random_uuid(); v_service_b uuid := gen_random_uuid();
   v_unpaid uuid := gen_random_uuid(); v_paid uuid := gen_random_uuid();
+  v_direct uuid := gen_random_uuid();
   v_late uuid := gen_random_uuid(); v_cutoff uuid := gen_random_uuid();
   v_other_customer uuid := gen_random_uuid(); v_cross_tenant uuid := gen_random_uuid();
   v_session uuid := gen_random_uuid(); v_result record; v_json jsonb;
   v_payment_paid uuid := gen_random_uuid(); v_payment_late uuid := gen_random_uuid();
+  v_payment_direct uuid := gen_random_uuid();
   v_job uuid; v_count integer;
 begin
   insert into public.tenants (
@@ -89,6 +91,8 @@ begin
       statement_timestamp() + interval '3 days', statement_timestamp() + interval '3 days 30 minutes', 'confirmed', 10000),
     (v_paid, v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
       statement_timestamp() + interval '4 days', statement_timestamp() + interval '4 days 30 minutes', 'confirmed', 10000),
+    (v_direct, v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
+      statement_timestamp() + interval '8 days', statement_timestamp() + interval '8 days 30 minutes', 'confirmed', 10000),
     (v_late, v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
       statement_timestamp() + interval '5 days', statement_timestamp() + interval '5 days 30 minutes', 'pending', 10000),
     (v_cutoff, v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
@@ -102,6 +106,7 @@ begin
     stripe_payment_intent_id, stripe_connected_account_id
   ) values
     (v_payment_paid, v_tenant_a, v_paid, 10000, 'sek', 'succeeded', 'pi_refund_paid', 'acct_refund_a'),
+    (v_payment_direct, v_tenant_a, v_direct, 10000, 'sek', 'succeeded', 'pi_refund_direct', 'acct_refund_a'),
     (v_payment_late, v_tenant_a, v_late, 10000, 'sek', 'pending', null, 'acct_refund_a');
   insert into private.customer_portal_sessions (
     public_id, tenant_id, customer_id, secret_digest, key_version,
@@ -130,6 +135,14 @@ begin
          and j.provider_connected_account_id = 'acct_refund_a'
          and j.provider_idempotency_key = 'refund_' || v_paid::text
      ) then raise exception 'refund_succeeded_invalid:%', row_to_json(v_result); end if;
+
+  update public.bookings
+  set status = 'cancelled', cancelled_at = statement_timestamp(), cancelled_by = 'business'
+  where id = v_direct;
+  if (select count(*) from private.payment_refund_jobs j
+      where j.booking_id = v_direct and j.payment_id = v_payment_direct) <> 1 then
+    raise exception 'refund_direct_cancellation_not_queued';
+  end if;
 
   select * into v_result from public.customer_portal_cancel_booking(
     v_session, repeat('s', 64), v_paid, 24, repeat('p', 32)

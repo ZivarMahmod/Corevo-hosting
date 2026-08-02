@@ -21,12 +21,11 @@
 //   stamp_card → stämpelkort (rita stampGoal tomma stämpel-cirklar).
 // No `if (bransch)` anywhere — only the variant drives the difference.
 //
-// NO PAYMENT (unlike shop/offert): loyalty points never touch direct money, so
-// there is no pay step, no order — nothing money-bearing in this surface. The
-// "Bli medlem"-CTA is a STATIC, inert server element (no onClick, no 'use client',
-// aria-disabled) because the membership/signup rails are not built yet.
+// NO PAYMENT (unlike shop/offert): loyalty points never touch direct money. The
+// homepage CTA leads to the module's existing signup surface instead of duplicating it.
 
 import { SectionHeader } from './sections'
+import Link from 'next/link'
 import s from './promo-section.module.css'
 import { lojalitetVariantLabel, type LojalitetData } from '@/lib/storefront/lojalitet/types'
 import { loadLojalitetData } from '@/lib/storefront/lojalitet/load-lojalitet'
@@ -80,14 +79,11 @@ export async function LojalitetSection({
           </p>
         )}
 
-        {/* STATIC, inert CTA — membership/signup rails are not built yet, so this is
-            a non-interactive server element that merely looks disabled (no onClick,
-            no 'use client'). goal-60: den bär köpknappens form (--sf-btn-*) i sitt
-            OTILLGÄNGLIGA läge — mätt ink, aldrig opacity — så den ser ut att höra
-            hemma i mallen utan att ljuga om att den går att klicka. */}
-        <p aria-disabled="true" className={`${s.cta} ${s.ctaInert}`}>
-          Bli medlem
-        </p>
+        {!paused ? (
+          <Link href="/klubb" className={s.cta}>
+            Bli medlem
+          </Link>
+        ) : null}
       </div>
     </section>
   )

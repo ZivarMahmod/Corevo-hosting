@@ -107,6 +107,7 @@ export function NavShell({
   useEffect(() => {
     if (!menuOpen) return
     const prev = document.body.style.overflow
+    const burger = burgerRef.current
     document.body.style.overflow = 'hidden'
     const t = window.setTimeout(() => overlayCloseRef.current?.focus(), 0)
     function onKey(e: KeyboardEvent) {
@@ -136,7 +137,7 @@ export function NavShell({
       document.body.style.overflow = prev
       window.clearTimeout(t)
       document.removeEventListener('keydown', onKey)
-      burgerRef.current?.focus()
+      burger?.focus()
     }
   }, [menuOpen])
 

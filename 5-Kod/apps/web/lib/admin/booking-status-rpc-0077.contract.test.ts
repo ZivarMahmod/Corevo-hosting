@@ -17,6 +17,6 @@ describe('setBookingStatus 0077', () => {
     expect(statusAction).not.toContain('createAdminServiceClient')
     expect(statusAction).not.toContain('enqueueNotification')
     expect(statusAction).not.toContain('sendReviewNudgeForBooking')
-    expect(statusAction).toContain('refundBookingPayment')
+    expect(statusAction).not.toContain('refundBookingPayment')
   })
 })

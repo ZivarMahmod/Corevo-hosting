@@ -14,6 +14,7 @@ import { LojalitetSection } from '@/components/storefront/LojalitetSection'
 import { PresentkortSection } from '@/components/storefront/PresentkortSection'
 import { KurserSection } from '@/components/storefront/kurser/KurserSection'
 import { GalleriSection } from '@/components/storefront/galleri/GalleriSection'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 /**
  * `variant`:
@@ -35,6 +36,7 @@ export async function StorefrontModuleSections({
   const moduleStates = await getTenantModuleStates(tenantId, slug)
   const shopLive = isModuleLive(moduleStates, 'shop')
   const shopPaused = isModulePaused(moduleStates, 'shop')
+  const checkoutLive = shopLive && commerceReleaseGate(tenantId).shop
   const kurserLive = isModuleLive(moduleStates, 'kurser')
   const kurserPaused = isModulePaused(moduleStates, 'kurser')
   const bloggLive = isModuleLive(moduleStates, 'blogg')
@@ -64,6 +66,7 @@ export async function StorefrontModuleSections({
           tenantId={tenantId}
           slug={slug}
           paused={kurserPaused}
+          checkoutLive={checkoutLive}
           {...(teaser ? { limit: 3, moreHref: '/kurser' } : {})}
         />
       ) : null}
@@ -82,7 +85,12 @@ export async function StorefrontModuleSections({
       ) : null}
 
       {presentkortLive || presentkortPaused ? (
-        <PresentkortSection tenantId={tenantId} slug={slug} paused={presentkortPaused} />
+        <PresentkortSection
+          tenantId={tenantId}
+          slug={slug}
+          paused={presentkortPaused}
+          checkoutLive={checkoutLive}
+        />
       ) : null}
 
       {lojalitetLive || lojalitetPaused ? (

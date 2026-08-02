@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './google-review-nudge.module.css'
 
 // Client popup for the booking-confirmation Google-review nudge. Ignorable:
@@ -22,6 +22,9 @@ export function GoogleReviewNudgePopup({
 }) {
   const storageKey = `corevo:review-nudge:${bookingId}`
   const [open, setOpen] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     // Respect a prior dismissal for this booking.
@@ -30,7 +33,10 @@ export function GoogleReviewNudgePopup({
     } catch {
       /* storage blocked (private mode) → just show it once this view */
     }
-    const t = setTimeout(() => setOpen(true), 900)
+    const t = setTimeout(() => {
+      previousFocusRef.current = document.activeElement as HTMLElement | null
+      setOpen(true)
+    }, 900)
     return () => clearTimeout(t)
   }, [storageKey])
 
@@ -45,23 +51,44 @@ export function GoogleReviewNudgePopup({
 
   useEffect(() => {
     if (!open) return
+    closeRef.current?.focus()
     function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      setOpen(false)
-      try {
-        sessionStorage.setItem(storageKey, '1')
-      } catch {
-        /* ignore */
+      if (e.key === 'Escape') {
+        setOpen(false)
+        try {
+          sessionStorage.setItem(storageKey, '1')
+        } catch {
+          /* ignore */
+        }
+        return
+      }
+      if (e.key !== 'Tab') return
+      const controls = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href]',
+      ) ?? [])]
+      if (controls.length === 0) return
+      const first = controls[0]!
+      const last = controls[controls.length - 1]!
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
       }
     }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      previousFocusRef.current?.focus()
+    }
   }, [open, storageKey])
 
   if (!open) return null
 
   return (
     <div
+      ref={dialogRef}
       className={styles.backdrop}
       onClick={dismiss}
       role="dialog"
@@ -70,6 +97,7 @@ export function GoogleReviewNudgePopup({
     >
       <div className={styles.card} onClick={(e) => e.stopPropagation()}>
         <button
+          ref={closeRef}
           type="button"
           className={styles.close}
           onClick={dismiss}

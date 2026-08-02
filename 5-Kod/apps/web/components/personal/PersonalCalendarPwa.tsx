@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { StaffScheduleEntry } from '@/lib/personal/calendar'
 import { fmtTime } from '@/lib/personal/format'
 import { BookingStatusActions } from './BookingStatusActions'
@@ -47,8 +47,49 @@ export function PersonalCalendarPwa({
   ownCalendar: boolean
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const sheetRef = useRef<HTMLElement>(null)
+  const returnFocusRef = useRef<HTMLElement | null>(null)
   const selected = useMemo(() => bookings.find((booking) => booking.id === selectedId) ?? null, [bookings, selectedId])
+  const selectedBookingId = selected?.id
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index)
+
+  useEffect(() => {
+    if (!selectedBookingId) return
+    const sheet = sheetRef.current
+    const returnFocus = returnFocusRef.current
+    const focusableSelector = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    const focusable = () => [...(sheet?.querySelectorAll<HTMLElement>(focusableSelector) ?? [])]
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setSelectedId(null)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const controls = focusable()
+      const first = controls[0]
+      const last = controls.at(-1)
+      if (!first || !last) {
+        event.preventDefault()
+      } else if (!sheet?.contains(document.activeElement)) {
+        event.preventDefault()
+        ;(event.shiftKey ? last : first).focus()
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    ;(focusable()[0] ?? sheet)?.focus()
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      if (returnFocus?.isConnected) returnFocus.focus()
+      returnFocusRef.current = null
+    }
+  }, [selectedBookingId])
 
   return (
     <section className={styles.calendarScreen} data-accept="personal-calendar">
@@ -93,7 +134,10 @@ export function PersonalCalendarPwa({
                   type="button"
                   className={`${styles.bookingBlock} ${booking.status === 'completed' ? styles.bookingDone : ''} ${booking.status === 'cancelled' ? styles.bookingCancelled : ''}`}
                   style={{ top, height }}
-                  onClick={() => setSelectedId(booking.id)}
+                  onClick={(event) => {
+                    returnFocusRef.current = event.currentTarget
+                    setSelectedId(booking.id)
+                  }}
                 >
                   <strong>{fmtTime(booking.startTs, booking.timeZone)} · {booking.customerLabel}</strong>
                   <span>{booking.serviceName ?? 'Bokning'}</span>
@@ -108,7 +152,7 @@ export function PersonalCalendarPwa({
       {selected ? (
         <div className={styles.sheetLayer} data-accept="booking-sheet">
           <button className={styles.sheetBackdrop} type="button" aria-label="Stäng" onClick={() => setSelectedId(null)} />
-          <section className={styles.sheet} role="dialog" aria-modal="true" aria-label="Bokning">
+          <section ref={sheetRef} className={styles.sheet} role="dialog" aria-modal="true" aria-label="Bokning" tabIndex={-1}>
             <div className={styles.sheetHandle} />
             <div className={styles.sheetMeta}><span><i />{ownCalendar ? 'din bokning' : 'bokning'} · {day}</span><button type="button" onClick={() => setSelectedId(null)}>✕</button></div>
             <div className={styles.sheetTitle}><strong>{fmtTime(selected.startTs, selected.timeZone)}</strong><span>{selected.serviceName ?? 'Bokning'}</span></div>

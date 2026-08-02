@@ -134,6 +134,7 @@ export function useCheckout(args: {
     if (!orderId) return 'Beställningen är inte redo — ladda om sidan.'
     // Har butiken leveransval MÅSTE ett vara valt (servern kräver det också — 0058).
     if (shippingOptions.length > 0 && !shippingId) return 'Välj ett leveranssätt.'
+    if (paymentMethods.length > 0 && !paymentMethod) return 'Välj ett betalsätt.'
 
     inFlight.current = true
     setSubmitting(true)
@@ -164,14 +165,14 @@ export function useCheckout(args: {
     // (requiresPayment). Misslyckas en betalstart faller vi igenom till bekräftelsen —
     // ordern står kvar obetald och sidan säger det ärligt, i stället för en vit skärm.
     if (paymentMethod === 'paypal') {
-      const pp = await startPaypalCheckout(res.orderId)
+      const pp = await startPaypalCheckout(res.orderId, token)
       if (pp.ok) {
         clear()
         window.location.href = pp.url
         return null
       }
     } else if (res.requiresPayment) {
-      const co = await startShopCheckout(res.orderId, paymentMethod)
+      const co = await startShopCheckout(res.orderId, token, paymentMethod)
       if (co.ok) {
         clear()
         window.location.href = co.url

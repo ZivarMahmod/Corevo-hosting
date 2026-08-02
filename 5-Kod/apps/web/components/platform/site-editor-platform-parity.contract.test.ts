@@ -8,6 +8,7 @@ const read = (relative: string) => readFileSync(path.join(WEB_ROOT, relative), '
 const adminRoute = read('app/(admin)/admin/sida/page.tsx')
 const platformRoute = read('app/(platform)/kunder/(board)/[id]/page.tsx')
 const studio = read('components/platform/SidaStudioV2.tsx')
+const studioRoutes = read('components/platform/SidaStudioV2.tabs.ts')
 const css = read('components/platform/SidaStudioV2.module.css')
 
 describe('Goal 88 shared platform site editor', () => {
@@ -42,8 +43,8 @@ describe('Goal 88 shared platform site editor', () => {
     expect(platformRoute).toContain('const operator = await requirePlatformOperator()')
     expect(platformRoute).toContain('canChangeTemplate={operator.platformAdmin}')
     expect(studio).toContain('canChangeTemplate && !dirty && !hasDraft')
-    expect(studio).toContain("q.set('theme', previewTheme)")
-    expect(studio).toContain("q.set('copy', previewCopyMode)")
+    expect(studioRoutes).toContain("params.set('theme', theme)")
+    expect(studio).toContain('siteEditorPreviewSrc(previewPath')
     expect(studio).toContain("previewCopyMode === 'template'")
     expect(studio).toContain('if (previewingTemplateDefaults) return')
   })

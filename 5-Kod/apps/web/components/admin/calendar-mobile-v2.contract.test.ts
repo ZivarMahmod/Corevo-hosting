@@ -45,6 +45,17 @@ describe('Kalender Mobil v2', () => {
     expect(component).not.toContain('pagerDayStart')
   })
 
+  it('håller tangentbordsfokus i den mobila datumdialogen och lämnar tillbaka det', () => {
+    const component = read('components/admin/CalendarBoard.tsx')
+
+    expect(component).toContain('mobileDateDialogRef')
+    expect(component).toContain('mobileDateReturnFocusRef')
+    expect(component).toContain("event.key === 'Escape'")
+    expect(component).toContain("event.key !== 'Tab'")
+    expect(component).toContain('returnFocus.focus()')
+    expect(component).toMatch(/ref=\{mobileDateDialogRef\}[\s\S]*?role="dialog"[\s\S]*?tabIndex=\{-1\}/)
+  })
+
   it('låter touchscroll vinna utan markerad friyta och visar ej arbetstid som samma lugna yta', () => {
     const component = read('components/admin/CalendarBoard.tsx')
     const css = read('components/admin/calendar.module.css')

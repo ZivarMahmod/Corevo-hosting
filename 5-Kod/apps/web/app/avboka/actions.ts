@@ -8,7 +8,6 @@ import {
   queueBookingEvent,
   type BookingNotificationQueueResult,
 } from '@/lib/notifications/booking-events'
-import { refundBookingPayment } from '@/lib/stripe/refund'
 import { logger } from '@/lib/observability'
 
 // Guest self-service CANCEL action (NOTIF-GUEST). The only authorisation is the
@@ -85,9 +84,6 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
     // Someone else cancelled between our read and write — treat as already done.
     return { ok: false, reason: 'already_cancelled', message: 'Den här tiden är redan avbokad.' }
   }
-
-  // Refund a paid booking on guest self-service cancel (parity with kund/personal).
-  await refundBookingPayment(bookingId, b.tenant_id)
 
   const notification = await queueBookingEvent({
     tenantId: b.tenant_id,

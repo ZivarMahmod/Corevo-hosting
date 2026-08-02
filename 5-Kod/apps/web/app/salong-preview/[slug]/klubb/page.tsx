@@ -32,7 +32,7 @@ export default async function PreviewKlubbPage({
   let body
   if (off || !data) {
     body = <PreviewModuleOff moduleLabel="Klubben" />
-  } else if (View) {
+  } else if (View && !paused) {
     const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
     const content = resolveThemeContent(theme, settings.branding, copy)
     body = <View config={data.config} plans={data.plans} content={content} tenantName={tenant.name} />

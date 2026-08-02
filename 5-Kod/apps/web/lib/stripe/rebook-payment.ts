@@ -48,7 +48,7 @@ export function decideCarryAction(payment: PaymentRow | null): CarryAction {
 }
 
 /**
- * Server-only IO wrapper (untested, like refundBookingPayment): moves a succeeded
+ * Server-only IO wrapper: moves a succeeded
  * payment from the old booking to the new one and confirms the new booking. Best-
  * effort + fully fenced:
  *   · service-role (payments writes are RLS-invisible to the kund client);

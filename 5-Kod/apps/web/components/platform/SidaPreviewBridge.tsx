@@ -162,11 +162,17 @@ export function SidaPreviewBridge() {
       if (!PREVIEW_PATHS.has(target) && !target.startsWith('blogg/')) return
       const path = target ? `/${target}` : ''
       if (window.parent === window) {
-        window.location.assign(directPreviewHref(slug, path, url.search, window.location.search))
+        window.location.assign(directPreviewHref(
+          slug,
+          path,
+          url.search,
+          window.location.search,
+          url.hash,
+        ))
         return
       }
       window.parent.postMessage(
-        { source: MSG_SOURCE, type: 'preview-route', path: `${path}${url.search}` },
+        { source: MSG_SOURCE, type: 'preview-route', path: `${path}${url.search}${url.hash}` },
         window.location.origin,
       )
     }

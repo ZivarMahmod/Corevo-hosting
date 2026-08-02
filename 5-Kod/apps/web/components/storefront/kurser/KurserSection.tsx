@@ -9,6 +9,7 @@ export async function KurserSection({
   tenantId,
   slug,
   paused = false,
+  checkoutLive = false,
   limit,
   moreHref,
   pageHero = false,
@@ -16,6 +17,7 @@ export async function KurserSection({
   tenantId: string
   slug: string
   paused?: boolean
+  checkoutLive?: boolean
   limit?: number
   moreHref?: string
   pageHero?: boolean
@@ -29,9 +31,11 @@ export async function KurserSection({
 
   const shownEvents = typeof limit === 'number' ? events.slice(0, limit) : events
   const lead =
-    config.payment === 'checkout'
+    config.payment === 'checkout' && checkoutLive
       ? 'Boka din plats direkt — kursplatsen läggs i varukorgen och betalas i kassan.'
-      : 'Anmäl dig och ditt sällskap — avgiften betalas på plats.'
+      : config.payment === 'checkout'
+        ? 'Onlineköp av kursplatser är inte öppet just nu.'
+        : 'Anmäl dig och ditt sällskap — avgiften betalas på plats.'
 
   return (
     <>
@@ -75,19 +79,19 @@ export async function KurserSection({
                     </p>
 
                     {!paused && !full ? (
-                      config.payment === 'checkout' ? (
+                      config.payment === 'checkout' && checkoutLive ? (
                         <EventSeatBuy
                           eventId={event.id}
                           title={event.title}
                           priceCents={event.priceCents}
                           seatsLeft={remaining}
                         />
-                      ) : (
+                      ) : config.payment === 'onsite' ? (
                         <KursAnmalanForm
                           eventId={event.id}
                           maxParty={remaining == null ? 8 : Math.min(8, remaining)}
                         />
-                      )
+                      ) : null
                     ) : null}
                   </li>
                 )

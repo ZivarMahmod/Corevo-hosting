@@ -21,7 +21,7 @@ import {
   focusEditorControl,
   resolveEditorPickMessage,
 } from './SidaStudioV2.pick'
-import { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
+import { resolveSiteEditorTabId, siteEditorPreviewSrc, siteEditorTabHref } from './SidaStudioV2.tabs'
 import type { SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
 import { ThemePicker, type ThemeCopyMode } from './ThemePicker'
 
@@ -285,15 +285,10 @@ export function SidaStudioV2({
   )
   const previewingTemplateDefaults = Boolean(previewTheme && previewCopyMode === 'template')
   const activePreviewPath = previewRoute ?? activeTab?.path ?? ''
-  const previewSrc = useMemo(() => {
-    const activePath = activePreviewPath
-    const [routePath, routeSearch = ''] = activePath.split('?')
-    const q = new URLSearchParams(routeSearch)
-    if (previewTheme) q.set('theme', previewTheme)
-    if (previewTheme) q.set('copy', previewCopyMode)
-    const query = q.toString()
-    return `${previewPath}${routePath}${query ? `?${query}` : ''}`
-  }, [activePreviewPath, previewCopyMode, previewPath, previewTheme])
+  const previewSrc = useMemo(
+    () => siteEditorPreviewSrc(previewPath, activePreviewPath, previewTheme ?? undefined, previewCopyMode),
+    [activePreviewPath, previewCopyMode, previewPath, previewTheme],
+  )
   const displayPath = activePreviewPath.startsWith('?')
     ? `/${activePreviewPath}`
     : activePreviewPath || '/'
@@ -431,7 +426,7 @@ export function SidaStudioV2({
       }
       if (data.source === MESSAGE_SOURCE && data.type === 'preview-route' && typeof data.path === 'string') {
         if (editorMutationLocked()) return
-        const routePath = data.path.split('?')[0] ?? ''
+        const routePath = data.path.split(/[?#]/)[0] ?? ''
         const target = tabs.find((tab) => {
           const tabPath = tab.path.split('?')[0] ?? ''
           return tabPath === routePath || Boolean(tabPath && routePath.startsWith(`${tabPath}/`))

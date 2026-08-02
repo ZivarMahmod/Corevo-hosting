@@ -297,6 +297,8 @@ export function CalendarBoard({
       : null,
   )
   const [mobileDateOpen, setMobileDateOpen] = useState(false)
+  const mobileDateDialogRef = useRef<HTMLDivElement>(null)
+  const mobileDateReturnFocusRef = useRef<HTMLElement | null>(null)
 
   // router.refresh() levererar en ny bookings-array efter statusändring. Den öppna
   // drawern höll tidigare kvar objektet från före refresh och kunde därför visa
@@ -325,15 +327,46 @@ export function CalendarBoard({
 
   useEffect(() => {
     if (!mobileDateOpen) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMobileDateOpen(false)
+    const dialog = mobileDateDialogRef.current
+    const returnFocus = mobileDateReturnFocusRef.current
+    const focusable = () => [...(dialog?.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])') ?? [])]
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setMobileDateOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const controls = focusable()
+      const first = controls[0]
+      const last = controls.at(-1)
+      if (!first || !last) {
+        event.preventDefault()
+      } else if (!dialog?.contains(document.activeElement)) {
+        event.preventDefault()
+        ;(event.shiftKey ? last : first).focus()
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
+    document.addEventListener('keydown', onKeyDown)
+    ;(dialog?.querySelector<HTMLElement>('[aria-current="date"]') ?? focusable()[0] ?? dialog)?.focus()
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      if (returnFocus?.isConnected) returnFocus.focus()
+      mobileDateReturnFocusRef.current = null
+    }
   }, [mobileDateOpen])
 
   useEffect(() => {
-    const toggleMobileDate = () => setMobileDateOpen((open) => !open)
+    const toggleMobileDate = () => setMobileDateOpen((open) => {
+      if (!open) mobileDateReturnFocusRef.current = document.activeElement as HTMLElement | null
+      return !open
+    })
     window.addEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
     return () => window.removeEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
   }, [])
@@ -1049,7 +1082,10 @@ export function CalendarBoard({
           <button
             type="button"
             className={styles.mobileDateToggle}
-            onClick={() => setMobileDateOpen((open) => !open)}
+            onClick={(event) => {
+              mobileDateReturnFocusRef.current = event.currentTarget
+              setMobileDateOpen((open) => !open)
+            }}
             aria-expanded={mobileDateOpen}
             aria-haspopup="dialog"
           >
@@ -1123,10 +1159,12 @@ export function CalendarBoard({
             aria-label="Stäng datumväljaren"
           />
           <div
+            ref={mobileDateDialogRef}
             className={styles.mobileCalendarPicker}
             role="dialog"
             aria-modal="true"
             aria-label="Välj datum"
+            tabIndex={-1}
           >
             <div className={styles.mobilePickerHead}>
               <strong>

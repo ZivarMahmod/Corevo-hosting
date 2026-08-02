@@ -908,6 +908,10 @@
 }
 
 @media (max-width: 780px) {
+  .page {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
   .hero {
     min-height: calc(100svh - var(--nav-h, 89px));
   }

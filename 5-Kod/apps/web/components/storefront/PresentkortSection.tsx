@@ -22,12 +22,7 @@
 //   physical → "Hämtas i butik".
 // No `if (bransch)` anywhere — only the variant drives the difference.
 //
-// ⚠ INERT — NO PAYMENT (compliance): a gift card touches money, but NO betal-rails
-// are built (locked rule: no payment services without explicit OK). There is no pay
-// step, no purchase, no order — nothing money-bearing happens in this surface, and
-// it never reads the gift_cards table (codes/balances are private; the promo needs
-// no row). The "Köp presentkort"-CTA is a STATIC, inert server element (no onClick,
-// no 'use client', aria-disabled) because the purchase rails are not built yet.
+// Gift-card purchase is shown only when the shared shop/checkout rail is live.
 
 import Link from 'next/link'
 import { SectionHeader } from './sections'
@@ -46,11 +41,14 @@ export async function PresentkortSection({
   tenantId,
   slug,
   paused = false,
+  checkoutLive = false,
 }: {
   tenantId: string
   slug: string
   /** true when tenant_modules.state='presentkort' is 'paused' → promo shown, paused. */
   paused?: boolean
+  /** Shopmodulen och dess releasegrind måste båda vara öppna för onlineköp. */
+  checkoutLive?: boolean
 }) {
   const data: PresentkortData | null = await loadPresentkortData(tenantId, slug)
   if (!data) return null
@@ -78,18 +76,8 @@ export async function PresentkortSection({
           </p>
         ) : null}
 
-        {/* goal-64 — KNAPPEN ÄR TILLBAKA, OCH DEN KÖPER PÅ RIKTIGT.
-            Här stod tidigare en INERT platta ("Presentkort köper du i butiken — eller hör
-            av dig"), för korgen kunde inte bära ett presentkort och en köpknapp utan köp
-            hade varit en lögn. Korgen bär radtypen 'giftcard' nu (0059), så mockens
-            addGift blir sann: belopp (kundens EGNA, aldrig hårdkodade) + leveransval →
-            varukorgen → kassan → betald order → utfärdat kort med kod och saldo.
-
-            PAUSAD modul → ingen köpyta. Stängt är stängt (samma regel som pausad butik).
-            Inga konfigurerade belopp → GiftCardBuy renderar ingenting alls (den vägrar
-            visa en knapp för ett belopp kunden inte godkänt), och vi faller tillbaka på
-            det ärliga beskedet: hör av dig. */}
-        {!paused && config.amountPresets.length > 0 ? (
+        {/* Pausad presentkortmodul eller stängd checkout → ingen köpyta. */}
+        {!paused && checkoutLive && config.amountPresets.length > 0 ? (
           <GiftCardBuy config={config} />
         ) : (
           <>

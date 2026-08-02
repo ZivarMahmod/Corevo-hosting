@@ -40,7 +40,7 @@ export default async function KlubbPage() {
   if (!data) notFound()
 
   const View = themeModuleViews(settings.theme).lojalitet
-  if (View) {
+  if (View && !paused) {
     const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
     const content = resolveThemeContent(settings.theme, settings.branding, copy)
     return (

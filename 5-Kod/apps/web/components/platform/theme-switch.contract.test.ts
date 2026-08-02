@@ -10,6 +10,7 @@ describe('safe storefront template switch', () => {
   it('requires one of two copy choices and keeps preview equal to publish', () => {
     const picker = read('components/platform/ThemePicker.tsx')
     const studio = read('components/platform/SidaStudioV2.tsx')
+    const routes = read('components/platform/SidaStudioV2.tabs.ts')
     const action = read('lib/platform/actions/theme.ts')
 
     expect(picker).toContain('name="copyMode"')
@@ -21,7 +22,8 @@ describe('safe storefront template switch', () => {
     expect(studio).toContain('contentSlotKeys={[')
     expect(picker).toContain("onPreview?.(key, 'keep')")
     expect(picker).toContain('onClick={() => pick(current)}')
-    expect(studio).toContain("q.set('copy', previewCopyMode)")
+    expect(studio).toContain('siteEditorPreviewSrc(previewPath')
+    expect(routes).toContain("params.set('copy', copyMode)")
     expect(studio).toContain("previewCopyMode === 'template'")
     expect(studio).toContain('if (previewingTemplateDefaults) return')
     expect(action).toContain("fd.get('copyMode')")

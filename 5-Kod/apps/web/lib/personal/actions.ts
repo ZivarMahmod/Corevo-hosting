@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requirePortal } from '@/lib/auth/session'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { refundBookingPayment } from '@/lib/stripe/refund'
 import { getMyStaff } from './staff'
 import {
   getCustomerCard,
@@ -257,8 +256,8 @@ export async function rebookOwnBooking(
 // ── Cancel (own booking) ──────────────────────────────────────────────────────
 // status='cancelled' frees the slot (EXCLUDE only blocks pending/confirmed/
 // completed). Own-scope via staff_id + active-status re-asserted in the UPDATE.
-// Refund + cancellation mail are best-effort so a paid booking the staff cancels
-// can never strand the customer's money — but never block the status flip.
+// The DB transition atomically queues any required payment refund. Customer
+// notification remains best-effort after the committed cancellation.
 export async function cancelOwnBooking(
   _prev: ActionState,
   formData: FormData,
@@ -296,11 +295,8 @@ export async function cancelOwnBooking(
     return { error: 'Bokningen behöver avslutas som Genomförd eller Uteblev.' }
   }
 
-  // Frigör pengarna om bokningen var betald (no-op utan lyckad betalning/Stripe).
   // Kund-notis om avbokningen är M9/notifications-revir, inte M5:s — och kontakt-
   // PII ska bara flöda via get_customer_contact (0011), aldrig läsas rått här.
-  await refundBookingPayment(bookingId, user.tenantId ?? '')
-
   const notification = await queueBookingEvent({
     tenantId: user.tenantId ?? '',
     bookingId,

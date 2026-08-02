@@ -19,9 +19,11 @@ export default async function PresentkortPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings } = bundle
-  if (!commerceReleaseGate(tenant.id).presentkort) notFound()
+  const commerce = commerceReleaseGate(tenant.id)
+  if (!commerce.presentkort) notFound()
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'presentkort')
+  const checkoutLive = isModuleLive(states, 'shop') && commerce.shop
   if (!isModuleLive(states, 'presentkort') && !paused) notFound()
 
   // goal-64 (regression): mallens egen gåvobrev-vy när den finns (filens kort + chips +
@@ -30,8 +32,8 @@ export default async function PresentkortPage() {
   if (View) {
     const data = await loadPresentkortData(tenant.id, tenant.slug)
     if (!data) notFound()
-    return <View config={data.config} paused={paused} tenantName={tenant.name} />
+    return <View config={data.config} paused={paused || !checkoutLive} tenantName={tenant.name} />
   }
 
-  return <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={paused} />
+  return <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={paused} checkoutLive={checkoutLive} />
 }

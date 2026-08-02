@@ -9,7 +9,7 @@
 // no-show today must keep doing exactly what it does (free the slot), with zero
 // payment side-effect. When Zivar activates: read the per-salong policy (a future
 // settings flag — NOT migration 0013/0014, both frozen) and call decideNoShowRefund
-// at the no_show transition, then route 'refund' → refundBookingPayment.
+// at the no_show transition, then route 'refund' through the durable refund queue.
 //
 // Policy is a PARAM, never a hard-coded column here, precisely so activation needs
 // no schema change while the migrations are frozen.

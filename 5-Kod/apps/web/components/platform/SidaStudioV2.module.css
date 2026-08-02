@@ -487,8 +487,8 @@
   }
   .mobileSwitch button[aria-pressed='true'] { background: var(--editor-card-2); color: var(--editor-text); }
   .workspace { min-height: 60dvh; display: block; }
-  .panel { padding: 12px 12px 82px; border-right: 0; }
-  .preview { height: calc(100dvh - 220px); min-height: 520px; padding-bottom: 72px; }
+  .panel { padding: 12px 12px 142px; border-right: 0; }
+  .preview { height: calc(100dvh - 220px); min-height: 520px; padding-bottom: 142px; box-sizing: border-box; }
   .previewDevice,
   .mobileDevice { width: 100%; border: 0; }
   .mobileHidden { display: none; }

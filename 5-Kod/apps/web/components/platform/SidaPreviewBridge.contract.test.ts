@@ -41,7 +41,7 @@ describe('SidaPreviewBridge full snapshot contract', () => {
 
   it('delegates embedded navigation and keeps direct preview navigation inside preview', () => {
     expect(source).toContain("type: 'preview-route'")
-    expect(source).toContain('path: `${path}${url.search}`')
+    expect(source).toContain('path: `${path}${url.search}${url.hash}`')
     expect(source).toContain('window.parent === window')
     expect(source).toContain('window.location.assign(directPreviewHref(')
     expect(
@@ -50,6 +50,9 @@ describe('SidaPreviewBridge full snapshot contract', () => {
     expect(
       directPreviewHref('freshcut', '/blogg/post', '', '?theme=snitt'),
     ).toBe('/salong-preview/freshcut/blogg/post?theme=snitt')
+    expect(
+      directPreviewHref('freshcut', '', '', '?theme=freshcut', '#kontakt'),
+    ).toBe('/salong-preview/freshcut?theme=freshcut#kontakt')
   })
 
   it('previews social, booking and all non-copy field highlights', () => {

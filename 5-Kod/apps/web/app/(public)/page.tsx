@@ -9,9 +9,7 @@ import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-mo
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
-import { loadTenantSkin } from '@/lib/storefront/skin/load-skin'
-import { applySkinOverlay } from '@/lib/storefront/skin/overlay'
-import { SALVIA_REGION_MANIFEST } from '@/lib/storefront/skin/salvia-manifest'
+import { resolveStorefrontSkinContent } from '@/lib/storefront/skin/content'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
@@ -40,29 +38,12 @@ export default async function HomePage() {
   // Owner copy (settings.copy) wins per-field; theme default fills the rest.
   const baseCopy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
 
-  // Template-bron option 1: a salvia tenant with authored content_slots (written by
-  // the super-admin visual hub at /kunder/[id]) renders those values THROUGH this
-  // same hand-built layout — precedence content_slots > tenant_settings > theme
-  // default. We resolve the DB skin and fold it onto copy/branding via the salvia
-  // manifest's bindings (applySkinOverlay), then the normal resolveThemeContent
-  // renders it — no new renderer, no design regression. salvia-only, and only when
-  // the tenant actually authored content (hasTenantContent) → otherwise BYTE-
-  // IDENTICAL to the tenant_settings path. loadTenantSkin is throw-safe (→ null).
-  let copy = baseCopy
-  let branding: typeof settings.branding = settings.branding
-  if (settings.theme === 'salvia') {
-    const skin = await loadTenantSkin(tenant.id, 'salvia')
-    if (skin?.hasTenantContent) {
-      const folded = applySkinOverlay(
-        skin,
-        SALVIA_REGION_MANIFEST,
-        (baseCopy ?? {}) as Record<string, unknown>,
-        (settings.branding ?? {}) as unknown as Record<string, unknown>,
-      )
-      copy = folded.copy as unknown as typeof baseCopy
-      branding = folded.branding as unknown as typeof settings.branding
-    }
-  }
+  const { copy, branding } = await resolveStorefrontSkinContent(
+    tenant.id,
+    settings.theme,
+    baseCopy as Record<string, unknown> | null,
+    settings.branding as unknown as Record<string, unknown>,
+  )
   const content = resolveThemeContent(settings.theme, branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
