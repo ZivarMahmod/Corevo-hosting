@@ -48,10 +48,10 @@ begin
   insert into public.working_hours (
     tenant_id, staff_id, location_id, weekday, start_time, end_time
   )
-  select v_tenant_a, v_staff_a, v_location_a, d, '00:00', '23:59'
+  select v_tenant_a, v_staff_a, v_location_a, d, time '00:00', time '23:59'
   from generate_series(0, 6) d
   union all
-  select v_tenant_b, v_staff_b, v_location_b, d, '00:00', '23:59'
+  select v_tenant_b, v_staff_b, v_location_b, d, time '00:00', time '23:59'
   from generate_series(0, 6) d;
   insert into public.bookings (
     id, tenant_id, location_id, staff_id, service_id, customer_id,
