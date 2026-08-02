@@ -68,7 +68,7 @@ jobs:
                 docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
                   -c "alter table public.tenants disable trigger trg_tenant_launch_readiness"
                 case "$(basename "$sql_test")" in
-                  goal87_*|goal90_*|customer_account_claim_0096_test.sql)
+                  goal87_*|goal90_*|customer_account_claim_0096_test.sql|staff_readiness_0079_test.sql)
                     test_input=(cat "$sql_test")
                     ;;
                   *)
