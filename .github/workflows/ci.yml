@@ -68,11 +68,11 @@ jobs:
                 docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
                   -c "alter table public.tenants disable trigger trg_tenant_launch_readiness"
                 case "$(basename "$sql_test")" in
-                  goal87_module_lifecycle_test.sql|goal87_public_rpc_module_gates_test.sql|customer_account_claim_0096_test.sql)
+                  goal87_*|goal90_*|customer_account_claim_0096_test.sql)
                     test_input=(cat "$sql_test")
                     ;;
                   *)
-                    test_input=(cat supabase/tests/legacy_booking_module_fixture.sql "$sql_test")
+                    test_input=(cat supabase/tests/legacy_module_gate_fixture.sql "$sql_test")
                     ;;
                 esac
                 if ! "${test_input[@]}" | docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres; then
