@@ -170,8 +170,8 @@ where id in (
   '33333333-0000-0000-0000-000000000003'
 );
 
--- Publish only after settings, primary location and active owner exist. This
--- exercises the same DB-owned Goal 76 gate as the application.
-update public.tenants
-   set status = 'active'
- where id = '11111111-1111-1111-1111-111111111111';
+-- Publish only after settings, primary location and active owner exist. Seed
+-- runs as postgres without JWT claims, so give the canonical RPC the same
+-- service-role claim used by the application.
+select pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);
+select public.publish_tenant('11111111-1111-1111-1111-111111111111');

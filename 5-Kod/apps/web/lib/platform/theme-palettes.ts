@@ -130,7 +130,7 @@ export const THEME_PALETTES: ThemePalette[] = [
   {
     key: 'freshcut',
     name: 'FreshCut',
-    desc: 'Svart & guld · skarp barbershop',
+    desc: 'Svart & guld · skarp kontrast',
     primary: '#A78F6D',
     bg: '#171918',
     fg: '#D8D6CF',

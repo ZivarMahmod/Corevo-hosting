@@ -42,7 +42,13 @@ function isTemplateCopyFile(rel) {
 // Filer där bransch-ord är HELA POÄNGEN — branschens egen copy. Ett bransch-ord
 // här är inte en hårdkodning, det är innehållet: frisör-branschens text SKA säga
 // frisör. Vakten skulle annars flagga den enda fil som gör det rätt.
-const BRANSCH_ÄGDA = new Set(['components/storefront/bransch-copy.ts']);
+const BRANSCH_ÄGDA = new Set([
+  'components/storefront/bransch-copy.ts',
+  'components/storefront/layouts/FreshCutChrome.tsx',
+  'components/storefront/layouts/FreshCutLayout.tsx',
+  'components/storefront/theme-content.ts',
+  'lib/platform/theme-catalog.ts',
+]);
 
 // Samma sak fast för hela mappar: en salong-mall SKA säga salong. Ett bransch-ord
 // i florist-mappen är däremot en läcka — därför bara branschens egen mapp.

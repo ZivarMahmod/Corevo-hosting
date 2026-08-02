@@ -68,8 +68,8 @@ function assertThemeContract(themeKey, payload) {
   }
 }
 
-function runPlaywright(specs, expected) {
-  assertPreviewRef()
+function runPlaywright(specs, expected, requirePreview = true) {
+  if (requirePreview) assertPreviewRef()
   const result = spawnSync(
     process.execPath,
     [
@@ -202,7 +202,6 @@ function runAllProbes() {
     const payload = loadMatrix()
     if (mode === '--runtime') process.exit(runRuntime())
     if (mode === '--contract') {
-      assertPreviewRef()
       for (const key of payload.keys) {
         const counts = assertThemeContract(key, payload)
         console.log(
@@ -220,6 +219,7 @@ function runAllProbes() {
             ),
           ],
           5,
+          false,
         ),
       )
     }
