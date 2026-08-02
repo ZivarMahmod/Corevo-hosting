@@ -202,7 +202,7 @@ do $$ begin
     'walk-in-0094',
     '94000000-0000-0000-0000-000000000021',
     '94000000-0000-0000-0000-000000000031',
-    current_setting('corevo.test_0094_start')::timestamptz + interval '20 minutes',
+    date_trunc('minute', statement_timestamp()) + interval '20 minutes',
     null, null, 'Vanlig Kund', 'vanlig-0094@example.test', '0700000000',
     '94000000-0000-0000-0000-000000000011', null
   );
