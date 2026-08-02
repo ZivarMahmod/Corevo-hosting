@@ -141,7 +141,7 @@ begin
     select * into v_result from public.customer_portal_verify_contact_change_current(
       v_other_session, repeat('f', 64), v_locked_flow, repeat('8', 64), repeat('0', 64)
     );
-    if v_result.outcome <> case when v_count = 5 then 'max_attempts' else 'invalid' end
+    if v_result.outcome <> (case when v_count = 5 then 'max_attempts' else 'invalid' end)
        or v_result.attempts_remaining <> 5 - v_count then
       raise exception 'contact_change_five_error_lock_invalid';
     end if;
