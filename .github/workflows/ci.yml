@@ -67,14 +67,17 @@ jobs:
               *)
                 docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
                   -c "alter table public.tenants disable trigger trg_tenant_launch_readiness"
+                test_parts=()
                 case "$(basename "$sql_test")" in
-                  goal87_*|goal90_*|customer_account_claim_0096_test.sql|staff_readiness_0079_test.sql)
-                    test_input=(cat "$sql_test")
-                    ;;
-                  *)
-                    test_input=(cat supabase/tests/legacy_module_gate_fixture.sql "$sql_test")
-                    ;;
+                  goal87_*|goal90_*|customer_account_claim_0096_test.sql) ;;
+                  *) test_parts+=(supabase/tests/legacy_module_gate_fixture.sql) ;;
                 esac
+                case "$(basename "$sql_test")" in
+                  goal87_*|goal90_*|customer_account_claim_0096_test.sql|booking_foundation_0078_test.sql|staff_readiness_0079_test.sql) ;;
+                  *) test_parts+=(supabase/tests/legacy_staff_gate_fixture.sql) ;;
+                esac
+                test_parts+=("$sql_test")
+                test_input=(cat "${test_parts[@]}")
                 if ! "${test_input[@]}" | docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres; then
                   docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
                     -c "alter table public.tenants enable trigger trg_tenant_launch_readiness"
