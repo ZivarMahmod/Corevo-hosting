@@ -271,10 +271,10 @@ begin
     id, tenant_id, location_id, name, duration_min, price_cents, active
   ) values (v_service, v_tenant, v_location, 'Extended', 30, 10000, true);
   insert into public.shop_orders (
-    id,tenant_id,subtotal_cents,total_cents,currency,status,payment_status
+    id,tenant_id,subtotal_cents,total_cents,currency,status,payment_status,payment_method
   ) values
-    (v_shop_legacy,v_tenant,10000,10000,'SEK','awaiting_payment','unpaid'),
-    (v_shop_new,v_tenant,10000,10000,'SEK','awaiting_payment','unpaid');
+    (v_shop_legacy,v_tenant,10000,10000,'SEK','awaiting_payment','unpaid','card'),
+    (v_shop_new,v_tenant,10000,10000,'SEK','awaiting_payment','unpaid','card');
 
   insert into public.bookings (
     id, tenant_id, location_id, staff_id, service_id, customer_profile_id,
