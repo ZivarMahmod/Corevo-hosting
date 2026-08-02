@@ -105,7 +105,6 @@ declare
   v_service_b uuid := gen_random_uuid();
   v_booking_a uuid := gen_random_uuid();
   v_booking_b uuid := gen_random_uuid();
-  v_duplicate_booking uuid := gen_random_uuid();
   v_link uuid;
   v_session uuid := gen_random_uuid();
   v_result record;
@@ -377,42 +376,17 @@ begin
     raise exception 'portal_recovery_cross_tenant_match';
   end if;
 
-  -- More than one active customer matching the same verified contact is
-  -- ambiguous. Exact-one resolution is required; ambiguity becomes an internal decoy.
-  insert into public.customers (id, tenant_id, full_name, phone, status) values
-    (v_duplicate_customer, v_tenant_a, 'Portal A duplicate', '+46700000001', 'active');
-  insert into public.bookings (
-    id, tenant_id, location_id, staff_id, service_id, customer_id,
-    start_ts, end_ts, status, price_cents
-  ) values (
-    v_duplicate_booking, v_tenant_a, v_location_a, v_staff_a, v_service_a,
-    v_duplicate_customer, statement_timestamp() - interval '60 days',
-    statement_timestamp() - interval '60 days' + interval '30 minutes',
-    'completed', 10000
-  );
-  insert into private.booking_verification_challenges (
-    tenant_id, staff_id, service_id, start_ts, session_token, channel,
-    contact_digest, contact_masked, pin_digest, delivery_state,
-    expires_at, consumed_at, booking_id
-  ) values (
-    v_tenant_a, v_staff_a, v_service_a, statement_timestamp() - interval '60 days',
-    gen_random_uuid(), 'sms', repeat('a', 64), '+46 ••• •• 01', repeat('b', 64),
-    'delivered', statement_timestamp() + interval '5 minutes', statement_timestamp(),
-    v_duplicate_booking
-  );
-  v_decoy_public := gen_random_uuid();
-  select * into v_result
-  from public.customer_portal_start_recovery(
-    'portal-test-a', '+46700000001', repeat('a', 64), v_decoy_public,
-    repeat('b', 64), repeat('c', 64), repeat('d', 64), 1,
-    statement_timestamp() + interval '5 minutes'
-  );
-  if v_result.outcome <> 'accepted' or not v_result.created or v_result.outbox_id is null then
-    raise exception 'portal_recovery_ambiguous_contact_not_decoy:%', row_to_json(v_result);
-  end if;
-  if exists (select 1 from private.customer_portal_challenges pc
-    where pc.public_id = v_decoy_public and pc.customer_id is not null) then
-    raise exception 'portal_recovery_ambiguous_contact_bound_customer';
+  -- Active contacts are unique per tenant, so an ambiguous recovery identity
+  -- cannot be created in the first place.
+  begin
+    insert into public.customers (id, tenant_id, full_name, phone, status) values
+      (v_duplicate_customer, v_tenant_a, 'Portal A duplicate', '+46700000001', 'active');
+    raise exception 'portal_duplicate_contact_created';
+  exception when unique_violation then
+    if sqlerrm <> 'customer_contact_conflict' then raise; end if;
+  end;
+  if exists (select 1 from public.customers where id = v_duplicate_customer) then
+    raise exception 'portal_duplicate_contact_persisted';
   end if;
 
   -- Generic challenges are contact-change-only; recovery has its dedicated lifecycle.
