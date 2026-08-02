@@ -278,17 +278,32 @@ insert into public.gift_cards (
   '99000000-0000-0000-0000-000000000089'
 );
 select set_config('request.jwt.claim.role', '', true);
+insert into public.notifications_outbox (
+  id, tenant_id, customer_id, event_type, event_key, category,
+  chosen_channel, status, sent_at
+) values (
+  '99000000-0000-0000-0000-000000000092',
+  '99000000-0000-0000-0000-000000000001',
+  '99000000-0000-0000-0000-000000000061',
+  'offert.reply', 'offert:99000000-0000-0000-0000-000000000082:reply:0',
+  'transactional', 'email', 'sent', now()
+);
 insert into public.offert_requests (
   id, tenant_id, customer_id, customer_name, customer_email, customer_phone,
   subject, message, details, estimate_cents, status, payment_status, note,
-  reply_message
+  reply_message, replied_at, reply_delivery_state, reply_outbox_id,
+  reply_pending_message, reply_content_hash, reply_requested_version,
+  reply_requested_by
 ) values (
   '99000000-0000-0000-0000-000000000082',
   '99000000-0000-0000-0000-000000000001',
   '99000000-0000-0000-0000-000000000061', 'Target Person',
   'target@example.test', '+46711111111', 'Private subject', 'Private message',
   '{"private":"value"}'::jsonb, 54321, 'accepted', 'paid', 'private admin note',
-  'Private reply'
+  'Private reply', now(), 'sent',
+  '99000000-0000-0000-0000-000000000092', 'Private reply',
+  encode(extensions.digest(convert_to('Private reply', 'UTF8'), 'sha256'), 'hex'),
+  0, '99000000-0000-0000-0000-000000000021'
 );
 select set_config('request.jwt.claim.role', 'service_role', true);
 
