@@ -555,6 +555,9 @@ begin
 
   select j.id into strict v_late_job from private.payment_refund_jobs j
   where j.provider_payment_intent_id = 'pi_refund_late';
+  update private.payment_refund_jobs j
+  set available_at = statement_timestamp() + interval '1 hour'
+  where j.id <> v_late_job and j.status = 'queued';
   select * into v_claim from public.claim_payment_refund_jobs(
     v_lease_b,statement_timestamp(),120,1
   ) where id=v_late_job;
