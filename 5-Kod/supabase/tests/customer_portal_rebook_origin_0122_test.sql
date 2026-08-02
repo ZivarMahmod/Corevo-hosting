@@ -60,13 +60,20 @@ begin
     id, tenant_id, location_id, name, duration_min, price_cents, active
   ) values
     (v_service, v_custom, v_location, 'Portal Rebook Service', 30, 10000, true);
+  insert into public.staff_services (tenant_id, staff_id, service_id)
+  values (v_custom, v_staff, v_service);
+  insert into public.working_hours (
+    tenant_id, staff_id, location_id, weekday, start_time, end_time
+  )
+  select v_custom, v_staff, v_location, d, '00:00', '23:59'
+  from generate_series(0, 6) d;
   insert into public.bookings (
     id, tenant_id, location_id, staff_id, service_id, customer_id,
     start_ts, end_ts, status, price_cents
   ) values (
     v_booking, v_custom, v_location, v_staff, v_service, v_customer,
-    statement_timestamp() + interval '30 days',
-    statement_timestamp() + interval '30 days 30 minutes',
+    date_trunc('hour', statement_timestamp()) + interval '30 days',
+    date_trunc('hour', statement_timestamp()) + interval '30 days 30 minutes',
     'confirmed', 10000
   );
 

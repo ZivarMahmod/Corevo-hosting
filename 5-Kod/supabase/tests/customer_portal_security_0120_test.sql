@@ -149,15 +149,28 @@ begin
   ) values
     (v_service_a, v_tenant_a, v_location_a, 'A', 30, 10000, true),
     (v_service_b, v_tenant_b, v_location_b, 'B', 30, 10000, true);
+  insert into public.staff_services (tenant_id, staff_id, service_id) values
+    (v_tenant_a, v_staff_a, v_service_a),
+    (v_tenant_b, v_staff_b, v_service_b);
+  insert into public.working_hours (
+    tenant_id, staff_id, location_id, weekday, start_time, end_time
+  )
+  select v_tenant_a, v_staff_a, v_location_a, d, '00:00', '23:59'
+  from generate_series(0, 6) d
+  union all
+  select v_tenant_b, v_staff_b, v_location_b, d, '00:00', '23:59'
+  from generate_series(0, 6) d;
   insert into public.bookings (
     id, tenant_id, location_id, staff_id, service_id, customer_id,
     start_ts, end_ts, status, price_cents
   ) values
     (v_booking_a, v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
-     statement_timestamp() + interval '3 days', statement_timestamp() + interval '3 days 30 minutes',
+     date_trunc('hour', statement_timestamp()) + interval '3 days',
+     date_trunc('hour', statement_timestamp()) + interval '3 days 30 minutes',
      'confirmed', 10000),
     (v_booking_b, v_tenant_b, v_location_b, v_staff_b, v_service_b, v_customer_b,
-     statement_timestamp() + interval '4 days', statement_timestamp() + interval '4 days 30 minutes',
+     date_trunc('hour', statement_timestamp()) + interval '4 days',
+     date_trunc('hour', statement_timestamp()) + interval '4 days 30 minutes',
      'confirmed', 10000);
 
   -- Recovery may trust only a consumed + delivered Goal-74 challenge whose
@@ -167,10 +180,10 @@ begin
     contact_digest, contact_masked, pin_digest, delivery_state,
     expires_at, consumed_at, booking_id
   ) values
-    (v_tenant_a, v_staff_a, v_service_a, statement_timestamp() + interval '3 days',
+    (v_tenant_a, v_staff_a, v_service_a, date_trunc('hour', statement_timestamp()) + interval '3 days',
      gen_random_uuid(), 'sms', repeat('a', 64), '+46 ••• •• 01', repeat('c', 64),
      'delivered', statement_timestamp() + interval '5 minutes', statement_timestamp(), v_booking_a),
-    (v_tenant_b, v_staff_b, v_service_b, statement_timestamp() + interval '4 days',
+    (v_tenant_b, v_staff_b, v_service_b, date_trunc('hour', statement_timestamp()) + interval '4 days',
      gen_random_uuid(), 'sms', repeat('b', 64), '+46 ••• •• 02', repeat('d', 64),
      'delivered', statement_timestamp() + interval '5 minutes', statement_timestamp(), v_booking_b);
 
