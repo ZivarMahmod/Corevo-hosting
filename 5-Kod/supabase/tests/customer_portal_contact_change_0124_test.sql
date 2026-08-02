@@ -110,7 +110,9 @@ begin
     repeat('5', 64), repeat('a', 64), '+46700000001',
     statement_timestamp() + interval '5 minutes'
   );
-  if v_result.outcome <> 'cooldown' then raise exception 'contact_change_resend_cooldown_invalid'; end if;
+  if v_result.outcome <> 'cooldown' then
+    raise exception 'contact_change_resend_cooldown_invalid:%', row_to_json(v_result);
+  end if;
 
   -- Four failed proofs must consume this session's shared active-window budget.
   -- Starting a replacement flow must not reset those attempts.
