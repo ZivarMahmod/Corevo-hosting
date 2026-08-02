@@ -68,7 +68,7 @@ begin
   ) values (
     v_tenant, v_staff, v_service,
     date_trunc('hour', statement_timestamp()) + interval '2 days', gen_random_uuid(),
-    'sms', repeat('a', 64), '+46 ••• •• 01', repeat('1', 64), 'delivered',
+    'sms', repeat('a', 64), '070 ••• •• 01', repeat('1', 64), 'delivered',
     statement_timestamp() + interval '5 minutes', statement_timestamp(), v_booking
   );
   insert into private.customer_portal_sessions (
@@ -82,7 +82,7 @@ begin
 
   select * into v_result from public.customer_portal_start_contact_change(
     v_session, repeat('e', 64), 'change_phone', v_flow, repeat('2', 64),
-    repeat('a', 64), '+46700000001', '+46 ••• •• 01', repeat('c', 64), 1,
+    repeat('a', 64), '+46700000001', '070 ••• •• 01', repeat('c', 64), 1,
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'ready' or v_result.delivery_destination <> '+46700000001' then
@@ -124,7 +124,7 @@ begin
   end loop;
   select * into v_result from public.customer_portal_start_contact_change(
     v_session, repeat('e', 64), 'change_phone', v_restart_flow, repeat('4', 64),
-    repeat('a', 64), '+46700000001', '+46 ••• •• 01', repeat('5', 64), 1,
+    repeat('a', 64), '+46700000001', '070 ••• •• 01', repeat('5', 64), 1,
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'max_attempts' then
@@ -138,7 +138,7 @@ begin
   -- A fifth failed proof locks the whole flow for the remaining active window.
   select * into v_result from public.customer_portal_start_contact_change(
     v_other_session, repeat('f', 64), 'change_phone', v_locked_flow, repeat('8', 64),
-    repeat('a', 64), '+46700000001', '+46 ••• •• 01', repeat('9', 64), 1,
+    repeat('a', 64), '+46700000001', '070 ••• •• 01', repeat('9', 64), 1,
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'ready' then raise exception 'contact_change_lock_setup_invalid'; end if;
@@ -163,7 +163,7 @@ begin
   if v_result.outcome <> 'max_attempts' then raise exception 'contact_change_locked_resend_invalid'; end if;
   select * into v_result from public.customer_portal_start_contact_change(
     v_other_session, repeat('f', 64), 'change_phone', v_locked_restart_flow, repeat('b', 64),
-    repeat('a', 64), '+46700000001', '+46 ••• •• 01', repeat('c', 64), 1,
+    repeat('a', 64), '+46700000001', '070 ••• •• 01', repeat('c', 64), 1,
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'max_attempts' then raise exception 'contact_change_locked_restart_invalid'; end if;
@@ -171,7 +171,7 @@ begin
   select * into v_result from public.customer_portal_prepare_contact_change_destination(
     v_session, repeat('e', 64), v_flow, repeat('2', 64), repeat('a', 64),
     '+46700000001', '+46700000001', 'sms',
-    repeat('3', 64), repeat('a', 64), '+46 ••• •• 01', repeat('d', 64), 1,
+    repeat('3', 64), repeat('a', 64), '070 ••• •• 01', repeat('d', 64), 1,
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'same' then raise exception 'contact_change_same_destination_invalid'; end if;
@@ -180,7 +180,7 @@ begin
   select * into v_result from public.customer_portal_prepare_contact_change_destination(
     v_session, repeat('e', 64), v_flow, repeat('2', 64), repeat('a', 64),
     '+46700000001', '+46700000009', 'sms',
-    repeat('3', 64), repeat('b', 64), '+46 ••• •• 09', repeat('d', 64), 1,
+    repeat('3', 64), repeat('b', 64), '070 ••• •• 09', repeat('d', 64), 1,
     statement_timestamp() + interval '5 minutes'
   );
   if v_result.outcome <> 'ready' then
@@ -338,7 +338,7 @@ begin
   ) values (
     v_revoked_flow, v_tenant, v_customer,
     (select id from private.customer_portal_sessions where public_id = v_session), repeat('4', 64), 1,
-    'change_phone', 'sms', repeat('a', 64), '+46 ••• •• 01',
+    'change_phone', 'sms', repeat('a', 64), '070 ••• •• 01',
     repeat('5', 64), statement_timestamp() + interval '5 minutes',
     statement_timestamp() + interval '30 seconds', statement_timestamp() + interval '10 minutes',
     '+46700000010', statement_timestamp()
@@ -351,7 +351,7 @@ begin
   ) values (
     v_expired_flow, v_tenant, v_customer,
     (select id from private.customer_portal_sessions where public_id = v_session), repeat('6', 64), 1,
-    'change_phone', 'sms', repeat('a', 64), '+46 ••• •• 01',
+    'change_phone', 'sms', repeat('a', 64), '070 ••• •• 01',
     repeat('7', 64), statement_timestamp() - interval '9 minutes',
     statement_timestamp() - interval '9 minutes', statement_timestamp() - interval '1 second',
     '+46700000011', statement_timestamp() - interval '10 minutes',
