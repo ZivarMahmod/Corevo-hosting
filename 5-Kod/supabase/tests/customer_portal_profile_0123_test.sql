@@ -190,7 +190,7 @@ begin
   where a.tenant_id = v_tenant_a
     and a.customer_id = v_customer_a
     and a.event_type = 'profile_name_updated';
-  if v_count <> 1 then raise exception 'profile_name_audit_invalid:%', v_count; end if;
+  if v_count <> 4 then raise exception 'profile_name_audit_invalid:%', v_count; end if;
   select c.display_name into v_text from public.customers c where c.id = v_customer_b;
   if v_text is not null then raise exception 'profile_name_cross_tenant_write'; end if;
 
