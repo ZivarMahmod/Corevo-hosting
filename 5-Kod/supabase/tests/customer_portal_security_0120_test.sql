@@ -506,9 +506,9 @@ begin
     start_ts, end_ts, status, price_cents
   ) values (
     gen_random_uuid(), v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
-    statement_timestamp() + interval '30 days',
-    statement_timestamp() + interval '30 days 30 minutes',
-    'awaiting_review', 10000
+    date_trunc('hour', statement_timestamp()) - interval '30 minutes',
+    date_trunc('hour', statement_timestamp()),
+    'completed', 10000
   );
   perform pg_catalog.set_config('request.jwt.claims', '{}', true);
 
@@ -518,15 +518,15 @@ begin
   if pg_catalog.jsonb_array_length(v_payload -> 'items') <> 20
      or not (v_payload ->> 'hasMore')::boolean
      or v_payload -> 'nextCursor' = 'null'::jsonb
-     or v_payload #>> '{items,0,status}' <> 'awaiting_review' then
-    raise exception 'portal_history_unknown_or_cursor_invalid:%', v_payload;
+     or v_payload #>> '{items,0,status}' <> 'completed' then
+    raise exception 'portal_history_cursor_invalid:%', v_payload;
   end if;
 
   select public.customer_portal_list_bookings(
     v_session, v_session_digest, 'upcoming', null, null, 20
   ) into v_payload;
-  if v_payload::text like '%awaiting_review%' then
-    raise exception 'portal_unknown_status_leaked_into_upcoming';
+  if v_payload::text like '%completed%' then
+    raise exception 'portal_history_status_leaked_into_upcoming';
   end if;
 
   select public.customer_portal_get_booking(
