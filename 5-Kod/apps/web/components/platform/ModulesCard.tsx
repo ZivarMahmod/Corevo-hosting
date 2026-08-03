@@ -7,11 +7,12 @@ import styles from './platform.module.css'
 function ModuleRow({ tenantId, module }: { tenantId: string; module: TenantModuleRow }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setModuleState, {})
   const formRef = useRef<HTMLFormElement>(null)
-  const [enabled, setEnabled] = useState(module.state === 'live')
+  const visible = module.state === 'live' || module.state === 'paused'
+  const [enabled, setEnabled] = useState(visible)
 
   useEffect(() => {
-    setEnabled(module.state === 'live')
-  }, [module.state, state.error])
+    setEnabled(visible)
+  }, [visible, state.error])
 
   return (
     <form action={formAction} ref={formRef} className={styles.domainRow}>
