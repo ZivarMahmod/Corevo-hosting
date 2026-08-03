@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const canonical = readFileSync(path.join(WEB_ROOT, 'app/(admin)/admin/sida/page.tsx'), 'utf8')
 const manifest = readFileSync(path.join(WEB_ROOT, 'lib/platform/site-editor-manifest.ts'), 'utf8')
-const legacy = readFileSync(path.join(WEB_ROOT, 'app/(admin)/admin/sida/redigera/page.tsx'), 'utf8')
+const nextConfig = readFileSync(path.join(WEB_ROOT, 'next.config.ts'), 'utf8')
 
 describe('admin site editor routes', () => {
   it('passes the flik query to the editor for the first render', () => {
@@ -24,8 +24,7 @@ describe('admin site editor routes', () => {
   })
 
   it('redirects the legacy editor route to the canonical route', () => {
-    expect(legacy).toContain("redirect('/admin/sida')")
-    expect(legacy).not.toContain('SidaStudio')
+    expect(nextConfig).toContain("source: '/admin/sida/redigera', destination: '/admin/sida', permanent: false")
   })
 
   it('locks the exact Kalla and Snitt tab labels from the design package', () => {

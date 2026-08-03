@@ -6,7 +6,7 @@ const repo = path.resolve(__dirname, '../../..')
 const read = (relativePath: string) => readFileSync(path.join(repo, relativePath), 'utf8')
 
 const entrySource = read('apps/web/app/(admin)/admin/sida/page.tsx')
-const legacyEntrySource = read('apps/web/app/(admin)/admin/sida/redigera/page.tsx')
+const nextConfigSource = read('apps/web/next.config.ts')
 const studioSource = read('apps/web/components/platform/SidaStudioV2.tsx')
 const studioCss = read('apps/web/components/platform/SidaStudioV2.module.css')
 const manifestSource = read('apps/web/lib/platform/site-editor-manifest.ts')
@@ -19,7 +19,7 @@ test.describe('03 Redigera sidan v2 — source contract @readonly @contract', ()
   test('03-C01 direct entry redirects into the editor', () => {
     expect(entrySource).toContain('SidaStudio')
     expect(entrySource).not.toContain('Öppna redigeraren')
-    expect(legacyEntrySource).toMatch(/redirect\(['"]\/admin\/sida['"]\)/)
+    expect(nextConfigSource).toContain("source: '/admin/sida/redigera', destination: '/admin/sida', permanent: false")
   })
 
   test('03-C02 stable acceptance hooks cover the complete editor shell', () => {

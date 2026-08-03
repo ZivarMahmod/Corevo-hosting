@@ -35,9 +35,9 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
     const services = readWeb('components/admin/ServicesManager.tsx')
     const customer = readWeb('components/admin/CreateCustomerForm.tsx')
 
-    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?margin:\s*-20px -14px 0;/)
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?margin:\s*-20px -14px 0;/)
     expect(css).toMatch(
-      /@media \(max-width: 760px\)[\s\S]*?padding:\s*18px 14px calc\(132px \+ env\(safe-area-inset-bottom\)\);/,
+      /@media \(max-width: 767px\)[\s\S]*?padding:\s*18px 14px calc\(132px \+ env\(safe-area-inset-bottom\)\);/,
     )
     expect(services).toContain('.services-2col > * { min-width: 0; }')
     expect(services).toContain('.services-site-map { position: static !important; }')
@@ -133,8 +133,8 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
       expect(page).not.toContain('Alla inställningar')
     }
 
-    const legacyCompany = readWeb('app/(admin)/admin/installningar/foretag/page.tsx')
-    expect(legacyCompany).toContain("redirect('/admin/installningar/paminnelser')")
+    const nextConfig = readWeb('next.config.ts')
+    expect(nextConfig).toContain("source: '/admin/installningar/foretag', destination: '/admin/installningar/paminnelser', permanent: false")
 
     const bookingFlow = readWeb('app/(admin)/admin/installningar/bokningsflode/page.tsx')
     expect(bookingFlow).toContain('href="/admin/sida?flik=bokning"')
