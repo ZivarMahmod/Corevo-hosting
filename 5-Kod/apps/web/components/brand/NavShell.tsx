@@ -76,9 +76,10 @@ export function NavShell({
   useLayoutEffect(() => {
     const el = rootRef.current
     if (!el) return
+    const target = el.closest<HTMLElement>('[data-world="storefront"]') ?? document.documentElement
     const apply = () => {
       const h = el.getBoundingClientRect().height
-      if (h > 0) document.documentElement.style.setProperty('--nav-h', `${Math.round(h)}px`)
+      if (h > 0) target.style.setProperty('--nav-h', `${Math.round(h)}px`)
     }
     apply()
     const ro = new ResizeObserver(apply)
