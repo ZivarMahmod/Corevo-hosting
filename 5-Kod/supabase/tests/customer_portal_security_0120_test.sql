@@ -479,13 +479,13 @@ begin
 
   select m.link_public_id into v_link
   from public.customer_portal_mint_link(
-    v_tenant_a, v_customer_a, 'booking_access', repeat('a', 64), 1,
+    v_tenant_a, v_customer_a, 'booking_access', repeat('f', 64), 1,
     statement_timestamp() + interval '15 minutes', gen_random_uuid()
   ) m;
   v_session := gen_random_uuid();
   select * into v_result
   from public.customer_portal_exchange_link(
-    v_link, repeat('a', 64), v_session, repeat('b', 64), 1
+    v_link, repeat('f', 64), v_session, repeat('b', 64), 1
   );
   if v_result.outcome <> 'ok' then raise exception 'portal_reauthentication_failed'; end if;
 
@@ -541,7 +541,7 @@ begin
 
   select * into v_result
   from public.customer_portal_exchange_link(
-    v_link, repeat('a', 64), gen_random_uuid(), repeat('c', 64), 1
+    v_link, repeat('f', 64), gen_random_uuid(), repeat('c', 64), 1
   );
   if v_result.outcome <> 'invalid' then raise exception 'portal_link_replay_allowed'; end if;
 
