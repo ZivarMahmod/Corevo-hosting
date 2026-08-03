@@ -73,6 +73,15 @@ begin
     ) then
       raise exception 'public_table_without_rls_%', t;
     end if;
+    if t = 'gift_cards' then
+      if not has_table_privilege('service_role', 'public.gift_cards', 'SELECT')
+         or has_table_privilege('service_role', 'public.gift_cards', 'INSERT,DELETE')
+         or not has_column_privilege('service_role', 'public.gift_cards', 'emailed_at', 'UPDATE')
+         or has_column_privilege('service_role', 'public.gift_cards', 'balance_cents', 'UPDATE') then
+        raise exception 'service_role_gift_card_grants_wrong';
+      end if;
+      continue;
+    end if;
     if not has_table_privilege('service_role', format('public.%I', t), 'SELECT')
        or not has_table_privilege('service_role', format('public.%I', t), 'INSERT')
        or not has_table_privilege('service_role', format('public.%I', t), 'UPDATE')
