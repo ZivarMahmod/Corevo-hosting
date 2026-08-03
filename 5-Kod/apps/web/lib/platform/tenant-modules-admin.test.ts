@@ -68,6 +68,15 @@ function form(state: string) {
   return fd
 }
 
+function toggle(enabled: boolean) {
+  const fd = new FormData()
+  fd.set('tenantId', 'tenant-1')
+  fd.set('moduleKey', 'shop')
+  fd.set('binary', 'true')
+  if (enabled) fd.set('enabled', 'true')
+  return fd
+}
+
 describe('setModuleState', () => {
   beforeEach(() => {
     mocks.currentState = 'paused'
@@ -113,5 +122,28 @@ describe('setModuleState', () => {
     expect(mocks.updateTenantEq).toHaveBeenCalledWith('tenant_id', 'tenant-1')
     expect(mocks.updateModuleEq).toHaveBeenCalledWith('module_key', 'shop')
     expect(mocks.upsert).not.toHaveBeenCalled()
+  })
+
+  it('turns a missing module on through the canonical off → draft → live path', async () => {
+    mocks.currentState = null
+
+    await expect(setModuleState({}, toggle(true))).resolves.toEqual({
+      success: 'Modul "shop" är på.',
+    })
+    expect(mocks.insert).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      module_key: 'shop',
+      state: 'off',
+    })
+    expect(mocks.update).toHaveBeenNthCalledWith(1, { state: 'draft' })
+    expect(mocks.update).toHaveBeenNthCalledWith(2, { state: 'live' })
+  })
+
+  it('turns a paused module off through the canonical paused → live → off path', async () => {
+    await expect(setModuleState({}, toggle(false))).resolves.toEqual({
+      success: 'Modul "shop" är av.',
+    })
+    expect(mocks.update).toHaveBeenNthCalledWith(1, { state: 'live' })
+    expect(mocks.update).toHaveBeenNthCalledWith(2, { state: 'off' })
   })
 })

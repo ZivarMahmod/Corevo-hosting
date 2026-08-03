@@ -95,7 +95,13 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   const moduleKey = String(fd.get('moduleKey') ?? '').trim()
-  const state = String(fd.get('state') ?? '')
+  const binary = fd.get('binary') === 'true'
+  const enabled = fd.get('enabled')
+  const state = binary
+    ? enabled === 'true'
+      ? 'live'
+      : 'off'
+    : String(fd.get('state') ?? '')
   if (!tenantId || !moduleKey) return { error: 'Saknar kund eller modul.' }
   if (!isState(state)) return { error: 'Ogiltigt modul-läge.' }
 
@@ -125,29 +131,34 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
   if (currentErr) return { error: GENERIC }
   const currentState =
     currentRow && isState(currentRow.state) ? currentRow.state : 'off'
-  if (!canTransitionModuleState(currentState, state, true)) {
-    return { error: 'Otillåten ändring av modul-läge.' }
-  }
-
-  if (currentRow) {
-    const { error } = await supabase
-      .from('tenant_modules')
-      .update({ state })
-      .eq('tenant_id', tenantId)
-      .eq('module_key', moduleKey)
-    if (error) return { error: GENERIC }
-  } else if (state !== 'off') {
+  if (!currentRow && state !== 'off') {
     const { error: insertError } = await supabase
       .from('tenant_modules')
       .insert({ tenant_id: tenantId, module_key: moduleKey, state: 'off' })
     if (insertError) return { error: GENERIC }
+  }
 
-    const { error: updateError } = await supabase
+  const transitions: ModuleState[] =
+    binary && currentState === 'off' && state === 'live'
+      ? ['draft', 'live']
+      : binary && currentState === 'paused' && state === 'off'
+        ? ['live', 'off']
+        : [state]
+
+  let from = currentState
+  for (const next of transitions) {
+    if (!canTransitionModuleState(from, next, true)) {
+      return { error: 'Otillåten ändring av modul-läge.' }
+    }
+    if (from === next || (!currentRow && next === 'off')) continue
+
+    const { error } = await supabase
       .from('tenant_modules')
-      .update({ state })
+      .update({ state: next })
       .eq('tenant_id', tenantId)
       .eq('module_key', moduleKey)
-    if (updateError) return { error: GENERIC }
+    if (error) return { error: GENERIC }
+    from = next
   }
 
   // Bust the per-tenant storefront cache (module gating reads tenant_modules, tagged
@@ -163,5 +174,9 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
     meta: { module: moduleKey, state },
   })
 
-  return { success: `Modul "${moduleKey}" satt till ${state}.` }
+  return {
+    success: binary
+      ? `Modul "${moduleKey}" är ${state === 'live' ? 'på' : 'av'}.`
+      : `Modul "${moduleKey}" satt till ${state}.`,
+  }
 }

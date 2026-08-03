@@ -807,8 +807,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             <span className={styles.chip}>tenant_modules</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 4 }}>
-            Per-modul livscykel: av → utkast → live → pausad. Aktivering (av→utkast) är
-            super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
+            Slå på en modul för att visa den för kunden. Slå av den för att dölja den direkt.
           </p>
           <ModulesCard tenantId={tenant.id} modules={modules} />
         </Card>
