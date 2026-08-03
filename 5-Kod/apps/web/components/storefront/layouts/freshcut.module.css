@@ -441,15 +441,25 @@
 }
 
 .serviceAction {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  gap: 7px;
+  min-height: 32px;
+  padding: 5px 12px;
   color: var(--fc-signal);
+  border: 1px solid var(--fc-signal);
+  border-radius: 999px;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.14em;
+  white-space: nowrap;
   text-transform: uppercase;
-  transition: color 180ms ease;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
 }
 
 .serviceAction i {
@@ -465,6 +475,12 @@
 .serviceRow:hover .serviceAction,
 .serviceRow:focus-visible .serviceAction {
   color: var(--fc-black);
+}
+
+.serviceRow:hover .serviceAction,
+.serviceRow:focus-visible .serviceAction {
+  background: var(--fc-signal);
+  border-color: var(--fc-signal);
 }
 
 .emptyServices {
@@ -1024,8 +1040,9 @@
   }
 
   .serviceAction {
-    display: none;
-    grid-column: 2 / 4;
+    display: inline-flex;
+    grid-column: 3;
+    margin-top: 8px;
   }
 
   .servicesFooter {

@@ -130,6 +130,14 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).toContain('rel="noopener noreferrer"')
   })
 
+  it('shows a compact booking button on every service, including mobile', () => {
+    const html = renderFreshCut()
+
+    expect(html.match(/Boka <i aria-hidden="true">↗<\/i>/g)).toHaveLength(SERVICES.length)
+    expect(css).toMatch(/\.serviceAction \{[^}]*border: 1px solid var\(--fc-signal\)[^}]*border-radius: 999px/s)
+    expect(css).toMatch(/@media \(max-width: 780px\) \{[\s\S]*?\.serviceAction \{[^}]*display: inline-flex/)
+  })
+
   it('reserves mobile page space for the fixed booking row', () => {
     expect(css).toMatch(
       /@media \(max-width: 780px\) {[\s\S]*?\.page {[^}]*padding-bottom: calc\(84px \+ env\(safe-area-inset-bottom\)\)/,
