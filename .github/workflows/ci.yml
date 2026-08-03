@@ -90,11 +90,11 @@ jobs:
             echo "::endgroup::"
           done
           docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
-            -c "alter table public.tenants disable trigger trg_tenant_launch_readiness"
+            -c "alter table public.tenants disable trigger trg_tenant_launch_readiness; alter table public.staff disable trigger trg_staff_activation_readiness"
           bash supabase/tests/customer_portal_cancellation_refunds_0121_concurrency_test.sh "$db_container"
           bash supabase/tests/customer_portal_contact_change_0124_concurrency_test.sh "$db_container"
           docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
-            -c "alter table public.tenants enable trigger trg_tenant_launch_readiness"
+            -c "alter table public.staff enable trigger trg_staff_activation_readiness; alter table public.tenants enable trigger trg_tenant_launch_readiness"
 
   quality:
     name: lint · typecheck · unit · contract acceptance · build

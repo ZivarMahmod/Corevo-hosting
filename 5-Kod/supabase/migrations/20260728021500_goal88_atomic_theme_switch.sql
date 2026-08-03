@@ -69,6 +69,7 @@ begin
     'blomstertorget',
     'calytrix',
     'eloria',
+    'freshcut',
     'lunaria',
     'onyx',
     'sivsav',

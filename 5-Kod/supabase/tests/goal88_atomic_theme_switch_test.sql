@@ -95,7 +95,7 @@ select public.switch_tenant_theme(
   '88000000-0000-0000-0000-000000000002',
   '{}',
   null,
-  'snitt',
+  'freshcut',
   '{}'
 );
 
@@ -105,7 +105,7 @@ begin
     select 1
       from public.tenant_settings ts
      where ts.tenant_id = '88000000-0000-0000-0000-000000000002'
-       and ts.settings = '{"theme":"snitt","copy":{}}'::jsonb
+       and ts.settings = '{"theme":"freshcut","copy":{}}'::jsonb
   ) then
     raise exception 'theme_switch_missing_row_not_materialized';
   end if;
