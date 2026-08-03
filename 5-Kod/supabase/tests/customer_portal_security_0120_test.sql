@@ -107,6 +107,7 @@ declare
   v_booking_b uuid := gen_random_uuid();
   v_link uuid;
   v_session uuid := gen_random_uuid();
+  v_session_digest text := repeat('b', 64);
   v_result record;
   v_payload jsonb;
   v_count integer;
@@ -193,12 +194,12 @@ begin
   ) m;
   select * into v_result
   from public.customer_portal_exchange_link(
-    v_link, repeat('a', 64), v_session, repeat('b', 64), 1
+    v_link, repeat('a', 64), v_session, v_session_digest, 1
   );
   if v_result.outcome <> 'ok' then raise exception 'portal_exchange_failed'; end if;
 
   select * into v_result
-  from public.customer_portal_session_snapshot(v_session, repeat('b', 64));
+  from public.customer_portal_session_snapshot(v_session, v_session_digest);
   if v_result.outcome <> 'ok'
      or v_result.snapshot ->> 'tenantSlug' <> 'portal-test-a'
      or v_result.snapshot ->> 'bookingOrigin' <> 'https://portal-test-a.example'
@@ -483,14 +484,15 @@ begin
     statement_timestamp() + interval '15 minutes', gen_random_uuid()
   ) m;
   v_session := gen_random_uuid();
+  v_session_digest := repeat('9', 64);
   select * into v_result
   from public.customer_portal_exchange_link(
-    v_link, repeat('f', 64), v_session, repeat('b', 64), 1
+    v_link, repeat('f', 64), v_session, v_session_digest, 1
   );
   if v_result.outcome <> 'ok' then raise exception 'portal_reauthentication_failed'; end if;
 
   select public.customer_portal_list_bookings(
-    v_session, repeat('b', 64), 'history', null, null, 20
+    v_session, v_session_digest, 'history', null, null, 20
   ) into v_payload;
   if pg_catalog.jsonb_array_length(v_payload -> 'items') <> 20
      or (v_payload ->> 'hasMore')::boolean
@@ -509,7 +511,7 @@ begin
   );
 
   select public.customer_portal_list_bookings(
-    v_session, repeat('b', 64), 'history', null, null, 20
+    v_session, v_session_digest, 'history', null, null, 20
   ) into v_payload;
   if pg_catalog.jsonb_array_length(v_payload -> 'items') <> 20
      or not (v_payload ->> 'hasMore')::boolean
@@ -519,14 +521,14 @@ begin
   end if;
 
   select public.customer_portal_list_bookings(
-    v_session, repeat('b', 64), 'upcoming', null, null, 20
+    v_session, v_session_digest, 'upcoming', null, null, 20
   ) into v_payload;
   if v_payload::text like '%awaiting_review%' then
     raise exception 'portal_unknown_status_leaked_into_upcoming';
   end if;
 
   select public.customer_portal_get_booking(
-    v_session, repeat('b', 64), v_booking_a
+    v_session, v_session_digest, v_booking_a
   ) into v_payload;
   if v_payload #>> '{booking,publicRebookUrl}'
        <> ('https://portal-test-a.example/boka?plats=' || v_location_a::text
@@ -546,7 +548,7 @@ begin
   if v_result.outcome <> 'invalid' then raise exception 'portal_link_replay_allowed'; end if;
 
   select public.customer_portal_get_booking(
-    v_session, repeat('b', 64), v_booking_b
+    v_session, v_session_digest, v_booking_b
   ) into v_payload;
   if v_payload ->> 'outcome' <> 'not_found' then
     raise exception 'portal_cross_tenant_booking_leaked';
@@ -554,13 +556,13 @@ begin
 
   select * into v_result
   from public.customer_portal_cancel_booking(
-    v_session, repeat('b', 64), v_booking_a, 24, repeat('i', 32)
+    v_session, v_session_digest, v_booking_a, 24, repeat('i', 32)
   );
   if v_result.outcome <> 'cancelled' then raise exception 'portal_cancel_failed'; end if;
 
   select * into v_result
   from public.customer_portal_cancel_booking(
-    v_session, repeat('b', 64), v_booking_a, 24, repeat('i', 32)
+    v_session, v_session_digest, v_booking_a, 24, repeat('i', 32)
   );
   if v_result.outcome <> 'cancelled' then raise exception 'portal_cancel_not_idempotent'; end if;
 
@@ -592,7 +594,7 @@ begin
   set idle_expires_at = statement_timestamp() - interval '1 second'
   where ps.public_id = v_session;
   select * into v_result
-  from public.customer_portal_session_snapshot(v_session, repeat('b', 64));
+  from public.customer_portal_session_snapshot(v_session, v_session_digest);
   if v_result.outcome <> 'expired' or v_result.snapshot is not null
      or v_result.recovery_tenant_slug <> 'portal-test-a' then
     raise exception 'portal_expired_snapshot_recovery_slug_invalid:%', row_to_json(v_result);
@@ -607,7 +609,7 @@ begin
   perform public.customer_portal_gdpr_scrub(v_tenant_a, v_customer_a);
   if exists (
     select 1 from private.customer_portal_resolve_session(
-      v_session, repeat('b', 64), statement_timestamp()
+      v_session, v_session_digest, statement_timestamp()
     )
   ) then
     raise exception 'portal_gdpr_session_survived';
