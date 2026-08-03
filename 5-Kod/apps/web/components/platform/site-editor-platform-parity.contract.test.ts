@@ -21,6 +21,8 @@ describe('Goal 88 shared platform site editor', () => {
       expect(route).toContain('deriveSiteScheduleHours')
     }
     expect(adminRoute).toContain('surface="standalone"')
+    expect(adminRoute).toContain('<BookingPanel')
+    expect(adminRoute).toContain('normalizeBookingExternalUrl')
     expect(platformRoute).toContain('surface="embedded"')
     expect(platformRoute).not.toContain('<SidaStudioLazy')
   })

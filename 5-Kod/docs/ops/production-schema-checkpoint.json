@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "20260803070000",
-  "observedHistoryLatest": "20260803070000",
+  "requiredLatest": "20260803095219",
+  "observedHistoryLatest": "20260803095219",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-08-03T08:42:57Z",
+  "verifiedAt": "2026-08-03T09:52:47Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:86a12bb49f4eb060e5eb0d20b3f06968a3c1d615cd2bb920c1c9a3a9dba918e2",
-  "verificationEvidence": "Supabase production migration history and binary module schema verified through 20260803070000 on 2026-08-03",
+  "migrationFingerprint": "sha256:6bc706742eae8fcd686aa67ef46a177955dbca17e650fc619d00b49f4ab2020c",
+  "verificationEvidence": "Supabase production migration history and external booking service visibility verified through 20260803095219 on 2026-08-03",
   "reason": null
 }

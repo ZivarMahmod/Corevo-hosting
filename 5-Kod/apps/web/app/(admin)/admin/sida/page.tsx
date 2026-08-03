@@ -9,7 +9,15 @@ import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { buildSiteEditorManifest, type EditorManifestKind } from '@/lib/platform/site-editor-manifest'
 import { SidaStudioV2Lazy } from '@/components/platform/SidaStudioV2Lazy'
+import { BookingPanel } from '@/components/platform/BookingSettings'
 import { tenantStorefrontHost, tenantStorefrontUrl } from '@/lib/storefront-url'
+import {
+  readBookingVariant,
+  readBookingVerificationMode,
+  readPickerMode,
+  readStaffAvatarMode,
+} from '@/lib/platform/booking-variant'
+import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 import {
   DEFAULT_STOREFRONT_THEME,
   STOREFRONT_THEMES,
@@ -70,23 +78,41 @@ export default async function AdminSidaPage({ searchParams }: AdminSidaPageProps
   const liveModules = [
     'shop', 'kurser', 'blogg', 'offert', 'presentkort', 'lojalitet', 'galleri',
   ].filter((key) => isModuleActivated(moduleStates, key))
+  const rawSettings = detail.settings?.settings as Record<string, unknown> | undefined
+  const rawBooking = rawSettings?.booking as Record<string, unknown> | undefined
 
   return (
-    <SidaStudioV2Lazy
-      surface="standalone"
-      tenantId={detail.tenant.id}
-      effectiveSnapshot={effectiveSnapshot}
-      publishedSnapshot={publishedSnapshot}
-      draft={revisionState.draft}
-      history={revisionState.history}
-      previewPath={`/salong-preview/${detail.tenant.slug}`}
-      storefrontHost={storefrontHost}
-      storefrontUrl={storefrontUrl}
-      isActive={detail.tenant.status === 'active'}
-      initialTabId={requestedTabId}
-      manifestData={buildSiteEditorManifest(manifestKind, defaults, storefrontTheme)}
-      liveModules={liveModules}
-      scheduleHours={deriveSiteScheduleHours(detail)}
-    />
+    <>
+      <SidaStudioV2Lazy
+        surface="standalone"
+        tenantId={detail.tenant.id}
+        effectiveSnapshot={effectiveSnapshot}
+        publishedSnapshot={publishedSnapshot}
+        draft={revisionState.draft}
+        history={revisionState.history}
+        previewPath={`/salong-preview/${detail.tenant.slug}`}
+        storefrontHost={storefrontHost}
+        storefrontUrl={storefrontUrl}
+        isActive={detail.tenant.status === 'active'}
+        initialTabId={requestedTabId}
+        manifestData={buildSiteEditorManifest(manifestKind, defaults, storefrontTheme)}
+        liveModules={liveModules}
+        scheduleHours={deriveSiteScheduleHours(detail)}
+      />
+      <section className="portal-section" aria-labelledby="booking-settings">
+        <h2 id="booking-settings">Bokning</h2>
+        <BookingPanel
+          tenantId={detail.tenant.id}
+          templateKey={storefrontTheme}
+          branding={publishedSnapshot.branding}
+          variant={readBookingVariant(rawSettings)}
+          pickerMode={readPickerMode(rawSettings)}
+          staffAvatars={readStaffAvatarMode(rawSettings)}
+          verificationMode={readBookingVerificationMode(rawSettings)}
+          externalUrl={normalizeBookingExternalUrl(rawBooking?.external_url)}
+          hasStaffPhoto={detail.staffList.some((staff) => Boolean(staff.avatar_url))}
+        />
+      </section>
+    </>
   )
 }

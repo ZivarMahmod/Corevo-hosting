@@ -370,8 +370,8 @@ describe('customer portal 0120 migration contract', () => {
 
   it('moves the database release inventory through the latest timestamped migration without pretending production is applied', () => {
     for (const workflow of [ci, deploy]) {
-      expect(workflow).toContain('--expected-latest 20260803070000')
-      expect(workflow).toMatch(/--required-test-versions[^\n]*0130,0131,0132,0133,0134/)
+      expect(workflow).toContain('--expected-latest 20260803095219')
+      expect(workflow).toMatch(/--required-test-versions[^\n]*0130,0131,0132,0133,0134,0135/)
     }
     expect(deploy).toContain('PROD_DB_MIGRATION')
   })
