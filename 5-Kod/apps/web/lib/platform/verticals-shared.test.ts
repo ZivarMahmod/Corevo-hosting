@@ -156,7 +156,7 @@ const vData = (over: Partial<VerticalPresetData> = {}): VerticalPresetData => ({
       key: 'frisor',
       name: 'Frisör',
       defaultTemplate: 'salvia',
-      defaultModules: { booking: 'live', shop: 'draft' },
+      defaultModules: { booking: 'live', shop: 'live' },
       terminology: { staff: 'Stylist' },
     },
   ],
@@ -170,9 +170,9 @@ const vData = (over: Partial<VerticalPresetData> = {}): VerticalPresetData => ({
 })
 
 describe('modulesForVertical', () => {
-  it('ingen bransch vald → booking live, allt annat off', () => {
+  it('ingen bransch vald → allt off', () => {
     expect(modulesForVertical(vData(), null)).toEqual([
-      { key: 'booking', name: 'Bokning', defaultState: 'live' },
+      { key: 'booking', name: 'Bokning', defaultState: 'off' },
       { key: 'shop', name: 'Webshop', defaultState: 'off' },
       { key: 'blogg', name: 'Blogg', defaultState: 'off' },
     ])
@@ -181,14 +181,14 @@ describe('modulesForVertical', () => {
   it('vald bransch applicerar sina preset-stater; modul utan preset → off', () => {
     expect(modulesForVertical(vData(), 'frisor')).toEqual([
       { key: 'booking', name: 'Bokning', defaultState: 'live' }, // preset
-      { key: 'shop', name: 'Webshop', defaultState: 'draft' }, // preset
+      { key: 'shop', name: 'Webshop', defaultState: 'live' }, // preset
       { key: 'blogg', name: 'Blogg', defaultState: 'off' }, // ej i preset → off
     ])
   })
 
-  it('okänd branschnyckel → allt faller tillbaka (booking live, resten off)', () => {
+  it('okänd branschnyckel → allt faller tillbaka till off', () => {
     expect(modulesForVertical(vData(), 'finnsinte').map((o) => o.defaultState)).toEqual([
-      'live',
+      'off',
       'off',
       'off',
     ])

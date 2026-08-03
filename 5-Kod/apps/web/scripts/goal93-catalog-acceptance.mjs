@@ -264,7 +264,7 @@ function validateRuntime(runtime) {
     uniqueStrings(runtime.copyOverrideKeys, 'runtime-copy-override-keys'),
   )
   const moduleStates = new Set(uniqueStrings(runtime.moduleStates ?? [], 'runtime-module-states'))
-  if (!moduleStates.has('live') || !moduleStates.has('off') || !moduleStates.has('paused')) {
+  if (moduleStates.size !== 2 || !moduleStates.has('live') || !moduleStates.has('off')) {
     fail('runtime-module-states')
   }
   if (!Array.isArray(runtime.catalog)) fail('runtime-catalog')

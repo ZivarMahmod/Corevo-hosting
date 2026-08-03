@@ -95,13 +95,6 @@ insert into public.tenant_modules (tenant_id, module_key, state, config) values
   ('90910000-0000-0000-0000-000000000001', 'galleri', 'off', '{}'),
   ('90910000-0000-0000-0000-000000000002', 'galleri', 'off', '{}');
 update public.tenant_modules
-   set state = 'draft'
- where module_key = 'galleri'
-   and tenant_id in (
-     '90910000-0000-0000-0000-000000000001',
-     '90910000-0000-0000-0000-000000000002'
-   );
-update public.tenant_modules
    set state = 'live'
  where module_key = 'galleri'
    and tenant_id in (
@@ -398,7 +391,7 @@ select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claim.role', '', true);
 select set_config('request.jwt.claims', '{}', true);
 update public.tenant_modules
-   set state = 'paused'
+   set state = 'off'
  where tenant_id = '90910000-0000-0000-0000-000000000001'
    and module_key = 'galleri';
 

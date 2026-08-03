@@ -102,7 +102,7 @@ describe('goal-84 launch readiness booking tuple', () => {
     expect(migration).toContain('(select private.role_level()) = 2')
   })
 
-  it('keeps direct setup and legal module restoration claim-free', () => {
+  it('keeps direct setup and binary module restoration claim-free', () => {
     const serviceRole = "perform pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);"
     const serviceClaims = '\'{"role":"service_role"}\''
     const roleReset = "perform pg_catalog.set_config('request.jwt.claim.role', '', true);"
@@ -116,13 +116,9 @@ describe('goal-84 launch readiness booking tuple', () => {
       "update public.tenants set status = 'provisioning' where id = v_tenant;",
       websitePublish,
     )
-    const bookingDraftRestore = runtime.indexOf(
-      "update public.tenant_modules set state = 'draft'",
-      websiteStatusReset,
-    )
     const bookingLiveRestore = runtime.indexOf(
       "update public.tenant_modules set state = 'live'",
-      bookingDraftRestore,
+      websiteStatusReset,
     )
     const firstServiceRole = runtime.indexOf(serviceRole)
     const firstServiceClaims = runtime.indexOf(serviceClaims, firstServiceRole)
@@ -155,8 +151,7 @@ describe('goal-84 launch readiness booking tuple', () => {
     expect(websiteStatusReset).toBeGreaterThan(websitePublish)
     expect(publishRoleReset).toBeGreaterThan(websiteStatusReset)
     expect(publishClaimsReset).toBeGreaterThan(publishRoleReset)
-    expect(bookingDraftRestore).toBeGreaterThan(publishClaimsReset)
-    expect(bookingLiveRestore).toBeGreaterThan(bookingDraftRestore)
+    expect(bookingLiveRestore).toBeGreaterThan(publishClaimsReset)
   })
 
   it('keeps protected status resets service-scoped and the direct bypass unprivileged', () => {

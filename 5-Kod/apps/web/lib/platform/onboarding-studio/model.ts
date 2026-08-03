@@ -85,15 +85,13 @@ export function applyBranch(cfg: StudioCfg, verticalKey: string, presets: Vertic
     .find((candidate): candidate is string => !!candidate && isSelectableTheme(candidate))!
   const moduleStates: Record<string, ModuleState> = {}
   for (const m of modulesForVertical(presets, verticalKey)) {
-    if (m.key !== 'booking') moduleStates[m.key] = m.defaultState
+    moduleStates[m.key] = m.defaultState
   }
   return { ...cfg, branch: verticalKey, theme, moduleStates }
 }
 
 /**
- * The effective state of a module: explicit pick → preset default → 'off'. Booking
- * ignores the preset and defaults live unless the operator explicitly picks another
- * create-time state.
+ * The effective state of a module: explicit pick → preset default → off.
  */
 export function resolveModuleState(
   cfg: StudioCfg,
@@ -101,9 +99,6 @@ export function resolveModuleState(
   presets: VerticalPresetData,
 ): ModuleState {
   const picked = cfg.moduleStates[key]
-  if (key === 'booking') {
-    return picked === 'live' || picked === 'off' ? picked : 'live'
-  }
   const preset = modulesForVertical(presets, cfg.branch).find((m) => m.key === key)?.defaultState ?? 'off'
   return picked ?? preset
 }

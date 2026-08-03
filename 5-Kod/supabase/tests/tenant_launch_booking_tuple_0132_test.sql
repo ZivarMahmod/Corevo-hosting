@@ -109,8 +109,6 @@ begin
     update public.tenants set status = 'provisioning' where id = v_tenant;
     perform pg_catalog.set_config('request.jwt.claim.role', '', true);
     perform pg_catalog.set_config('request.jwt.claims', '{}', true);
-    update public.tenant_modules set state = 'draft'
-    where tenant_id = v_tenant and module_key = 'booking';
     update public.tenant_modules set state = 'live'
     where tenant_id = v_tenant and module_key = 'booking';
     update public.location_opening_hours set weekday = 1

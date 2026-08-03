@@ -34,8 +34,20 @@ begin
   ) then
     raise exception 'non_binary_vertical_preset';
   end if;
+
+  if private.module_state('00000000-0000-0000-0000-000000000000', 'booking') <> 'off' then
+    raise exception 'missing_booking_defaulted_on';
+  end if;
 end;
 $$;
+
+alter table public.tenants disable trigger trg_tenant_launch_readiness;
+insert into public.tenants (id, slug, name, status) values
+  ('01340000-0000-0000-0000-000000000001', 'binary-modules-0134', 'Binary Modules 0134', 'active');
+alter table public.tenants enable trigger trg_tenant_launch_readiness;
+
+insert into public.tenant_modules (tenant_id, module_key, state) values
+  ('01340000-0000-0000-0000-000000000001', 'booking', 'off');
 
 do $$
 declare
@@ -43,9 +55,8 @@ declare
 begin
   select tm.* into v_row
   from public.tenant_modules tm
-  join public.tenants t on t.id = tm.tenant_id
-  where t.status = 'active'
-  limit 1;
+  where tm.tenant_id = '01340000-0000-0000-0000-000000000001'
+    and tm.module_key = 'booking';
 
   if not found then
     raise exception 'binary_module_fixture_missing';

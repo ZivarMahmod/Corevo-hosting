@@ -121,7 +121,7 @@ function contract(overrides = {}) {
       schemaVersion: 1,
       knownModules: ['shop'],
       renderableThemes: ['fixture', 'legacy-fixture'],
-      moduleStates: ['off', 'draft', 'live', 'paused'],
+      moduleStates: ['off', 'live'],
       copyOverrideKeys: ['heroTitle'],
       catalog: [runtimeEntry()],
     },

@@ -41,14 +41,14 @@ describe('applyBranch', () => {
     const cfg = applyBranch(initStudioCfg('salvia'), 'frisor', presets)
     expect(cfg.branch).toBe('frisor')
     expect(cfg.theme).toBe('aurora')
-    expect(cfg.moduleStates.booking).toBeUndefined()
+    expect(cfg.moduleStates.booking).toBe('live')
     expect(resolveModuleState(cfg, 'booking', presets)).toBe('live')
     expect(cfg.moduleStates.lojalitet).toBe('live')
     // not in the bransch preset → modulesForVertical fallback 'off'
     expect(cfg.moduleStates.shop).toBe('off')
   })
 
-  it('keeps booking live by default even when the vertical preset says off', () => {
+  it('preserves booking off when the vertical preset says off', () => {
     const websitePreset: VerticalPresetData = {
       ...presets,
       verticals: presets.verticals.map((vertical) =>
@@ -58,8 +58,8 @@ describe('applyBranch', () => {
       ),
     }
     const cfg = applyBranch(initStudioCfg('salvia'), 'frisor', websitePreset)
-    expect(cfg.moduleStates.booking).toBeUndefined()
-    expect(resolveModuleState(cfg, 'booking', websitePreset)).toBe('live')
+    expect(cfg.moduleStates.booking).toBe('off')
+    expect(resolveModuleState(cfg, 'booking', websitePreset)).toBe('off')
   })
 
   it('falls back to the first bransch-filtered template when defaultTemplate is null', () => {
@@ -91,8 +91,8 @@ describe('resolveModuleState', () => {
     expect(resolveModuleState(cfg, 'booking', presets)).toBe('off')
   })
 
-  it('still floors an unset booking module to live', () => {
-    expect(resolveModuleState(initStudioCfg('salvia'), 'booking', presets)).toBe('live')
+  it('treats an unset booking module as off', () => {
+    expect(resolveModuleState(initStudioCfg('salvia'), 'booking', presets)).toBe('off')
   })
 
   it('lets booking be explicitly off', () => {

@@ -29,6 +29,25 @@ alter table public.tenant_modules
 alter table public.tenant_modules
   add constraint tenant_modules_state_check check (state in ('off', 'live'));
 
+create or replace function private.module_state(p_tenant uuid, p_module text)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(
+    (
+      select tm.state
+        from public.tenant_modules tm
+       where tm.tenant_id = p_tenant
+         and tm.module_key = p_module
+       limit 1
+    ),
+    'off'
+  )
+$$;
+
 create or replace function private.module_public_readable(p_tenant uuid, p_module text)
 returns boolean
 language sql

@@ -56,7 +56,7 @@ insert into public.tenant_modules (tenant_id, module_key, state, config) values
   ('90000000-0000-0000-0000-000000000001', 'blogg', 'off', '{}'),
   ('90000000-0000-0000-0000-000000000002', 'blogg', 'off', '{}');
 update public.tenant_modules
-   set state = 'draft'
+   set state = 'live'
  where module_key = 'blogg'
    and tenant_id in (
      '90000000-0000-0000-0000-000000000001',

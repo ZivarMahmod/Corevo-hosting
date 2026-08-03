@@ -38,9 +38,8 @@ export type VerticalPresetData = {
 
 /**
  * Resolve the module options for a chosen vertical: every catalog module annotated
- * with its preset state for that vertical (default 'off', except booking → 'live'
- * when no bransch is picked). PURE — safe in both client and server. The wizard
- * enforces "booking minst live" in its own UI; this only reports the raw preset.
+ * with its preset state for that vertical (default off). PURE and safe in both
+ * client and server.
  */
 export function modulesForVertical(
   data: VerticalPresetData,
@@ -49,8 +48,7 @@ export function modulesForVertical(
   const preset = verticalKey ? data.verticals.find((v) => v.key === verticalKey) : undefined
   return data.modules.map((m) => {
     const presetState = preset?.defaultModules[m.key]
-    const fallback: ModuleState = m.key === 'booking' ? 'live' : 'off'
-    return { key: m.key, name: m.name, defaultState: presetState ?? fallback }
+    return { key: m.key, name: m.name, defaultState: presetState ?? 'off' }
   })
 }
 

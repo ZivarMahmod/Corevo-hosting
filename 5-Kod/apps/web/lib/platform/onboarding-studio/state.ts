@@ -120,8 +120,7 @@ export type PanelProps = {
  * - `theme`        one of the 5 lowercase storefront keys, else server → 'leander'.
  * - `booking_variant` cfg.variant (operator-picked in the booking module row, W3;
  *                  defaults to 'wizard'). createTenant re-validates via isBookingVariant.
- * - `modules`      JSON {key:state} of cfg.moduleStates with unset booking floored to
- *                  live (mirrors moduleSubmitMap); explicit off-keys are preserved.
+ * - `modules`      JSON {key:state} of the operator's exact on/off choices.
  * - `color_accent` ONLY when accent !== '' (omitted otherwise — theme owns palette).
  * - `services`     JSON [{name, price_cents}] (W4); kr→öre via krToOre, empty names
  *                  dropped. createTenant re-validates (parseServiceInputs) + inserts.
@@ -139,7 +138,6 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   fd.set('booking_variant', cfg.variant)
 
   const modules: Record<string, ModuleState> = { ...cfg.moduleStates }
-  modules.booking = modules.booking === 'off' ? 'off' : 'live'
   fd.set('modules', JSON.stringify(modules))
 
   if (cfg.accent !== '') fd.set('color_accent', cfg.accent)

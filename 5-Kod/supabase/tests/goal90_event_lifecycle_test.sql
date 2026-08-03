@@ -53,13 +53,6 @@ insert into public.tenant_modules (tenant_id, module_key, state, config) values
   ('90900000-0000-0000-0000-000000000001', 'kurser', 'off', '{"payment":"onsite"}'),
   ('90900000-0000-0000-0000-000000000002', 'kurser', 'off', '{"payment":"onsite"}');
 update public.tenant_modules
-   set state = 'draft'
- where module_key = 'kurser'
-   and tenant_id in (
-     '90900000-0000-0000-0000-000000000001',
-     '90900000-0000-0000-0000-000000000002'
-   );
-update public.tenant_modules
    set state = 'live'
  where module_key = 'kurser'
    and tenant_id in (
