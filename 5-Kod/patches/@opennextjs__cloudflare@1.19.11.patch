@@ -21,40 +21,48 @@ index b0616a9a1a2729c3bc1cf03dd88edde8afa09d08..e95c853db3879e7fb812aeb31541242c
                  "rscModuleMapping",
                  "entryCSSFiles",
                  "entryJSFiles",
-@@ -108,8 +109,9 @@ async function getEvalManifestRule(buildOpts) {
+@@ -108,8 +109,10 @@ async function getEvalManifestRule(buildOpts) {
      }
      // Map of factored values in an object
      const factoredValues = new Map();
 +    const repeatedObjectValues = countRepeatedObjectValues(factoredObjects.values());
++    const repeatedObjectKeys = countRepeatedObjectKeys(factoredObjects.values());
      for (const [varName, value] of factoredObjects) {
 -        factoredObjects.set(varName, factorObjectValues(value, factoredValues, prefixMap));
-+        factoredObjects.set(varName, factorObjectValues(value, factoredValues, prefixMap, repeatedObjectValues));
++        factoredObjects.set(varName, factorObjectValues(value, factoredValues, prefixMap, repeatedObjectValues, repeatedObjectKeys));
      }
      // Prepend chunks variable declarations before the factored values
      const factoredValueCode = [...factoredValues.entries()]
-@@ -214,9 +216,19 @@ export function factorManifestValue(manifest, key, values, prefixMap) {
+@@ -214,9 +217,26 @@ export function factorManifestValue(manifest, key, values, prefixMap) {
   * @param prefixMap Map of short hash prefix → full hash, updated in place for
   *   collision resolution across calls.
   * @returns The rewritten value text with chunks arrays replaced by variable refs.
   */
 -export function factorObjectValues(valueText, sharedVars, prefixMap) {
 -    const rootNode = parse(Lang.JavaScript, valueText).root();
-+export function factorObjectValues(valueText, sharedVars, prefixMap, repeatedValues = new Set()) {
++export function factorObjectValues(valueText, sharedVars, prefixMap, repeatedValues = new Set(), repeatedKeys = new Set()) {
 +    const value = JSON.parse(valueText);
 +    const entries = Object.entries(value).map(([key, entryValue]) => {
++        const keyText = JSON.stringify(key);
++        let factoredKey = keyText;
++        if (keyText.length > 30 && repeatedKeys.has(keyText)) {
++            const varName = getOrCreateVarName(keyText, prefixMap);
++            sharedVars.set(varName, keyText);
++            factoredKey = `[${varName}]`;
++        }
 +        const text = JSON.stringify(entryValue);
 +        if (text.length <= 30 || !repeatedValues.has(text))
-+            return `${JSON.stringify(key)}:${text}`;
++            return `${factoredKey}:${text}`;
 +        const varName = getOrCreateVarName(text, prefixMap);
 +        sharedVars.set(varName, text);
-+        return `${JSON.stringify(key)}:${varName}`;
++        return `${factoredKey}:${varName}`;
 +    });
 +    const factoredText = `{${entries.join(",")}}`;
 +    const rootNode = parse(Lang.JavaScript, factoredText).root();
      // Find all "chunks": [...] pairs
      const chunksRule = `
  rule:
-@@ -244,8 +256,19 @@ rule:
+@@ -244,8 +264,30 @@ rule:
          edits.push({ match, replacement: `"chunks": ${varName}` });
      }
      return edits.length === 0
@@ -67,6 +75,17 @@ index b0616a9a1a2729c3bc1cf03dd88edde8afa09d08..e95c853db3879e7fb812aeb31541242c
 +    for (const valueText of valueTexts) {
 +        for (const value of Object.values(JSON.parse(valueText))) {
 +            const text = JSON.stringify(value);
++            if (text.length > 30)
++                counts.set(text, (counts.get(text) ?? 0) + 1);
++        }
++    }
++    return new Set([...counts].filter(([, count]) => count > 1).map(([text]) => text));
++}
++function countRepeatedObjectKeys(valueTexts) {
++    const counts = new Map();
++    for (const valueText of valueTexts) {
++        for (const key of Object.keys(JSON.parse(valueText))) {
++            const text = JSON.stringify(key);
 +            if (text.length > 30)
 +                counts.set(text, (counts.get(text) ?? 0) + 1);
 +        }
