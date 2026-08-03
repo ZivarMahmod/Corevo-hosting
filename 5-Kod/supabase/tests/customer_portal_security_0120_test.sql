@@ -477,6 +477,18 @@ begin
   end loop;
   perform pg_catalog.set_config('request.jwt.claims', '{}', true);
 
+  select m.link_public_id into v_link
+  from public.customer_portal_mint_link(
+    v_tenant_a, v_customer_a, 'booking_access', repeat('a', 64), 1,
+    statement_timestamp() + interval '15 minutes', gen_random_uuid()
+  ) m;
+  v_session := gen_random_uuid();
+  select * into v_result
+  from public.customer_portal_exchange_link(
+    v_link, repeat('a', 64), v_session, repeat('b', 64), 1
+  );
+  if v_result.outcome <> 'ok' then raise exception 'portal_reauthentication_failed'; end if;
+
   select public.customer_portal_list_bookings(
     v_session, repeat('b', 64), 'history', null, null, 20
   ) into v_payload;
