@@ -24,8 +24,8 @@ select set_config(
 
 insert into public.tenants (id, slug, name, status) values
   ('13000000-0000-0000-0000-000000000001', 'tenant-lifecycle-0130', 'Lifecycle 0130', 'provisioning');
-insert into public.tenant_settings (tenant_id) values
-  ('13000000-0000-0000-0000-000000000001');
+insert into public.tenant_settings (tenant_id, settings) values
+  ('13000000-0000-0000-0000-000000000001', '{"theme":"kalla"}');
 insert into public.locations (id, tenant_id, name, timezone, is_primary, active) values
   ('13000000-0000-0000-0000-000000000011', '13000000-0000-0000-0000-000000000001', 'Primary', 'Europe/Stockholm', true, true);
 insert into public.location_opening_hours (
