@@ -469,8 +469,10 @@ begin
       start_ts, end_ts, status, price_cents
     ) values (
       gen_random_uuid(), v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
-      statement_timestamp() + pg_catalog.make_interval(days => v_i),
-      statement_timestamp() + pg_catalog.make_interval(days => v_i) + interval '30 minutes',
+      date_trunc('hour', statement_timestamp()) + interval '30 days'
+        + pg_catalog.make_interval(days => v_i),
+      date_trunc('hour', statement_timestamp()) + interval '30 days 30 minutes'
+        + pg_catalog.make_interval(days => v_i),
       'confirmed', 10000
     ) returning id into v_history_booking;
     update public.bookings set status = 'completed' where id = v_history_booking;
