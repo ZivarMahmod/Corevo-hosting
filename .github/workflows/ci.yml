@@ -31,7 +31,7 @@ jobs:
       - name: Verify migration and SQL test inventory
         run: >-
           node scripts/verify-database-release.mjs
-          --expected-latest 20260802230500
+          --expected-latest 20260803011000
           --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121,0122,0123,0124,0125,0126,0127,0128,0129
       # Local disposable stack: migrations + seed are applied before the SQL
       # suites run. No production/staging credentials or data are used.
@@ -41,7 +41,7 @@ jobs:
         run: |
           supabase migration list --local > "$RUNNER_TEMP/local-migrations.txt"
           node scripts/verify-database-release.mjs \
-            --expected-latest 20260802230500 \
+            --expected-latest 20260803011000 \
             --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121,0122,0123,0124,0125,0126,0127,0128,0129 \
             --history-file "$RUNNER_TEMP/local-migrations.txt" \
             --history-side remote
