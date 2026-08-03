@@ -82,6 +82,24 @@ begin
       end if;
       continue;
     end if;
+    if t = 'gift_card_entries' then
+      if not has_table_privilege('service_role', 'public.gift_card_entries', 'SELECT')
+         or has_table_privilege('service_role', 'public.gift_card_entries', 'INSERT,UPDATE,DELETE') then
+        raise exception 'service_role_gift_card_entries_grants_wrong';
+      end if;
+      continue;
+    end if;
+    if t = any(array[
+      'partner_license_price_events',
+      'partner_tenant_events',
+      'partner_license_months'
+    ]) then
+      if not has_table_privilege('service_role', format('public.%I', t), 'SELECT,INSERT,UPDATE')
+         or has_table_privilege('service_role', format('public.%I', t), 'DELETE') then
+        raise exception 'service_role_partner_ledger_grants_wrong_%', t;
+      end if;
+      continue;
+    end if;
     if not has_table_privilege('service_role', format('public.%I', t), 'SELECT')
        or not has_table_privilege('service_role', format('public.%I', t), 'INSERT')
        or not has_table_privilege('service_role', format('public.%I', t), 'UPDATE')
