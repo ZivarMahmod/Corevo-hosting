@@ -238,7 +238,7 @@ begin
         "tenant":{"name":"Published A"},
         "settings":{
           "copy":{"heroTitle":"After"},
-          "theme":"snitt",
+          "theme":"kalla",
           "contact":{"email":"after@example.test","phone":null},
           "social":{"instagram":null,"facebook":null,"tiktok":null},
           "map":null,"opening_hours":null,
