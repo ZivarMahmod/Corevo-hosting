@@ -2,7 +2,7 @@
 -- public read/action decisions, readiness shape, policy inventory and grants.
 -- Every fixture and catalog tweak is rolled back.
 
-select pg_catalog.position('draft' in pg_catalog.pg_get_constraintdef(c.oid)) = 0 as binary_modules
+select pg_catalog.strpos(pg_catalog.pg_get_constraintdef(c.oid), 'draft') = 0 as binary_modules
 from pg_catalog.pg_constraint c
 where c.conrelid = 'public.tenant_modules'::regclass
   and c.conname = 'tenant_modules_state_check'
