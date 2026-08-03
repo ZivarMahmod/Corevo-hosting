@@ -10,11 +10,9 @@
   max-width: 100%;
   height: calc(100dvh - 58px - 30px);
   min-height: 420px;
-  border-radius: 18px;
+  border-radius: 0;
   background: var(--c-paper);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--c-line) 75%, transparent),
-    0 12px 32px color-mix(in srgb, var(--c-ink) 6%, transparent);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -39,6 +37,7 @@
 }
 
 .listTitle {
+  margin: 0;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -201,8 +200,8 @@
   min-height: 0;
 }
 .paneInner {
-  max-width: 880px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 28px 36px 56px;
 }
 

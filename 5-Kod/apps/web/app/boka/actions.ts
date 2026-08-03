@@ -44,6 +44,7 @@ import { deliverImmediateBookingOutbox } from '@/lib/notifications/booking-immed
 import { logger } from '@/lib/observability'
 import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 import { buildCancelToken, verifyCancelToken } from '@/lib/booking/cancel-token'
+import { normalizeBookingProvider, type BookingProviderKind } from '@/lib/platform/booking-external-url'
 
 // Public reads run as anon. Proposed starts are filtered through
 // get_public_bookable_starts (never raw busy intervals). The rate-limited server
@@ -143,6 +144,7 @@ type TenantContext = {
    *  (single-location tenants, /boka back-compat, rebok-flödet). May be null on
    *  the rare tenant with no primary; callers then fall back to the RPC default. */
   locationId: string | null
+  bookingProvider: BookingProviderKind
 }
 
 /** Resolve the request's tenant from the middleware header (never the client). */
@@ -170,7 +172,7 @@ async function getTenantContext(): Promise<TenantContext | null> {
       .maybeSingle(),
     supabase
       .from('tenant_settings')
-      .select('country_code, locale, currency, default_timezone')
+      .select('country_code, locale, currency, default_timezone, settings')
       .eq('tenant_id', tenant.id)
       .maybeSingle(),
   ])
@@ -190,10 +192,16 @@ async function getTenantContext(): Promise<TenantContext | null> {
     defaultTimeZone: region.default_timezone,
     timeZone: loc?.timezone ?? region.default_timezone,
     locationId: loc?.id ?? null,
+    bookingProvider: normalizeBookingProvider(
+      (region.settings as Record<string, unknown> | null)?.booking
+        ? ((region.settings as Record<string, unknown>).booking as Record<string, unknown>).provider
+        : null,
+    ),
   }
 }
 
 async function publicBookingIsLive(ctx: TenantContext): Promise<boolean> {
+  if (ctx.bookingProvider !== 'corevo') return false
   const states = await getTenantModuleStates(ctx.tenantId, ctx.slug)
   return bookingModuleAccess(states) === 'live'
 }
@@ -568,7 +576,7 @@ async function getTenantBookingVerificationMode(
 /** The UI asks this before rendering its one allowed contact field. */
 export async function getBookingContactModeAction(): Promise<{ mode: BookingContactAvailability }> {
   const ctx = await getTenantContext()
-  if (!ctx) return { mode: 'unavailable' }
+  if (!ctx || !(await publicBookingIsLive(ctx))) return { mode: 'unavailable' }
   const policy = await getTenantBookingVerificationMode(ctx.tenantId)
   return { mode: policy ? await getBookingContactMode(policy) : 'unavailable' }
 }

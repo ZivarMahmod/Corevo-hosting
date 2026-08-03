@@ -42,12 +42,12 @@ const validBooking = {
   currency: 'SEK',
   canCancel: true,
   cancelDeadline: '2026-07-31T10:00:00.000Z',
-  publicRebookUrl: 'https://freshcut.boka.corevo.se/boka',
+  publicRebookUrl: 'https://freshcut.corevo.se/boka',
 }
 
 const binding = {
   tenantSlug: 'freshcut',
-  bookingOrigin: 'https://freshcut.boka.corevo.se',
+  bookingOrigin: 'https://freshcut.corevo.se',
 }
 
 function setCookie(sessionPublicId = firstSession, secret = firstSecret) {
@@ -112,7 +112,7 @@ describe('customer portal server DAL', () => {
           phone: '+46 70 000 00 00',
           address: 'Testgatan 1',
           mapUrl: null,
-          bookingOrigin: 'https://freshcut.boka.corevo.se',
+          bookingOrigin: 'https://freshcut.corevo.se',
           timezone: 'Europe/Stockholm',
           locale: 'sv-SE',
           defaultCountry: 'SE',
@@ -136,7 +136,7 @@ describe('customer portal server DAL', () => {
         phone: '+46 70 000 00 00',
         address: 'Testgatan 1',
         mapUrl: null,
-        bookingOrigin: 'https://freshcut.boka.corevo.se',
+        bookingOrigin: 'https://freshcut.corevo.se',
         timezone: 'Europe/Stockholm',
         locale: 'sv-SE',
         defaultCountry: 'SE',
@@ -168,8 +168,8 @@ describe('customer portal server DAL', () => {
           address: null,
           mapUrl: null,
           bookingOrigin: args.p_session_public_id === firstSession
-            ? 'https://tenant-one.boka.corevo.se'
-            : 'https://tenant-two.boka.corevo.se',
+            ? 'https://tenant-one.corevo.se'
+            : 'https://tenant-two.corevo.se',
           timezone: 'Europe/Stockholm',
           locale: 'sv-SE',
           defaultCountry: 'SE',
@@ -225,7 +225,7 @@ describe('customer portal server DAL', () => {
         snapshot: {
           tenantSlug: 'freshcut', tenantName: 'FreshCut', customerName: 'Kund',
           logoUrl: 'javascript:alert(1)', verticalLabel: null, phone: null, address: null,
-          mapUrl: null, bookingOrigin: 'https://freshcut.boka.corevo.se',
+          mapUrl: null, bookingOrigin: 'https://freshcut.corevo.se',
           timezone: 'Europe/Stockholm', locale: 'sv-SE', defaultCountry: 'SE', currency: 'SEK',
           cancellationCutoffHours: 24, lastSeenAt: '2026-07-22T12:00:00.000Z',
           absoluteExpiresAt: '2027-07-22T12:00:00.000Z',
@@ -403,7 +403,7 @@ describe('customer portal server DAL', () => {
       data: {
         ...binding,
         outcome: 'ok', scope: 'history', pageSize: 20,
-        items: [{ ...validBooking, publicRebookUrl: 'https://other.boka.corevo.se/boka' }],
+        items: [{ ...validBooking, publicRebookUrl: 'https://other.corevo.se/boka' }],
         hasMore: false, nextCursor: null,
       },
       error: null,
@@ -415,7 +415,7 @@ describe('customer portal server DAL', () => {
     rpc.mockResolvedValueOnce({
       data: {
         ...binding,
-        bookingOrigin: 'https://other.boka.corevo.se',
+        bookingOrigin: 'https://other.corevo.se',
         outcome: 'ok', booking: validBooking,
       },
       error: null,

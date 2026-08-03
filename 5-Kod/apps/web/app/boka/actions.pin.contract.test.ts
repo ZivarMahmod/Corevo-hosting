@@ -43,6 +43,12 @@ describe('public booking PIN action contract', () => {
     expect(source).toContain("rateLimitKey(bucket, ctx.tenantId, 'target', limiterPart)")
   })
 
+  it('requires both a live module and the Corevo provider at the shared server gate', () => {
+    expect(source).toContain(".select('country_code, locale, currency, default_timezone, settings')")
+    expect(source).toContain("if (ctx.bookingProvider !== 'corevo') return false")
+    expect(source).toContain("if (!ctx || !(await publicBookingIsLive(ctx))) return { mode: 'unavailable' }")
+  })
+
   it('keeps the challenge visible after three errors so the customer can request a new code', () => {
     expect(source).toMatch(
       /row\.outcome === 'attempts_exhausted'[\s\S]*?reason: 'invalid_pin'[\s\S]*?attemptsRemaining: 0/,

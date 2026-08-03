@@ -71,6 +71,14 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     expect(cfg.variant).toBe('compact')
   })
 
+  it('records booking provider and external URL independently from module visibility', () => {
+    let cfg = reducer(initStudioCfg('salvia'), { type: 'setBookingProvider', provider: 'external' })
+    cfg = reducer(cfg, { type: 'setBookingExternalUrl', value: 'https://www.bokadirekt.se/test' })
+    expect(cfg.bookingProvider).toBe('external')
+    expect(cfg.bookingExternalUrl).toBe('https://www.bokadirekt.se/test')
+    expect(cfg.moduleStates.booking).toBeUndefined()
+  })
+
   it('setServices replaces the onboarding service list (W4)', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setServices', services: [{ name: 'Klippning', price: '350' }] })
     expect(cfg.services).toEqual([{ name: 'Klippning', price: '350' }])
@@ -92,11 +100,26 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
     expect(fd.get('slug')).toBe('klippoteket')
     expect(fd.get('theme')).toBe('salvia')
     expect(fd.get('booking_variant')).toBe('wizard') // cfg.variant default
+    expect(fd.get('booking_provider')).toBe('corevo')
+    expect(fd.get('booking_external_url')).toBe('')
   })
 
   it('emits the operator-picked booking_variant (W3 — no longer hardcoded)', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setVariant', variant: 'compact' })
     expect(buildCreateTenantFormData(cfg).get('booking_variant')).toBe('compact')
+  })
+
+  it('emits the external provider and URL without changing the module choice', () => {
+    const cfg = {
+      ...initStudioCfg('salvia'),
+      bookingProvider: 'external' as const,
+      bookingExternalUrl: 'https://www.bokadirekt.se/test',
+      moduleStates: { booking: 'live' as const },
+    }
+    const fd = buildCreateTenantFormData(cfg)
+    expect(fd.get('booking_provider')).toBe('external')
+    expect(fd.get('booking_external_url')).toBe('https://www.bokadirekt.se/test')
+    expect(JSON.parse(String(fd.get('modules'))).booking).toBe('live')
   })
 
   it('emits services as JSON with kr→öre price_cents, dropping empty names (W4)', () => {

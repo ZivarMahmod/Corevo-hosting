@@ -1,23 +1,23 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx, sidaCtx } from '../guard'
+import { platformCtx, sidaCtx, siteRevisionCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import {
   isBookingVariant,
-  DEFAULT_BOOKING_VARIANT,
-  PICKER_MODES,
-  STAFF_AVATAR_MODES,
   type BookingVariant,
-  type PickerMode,
-  type StaffAvatarMode,
   isBookingVerificationMode,
   type BookingVerificationMode,
 } from '../booking-variant'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
-import { normalizeBookingExternalUrl } from '../booking-external-url'
+import {
+  BOOKING_PROVIDERS,
+  normalizeBookingExternalUrl,
+  parseBookingExternalCtaUrls,
+  type BookingProviderKind,
+} from '../booking-external-url'
 
 // ── §2.1B Operativ data-kontroll ("Supabase med mitt UI", no-code) ──────────────
 
@@ -200,72 +200,90 @@ export async function saveTenantName(_p: ActionState, fd: FormData): Promise<Act
 }
 
 
-/**
- * Bokningsinställningar — designpaketet "Frisörbokningsformulär redesign" ⭐-kravet:
- * ALLT i bokningsflödet valbart per salong från admin (/admin/bokning + kundkortets
- * Sida-flik), utan kodändring per kund. Skriver de TRE booking-prefs-axlarna i ETT
- * svep till tenant_settings.settings.booking (samma seam som saveTenantBookingView):
- *   variant      — 'wizard' | 'compact' | 'drawer' | 'inline'  (bokningssätt)
- *   pickerMode   — 'calendar' | 'strip'                        (tid-väljare)
- *   staffAvatars — 'foto' | 'initialer' | 'namn'               (barberarbilder)
- * MERGE, aldrig clobber: settings är co-owned jsonb — prev spread:as, och prev
- * booking-nycklar utanför de tre behålls. Färgerna går INTE här — de bor i
- * branding (savePlatformBranding), som injectTenantTokens redan konsumerar.
- */
+/** Save only the booking provider and external destinations. Presentation is
+ * owned by the site revision so an older draft cannot overwrite these values. */
 export async function updateBookingSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase, tenantId } = await sidaCtx(fd)
+  const { user, supabase, tenantId } = await siteRevisionCtx({
+    tenantId: String(fd.get('tenantId') ?? ''),
+  })
   if (!tenantId) return { error: 'Saknar kund.' }
 
-  const variantRaw = String(fd.get('booking_variant') ?? '')
-  const pickerRaw = String(fd.get('picker_mode') ?? '')
-  const avatarsRaw = String(fd.get('staff_avatars') ?? '')
   const verificationModeRaw = String(fd.get('booking_verification_mode') ?? '')
+  const providerRaw = String(fd.get('booking_provider') ?? '')
   const externalUrlRaw = String(fd.get('booking_external_url') ?? '').trim()
   const externalUrl = normalizeBookingExternalUrl(externalUrlRaw)
-  // Okänt/saknat värde → samma defaults som läs-seamen (readPickerMode/
-  // readStaffAvatarMode) så spar aldrig kan landa på ett odefinierat läge.
-  const variant: BookingVariant = isBookingVariant(variantRaw) ? variantRaw : DEFAULT_BOOKING_VARIANT
-  const pickerMode: PickerMode = (PICKER_MODES as readonly string[]).includes(pickerRaw)
-    ? (pickerRaw as PickerMode)
-    : 'calendar'
-  const staffAvatars: StaffAvatarMode = (STAFF_AVATAR_MODES as readonly string[]).includes(avatarsRaw)
-    ? (avatarsRaw as StaffAvatarMode)
-    : 'initialer'
-  if (!isBookingVerificationMode(verificationModeRaw)) {
-    return { error: 'Ogiltigt kanalval för bokningskoder.' }
+  const externalCtaUrls = parseBookingExternalCtaUrls(fd)
+  if (!(BOOKING_PROVIDERS as readonly string[]).includes(providerRaw)) {
+    return { error: 'Välj Corevo-bokning eller extern bokning.' }
   }
   if (externalUrlRaw && !externalUrl) {
     return { error: 'Extern bokningslänk måste vara en fullständig https-länk.' }
   }
-  const verificationMode = verificationModeRaw as BookingVerificationMode
+  if (!externalCtaUrls) {
+    return { error: 'En knapp har en ogiltig extern bokningslänk.' }
+  }
+  const provider = providerRaw as BookingProviderKind
+  if (provider === 'corevo' && !isBookingVerificationMode(verificationModeRaw)) {
+    return { error: 'Välj kanal för bokningskoder.' }
+  }
+  if (verificationModeRaw && !isBookingVerificationMode(verificationModeRaw)) {
+    return { error: 'Ogiltigt kanalval för bokningskoder.' }
+  }
+  if (provider === 'external' && !externalUrl) {
+    return { error: 'Extern bokning kräver en standardlänk med https.' }
+  }
+  const verificationMode = verificationModeRaw
+    ? verificationModeRaw as BookingVerificationMode
+    : null
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd kund.' }
 
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
-  const prev = (existing?.settings ?? {}) as Record<string, unknown>
-  const prevBooking = (prev.booking ?? {}) as Record<string, unknown>
-  const settings = {
-    ...prev,
-    booking: {
-      ...prevBooking,
-      variant,
-      pickerMode,
-      staffAvatars,
-      verificationMode,
-      external_url: externalUrl,
-    },
-  }
-
-  const { error } = await supabase
-    .from('tenant_settings')
-    .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
-  if (error) {
-    await reportActionError('updateBookingSettings.settings_upsert', error, { tenantId })
+  const { error } = await supabase.rpc('update_booking_operational_settings', {
+    p_tenant: tenantId,
+    p_provider: provider,
+    p_external_url: externalUrl,
+    p_external_cta_urls: externalCtaUrls,
+    p_verification_mode: verificationMode,
+  })
+  if (error?.code === 'PGRST202') {
+    // ponytail: one rolling-release fallback; the atomic RPC owns all writes once deployed.
+    const { data: existing, error: readError } = await supabase
+      .from('tenant_settings')
+      .select('settings')
+      .eq('tenant_id', tenantId)
+      .maybeSingle()
+    if (readError) {
+      await reportActionError('updateBookingSettings.fallback_read', readError, { tenantId })
+      return { error: GENERIC }
+    }
+    const prev = (existing?.settings ?? {}) as Record<string, unknown>
+    const prevBooking = (prev.booking ?? {}) as Record<string, unknown>
+    const settings = {
+      ...prev,
+      booking: {
+        ...prevBooking,
+        provider,
+        external_url: externalUrl,
+        external_cta_urls: externalCtaUrls,
+        ...(verificationMode ? { verificationMode } : {}),
+      },
+    }
+    const { error: fallbackError } = await supabase
+      .from('tenant_settings')
+      .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
+    if (fallbackError) {
+      await reportActionError('updateBookingSettings.fallback_upsert', fallbackError, { tenantId })
+      return { error: GENERIC }
+    }
+    await logPlatformAction(supabase, {
+      action: 'tenant.update',
+      tenantId,
+      actorId: user.id,
+      meta: { provider, fallback: true },
+    })
+  } else if (error) {
+    await reportActionError('updateBookingSettings.rpc', error, { tenantId })
     return { error: GENERIC }
   }
 
@@ -273,18 +291,6 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
   revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   revalidatePath('/admin/bokning')
-  await logPlatformAction(supabase, {
-    action: 'tenant.update',
-    tenantId,
-    actorId: user.id,
-    meta: {
-      booking_variant: variant,
-      picker_mode: pickerMode,
-      staff_avatars: staffAvatars,
-      booking_verification_mode: verificationMode,
-      booking_external_url: externalUrl,
-    },
-  })
   return { success: 'Bokningsinställningar sparade. Publika sajten uppdaterad.' }
 }
 

@@ -5,7 +5,7 @@ import { BookAgainButton, BookAgainProvider } from './BookAgainButton'
 
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null, verticalLabel: null,
-  phone: null, address: null, mapUrl: null, bookingOrigin: 'https://freshcut.boka.corevo.se',
+  phone: null, address: null, mapUrl: null, bookingOrigin: 'https://freshcut.corevo.se',
   timezone: 'Europe/Stockholm', locale: 'sv-SE', defaultCountry: 'SE', currency: 'SEK',
   cancellationCutoffHours: 24, customerName: 'Alex', lastSeenAt: '2026-07-22T10:00:00.000Z',
   absoluteExpiresAt: '2027-07-22T10:00:00.000Z',
@@ -17,7 +17,7 @@ const booking: PortalBookingProjection = {
   serviceName: 'Klippning', durationMinutes: 30, staffTitle: null, location: null,
   priceCents: null, currency: 'SEK', canCancel: true,
   cancelDeadline: '2099-07-31T10:00:00.000Z',
-  publicRebookUrl: 'https://freshcut.boka.corevo.se/boka?tjanst=223e4567-e89b-42d3-a456-426614174000',
+  publicRebookUrl: 'https://freshcut.corevo.se/boka?tjanst=223e4567-e89b-42d3-a456-426614174000',
 }
 
 describe('BookAgainButton', () => {
@@ -39,13 +39,13 @@ describe('BookAgainButton', () => {
         <BookAgainButton label="Boka ny tid" variant="primary" />
       </BookAgainProvider>,
     )
-    expect(html).toContain('href="https://freshcut.boka.corevo.se/boka"')
+    expect(html).toContain('href="https://freshcut.corevo.se/boka"')
     expect(html).toContain('cp-btn-primary')
   })
 
   it.each([
     { ...snapshot, bookingOrigin: 'https://portal.corevo.se' },
-    { ...snapshot, bookingOrigin: 'https://other.boka.corevo.se' },
+    { ...snapshot, bookingOrigin: 'https://other.corevo.se' },
   ])('renders nothing for an unsafe or cross-tenant origin', (unsafeSnapshot) => {
     expect(renderToStaticMarkup(
       <BookAgainProvider snapshot={unsafeSnapshot}>

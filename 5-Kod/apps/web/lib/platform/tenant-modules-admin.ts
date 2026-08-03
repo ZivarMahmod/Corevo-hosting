@@ -144,7 +144,12 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
       .update({ state })
       .eq('tenant_id', tenantId)
       .eq('module_key', moduleKey)
-    if (error) return { error: GENERIC }
+    if (error) {
+      if (error.message.includes('booking_external_url_required')) {
+        return { error: 'Lägg in en giltig extern bokningslänk innan modulen slås på.' }
+      }
+      return { error: GENERIC }
+    }
   }
 
   // Bust the per-tenant storefront cache (module gating reads tenant_modules, tagged

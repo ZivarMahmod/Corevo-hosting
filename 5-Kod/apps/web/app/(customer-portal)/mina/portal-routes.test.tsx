@@ -48,7 +48,7 @@ import ProfilePage, {
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null,
   verticalLabel: 'Frisörsalong', phone: '+4613123456', address: 'Testgatan 1', mapUrl: null,
-  bookingOrigin: 'https://freshcut.boka.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
+  bookingOrigin: 'https://freshcut.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
   defaultCountry: 'SE', currency: 'SEK', cancellationCutoffHours: 24, customerName: 'Alex',
   lastSeenAt: '2026-07-22T12:00:00.000Z', absoluteExpiresAt: '2027-07-22T12:00:00.000Z',
 }
@@ -59,7 +59,7 @@ const booking = (overrides: Partial<PortalBookingProjection> = {}): PortalBookin
   status: 'confirmed', presentationStatus: 'confirmed', serviceName: 'Service från RPC',
   durationMinutes: 30, staffTitle: 'Sam', location: null, priceCents: 32900, currency: 'SEK',
   canCancel: true, cancelDeadline: '2026-08-22T12:30:00.000Z',
-  publicRebookUrl: 'https://freshcut.boka.corevo.se/boka', ...overrides,
+  publicRebookUrl: 'https://freshcut.corevo.se/boka', ...overrides,
 })
 
 const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
@@ -169,7 +169,7 @@ describe('/mina', () => {
     expect(mocks.listPortalBookings).toHaveBeenNthCalledWith(2, { scope: 'history', pageSize: 1 })
     expect(html).toContain('Du har inga bokningar hos FreshCut ännu.')
     expect(html).toContain('Boka ny tid')
-    expect(html).toContain('href="https://freshcut.boka.corevo.se/boka"')
+    expect(html).toContain('href="https://freshcut.corevo.se/boka"')
     expect(html).not.toContain('href="undefined"')
   })
 

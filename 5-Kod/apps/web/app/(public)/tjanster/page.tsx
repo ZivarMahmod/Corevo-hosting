@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { ServiceMenu } from '@/components/storefront/ServiceMenu'
 import { SectionHeader } from '@/components/storefront/sections'
@@ -21,6 +21,7 @@ export default async function ServicesPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings, location } = bundle
+  if (settings.theme === 'freshcut') redirect('/#tjanster')
   // Section header varies per theme (data-driven, no longer hardcoded).
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)

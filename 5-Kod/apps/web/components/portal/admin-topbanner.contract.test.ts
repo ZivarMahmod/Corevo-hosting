@@ -11,6 +11,7 @@ const topnav = read('components/portal/Topnav.tsx')
 const portalShell = read('components/portal/PortalShell.tsx')
 const adminNavigation = read('components/portal/admin-navigation.ts')
 const switcher = read('components/portal/LocationSwitcher.tsx')
+const switcherCss = read('components/portal/LocationSwitcher.module.css')
 const detailsHook = read('components/portal/useDismissibleDetails.ts')
 const css = read('components/portal/Topnav.module.css')
 const adminCss = read('components/portal/AdminTopnav.module.css')
@@ -150,6 +151,10 @@ describe('del 02: universal toppbanner v2', () => {
     expect(switcher).toContain('Valet följer med till alla flikar.')
     expect(switcher).toContain('PLATS_COOKIE')
     expect(switcher).not.toContain('<select')
+    expect(switcher).toContain('role="group"')
+    expect(switcher).toContain('aria-pressed={active}')
+    expect(switcherCss).toMatch(/\.menu\s*\{[\s\S]*?bottom:\s*calc\(100% \+ 8px\);/)
+    expect(switcherCss).toMatch(/\.menu\s*\{[\s\S]*?max-height:[\s\S]*?overflow-y:\s*auto;/)
   })
 
   it('låter det globala platsvalet styra översiktens data och utskrivna plats', () => {

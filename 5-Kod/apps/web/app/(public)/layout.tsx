@@ -115,11 +115,15 @@ export default async function PublicLayout({ children }: { children: React.React
 
   const bookingState = moduleState(moduleStates, 'booking')
   const bookingLive = bookingState === 'live'
+  const bookingReachable = bookingLive || settings.bookingLegacyExternal
+  const effectiveLayoutModules = settings.bookingLegacyExternal
+    ? { ...layoutModules, bookingReachable: true }
+    : layoutModules
   // Korgen visas bara när shop-routen är reachable och har publika produkter.
   const cartEnabled = layoutModules.shopReachable
-  // Booking gating: bara en LIVE booking-modul får riktiga tjänster. Off ger en
-  // TOM lista så varje "Boka tid"-CTA är inert (BookingProvider.available=false).
-  const wizardServices = bookingLive ? allWizardServices : []
+  // Booking gating: bara en LIVE booking-modul får tjänster. Provider avgör sedan
+  // om CTA:n öppnar Corevo eller en extern länk; Off döljer bokningskontrollerna.
+  const wizardServices = bookingReachable ? allWizardServices : []
   // BRANSCH-REGELN: bokningens VERB (drawer/aria/footer/inline) ur bransch-lagret.
   const bokning = branschBokning(tenant.vertical_id)
 
@@ -128,7 +132,7 @@ export default async function PublicLayout({ children }: { children: React.React
   // annars faller den tillbaka till BookCta (null-prop).
   // Nav/NavShell får bara en färdig cta — eller null = dagens 'Boka tid' exakt.
   const primaryCta =
-    rawPrimaryCta && moduleRouteReachable(rawPrimaryCta.href, layoutModules, layoutModules.bookingReachable)
+    rawPrimaryCta && moduleRouteReachable(rawPrimaryCta.href, effectiveLayoutModules, bookingReachable)
       ? { ...rawPrimaryCta, href: canonicalModuleHref(rawPrimaryCta.href) }
       : null
 
@@ -143,7 +147,7 @@ export default async function PublicLayout({ children }: { children: React.React
   // renderas som children i NavShell → mobilmeny, fokusfälla, korg och kundkonto följer
   // med varje mall utan att mallen kan tappa dem. Utan chrome → dagens Nav/Footer exakt.
   const chrome = themeChrome(settings.theme)
-  const moduleLinks = moduleNavigationLinks(layoutModules)
+  const moduleLinks = moduleNavigationLinks(effectiveLayoutModules)
   const navLinks = [
     { href: '/', label: 'Hem' },
     ...moduleLinks.filter((link) => link.href === '/shop'),
@@ -183,9 +187,10 @@ export default async function PublicLayout({ children }: { children: React.React
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
       <BookingProvider
-        reachable={layoutModules.bookingReachable}
-        websiteOnly={bookingState === 'off'}
+        reachable={bookingReachable}
+        provider={settings.bookingProvider}
         externalUrl={settings.bookingExternalUrl}
+        externalCtaUrls={settings.bookingExternalCtaUrls}
         services={wizardServices}
         locations={wizardLocations}
         tenantName={tenant.name}

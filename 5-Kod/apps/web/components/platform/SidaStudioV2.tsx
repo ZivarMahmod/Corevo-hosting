@@ -24,6 +24,7 @@ import {
 import { resolveSiteEditorTabId, siteEditorPreviewSrc, siteEditorTabHref } from './SidaStudioV2.tabs'
 import type { SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
 import { ThemePicker, type ThemeCopyMode } from './ThemePicker'
+import { BookingPanel, type BookingPanelConfig } from './BookingSettings'
 
 export { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
 export type { SiteEditorCard, SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
@@ -57,7 +58,6 @@ const REVISION_ACTION_ERROR: Record<RevisionAction, string> = {
   discard: 'Utkastet kunde inte kastas.',
   restore: 'Versionen kunde inte återställas.',
 }
-
 export type SidaStudioV2Props = {
   surface: 'standalone' | 'embedded'
   tenantId: string
@@ -75,8 +75,8 @@ export type SidaStudioV2Props = {
   liveModules?: string[]
   scheduleHours: { day: string; time: string }[] | null
   canChangeTemplate?: boolean
+  booking: BookingPanelConfig
 }
-
 const sameSnapshot = (a: SiteSnapshot, b: SiteSnapshot) => JSON.stringify(a) === JSON.stringify(b)
 const copySnapshot = (snapshot: SiteSnapshot): SiteSnapshot => structuredClone(snapshot)
 const resolvePreviewSnapshot = (
@@ -117,13 +117,11 @@ const formattedTime = (value: string | null | undefined) => {
   const date = new Date(value)
   return Number.isNaN(date.valueOf()) ? '' : date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
 }
-
 const slotRatio = (slot: ImageSlot): number => {
   if (slot === 'logo_url') return 1
   if (slot === 'hero_images' || slot === 'closing_image') return 16 / 9
   return 4 / 3
 }
-
 /** Bake the selected focus point into a real crop before R2 upload. Persisting the
  * final bitmap keeps every storefront renderer on the same image contract. */
 async function cropFocusedImage(file: File, ratio: number, focusX: number, focusY: number): Promise<File> {
@@ -172,6 +170,7 @@ export function SidaStudioV2({
   liveModules = [],
   scheduleHours,
   canChangeTemplate = false,
+  booking,
 }: SidaStudioV2Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -938,7 +937,30 @@ export function SidaStudioV2({
           })}
 
           {activeTab?.id === 'kontakt' ? <ContactFields snapshot={working} scheduleHours={scheduleHours} update={update} onShow={showField} /> : null}
-          {activeTab?.id === 'bokning' ? <BookingFields snapshot={working} published={published} update={update} onShow={showField} /> : null}
+          {activeTab?.id === 'bokning' ? (
+            <BookingPanel
+              tenantId={tenantId}
+              templateKey={booking.templateKey}
+              branding={working.branding}
+              variant={working.settings.booking.variant}
+              pickerMode={working.settings.booking.pickerMode}
+              staffAvatars={working.settings.booking.staffAvatars}
+              verificationMode={booking.verificationMode}
+              externalUrl={booking.externalUrl}
+              externalCtaUrls={booking.externalCtaUrls}
+              ctaSlots={booking.ctaSlots}
+              bookingLive={booking.bookingLive}
+              bookingProvider={booking.bookingProvider}
+              hasStaffPhoto={booking.hasStaffPhoto}
+              onVariantChange={(value) => update((next) => { next.settings.booking.variant = value })}
+              onPickerModeChange={(value) => update((next) => { next.settings.booking.pickerMode = value })}
+              onStaffAvatarsChange={(value) => update((next) => { next.settings.booking.staffAvatars = value })}
+              onSaved={() => {
+                iframeRef.current?.contentWindow?.location.reload()
+                router.refresh()
+              }}
+            />
+          ) : null}
         </fieldset>
 
         <div
@@ -1243,36 +1265,4 @@ function ContactFields({ snapshot, scheduleHours, update, onShow }: {
           next.settings.opening_hours = list.some((row) => row.time.trim()) ? list.filter((row) => row.time.trim()) : null
         })} />)}</div></EditorCard>
   </>
-}
-
-function BookingFields({ snapshot, published, update, onShow }: {
-  snapshot: SiteSnapshot; published: SiteSnapshot
-  update: (recipe: (snapshot: SiteSnapshot) => void) => void
-  onShow: (field: string, value: string) => void
-}) {
-  return <EditorCard title="Bokningsflödet">
-    <SelectField label="Presentation" field="booking.variant" value={snapshot.settings.booking.variant}
-      options={[['wizard', 'Steg för steg'], ['compact', 'Snabbboka'], ['drawer', 'Panel'], ['inline', 'Inbyggd']]}
-      custom={snapshot.settings.booking.variant !== published.settings.booking.variant}
-      onShow={onShow} onChange={(value) => update((next) => { next.settings.booking.variant = value as SiteSnapshot['settings']['booking']['variant'] })} />
-    <SelectField label="Datumväljare" field="booking.pickerMode" value={snapshot.settings.booking.pickerMode}
-      options={[['calendar', 'Kalender'], ['strip', 'Dagremsa']]}
-      custom={snapshot.settings.booking.pickerMode !== published.settings.booking.pickerMode} onShow={onShow}
-      onChange={(value) => update((next) => { next.settings.booking.pickerMode = value as SiteSnapshot['settings']['booking']['pickerMode'] })} />
-    <SelectField label="Personalbilder" field="booking.staffAvatars" value={snapshot.settings.booking.staffAvatars}
-      options={[['foto', 'Foto'], ['initialer', 'Initialer'], ['namn', 'Namn']]}
-      custom={snapshot.settings.booking.staffAvatars !== published.settings.booking.staffAvatars} onShow={onShow}
-      onChange={(value) => update((next) => { next.settings.booking.staffAvatars = value as SiteSnapshot['settings']['booking']['staffAvatars'] })} />
-  </EditorCard>
-}
-
-function SelectField({ label, field, value, options, custom, onChange, onShow }: {
-  label: string; field: string; value: string; options: [string, string][]; custom: boolean
-  onChange: (value: string) => void; onShow: (field: string, value: string) => void
-}) {
-  return <label className={styles.field}><span className={styles.fieldHead}><b>{label}</b>
-    <i className={custom ? styles.customChip : styles.standardChip}>{custom ? 'EGEN TEXT' : 'STANDARD'}</i></span>
-    <select value={value} data-corevo-editor-field={field} onChange={(e) => onChange(e.target.value)}>{options.map(([key, name]) => <option value={key} key={key}>{name}</option>)}</select>
-    <button type="button" className={styles.showButton} data-accept={`show-field-${field}`} onClick={(e) => { e.preventDefault(); onShow(field, value) }}>Visa var</button>
-  </label>
 }

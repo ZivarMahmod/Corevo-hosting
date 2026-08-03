@@ -1,12 +1,10 @@
-// Onboarding-studio (goal-48) — the PURE reducer + frozen prop/contract types the
-// shell and its 12 leaf panels share. Ports app.jsx's App stage-machine + A-actions,
-// but driven by the REAL StudioCfg model (model.ts) and submitted through the proven
-// createTenant FormData contract (build-contract §6). No DB, no side effects — every
-// function here is pure so the panels stay trivially testable and the flag-OFF path
-// (CreateTenantForm) is never touched.
+// Onboarding-studio (goal-48) — the pure reducer and prop contracts shared by the
+// studio panels. StudioCfg is submitted through the existing createTenant FormData
+// boundary; this file has no DB access or side effects.
 import type { Dispatch } from 'react'
 import { type ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant } from '@/lib/platform/booking-variant'
+import type { BookingProviderKind } from '@/lib/platform/booking-external-url'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import {
   type StudioCfg,
@@ -42,6 +40,8 @@ export type StudioAction =
   | { type: 'setTheme'; key: string }
   | { type: 'setModule'; key: string; state: ModuleState }
   | { type: 'setVariant'; variant: BookingVariant }
+  | { type: 'setBookingProvider'; provider: BookingProviderKind }
+  | { type: 'setBookingExternalUrl'; value: string }
   | { type: 'setServices'; services: StudioService[] }
   | { type: 'setAccent'; hex: string }
   | { type: 'setTagline'; value: string }
@@ -82,6 +82,10 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
         return { ...cfg, moduleStates: { ...cfg.moduleStates, [action.key]: action.state } }
       case 'setVariant':
         return { ...cfg, variant: action.variant }
+      case 'setBookingProvider':
+        return { ...cfg, bookingProvider: action.provider }
+      case 'setBookingExternalUrl':
+        return { ...cfg, bookingExternalUrl: action.value }
       case 'setServices':
         return { ...cfg, services: action.services }
       case 'setAccent':
@@ -136,6 +140,8 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   fd.set('slug', cfg.slug)
   fd.set('theme', cfg.theme)
   fd.set('booking_variant', cfg.variant)
+  fd.set('booking_provider', cfg.bookingProvider)
+  fd.set('booking_external_url', cfg.bookingExternalUrl)
 
   const modules: Record<string, ModuleState> = { ...cfg.moduleStates }
   fd.set('modules', JSON.stringify(modules))

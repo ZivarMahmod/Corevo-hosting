@@ -5814,6 +5814,16 @@ export type Database = {
           version: number
         }[]
       }
+      update_booking_operational_settings: {
+        Args: {
+          p_external_cta_urls: Json
+          p_external_url: string | null
+          p_provider: string
+          p_tenant: string
+          p_verification_mode?: string | null
+        }
+        Returns: Json
+      }
       update_media_alt: {
         Args: { p_alt: string; p_asset: string; p_tenant: string }
         Returns: {

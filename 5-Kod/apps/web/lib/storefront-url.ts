@@ -1,12 +1,11 @@
 /**
  * Public storefront URL for a tenant — ALWAYS the real public host
- * (`https://<slug>.boka.corevo.se`, or the tenant's verified custom domain), computed
+ * (`https://<slug>.corevo.se`, or the tenant's verified custom domain), computed
  * from tenant data. It is deliberately NOT derived from NEXT_PUBLIC_SITE_URL /
  * the request host. `tenantStorefrontAppUrl` is the explicit localhost seam for
  * back-office preview links; canonical display never changes with the dev host.
  */
-export const TENANT_HOST_SUFFIX =
-  process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX?.trim().toLowerCase() || 'boka.corevo.se'
+export const TENANT_HOST_SUFFIX = 'corevo.se'
 
 function cleanHost(value?: string | null): string | null {
   const host = value?.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '')
@@ -28,7 +27,7 @@ export function tenantStorefrontUrl(
   return clean ? `https://${clean}.${TENANT_HOST_SUFFIX}` : null
 }
 
-/** Bare canonical host for display, e.g. "freshcut.boka.corevo.se". */
+/** Bare canonical host for display, e.g. "freshcut.corevo.se". */
 export function tenantStorefrontHost(
   slug?: string | null,
   customDomain?: string | null,

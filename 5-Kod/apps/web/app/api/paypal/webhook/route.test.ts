@@ -60,6 +60,16 @@ beforeEach(() => {
 })
 
 describe('PayPal webhook', () => {
+  it('returnerar 503 när signaturkonfigurationen saknas så eventet levereras om', async () => {
+    paypalReady.mockReturnValue(false)
+
+    const response = await POST(completedRequest())
+
+    expect(response.status).toBe(503)
+    expect(verifyPaypalWebhook).not.toHaveBeenCalled()
+    expect(settleShopOrderPaid).not.toHaveBeenCalled()
+  })
+
   it('returnerar 500 när settlement inte kunde skrivas så PayPal försöker igen', async () => {
     settleShopOrderPaid.mockResolvedValue({ ok: false, reason: 'event_settle_failed' })
 

@@ -76,8 +76,11 @@ export function validatePortalBookingOrigin({
       url.origin !== bookingOrigin
     ) return null
 
-    const canonicalHost = `${tenantSlug}.boka.corevo.se`
-    if (url.hostname === canonicalHost) return bookingOrigin
+    const canonicalHost = `${tenantSlug}.corevo.se`
+    const legacyHost = `${tenantSlug}.boka.corevo.se`
+    if (url.hostname === canonicalHost || url.hostname === legacyHost) {
+      return `https://${canonicalHost}`
+    }
     return safeDnsHostname(url.hostname) ? bookingOrigin : null
   } catch {
     return null
@@ -106,12 +109,16 @@ export function buildPortalRebookUrl({
 
   try {
     const url = new URL(bookingUrl)
+    const legacyOrigin = `https://${tenantSlug}.boka.corevo.se`
+    const normalizedOrigin = url.origin === legacyOrigin
+      ? `https://${tenantSlug}.corevo.se`
+      : url.origin
     if (
       url.protocol !== 'https:' ||
       url.username !== '' ||
       url.password !== '' ||
       url.port !== '' ||
-      url.origin !== origin ||
+      normalizedOrigin !== origin ||
       url.pathname !== '/boka' ||
       url.hash !== ''
     ) return null

@@ -24,7 +24,10 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh, push: mocks.push }),
   useSearchParams: () => mocks.searchParams,
 }))
-vi.mock('@corevo/ui', () => ({ injectTenantTokens: () => ({}) }))
+vi.mock('@corevo/ui', () => ({
+  accentForeground: () => '#ffffff',
+  injectTenantTokens: () => ({}),
+}))
 vi.mock('@/lib/platform/actions/site-revisions', () => ({
   discardSiteDraft: mocks.discardSiteDraft,
   publishSiteDraft: mocks.publishSiteDraft,
@@ -230,6 +233,16 @@ function renderStudio(props: Partial<SidaStudioV2Props> = {}, key = 'studio') {
       manifestData={manifest}
       liveModules={[]}
       scheduleHours={null}
+      booking={{
+        templateKey: 'leander',
+        verificationMode: 'sms_with_email_fallback',
+        externalUrl: null,
+        externalCtaUrls: {},
+        ctaSlots: [],
+        bookingLive: true,
+        bookingProvider: 'corevo',
+        hasStaffPhoto: false,
+      }}
       {...props}
     />,
   )

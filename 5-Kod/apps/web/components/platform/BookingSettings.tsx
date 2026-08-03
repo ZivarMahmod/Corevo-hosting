@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { accentForeground, type TenantBranding } from '@corevo/ui'
 import { updateBookingSettings } from '@/lib/platform/actions'
@@ -12,6 +12,12 @@ import type {
   StaffAvatarMode,
 } from '@/lib/platform/booking-variant'
 import { themePalette } from '@/lib/platform/theme-palettes'
+import {
+  BOOKING_EXTERNAL_CTA_FIELD_PREFIX,
+  type BookingExternalCtaUrls,
+  type BookingProviderKind,
+} from '@/lib/platform/booking-external-url'
+import type { BookingCtaSlot } from '@/lib/platform/booking-cta-slots'
 import studio from './SidaStudio.module.css'
 import pform from './platform.module.css'
 
@@ -75,6 +81,17 @@ const AVATAR_OPTIONS: { id: StaffAvatarMode; label: string; hint: string }[] = [
   { id: 'namn', label: 'Namn', hint: 'Bara namn och roll — ingen bild.' },
 ]
 
+export type BookingPanelConfig = {
+  templateKey: string
+  verificationMode: BookingVerificationMode
+  externalUrl: string | null
+  externalCtaUrls: BookingExternalCtaUrls
+  ctaSlots: BookingCtaSlot[]
+  bookingLive: boolean
+  bookingProvider: BookingProviderKind
+  hasStaffPhoto: boolean
+}
+
 // ── WCAG-kontrast (för färg-varningen; accentForeground håller CTA-texten läsbar) ──
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(hex.trim())
@@ -110,7 +127,14 @@ export function BookingPanel({
   staffAvatars,
   verificationMode,
   externalUrl,
+  externalCtaUrls,
+  ctaSlots,
+  bookingLive,
+  bookingProvider,
   hasStaffPhoto,
+  onVariantChange,
+  onPickerModeChange,
+  onStaffAvatarsChange,
   onSaved,
 }: {
   tenantId: string
@@ -122,19 +146,22 @@ export function BookingPanel({
   staffAvatars: StaffAvatarMode
   verificationMode: BookingVerificationMode
   externalUrl: string | null
+  externalCtaUrls: BookingExternalCtaUrls
+  ctaSlots: BookingCtaSlot[]
+  bookingLive: boolean
+  bookingProvider: BookingProviderKind
   /** true när minst en AKTIV medarbetare har avatar_url — annars är Foto-läget
    *  avstängt med hint (design-kanon: "disable Foto with a hint"). */
   hasStaffPhoto: boolean
+  onVariantChange: (variant: BookingVariant) => void
+  onPickerModeChange: (pickerMode: PickerMode) => void
+  onStaffAvatarsChange: (staffAvatars: StaffAvatarMode) => void
   /** SidaStudions reload — previewen laddas om efter spar. */
   onSaved?: () => void
 }) {
-  // Valen hålls kontrollerat så mini-schematics + segmenten markerar direkt.
-  // 'foto' utan foton speglar render-fallbacken (initialer) redan i formuläret.
-  const [sel, setSel] = useState<{ variant: BookingVariant; picker: PickerMode; avatars: StaffAvatarMode }>({
-    variant,
-    picker: pickerMode,
-    avatars: staffAvatars === 'foto' && !hasStaffPhoto ? 'initialer' : staffAvatars,
-  })
+  const [selectedProvider, setSelectedProvider] = useState(bookingProvider)
+  useEffect(() => setSelectedProvider(bookingProvider), [bookingProvider])
+  const selectedAvatars = staffAvatars === 'foto' && !hasStaffPhoto ? 'initialer' : staffAvatars
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     async (p, fd) => {
@@ -157,9 +184,8 @@ export function BookingPanel({
   const lowContrast = fgBgRatio != null && fgBgRatio < 4.5
 
   return (
-    <form action={formAction} style={{ display: 'grid', gap: 16, minWidth: 0 }}>
-      <input type="hidden" name="tenantId" value={tenantId} />
-
+    <div style={{ display: 'grid', gap: 16, minWidth: 0 }}>
+      {bookingLive && selectedProvider === 'corevo' ? <>
       <section className={studio.card}>
         <h3 className={studio.cardHead}>Bokningssätt</h3>
         <p className={studio.note}>
@@ -168,7 +194,7 @@ export function BookingPanel({
         </p>
         <div className={pform.templateGrid} role="radiogroup" aria-label="Bokningssätt">
           {VARIANT_CARDS.map((c) => {
-            const on = sel.variant === c.id
+            const on = variant === c.id
             return (
               <label
                 key={c.id}
@@ -180,7 +206,7 @@ export function BookingPanel({
                   name="booking_variant"
                   value={c.id}
                   checked={on}
-                  onChange={() => setSel((s) => ({ ...s, variant: c.id }))}
+                  onChange={() => onVariantChange(c.id)}
                   style={srOnly}
                 />
                 <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
@@ -200,7 +226,7 @@ export function BookingPanel({
         <p className={studio.note}>Hur kunden väljer dag i steget &quot;När passar det?&quot;.</p>
         <div style={segRail} role="radiogroup" aria-label="Tid-väljare">
           {PICKER_OPTIONS.map((o) => {
-            const on = sel.picker === o.id
+            const on = pickerMode === o.id
             return (
               <label key={o.id} style={segPill(on, false)}>
                 <input
@@ -208,7 +234,7 @@ export function BookingPanel({
                   name="picker_mode"
                   value={o.id}
                   checked={on}
-                  onChange={() => setSel((s) => ({ ...s, picker: o.id }))}
+                  onChange={() => onPickerModeChange(o.id)}
                   style={srOnly}
                 />
                 <span style={{ fontWeight: 650 }}>{o.label}</span>
@@ -225,7 +251,7 @@ export function BookingPanel({
         <div style={segRail} role="radiogroup" aria-label="Personalbilder">
           {AVATAR_OPTIONS.map((o) => {
             const disabled = o.id === 'foto' && !hasStaffPhoto
-            const on = sel.avatars === o.id
+            const on = selectedAvatars === o.id
             return (
               <label key={o.id} style={segPill(on, disabled)}>
                 <input
@@ -234,7 +260,7 @@ export function BookingPanel({
                   value={o.id}
                   checked={on}
                   disabled={disabled}
-                  onChange={() => setSel((s) => ({ ...s, avatars: o.id }))}
+                  onChange={() => onStaffAvatarsChange(o.id)}
                   style={srOnly}
                 />
                 <span style={{ fontWeight: 650 }}>{o.label}</span>
@@ -251,8 +277,45 @@ export function BookingPanel({
           </p>
         ) : null}
       </section>
+      </> : (
+        <section className={studio.card}>
+          <h3 className={studio.cardHead}>{bookingLive ? 'Extern bokning är aktiv' : 'Bokning är av'}</h3>
+          <p className={studio.note}>
+            {bookingLive
+              ? 'Knapparna på sidan öppnar den externa bokningstjänsten.'
+              : 'Inga bokningsknappar är aktiva på kundens sida. Slå på modulen för att använda vald leverantör.'}
+          </p>
+        </section>
+      )}
+
+      <form action={formAction} style={{ display: 'grid', gap: 16, minWidth: 0 }}>
+      <input type="hidden" name="tenantId" value={tenantId} />
 
       <section className={studio.card}>
+        <h3 className={studio.cardHead}>Bokningsleverantör</h3>
+        <p className={studio.note}>Välj vad Boka-knapparna ska öppna när bokningsmodulen är på.</p>
+        <div style={segRail} role="radiogroup" aria-label="Bokningsleverantör">
+          {([
+            ['corevo', 'Corevo-bokning', 'Kunden bokar direkt på sin Corevo-sida.'],
+            ['external', 'Extern bokning', 'Knapparna öppnar exempelvis Bokadirekt.'],
+          ] as const).map(([value, label, hint]) => (
+            <label key={value} style={segPill(selectedProvider === value, false)}>
+              <input
+                type="radio"
+                name="booking_provider"
+                value={value}
+                checked={selectedProvider === value}
+                onChange={() => setSelectedProvider(value)}
+                style={srOnly}
+              />
+              <span style={{ fontWeight: 650 }}>{label}</span>
+              <span style={segHint(selectedProvider === value)}>{hint}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      {selectedProvider === 'corevo' ? <section className={studio.card}>
         <h3 className={studio.cardHead}>Verifieringskod</h3>
         <p className={studio.note}>
           Välj kanal efter kundens avtal. Mejlreserv används bara när SMS-tjänsten är nere.
@@ -265,24 +328,54 @@ export function BookingPanel({
             <option value="email_only">Endast mejl</option>
           </select>
         </label>
-      </section>
+      </section> : null}
 
       <section className={studio.card}>
-        <h3 className={studio.cardHead}>Extern bokning</h3>
+        <h3 className={studio.cardHead}>{selectedProvider === 'external' ? 'Bokningslänkar' : 'Extern reservbokning'}</h3>
         <p className={studio.note}>
-          Används när bokningsmodulen står på Av. Då går alla Boka-knappar till den
-          externa tjänsten i en ny flik. Corevo-bokningen vinner alltid när den är live.
+          {selectedProvider === 'external'
+            ? 'Standardlänken används av alla Boka-knappar som inte har en egen länk.'
+            : 'Länkarna sparas som reserv och används inte när Corevo är vald.'}
         </p>
         <label className={pform.field}>
-          <span>Extern https-länk</span>
+          <span>Standardlänk</span>
           <input
+            key={externalUrl ?? 'empty'}
             name="booking_external_url"
             type="url"
             inputMode="url"
             placeholder="https://www.bokadirekt.se/..."
             defaultValue={externalUrl ?? ''}
+            required={selectedProvider === 'external'}
           />
         </label>
+        {ctaSlots.length > 0 ? (
+          <div style={linkList}>
+            {ctaSlots.map((slot) => {
+              const ownUrl = externalCtaUrls[slot.id] ?? ''
+              const effectiveUrl = ownUrl || externalUrl
+              return (
+                <label className={pform.field} key={slot.id} style={linkRow}>
+                  <span style={linkHead}>
+                    <strong>{slot.label}</strong>
+                    <small>{slot.group}{ownUrl ? ' · egen länk' : ' · standardlänk'}</small>
+                  </span>
+                  <span style={linkControl}>
+                    <input
+                      key={`${slot.id}:${ownUrl}`}
+                      name={`${BOOKING_EXTERNAL_CTA_FIELD_PREFIX}${slot.id}`}
+                      type="url"
+                      inputMode="url"
+                      placeholder={externalUrl ?? 'https://www.bokadirekt.se/...'}
+                      defaultValue={ownUrl}
+                    />
+                    {effectiveUrl ? <a href={effectiveUrl} target="_blank" rel="noopener noreferrer">Testa ↗</a> : null}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        ) : null}
       </section>
 
       <section className={studio.card}>
@@ -307,7 +400,7 @@ export function BookingPanel({
 
       <div className={pform.actions}>
         <button type="submit" className="btn-primary" disabled={pending}>
-          {pending ? 'Sparar…' : 'Spara bokningsinställningar'}
+          {pending ? 'Sparar…' : bookingLive ? 'Spara bokningsinställningar' : 'Spara bokningslänkar'}
         </button>
         {state.error ? (
           <span className={`${pform.feedback} auth-error`} role="alert">
@@ -321,10 +414,10 @@ export function BookingPanel({
         ) : null}
       </div>
       <p className={pform.hint} style={{ margin: '-6px 0 0' }}>
-        Testa direkt: spara, klicka sedan <strong>Boka tid</strong> i previewen till höger —
-        bokningen följer valen.
+        Spara och testa sedan knapparna i förhandsvisningen till höger.
       </p>
-    </form>
+      </form>
+    </div>
   )
 }
 
@@ -491,4 +584,23 @@ const contrastWarn: CSSProperties = {
   borderRadius: 8,
   padding: '8px 12px',
   margin: '0 0 12px',
+}
+const linkList: CSSProperties = { display: 'grid', gap: 10, marginTop: 14 }
+const linkRow: CSSProperties = {
+  borderTop: '1px solid var(--c-line, #e2e7de)',
+  paddingTop: 10,
+  minWidth: 0,
+}
+const linkHead: CSSProperties = {
+  display: 'flex',
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  gap: 10,
+  flexWrap: 'wrap',
+}
+const linkControl: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) auto',
+  alignItems: 'center',
+  gap: 8,
 }

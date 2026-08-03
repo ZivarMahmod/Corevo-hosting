@@ -119,7 +119,10 @@ export async function PreviewShell({
   const layoutModules = await loadLayoutModuleTeasers(tenant.id, tenant.slug)
   const bookingState = moduleState(moduleStates, 'booking')
   const bookingLive = bookingState === 'live'
-  const bookingReachable = bookingLive
+  const bookingReachable = bookingLive || settings.bookingLegacyExternal
+  const effectiveLayoutModules = settings.bookingLegacyExternal
+    ? { ...layoutModules, bookingReachable: true }
+    : layoutModules
   const [allWizardServices, wizardLocations, staffNoun, bookingPrefs, teamCount] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
@@ -127,7 +130,7 @@ export async function PreviewShell({
     getBookingPrefs(tenant.id, tenant.slug),
     countTeamMembers(tenant.id, tenant.slug),
   ])
-  const wizardServices = bookingLive ? allWizardServices : []
+  const wizardServices = bookingReachable ? allWizardServices : []
 
   // Footer-taglinen ärar ägarens copy-override (temats standard annars) — samma
   // kontrakt som (public)/layout.
@@ -148,7 +151,7 @@ export async function PreviewShell({
   // Nu exakt samma chrome-dispatch + modul-gatade länklista + bransch-CTA som
   // app/(public)/layout.tsx. OBS: chromen följer ?theme= (previewens hela poäng).
   const chrome = themeChrome(theme)
-  const moduleLinks = moduleNavigationLinks(layoutModules)
+  const moduleLinks = moduleNavigationLinks(effectiveLayoutModules)
   const navLinks = [
     { href: '/', label: 'Hem' },
     ...moduleLinks.filter((link) => link.href === '/shop'),
@@ -162,7 +165,7 @@ export async function PreviewShell({
   // Bransch-CTA med samma modul-gate som layouten (peka aldrig på en död modulsida).
   const rawPrimaryCta = await resolvePrimaryCta(tenant.vertical_id)
   const primaryCta =
-    rawPrimaryCta && moduleRouteReachable(rawPrimaryCta.href, layoutModules, bookingReachable)
+    rawPrimaryCta && moduleRouteReachable(rawPrimaryCta.href, effectiveLayoutModules, bookingReachable)
       ? { ...rawPrimaryCta, href: canonicalModuleHref(rawPrimaryCta.href) }
       : null
 
@@ -177,8 +180,9 @@ export async function PreviewShell({
       <SidaPreviewBridge />
       <BookingProvider
         reachable={bookingReachable}
-        websiteOnly={bookingState === 'off'}
+        provider={settings.bookingProvider}
         externalUrl={settings.bookingExternalUrl}
+        externalCtaUrls={settings.bookingExternalCtaUrls}
         services={wizardServices}
         locations={wizardLocations}
         tenantName={tenant.name}

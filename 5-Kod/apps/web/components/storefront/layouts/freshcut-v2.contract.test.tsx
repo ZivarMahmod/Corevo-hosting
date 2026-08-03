@@ -23,7 +23,7 @@ const SERVICES = [
   ['Barnklippning upp till 8 år', null, 30, 29900],
   ['Skäggtrim', null, 15, 22900],
 ].map(([name, description, duration_min, price_cents], index) => ({
-  id: `service-${index + 1}`,
+  id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
   tenant_id: 'tenant-freshcut',
   name,
   description,
@@ -32,13 +32,13 @@ const SERVICES = [
   active: true,
 })) as Service[]
 
-function renderFreshCut(copy?: Record<string, string>) {
+function renderFreshCut(copy?: Record<string, string>, bookingReachable = true) {
   return renderToStaticMarkup(
     <BookingProvider
       tenantName="FreshCut"
       services={[]}
-      reachable={false}
-      websiteOnly
+      reachable={bookingReachable}
+      provider="external"
       externalUrl={EXTERNAL_URL}
     >
       <FreshCutLayout
@@ -54,7 +54,45 @@ function renderFreshCut(copy?: Record<string, string>) {
         contact={{ email: 'info@freshcut.se', phone: '073 876 71 44' }}
         social={{ instagram: 'https://instagram.com/freshcut.lkpg', facebook: null, tiktok: null }}
         modules={{
-          bookingReachable: false,
+          bookingReachable,
+          shopTeasers: [],
+          bloggTeasers: [],
+          presentkortReachable: false,
+          shopReachable: false,
+          bloggReachable: false,
+          offertReachable: false,
+          lojalitetReachable: false,
+          kurserReachable: false,
+          galleriReachable: false,
+        }}
+      />
+    </BookingProvider>,
+  )
+}
+
+function renderFreshCutWithOverrides() {
+  return renderToStaticMarkup(
+    <BookingProvider
+      tenantName="FreshCut"
+      services={[]}
+      reachable
+      provider="external"
+      externalUrl={EXTERNAL_URL}
+      externalCtaUrls={{
+        hero: 'https://www.bokadirekt.se/places/freshcut-hero',
+        'service:00000000-0000-4000-8000-000000000001': 'https://www.bokadirekt.se/places/freshcut-service-1',
+      }}
+    >
+      <FreshCutLayout
+        tenant={{ id: 'tenant-freshcut', name: 'FreshCut', slug: 'freshcut' }}
+        theme="freshcut"
+        content={resolveThemeContent('freshcut', null, null)}
+        services={SERVICES}
+        location={null}
+        contact={{ email: null, phone: null }}
+        social={{ instagram: null, facebook: null, tiktok: null }}
+        modules={{
+          bookingReachable: true,
           shopTeasers: [],
           bloggTeasers: [],
           presentkortReachable: false,
@@ -130,12 +168,29 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).toContain('rel="noopener noreferrer"')
   })
 
+  it('routes named and service buttons through their own saved destinations', () => {
+    const html = renderFreshCutWithOverrides()
+    expect(html).toContain('href="https://www.bokadirekt.se/places/freshcut-hero"')
+    expect(html).toContain('href="https://www.bokadirekt.se/places/freshcut-service-1"')
+    expect(html).toContain(`href="${EXTERNAL_URL}"`)
+  })
+
   it('shows a compact booking button on every service, including mobile', () => {
     const html = renderFreshCut()
 
     expect(html.match(/Boka <i aria-hidden="true">↗<\/i>/g)).toHaveLength(SERVICES.length)
     expect(css).toMatch(/\.serviceAction \{[^}]*border: 1px solid var\(--fc-signal\)[^}]*border-radius: 999px/s)
     expect(css).toMatch(/@media \(max-width: 780px\) \{[\s\S]*?\.serviceAction \{[^}]*display: inline-flex/)
+  })
+
+  it('keeps services visible but hides every booking control when the module is off', () => {
+    const html = renderFreshCut(undefined, false)
+
+    for (const service of SERVICES) expect(html).toContain(service.name)
+    expect(html).not.toContain('Boka direkt')
+    expect(html).not.toContain('Boka <i')
+    expect(html).not.toContain(EXTERNAL_URL)
+    expect(html).not.toContain('href="/boka"')
   })
 
   it('reserves mobile page space for the fixed booking row', () => {

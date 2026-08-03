@@ -45,6 +45,7 @@ export function InlineBooking({
   previewControlled?: boolean
 }) {
   const booking = useBooking()
+  if (booking && (!booking.reachable || booking.provider !== 'corevo')) return null
   if (previewControlled && booking?.variant !== 'inline') return null
   const activePickerMode = previewControlled && booking ? booking.pickerMode : pickerMode
   const activeStaffAvatarMode = previewControlled && booking

@@ -48,9 +48,11 @@ function makeSupabase(results: Record<string, { data?: unknown; error?: unknown 
 }
 
 const platformCtxMock = vi.fn()
+const siteRevisionCtxMock = vi.fn()
 vi.mock('./guard', () => ({
   platformCtx: () => platformCtxMock(),
   platformAdminCtx: () => platformCtxMock(),
+  siteRevisionCtx: (input: unknown) => siteRevisionCtxMock(input),
 }))
 
 const createServiceClientMock = vi.fn()
@@ -113,6 +115,7 @@ import {
   setTenantStatus,
   setServiceStaff,
   uploadServiceImage,
+  updateBookingSettings,
 } from './actions'
 import { resolveOwnerRole } from './owner-role'
 
@@ -295,6 +298,67 @@ describe('createTenant writes the goal-20 columns', () => {
     expect(captured.locations?.[0]).toMatchObject({ timezone: 'Europe/Stockholm' })
   })
 
+  it('writes the external booking provider and validated URL at creation', async () => {
+    const captured = seedCtx()
+    const res = await createTenant({}, tenantFd({
+      name: 'Extern kund',
+      slug: 'extern-kund',
+      booking_provider: 'external',
+      booking_external_url: 'https://www.bokadirekt.se/places/extern-kund',
+    }))
+
+    expect(res.error).toBeUndefined()
+    expect(captured.tenant_settings?.[0]).toMatchObject({
+      settings: {
+        booking: {
+          provider: 'external',
+          external_url: 'https://www.bokadirekt.se/places/extern-kund',
+        },
+      },
+    })
+  })
+
+  it('rejects an invalid external booking URL before creating the tenant', async () => {
+    const captured = seedCtx()
+    const res = await createTenant({}, tenantFd({
+      name: 'Extern kund',
+      slug: 'extern-kund',
+      booking_provider: 'external',
+      booking_external_url: 'http://unsafe.test',
+    }))
+
+    expect(res.error).toContain('https-länk')
+    expect(captured.tenants).toBeUndefined()
+  })
+
+  it('requires an external URL when the booking module starts live', async () => {
+    const captured = seedCtx()
+    const res = await createTenant({}, tenantFd({
+      name: 'Extern kund',
+      slug: 'extern-kund',
+      booking_provider: 'external',
+      modules: JSON.stringify({ booking: 'live' }),
+    }))
+
+    expect(res.error).toContain('https-länk')
+    expect(captured.tenants).toBeUndefined()
+  })
+
+  it('allows an external provider without a URL while the booking module is off', async () => {
+    const captured = seedCtx()
+    const res = await createTenant({}, tenantFd({
+      name: 'Extern senare',
+      slug: 'extern-senare',
+      booking_provider: 'external',
+      modules: JSON.stringify({ booking: 'off' }),
+    }))
+
+    expect(res.error).toBeUndefined()
+    expect(captured.tenant_settings?.[0]).toMatchObject({
+      settings: { booking: { provider: 'external' } },
+    })
+  })
+
   it('invalidates the persistent customer layout after a successful create', async () => {
     seedCtx()
 
@@ -341,6 +405,98 @@ describe('createTenant writes the goal-20 columns', () => {
     createServiceClientMock.mockReturnValue(fakeSvc('auth-2'))
     await createTenant({}, fd({ name: 'K', slug: 'kx', owner_email: 'noname@x.se' }))
     expect((captured.users?.[0] as { full_name: unknown }).full_name).toBeNull()
+  })
+})
+
+describe('updateBookingSettings', () => {
+  it('uses the narrow atomic RPC with validated provider and CTA slots', async () => {
+    const { client, captured } = makeSupabase({
+      tenants: { data: { slug: 'freshcut' }, error: null },
+      'rpc.update_booking_operational_settings': { data: {}, error: null },
+    })
+    siteRevisionCtxMock.mockResolvedValue({
+      user: { id: 'editor-1' },
+      supabase: client,
+      tenantId: 'tenant-1',
+    })
+    const form = fd({
+      tenantId: 'tenant-1',
+      booking_provider: 'external',
+      booking_external_url: 'https://www.bokadirekt.se/places/freshcut',
+      'booking_external_cta_url:hero': 'https://www.bokadirekt.se/places/freshcut-hero',
+    })
+
+    const result = await updateBookingSettings({}, form)
+
+    expect(result.error).toBeUndefined()
+    expect(siteRevisionCtxMock).toHaveBeenCalledWith({ tenantId: 'tenant-1' })
+    expect(captured['rpc.update_booking_operational_settings']?.[0]).toEqual({
+      p_tenant: 'tenant-1',
+      p_provider: 'external',
+      p_external_url: 'https://www.bokadirekt.se/places/freshcut',
+      p_external_cta_urls: { hero: 'https://www.bokadirekt.se/places/freshcut-hero' },
+      p_verification_mode: null,
+    })
+    expect(captured['tenant_settings.upsert']).toBeUndefined()
+  })
+
+  it('rejects invalid external URLs before the RPC', async () => {
+    const { client, captured } = makeSupabase({
+      tenants: { data: { slug: 'freshcut' }, error: null },
+    })
+    siteRevisionCtxMock.mockResolvedValue({
+      user: { id: 'editor-1' },
+      supabase: client,
+      tenantId: 'tenant-1',
+    })
+    const result = await updateBookingSettings({}, fd({
+      tenantId: 'tenant-1',
+      booking_provider: 'external',
+      booking_external_url: 'http://unsafe.test',
+    }))
+
+    expect(result.error).toContain('https-länk')
+    expect(captured['rpc.update_booking_operational_settings']).toBeUndefined()
+  })
+
+  it('keeps booking settings writable during the app-first rolling deploy', async () => {
+    const { client, captured } = makeSupabase({
+      tenants: { data: { slug: 'freshcut' }, error: null },
+      tenant_settings: {
+        data: { settings: { theme: 'freshcut', booking: { variant: 'wizard' } } },
+        error: null,
+      },
+      'rpc.update_booking_operational_settings': {
+        data: null,
+        error: { code: 'PGRST202', message: 'Function not found' },
+      },
+    })
+    siteRevisionCtxMock.mockResolvedValue({
+      user: { id: 'editor-1' },
+      supabase: client,
+      tenantId: 'tenant-1',
+    })
+
+    const result = await updateBookingSettings({}, fd({
+      tenantId: 'tenant-1',
+      booking_provider: 'external',
+      booking_external_url: 'https://www.bokadirekt.se/places/freshcut',
+      'booking_external_cta_url:hero': 'https://www.bokadirekt.se/places/freshcut-hero',
+    }))
+
+    expect(result.error).toBeUndefined()
+    expect(captured['tenant_settings.upsert']?.[0]).toEqual({
+      tenant_id: 'tenant-1',
+      settings: {
+        theme: 'freshcut',
+        booking: {
+          variant: 'wizard',
+          provider: 'external',
+          external_url: 'https://www.bokadirekt.se/places/freshcut',
+          external_cta_urls: { hero: 'https://www.bokadirekt.se/places/freshcut-hero' },
+        },
+      },
+    })
   })
 })
 

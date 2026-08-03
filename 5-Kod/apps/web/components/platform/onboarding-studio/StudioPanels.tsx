@@ -33,6 +33,7 @@ import {
   BOOKING_VARIANT_DESCRIPTIONS,
   RECOMMENDED_BOOKING_VARIANT,
 } from '@/lib/platform/booking-variant'
+import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { ThemeGallery } from '@/components/platform/ThemeGallery'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
@@ -337,11 +338,7 @@ function PanelTema({ cfg, dispatch, presets }: PanelProps) {
   )
 }
 
-/** modval — W1-REAL UI + W3 booking-variant sub-choice. Real catalog × preset state
- *  from modulesForVertical; rec/opt grouping derived from defaultState!=='off' (§10.7);
- *  every module supports off/live. setModule
- *  writes cfg.moduleStates. The booking row also carries the bokningsvariant picker
- *  (W3, form-parity → setVariant → cfg.variant). */
+/** Module visibility only. Booking provider and presentation live in the next step. */
 function PanelModval({ cfg, dispatch, presets }: PanelProps) {
   const options = modulesForVertical(presets, cfg.branch)
   const rec = options.filter((m) => m.defaultState !== 'off')
@@ -371,57 +368,10 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
             ) : null}
           </span>
         </div>
-        <ModuleStatePills value={cur} choices={choices} onChange={(state) => dispatch({ type: 'setModule', key: moduleKey, state })} />
+        <ModuleStatePills label={`${name} På eller Av`} value={cur} choices={choices} onChange={(state) => dispatch({ type: 'setModule', key: moduleKey, state })} />
         <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
           {MODULE_STATE_HINTS[cur]}
-          {isBooking && cur === 'off' ? ' Kundens Boka-knappar kan använda en extern länk som sparas i admin.' : ''}
         </p>
-        {/* booking.variant — operator picks how the booking presents. FORM-PARITY port
-            of CreateTenantForm's booking sub-choice (the design data defines BOOKING_VARIANTS
-            but renders NO picker; the shipped form does, so the studio must not regress it).
-            drawer/inline are presentation-deferred (readBookingMode → wizard) but still
-            honest picks. → setVariant → buildCreateTenantFormData emits cfg.variant. */}
-        {isBooking && cur !== 'off' ? (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--c-line)' }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--c-ink)', marginBottom: 8 }}>
-              Bokningsvariant — hur bokningen presenteras (99 % sker på mobil)
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {BOOKING_VARIANTS.map((v) => {
-                const von = cfg.variant === v
-                const isRec = v === RECOMMENDED_BOOKING_VARIANT
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    role="radio"
-                    aria-checked={von}
-                    onClick={() => dispatch({ type: 'setVariant', variant: v })}
-                    style={{
-                      textAlign: 'left',
-                      padding: 12,
-                      border: `2px solid ${von ? 'var(--c-forest)' : 'var(--c-line)'}`,
-                      borderRadius: 12,
-                      cursor: 'pointer',
-                      background: von ? 'var(--c-paper-2)' : 'var(--c-paper)',
-                      transition: 'all var(--dur-fast)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)' }}>{BOOKING_VARIANT_LABELS[v]}</span>
-                      {isRec ? (
-                        <Badge tone="gold" dot={false}>Rek.</Badge>
-                      ) : (
-                        <span style={{ fontSize: 11, color: 'var(--c-ink-3)', fontWeight: 600 }}>{BOOKING_VARIANT_TAGS[v]}</span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: 12, color: 'var(--c-ink-2)', lineHeight: 1.45, margin: 0 }}>{BOOKING_VARIANT_DESCRIPTIONS[v]}</p>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ) : null}
       </div>
     )
   }
@@ -443,6 +393,125 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
           {others.map((m) => renderRow(m.key, m.name))}
         </>
       ) : null}
+    </Panel>
+  )
+}
+
+function PanelBokning({ cfg, dispatch, presets }: PanelProps) {
+  const state = resolveModuleState(cfg, 'booking', presets)
+  const live = state === 'live'
+  const externalValid = normalizeBookingExternalUrl(cfg.bookingExternalUrl) !== null
+
+  return (
+    <Panel
+      title="Bokning"
+      sub="Först styr På eller Av om bokning syns. När den är På väljer du Corevo eller en extern bokningstjänst."
+    >
+      <div style={{ display: 'grid', gap: 18 }}>
+        <div>
+          <div style={{ ...labelStyle, marginBottom: 8 }}>Bokningsmodul</div>
+          <ModuleStatePills
+            label="Bokningsmodul På eller Av"
+            value={state}
+            choices={[...MODULE_STATES]}
+            onChange={(next) => dispatch({ type: 'setModule', key: 'booking', state: next })}
+          />
+          <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
+            {MODULE_STATE_HINTS[state]}
+          </p>
+        </div>
+
+        {live ? <>
+          <div role="radiogroup" aria-label="Bokningsleverantör" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {([
+              ['corevo', 'Corevo-bokning', 'Kunden bokar direkt på sin Corevo-sida.'],
+              ['external', 'Extern bokning', 'Boka-knapparna öppnar exempelvis Bokadirekt.'],
+            ] as const).map(([provider, label, description]) => {
+              const selected = cfg.bookingProvider === provider
+              return (
+                <button
+                  key={provider}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => dispatch({ type: 'setBookingProvider', provider })}
+                  style={{
+                    textAlign: 'left',
+                    padding: 14,
+                    border: `2px solid ${selected ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                    borderRadius: 10,
+                    background: selected ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                    color: 'var(--c-ink)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <strong style={{ display: 'block', fontSize: 14 }}>{label}</strong>
+                  <span style={{ display: 'block', marginTop: 5, color: 'var(--c-ink-3)', fontSize: 12, lineHeight: 1.45 }}>
+                    {description}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {cfg.bookingProvider === 'external' ? (
+            <Field
+              label="Extern bokningslänk"
+              type="url"
+              required
+              ph="https://www.bokadirekt.se/..."
+              value={cfg.bookingExternalUrl}
+              onChange={(value) => dispatch({ type: 'setBookingExternalUrl', value })}
+              hint={cfg.bookingExternalUrl ? undefined : 'Alla Boka-knappar använder den här länken från start.'}
+              error={cfg.bookingExternalUrl && !externalValid ? 'Ange en fullständig https-länk.' : undefined}
+            />
+          ) : (
+            <div>
+              <div style={{ ...labelStyle, marginBottom: 8 }}>Bokningssätt</div>
+              <div role="radiogroup" aria-label="Bokningssätt" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {BOOKING_VARIANTS.map((variant) => {
+                  const selected = cfg.variant === variant
+                  return (
+                    <button
+                      key={variant}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => dispatch({ type: 'setVariant', variant })}
+                      style={{
+                        textAlign: 'left',
+                        padding: 12,
+                        border: `2px solid ${selected ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                        borderRadius: 10,
+                        background: selected ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                        color: 'var(--c-ink)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                        <strong>{BOOKING_VARIANT_LABELS[variant]}</strong>
+                        {variant === RECOMMENDED_BOOKING_VARIANT ? <Badge tone="gold" dot={false}>Rek.</Badge> : (
+                          <small>{BOOKING_VARIANT_TAGS[variant]}</small>
+                        )}
+                      </span>
+                      <span style={{ display: 'block', marginTop: 5, color: 'var(--c-ink-3)', fontSize: 12, lineHeight: 1.45 }}>
+                        {BOOKING_VARIANT_DESCRIPTIONS[variant]}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </> : (
+          <div style={{ padding: 14, border: '1px solid var(--c-line)', borderRadius: 10, background: 'var(--c-paper)' }}>
+            <strong style={{ display: 'block', color: 'var(--c-ink)' }}>Inga bokningsknappar visas</strong>
+            <span style={{ display: 'block', marginTop: 5, color: 'var(--c-ink-3)', fontSize: 12.5 }}>
+              Leverantören kan väljas senare när modulen slås på.
+            </span>
+          </div>
+        )}
+      </div>
     </Panel>
   )
 }
@@ -486,10 +555,20 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
   const activeModules = presets.modules.filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off')
   const activeCount = activeModules.length
   const namedServices = cfg.services.filter((s) => s.name.trim() !== '')
+  const bookingLive = resolveModuleState(cfg, 'booking', presets) === 'live'
+  const bookingReady = !bookingLive
+    || cfg.bookingProvider === 'corevo'
+    || normalizeBookingExternalUrl(cfg.bookingExternalUrl) !== null
   const checks: { label: string; done: boolean; optional?: boolean }[] = [
     { label: 'Bransch vald', done: !!cfg.branch },
     { label: 'Namn & subdomän', done: !!cfg.name.trim() && !!cfg.slug },
     { label: 'Temamall', done: !!cfg.theme },
+    {
+      label: bookingLive
+        ? cfg.bookingProvider === 'external' ? 'Extern bokningslänk' : 'Corevo-bokning'
+        : 'Bokning är Av',
+      done: bookingReady,
+    },
     { label: `Tjänster (${namedServices.length} tillagda — läggs i adminen)`, done: namedServices.length > 0, optional: true },
     { label: 'Ägare inbjuds via e-post', done: !!cfg.ownerEmail.trim() },
   ]
@@ -508,6 +587,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
     && !isReservedSlug(cfg.slug)
     && !!cfg.theme
     && !!cfg.ownerEmail.trim()
+    && bookingReady
   return (
     <Panel title="Granska & skapa" sub="Sista koll — kunden skapas under konfiguration och publiceras från kundkortet.">
       <div style={{ display: 'grid', gap: 16 }}>
@@ -552,6 +632,8 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             {activeCount === 1 ? 'modul' : 'moduler'}:{' '}
             {activeModules.map((m) => m.name).join(', ') || '—'}
             <br />
+            Bokning: {bookingLive ? cfg.bookingProvider === 'external' ? 'extern länk' : 'Corevo' : 'Av'}
+            <br />
             {namedServices.length} {namedServices.length === 1 ? 'tjänst' : 'tjänster'} redo att bokas
             {cfg.ownerEmail.trim() ? <> · ägar-inbjudan till {cfg.ownerEmail.trim()}</> : null}
           </div>
@@ -573,7 +655,8 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             <span style={{ flex: 'none', marginTop: 1 }}>
               <Icon name="alert" size={14} />
             </span>
-            Kräver: företagsnamn, en giltig subdomän, ett tema och ägarens e-post.
+            Kräver: företagsnamn, en giltig subdomän, ett tema, ägarens e-post
+            {bookingLive && cfg.bookingProvider === 'external' ? ' och en giltig extern bokningslänk' : ''}.
             Komplettera i stegen ovan.
           </div>
         ) : null}
@@ -604,6 +687,7 @@ export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
   namn: PanelNamn,
   tema: PanelTema,
   modval: PanelModval,
+  bokning: PanelBokning,
   agare: PanelAgare,
   live: PanelLive,
 }

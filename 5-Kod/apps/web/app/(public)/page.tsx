@@ -53,9 +53,12 @@ export default async function HomePage() {
   // THEME_OWNS_MODULES (layouts/index.ts), inte i en OR-kedja här: en glömd nyckel
   // gav förr BÅDE modul-lösa hem OCH dubbelrenderade sektioner, helt tyst.
   const ownsModules = THEME_OWNS_MODULES.has(settings.theme)
-  const modules = THEME_LOADS_LAYOUT_MODULES.has(settings.theme)
+  const loadedModules = THEME_LOADS_LAYOUT_MODULES.has(settings.theme)
     ? await loadLayoutModuleTeasers(tenant.id, tenant.slug)
     : undefined
+  const modules = loadedModules && settings.bookingLegacyExternal
+    ? { ...loadedModules, bookingReachable: true }
+    : loadedModules
 
   // Multi-bransch (spår 5): the live module sections (shop/offert/blogg/lojalitet/
   // presentkort) render right after the theme layout's own sections, gated by the

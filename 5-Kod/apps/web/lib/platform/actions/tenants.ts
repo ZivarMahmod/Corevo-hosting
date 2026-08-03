@@ -6,6 +6,11 @@ import { validateSlug } from '../slug'
 import { createServiceClient } from '../service'
 import { logPlatformAction } from '../audit'
 import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from '../booking-variant'
+import {
+  BOOKING_PROVIDERS,
+  normalizeBookingExternalUrl,
+  type BookingProviderKind,
+} from '../booking-external-url'
 import { resolveOwnerRole } from '../owner-role'
 import { parseModuleSelections, writeTenantVerticalAndModules } from '../tenant-modules-write'
 import { parseServiceInputs } from '../onboarding-studio/services'
@@ -95,6 +100,23 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   const bookingVariant: BookingVariant = isBookingVariant(bookingVariantRaw)
     ? bookingVariantRaw
     : DEFAULT_BOOKING_VARIANT
+  const moduleSelections = parseModuleSelections(fd.get('modules'))
+  const bookingLive = moduleSelections.some(
+    ({ moduleKey, state }) => moduleKey === 'booking' && state === 'live',
+  )
+  const bookingProviderRaw = String(fd.get('booking_provider') ?? 'corevo')
+  if (!(BOOKING_PROVIDERS as readonly string[]).includes(bookingProviderRaw)) {
+    return { error: 'Välj Corevo-bokning eller extern bokning.' }
+  }
+  const bookingProvider = bookingProviderRaw as BookingProviderKind
+  const externalBookingUrlRaw = String(fd.get('booking_external_url') ?? '').trim()
+  const externalBookingUrl = normalizeBookingExternalUrl(externalBookingUrlRaw)
+  if (externalBookingUrlRaw && !externalBookingUrl) {
+    return { error: 'Extern bokningslänk måste vara en fullständig https-länk.' }
+  }
+  if (bookingLive && bookingProvider === 'external' && !externalBookingUrl) {
+    return { error: 'Extern bokning kräver en fullständig https-länk.' }
+  }
   // Token-branding (nivå 1, no-code): accent colour ONLY. We deliberately do NOT
   // write color_primary/bg/fg — those inline overrides WIN over the [data-theme]
   // palette (injectTenantTokens), which would MASK the theme just picked ("every
@@ -114,7 +136,6 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // { module_key: state }; parseModuleSelections drops garbage and the write helper
   // preserves the explicit on/off choices while fencing keys to the catalog.
   const verticalKey = String(fd.get('vertical_id') ?? '').trim().slice(0, 64) || null
-  const moduleSelections = parseModuleSelections(fd.get('modules'))
 
   // Multi-bransch: the wizard serves every bransch (frisör, restaurang, …), so the
   // validation text stays bransch-neutral ("namn", not "salongsnamn"). The branschens
@@ -176,7 +197,11 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   if (heroLede) copy.heroLede = heroLede
   const settings = {
     theme,
-    booking: { variant: bookingVariant },
+    booking: {
+      variant: bookingVariant,
+      provider: bookingProvider,
+      ...(externalBookingUrl ? { external_url: externalBookingUrl } : {}),
+    },
     ...(Object.keys(copy).length ? { copy } : {}),
   }
 
@@ -396,7 +421,14 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     action: 'tenant.create',
     tenantId,
     actorId: user.id,
-    meta: { slug, name, theme, booking_variant: bookingVariant, vertical_id: verticalKey },
+    meta: {
+      slug,
+      name,
+      theme,
+      booking_variant: bookingVariant,
+      booking_provider: bookingProvider,
+      vertical_id: verticalKey,
+    },
   })
 
   revalidatePath('/platform')

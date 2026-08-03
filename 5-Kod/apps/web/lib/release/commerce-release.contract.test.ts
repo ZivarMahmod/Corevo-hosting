@@ -103,8 +103,8 @@ describe('pilot commerce release fence', () => {
   it('hides commerce navigation and CTAs in authenticated preview when unreleased', () => {
     const source = read('app/salong-preview/[slug]/preview-shell.tsx')
     expect(source).toContain('const layoutModules = await loadLayoutModuleTeasers(tenant.id, tenant.slug)')
-    expect(source).toContain('const moduleLinks = moduleNavigationLinks(layoutModules)')
-    expect(source).toContain('moduleRouteReachable(rawPrimaryCta.href, layoutModules, bookingReachable)')
+    expect(source).toContain('const moduleLinks = moduleNavigationLinks(effectiveLayoutModules)')
+    expect(source).toContain('moduleRouteReachable(rawPrimaryCta.href, effectiveLayoutModules, bookingReachable)')
     expect(source).toContain('cartEnabled={layoutModules.shopReachable}')
   })
 

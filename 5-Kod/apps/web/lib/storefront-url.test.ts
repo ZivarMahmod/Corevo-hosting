@@ -6,9 +6,9 @@ import {
 } from './storefront-url'
 
 describe('canonical tenant storefront origin', () => {
-  it('builds the isolated boka host as the only standard production origin', () => {
-    expect(tenantStorefrontUrl(' FreshCut ')).toBe('https://freshcut.boka.corevo.se')
-    expect(tenantStorefrontHost(' FreshCut ')).toBe('freshcut.boka.corevo.se')
+  it('builds the first-level tenant host as the standard production origin', () => {
+    expect(tenantStorefrontUrl(' FreshCut ')).toBe('https://freshcut.corevo.se')
+    expect(tenantStorefrontHost(' FreshCut ')).toBe('freshcut.corevo.se')
   })
 
   it('lets a verified custom domain win', () => {
@@ -27,12 +27,12 @@ describe('canonical tenant storefront origin', () => {
     expect(tenantStorefrontAppUrl('freshcut', null, '127.0.0.1:3000')).toBe(
       'http://127.0.0.1:3000/?tenant=freshcut',
     )
-    expect(tenantStorefrontHost('freshcut')).toBe('freshcut.boka.corevo.se')
+    expect(tenantStorefrontHost('freshcut')).toBe('freshcut.corevo.se')
   })
 
   it('keeps production app links on the canonical host', () => {
     expect(tenantStorefrontAppUrl('freshcut', null, 'corevo.se')).toBe(
-      'https://freshcut.boka.corevo.se',
+      'https://freshcut.corevo.se',
     )
   })
 

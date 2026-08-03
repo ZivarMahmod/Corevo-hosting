@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { getServices } from '@/lib/tenant-data'
 import { ServiceMenu } from '@/components/storefront/ServiceMenu'
 import { SectionHeader } from '@/components/storefront/sections'
@@ -27,6 +28,9 @@ export default async function PreviewServicesPage({
   const bundle = await loadPreviewBundle(slug)
   const theme = resolvePreviewTheme(bundle, themeParam)
   const copyMode = resolvePreviewCopyMode(copyParam)
+  if (theme === 'freshcut') {
+    redirect(`/salong-preview/${encodeURIComponent(slug)}?theme=freshcut&copy=${copyMode}#tjanster`)
+  }
   const { tenant, settings, location } = bundle
 
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)

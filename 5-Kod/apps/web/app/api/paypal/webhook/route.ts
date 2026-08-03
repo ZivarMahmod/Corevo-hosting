@@ -31,9 +31,9 @@ function ok(body: Record<string, unknown> = { received: true }) {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  // Inte konfigurerat → acceptera tyst (degrade, ingen 5xx-loop). Samma mönster som
-  // Stripe-webhooken när STRIPE_WEBHOOK_SECRET saknas.
-  if (!paypalReady()) return ok({ skipped: 'paypal_not_configured' })
+  // Kvittera aldrig bort ett pengar-event som vi inte kan verifiera. 503 gör att
+  // PayPal försöker igen när konfigurationen är tillbaka.
+  if (!paypalReady()) return new Response('PayPal webhook unavailable', { status: 503 })
 
   // RÅ body FÖRST — signaturverifieringen sker mot exakt de bytes PayPal skickade.
   const rawBody = await req.text()

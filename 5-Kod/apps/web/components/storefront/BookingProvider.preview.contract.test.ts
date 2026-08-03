@@ -36,10 +36,11 @@ describe('BookingProvider editor preview contract', () => {
   })
 
   it('keeps the booking query presentation exclusive while preview variants switch', () => {
-    expect(source).toContain("const previewShouldOpen = nextVariant !== 'inline'")
+    expect(source).toContain("const previewShouldOpen = internalBookingAvailable && nextVariant !== 'inline'")
+    expect(source).toContain('if (!internalBookingAvailable) return')
     expect(source).toContain('setOpen(previewShouldOpen)')
     expect(source).toContain('setMounted((current) => current || previewShouldOpen)')
-    expect(source).toContain("if (nextVariant === 'inline')")
+    expect(source).toContain("if (internalBookingAvailable && nextVariant === 'inline')")
     expect(source).toContain("document.getElementById('boka-inline')")
     expect(source).toContain("window.parent !== window && window.location.pathname.startsWith('/salong-preview/')")
   })

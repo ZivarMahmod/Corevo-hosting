@@ -67,8 +67,8 @@ describe('goal-72/80 customer master–detail and full-width workspace contract'
     expect(create).toContain('styles.paneInnerWide')
     expect(create).toContain('<OnboardingEntryLazy')
     expect(lazyEntry).toContain("import('./onboarding-studio/OnboardingStudio')")
-    expect(lazyEntry).toContain("import('./CreateTenantForm')")
-    expect(lazyEntry.match(/ssr: false/g)).toHaveLength(2)
+    expect(lazyEntry).not.toContain("import('./CreateTenantForm')")
+    expect(lazyEntry.match(/ssr: false/g)).toHaveLength(1)
     expect(create).toContain('<Link href="/kunder" className={styles.back}>')
     expect(create).not.toContain('<main className={styles.pane}>')
 

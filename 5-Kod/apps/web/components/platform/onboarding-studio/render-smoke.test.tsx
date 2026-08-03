@@ -76,7 +76,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).not.toContain('>Kunder<') // gamla entré-pillen ska inte återuppstå
   })
 
-  it('StepRail mounts (5 phases / 12 steps)', () => {
+  it('StepRail mounts with the booking provider step', () => {
     const html = mounts(<StepRail cfg={branched} step="branch" onStep={noop} presets={presets} />)
     expect(html).toContain('Grunden')
   })
@@ -86,7 +86,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('data-world="storefront"') // real storefront render, not a skeleton
   })
 
-  it('PanelHost mounts EVERY one of the 12 steps (branched cfg)', () => {
+  it('PanelHost mounts every onboarding step (branched cfg)', () => {
     for (const step of FLAT_STEP_ORDER) {
       const html = mounts(
         <PanelHost
@@ -119,7 +119,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     }
   })
 
-  it('the modval panel renders the booking-variant picker (W3, booking active)', () => {
+  it('keeps module visibility separate from booking presentation', () => {
     const html = mounts(
       <PanelHost
         cfg={branched}
@@ -131,9 +131,9 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
         onLaunch={noop}
       />,
     )
-    // booking is live in the branched cfg → the sub-choice picker renders all 4 variants
-    expect(html).toContain('Bokningsvariant')
-    expect(html).toContain('Snabbboka') // the compact variant label
+    expect(html).toContain('Bokning')
+    expect(html).toContain('På')
+    expect(html).not.toContain('Bokningssätt')
   })
 
   it('the modval panel keeps booking off and hides its variant picker', () => {
@@ -150,15 +150,40 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     )
     expect(html).toContain('Av')
     expect(html).not.toContain('Bokningsvariant')
-    expect(html).toContain('Kundens Boka-knappar kan använda en extern länk som sparas i admin.')
+    expect(html).toContain('Av och dold för kunden.')
+  })
+
+  it('the booking step shows Corevo and external provider choices', () => {
+    const html = mounts(
+      <PanelHost cfg={branched} step="bokning" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+    )
+    expect(html).toContain('Corevo-bokning')
+    expect(html).toContain('Extern bokning')
+    expect(html).toContain('Bokningssätt')
+  })
+
+  it('the booking step requires a valid external https URL', () => {
+    const html = mounts(
+      <PanelHost
+        cfg={{ ...branched, bookingProvider: 'external', bookingExternalUrl: 'http://fel.test' }}
+        step="bokning"
+        dispatch={noopDispatch}
+        presets={presets}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    expect(html).toContain('Ange en fullständig https-länk.')
+    expect(html).toContain('aria-invalid="true"')
   })
 
   // 2026-07-11: stegen "Tjänster & priser" och "Utseende & text" är BORTA ur onboardingen
   // (Zivar: "superlätt att komma igång — jag ska inte skriva in tjänster eller rubriker").
   // Texten kommer från branschens mall-text + mallens evergreen-copy; tjänster och
   // accent/logga läggs upp i kundens admin efteråt.
-  it('onboardingen har 6 steg och kräver varken tjänster eller rubriker', () => {
-    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'tema', 'modval', 'agare', 'live'])
+  it('onboardingen har 7 steg och kräver varken tjänster eller rubriker', () => {
+    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'tema', 'modval', 'bokning', 'agare', 'live'])
     expect(FLAT_STEP_ORDER).not.toContain('tjanster')
     expect(FLAT_STEP_ORDER).not.toContain('brand')
   })
@@ -262,7 +287,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       />,
     )
     expect(html).toContain('href="/kunder/t9"') // real, working platform link
-    expect(html).toContain('klippoteket.boka.corevo.se') // canonical reserved address shown
+    expect(html).toContain('klippoteket.corevo.se') // canonical reserved address shown
     expect(html).toContain('Onboarda nästa kund')
     expect(html).toContain('är skapad') // honest header, NOT "är live" (host doesn't resolve yet)
     expect(html).not.toContain('byggs i senare vågor') // old placeholder copy is gone

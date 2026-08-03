@@ -19,12 +19,16 @@ describe('Goal 88 shared platform site editor', () => {
       expect(route).toContain('loadSiteRevisionState')
       expect(route).toContain('buildSiteEditorManifest')
       expect(route).toContain('deriveSiteScheduleHours')
+      expect(route).toContain('booking={{')
+      expect(route).toContain('bookingCtaSlots')
+      expect(route).not.toContain('<BookingPanel')
     }
     expect(adminRoute).toContain('surface="standalone"')
-    expect(adminRoute).toContain('<BookingPanel')
     expect(adminRoute).toContain('normalizeBookingExternalUrl')
     expect(platformRoute).toContain('surface="embedded"')
     expect(platformRoute).not.toContain('<SidaStudioLazy')
+    expect(studio).toContain('<BookingPanel')
+    expect(studio).toContain('booking.bookingLive')
   })
 
   it('keeps the accepted embedded split without changing standalone geometry', () => {

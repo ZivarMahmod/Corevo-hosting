@@ -1051,7 +1051,7 @@
 
   .shell[data-world='backoffice']:has(.main > :global(.onboarding-host)) .main,
   .shell[data-world='backoffice']:has(.main > :global(.sida-studio-host)) .main,
-  .shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
+  .shell[data-world='backoffice']:has(.main :global(.workbench)) .main {
     min-height: 100dvh;
   }
 }
@@ -1089,7 +1089,7 @@
 /* Arbetsbord (kalendern) tar HELA ytan. 1320px-spalten är gjord för läsbar text —
    ett schema med fem resurskolumner ska i stället använda varje pixel skärmen har.
    Utan detta blir det en smal remsa mitt på en tom sida (Zivar 2026-07-14). */
-.shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
+.shell[data-world='backoffice']:has(.main :global(.workbench)) .main {
   width: 100%;
   max-width: none;
   padding: 14px 14px 16px;
@@ -1332,7 +1332,7 @@
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
-  .shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
+  .shell[data-world='backoffice']:has(.main :global(.workbench)) .main {
     padding: 10px 0 calc(78px + env(safe-area-inset-bottom));
     min-height: calc(100dvh - 52px - env(safe-area-inset-top));
   }
@@ -1342,13 +1342,13 @@
     padding: 0;
   }
 
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileAdmin .brandSub {
+  .shell[data-portal='admin']:has(.main :global(.workbench)) .mobileAdmin .brandSub {
     display: block;
     font-size: 7.5px;
     line-height: 1;
   }
 
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .main {
+  .shell[data-portal='admin']:has(.main :global(.workbench)) .main {
     padding-top: 0;
   }
 }
@@ -1517,7 +1517,7 @@
     padding-bottom: calc(142px + env(safe-area-inset-bottom));
   }
 
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .main {
+  .shell[data-portal='admin']:has(.main :global(.workbench)) .main {
     min-height: calc(100dvh - 58px - env(safe-area-inset-top));
     padding: 0 0 calc(122px + env(safe-area-inset-bottom));
   }
@@ -1669,7 +1669,7 @@
   }
 
   .shell[data-portal='admin'] .main,
-  .shell[data-portal='admin']:has(.main > :global(.workbench)) .main {
+  .shell[data-portal='admin']:has(.main :global(.workbench)) .main {
     width: calc(100% - 132px);
     min-height: 100dvh;
     margin: 0 66px;

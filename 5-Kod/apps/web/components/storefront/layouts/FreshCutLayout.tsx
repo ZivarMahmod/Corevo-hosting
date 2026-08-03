@@ -119,6 +119,7 @@ export function FreshCutLayout({
             <p>{content.heroLede}</p>
             <div className={fc.heroActions}>
               <BookCta
+                slotId="hero"
                 enabled={bookingReachable}
                 className={`${fc.button} ${fc.buttonSignal}`}
                 label="Boka direkt ↗"
@@ -137,6 +138,7 @@ export function FreshCutLayout({
         <section className={fc.bookingStrip} aria-label="Populära behandlingar">
           {popular.map(({ label, service }, index) => (
             <Bookable
+              slotId={`service:${service.id}`}
               key={service.id}
               enabled={bookingReachable}
               className={fc.featuredService}
@@ -147,7 +149,7 @@ export function FreshCutLayout({
                 <strong>{label}</strong>
                 <small>{service.duration_min} minuter</small>
               </span>
-              <i aria-hidden="true">↗</i>
+              {bookingReachable ? <i aria-hidden="true">↗</i> : null}
             </Bookable>
           ))}
         </section>
@@ -160,13 +162,14 @@ export function FreshCutLayout({
         </div>
         <div className={fc.servicesHeading}>
           <h2 id="freshcut-services-title">{content.servicesTitle}</h2>
-          <p>Rätt behandling och rätt tid. Aktuella priser finns alltid hos Bokadirekt.</p>
+          <p>Rätt behandling och rätt tid. Aktuella priser visas i bokningen.</p>
         </div>
 
         {services.length > 0 ? (
           <div className={fc.servicesList}>
             {services.map((service, index) => (
               <Bookable
+                slotId={`service:${service.id}`}
                 key={service.id}
                 enabled={bookingReachable}
                 className={fc.serviceRow}
@@ -178,9 +181,11 @@ export function FreshCutLayout({
                   <p>{serviceDescription(service)}</p>
                 </span>
                 <span className={fc.serviceTime}>{service.duration_min} min</span>
-                <span className={fc.serviceAction}>
-                  Boka <i aria-hidden="true">↗</i>
-                </span>
+                {bookingReachable ? (
+                  <span className={fc.serviceAction}>
+                    Boka <i aria-hidden="true">↗</i>
+                  </span>
+                ) : null}
               </Bookable>
             ))}
           </div>
@@ -197,6 +202,7 @@ export function FreshCutLayout({
               </a>
             ) : null}
             <BookCta
+              slotId="services-footer"
               enabled={bookingReachable}
               className={`${fc.button} ${fc.buttonSignal}`}
               label="Se alla tider ↗"
@@ -216,6 +222,7 @@ export function FreshCutLayout({
           </h2>
           <p>Fade, sax eller skarpa skägglinjer. Uttrycket varierar, nivån ska vara densamma.</p>
           <BookCta
+            slotId="results"
             enabled={bookingReachable}
             className={`${fc.button} ${fc.buttonBlack}`}
             label="Gör din bokning ↗"
@@ -282,6 +289,7 @@ export function FreshCutLayout({
           </div>
           <div className={fc.studioActions}>
             <BookCta
+              slotId="studio"
               enabled={bookingReachable}
               className={`${fc.button} ${fc.buttonSignal}`}
               label="Boka besök ↗"
@@ -300,6 +308,7 @@ export function FreshCutLayout({
         </div>
         <h2 id="freshcut-final-title">{content.whyTitle ?? 'Redo för en skarpare look?'}</h2>
         <BookCta
+          slotId="final"
           enabled={bookingReachable}
           className={fc.finalCtaLink}
           label="Boka direkt ↗"
@@ -316,6 +325,7 @@ export function FreshCutLayout({
             <h2 id="freshcut-contact-title">Vi ses i stolen.</h2>
             <p>Aktuella öppettider och alla lediga tider ser du alltid i bokningen.</p>
             <BookCta
+              slotId="contact"
               enabled={bookingReachable}
               className={`${fc.button} ${fc.buttonBlack}`}
               label="Boka en tid ↗"
@@ -359,6 +369,7 @@ export function FreshCutLayout({
       </section>
 
       <BookCta
+        slotId="mobile"
         enabled={bookingReachable}
         className={fc.mobileBooking}
         label="Boka direkt ↗"

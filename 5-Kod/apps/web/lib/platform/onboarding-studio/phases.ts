@@ -1,16 +1,11 @@
-// Onboarding-studio (goal-48) — STEP RAIL config: the 5-phase / 12-step spine.
-//
-// Ported VERBATIM from the design data spine (4-Dokument-Underlag/01-acceptans/
-// super-admin/cfg-data.js, the PHASES const ~:303–331) per W1 build-contract §4.
-// This is STATIC config, NOT DB. The phase header renders `{pi+1}. {phase.name}`;
-// `phase.sub` + per-step `hint` are data-present (verbatim) but NOT rendered in the
-// rail (the rail shows label + status bullet + required dot). FLAT_STEP_ORDER drives
-// the Föregående/Nästa flow. `stepDone` derives each step's checkmark from the REAL
-// StudioCfg (model.ts) — see §4's per-step done-derivation.
+// Onboarding-studio (goal-48) — static step-rail config for the three phases and
+// seven steps. FLAT_STEP_ORDER drives navigation; stepDone derives completion from
+// the real StudioCfg.
 import type { IconName } from '@/components/portal/ui/Icon'
 import type { StudioCfg } from './model'
 import { resolveModuleState } from './model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
+import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 
 /** The step ids, in flow order (the StepId string-union the leaves narrow on). */
 // modplace/modconf borttagna 2026-07-11 (Dunder-fix). text→brand och granska→live
@@ -19,12 +14,13 @@ import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 // jag skriver in tjänster eller rubriker — det ska vara superlätt att komma igång").
 // Rubriker/ingress kommer från BRANSCHENS mall-text (verticals.default_copy, goal-57
 // K12) och mallens egen evergreen-copy; tjänster + accent/logga läggs upp i kundens
-// admin efteråt, där de hör hemma. Kvar: 6 steg.
+// admin efteråt, där de hör hemma. Kvar: 7 steg inklusive bokningsleverantör.
 export type StepId =
   | 'branch'
   | 'namn'
   | 'tema'
   | 'modval'
+  | 'bokning'
   | 'agare'
   | 'live'
 
@@ -49,9 +45,8 @@ export type StudioPhase = {
 }
 
 /**
- * The 5 phases / 12 steps — verbatim copy of cfg-data.js PHASES (labels, icons, req,
- * hints, subs incl. å/ä/ö). DATA, not behaviour: the studio renders whatever the REAL
- * presets/themes contain; this only orders + names the steps.
+ * Three phases and seven steps. Data, not behaviour: presets and themes own the
+ * actual tenant defaults; this list only orders and names the steps.
  */
 export const PHASES: StudioPhase[] = [
   {
@@ -70,6 +65,7 @@ export const PHASES: StudioPhase[] = [
     sub: 'Moduler — förvalda av branschen',
     steps: [
       { id: 'modval', label: 'Moduler', icon: 'layers', req: false, hint: 'Förvalda per bransch' },
+      { id: 'bokning', label: 'Bokning', icon: 'calendar', req: false, hint: 'Corevo eller extern leverantör' },
     ],
   },
   {
@@ -93,9 +89,8 @@ export const FLAT_STEP_ORDER: StepId[] = PHASES.flatMap((p) => p.steps.map((s) =
  *   tema    → a theme is set (always truthy — theme defaults to the built-in default)
  *   modval  → at least one module is on
  *   agare   → an owner email is filled
- *   tjanster→ at least one service with a non-empty name (W4; matches design's
- *             cfg.content.services.length > 0 launch gate)
- *   modplace/modconf/brand/text/granska/live → never a checkmark (matches design)
+ *   bokning → off is complete; live external requires a valid HTTPS URL
+ *   live    → never a checkmark because it is the submit step
  */
 export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPresetData): boolean {
   switch (stepId) {
@@ -110,6 +105,9 @@ export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPreset
         const st = resolveModuleState(cfg, m.key, presets)
         return st === 'live'
       })
+    case 'bokning':
+      if (resolveModuleState(cfg, 'booking', presets) === 'off') return true
+      return cfg.bookingProvider === 'corevo' || normalizeBookingExternalUrl(cfg.bookingExternalUrl) !== null
     case 'agare':
       return !!cfg.ownerEmail
     case 'live':

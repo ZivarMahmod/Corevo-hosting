@@ -18,7 +18,6 @@ import { LocationOpeningHours } from '@/components/admin/LocationOpeningHours'
 import { listLocationOpeningHours } from '@/lib/admin/schedule-data'
 import { savePlatformLocationBookingSettings } from '@/lib/platform/actions/location-hours'
 import { ModulesCard } from '@/components/platform/ModulesCard'
-import { BookingPanel } from '@/components/platform/BookingSettings'
 import { CustomerAccountsCard } from '@/components/platform/CustomerAccountsCard'
 import { TenantLegalCard } from '@/components/platform/TenantLegalCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
@@ -89,13 +88,13 @@ import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
 import boardStyles from '@/components/platform/kunder-v2.module.css'
 import { commerceReleaseGate } from '@/lib/release/commerce'
+import { readBookingVerificationMode } from '@/lib/platform/booking-variant'
 import {
-  readBookingVariant,
-  readBookingVerificationMode,
-  readPickerMode,
-  readStaffAvatarMode,
-} from '@/lib/platform/booking-variant'
-import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
+  normalizeBookingExternalCtaUrls,
+  normalizeBookingExternalUrl,
+  normalizeBookingProvider,
+} from '@/lib/platform/booking-external-url'
+import { bookingCtaSlots } from '@/lib/platform/booking-cta-slots'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Kund' }
@@ -296,6 +295,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
       ? rawTheme as StorefrontTheme
       : DEFAULT_STOREFRONT_THEME
+  const rawBooking = rawSettings.booking as Record<string, unknown> | undefined
+  const externalCtaUrls = normalizeBookingExternalCtaUrls(rawBooking?.external_cta_urls)
   const manifestKind: EditorManifestKind = activeTemplateKey === 'kalla' || activeTemplateKey === 'snitt'
     ? activeTemplateKey
     : 'generic'
@@ -734,26 +735,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           )}
           scheduleHours={deriveSiteScheduleHours(detail)}
           canChangeTemplate={operator.platformAdmin}
+          booking={{
+            templateKey: activeTemplateKey,
+            verificationMode: readBookingVerificationMode(rawSettings),
+            externalUrl: normalizeBookingExternalUrl(rawBooking?.external_url),
+            externalCtaUrls,
+            ctaSlots: bookingCtaSlots(activeTemplateKey, services, externalCtaUrls),
+            bookingLive: isModuleActivated(moduleStates, 'booking'),
+            bookingProvider: normalizeBookingProvider(rawBooking?.provider),
+            hasStaffPhoto: staffList.some((staff) => Boolean(staff.avatar_url)),
+          }}
         />
-        <section className={styles.maxCol} aria-labelledby="tenant-booking-settings">
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2} id="tenant-booking-settings">Bokning</h2>
-            <span className={styles.chip}>Corevo eller extern</span>
-          </div>
-          <BookingPanel
-            tenantId={tenant.id}
-            templateKey={activeTemplateKey}
-            branding={b}
-            variant={readBookingVariant(rawSettings)}
-            pickerMode={readPickerMode(rawSettings)}
-            staffAvatars={readStaffAvatarMode(rawSettings)}
-            verificationMode={readBookingVerificationMode(rawSettings)}
-            externalUrl={normalizeBookingExternalUrl(
-              (rawSettings.booking as Record<string, unknown> | undefined)?.external_url,
-            )}
-            hasStaffPhoto={staffList.some((staff) => Boolean(staff.avatar_url))}
-          />
-        </section>
       </div>
     ),
 

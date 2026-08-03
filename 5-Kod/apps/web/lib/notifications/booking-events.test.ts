@@ -159,7 +159,7 @@ describe('queueBookingEvent', () => {
     })
 
     const args = rpc.mock.calls[0]?.[1] as { p_payload: { origin: string } }
-    expect(args.p_payload.origin).toBe('https://demo.boka.corevo.se')
+    expect(args.p_payload.origin).toBe('https://demo.corevo.se')
   })
 
   it('never persists a raw account-claim or cancellation token in the outbox payload', async () => {

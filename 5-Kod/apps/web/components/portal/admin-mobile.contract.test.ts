@@ -30,7 +30,7 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(css).toContain('env(safe-area-inset-top)')
     const mobileHeaderStart = css.indexOf('@media (max-width: 767px)')
     const calendarHeaderOverride = css.indexOf(
-      ".shell[data-portal='admin']:has(.main > :global(.workbench))",
+      ".shell[data-portal='admin']:has(.main :global(.workbench))",
       mobileHeaderStart,
     )
     const sharedMobileHeader = css.slice(mobileHeaderStart, calendarHeaderOverride)
@@ -51,7 +51,7 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     const calendarCss = read('components/admin/calendar.module.css')
     const component = read('components/portal/Topnav.tsx')
 
-    expect(css).toContain(".shell[data-portal='admin']:has(.main > :global(.workbench))")
+    expect(css).toContain(".shell[data-portal='admin']:has(.main :global(.workbench))")
     expect(css).toContain('@media (orientation: landscape) and (max-height: 520px)')
     expect(css).toMatch(/\.mobileContext\s*\{[\s\S]*?width:\s*66px;/)
     expect(css).toContain('.mobileRailPrevious')

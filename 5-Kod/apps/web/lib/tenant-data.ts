@@ -16,7 +16,13 @@ import { getTenantFromHost } from '@/lib/tenant'
 import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-variant'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { withBranschMedia } from '@/components/storefront/images'
-import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
+import {
+  normalizeBookingExternalCtaUrls,
+  normalizeBookingExternalUrl,
+  normalizeBookingProvider,
+  type BookingExternalCtaUrls,
+  type BookingProviderKind,
+} from '@/lib/platform/booking-external-url'
 import {
   DEFAULT_TENANT_REGION,
   type TenantRegion,
@@ -100,6 +106,12 @@ export type TenantSettings = TenantRegion & {
   bookingVariant: BookingVariant
   /** Validated external booking destination for website-only tenants. */
   bookingExternalUrl: string | null
+  /** Booking provider is separate from the module's on/off visibility. */
+  bookingProvider: BookingProviderKind
+  /** Temporary read compatibility for the pre-provider external URL contract. */
+  bookingLegacyExternal: boolean
+  /** Validated per-button overrides. The global URL remains the fallback. */
+  bookingExternalCtaUrls: BookingExternalCtaUrls
   /** Manuella öppettider (settings.opening_hours, Sida-fliken) — vinner över de
    *  scheman-härledda. null = härled ur personalens veckoscheman som förut. */
   openingHours: OpeningHour[] | null
@@ -156,6 +168,10 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
   // the admin SettingsForm). Normalise blanks → null so the storefront can omit
   // the field gracefully instead of rendering an empty value.
   const contactRaw = (raw.contact ?? {}) as { email?: unknown; phone?: unknown }
+  const bookingRaw = (raw.booking ?? {}) as Record<string, unknown>
+  const bookingExternalUrl = normalizeBookingExternalUrl(bookingRaw.external_url)
+  const bookingLegacyExternal = bookingExternalUrl !== null
+    && (bookingRaw.provider === undefined || bookingRaw.provider === null || bookingRaw.provider === '')
   const cleanStr = (v: unknown): string | null => {
     const s = typeof v === 'string' ? v.trim() : ''
     return s.length > 0 ? s : null
@@ -180,8 +196,11 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     cookieBannerEnabled: raw.cookie_banner_enabled !== false,
     // Boknings-vy-valet (Sida-fliken) — resolvas här så layout/preview slipper rå-läsa.
     bookingVariant: readBookingVariant(raw),
-    bookingExternalUrl: normalizeBookingExternalUrl(
-      (raw.booking as Record<string, unknown> | undefined)?.external_url,
+    bookingExternalUrl,
+    bookingProvider: bookingLegacyExternal ? 'external' : normalizeBookingProvider(bookingRaw.provider),
+    bookingLegacyExternal,
+    bookingExternalCtaUrls: normalizeBookingExternalCtaUrls(
+      bookingRaw.external_cta_urls,
     ),
     openingHours: parseOpeningHours(raw.opening_hours),
     social: {

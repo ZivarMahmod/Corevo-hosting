@@ -64,7 +64,7 @@ export function CustomerWorkbenchList({
       <div className={styles.listHead}>
         <div className={styles.listTitleRow}>
           <div>
-            <div className={styles.listTitle}>Kunder</div>
+            <h2 className={styles.listTitle}>Kunder</h2>
             <div className={styles.stat}>{stat}</div>
           </div>
           {/* Kunddatabasen byggs av bokningarna — ingen manuell "skapa kund".
@@ -89,6 +89,7 @@ export function CustomerWorkbenchList({
             <button
               key={label}
               type="button"
+              aria-pressed={i === filter}
               onClick={() => setFilter(i)}
               className={`${styles.chip} ${i === filter ? styles.chipOn : ''}`}
             >
@@ -108,6 +109,7 @@ export function CustomerWorkbenchList({
               <Link
                 key={c.id}
                 href={`/admin/kunder/${c.id}`}
+                aria-current={selected ? 'page' : undefined}
                 className={`${styles.row} ${selected ? styles.rowOn : ''} ${
                   c.hidden ? styles.rowHidden : ''
                 }`}

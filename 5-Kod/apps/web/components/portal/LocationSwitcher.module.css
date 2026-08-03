@@ -49,10 +49,13 @@
 
 .menu {
   position: absolute;
-  top: calc(100% + 17px);
+  top: auto;
+  bottom: calc(100% + 8px);
   right: 0;
-  width: 230px;
-  overflow: hidden;
+  width: min(230px, calc(100vw - 32px));
+  max-height: min(420px, calc(100dvh - 32px));
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--c-line-strong);
   border-radius: 14px;
   background: var(--c-paper-2);
@@ -121,6 +124,11 @@
 }
 
 @media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
+  .menu {
+    top: calc(100% + 8px);
+    bottom: auto;
+  }
+
   .summary {
     width: 34px;
     min-height: 34px;
@@ -152,6 +160,7 @@
   .menu {
     position: relative;
     top: auto;
+    bottom: auto;
     right: auto;
     width: 100%;
     margin-top: 6px;

@@ -100,7 +100,7 @@ export function LocationSwitcher({
         </span>
       </summary>
 
-      <div className={styles.menu} role="menu" aria-label="Välj plats">
+      <div className={styles.menu} role="group" aria-label="Välj plats">
         <div className={styles.heading}>PLATS — FILTRERAR ALLT</div>
         {options.map((option) => {
           const active = option.id === effectiveValue
@@ -109,8 +109,7 @@ export function LocationSwitcher({
               key={option.id || 'all'}
               type="button"
               className={`${styles.option}${active ? ` ${styles.optionActive}` : ''}`}
-              role="menuitemradio"
-              aria-checked={active}
+              aria-pressed={active}
               disabled={pending}
               onClick={() => choose(option.id)}
             >

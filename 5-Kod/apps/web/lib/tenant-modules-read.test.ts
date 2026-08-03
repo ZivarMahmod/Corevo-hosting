@@ -17,25 +17,21 @@ vi.mock('@/lib/supabase/public', () => ({
   }),
 }))
 
-import {
-  getTenantModuleStates,
-  isModuleLive,
-  moduleState,
-} from '@/lib/tenant-modules'
+import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 
 describe('getTenantModuleStates', () => {
   beforeEach(() => {
     rpcResult.value = { data: [], error: null }
   })
 
-  it('fails closed for both missing rows and RPC failures', async () => {
+  it('treats missing rows as off but preserves RPC failures', async () => {
     const missing = await getTenantModuleStates('tenant-1', 'demo')
     expect(missing).toEqual({})
     expect(moduleState(missing, 'booking')).toBe('off')
 
     rpcResult.value = { data: null, error: { message: 'unavailable' } }
-    const failed = await getTenantModuleStates('tenant-1', 'demo')
-    expect(failed).toEqual({})
-    expect(isModuleLive(failed, 'booking')).toBe(false)
+    await expect(getTenantModuleStates('tenant-1', 'demo')).rejects.toThrow(
+      'tenant_module_state_read_failed',
+    )
   })
 })

@@ -12,16 +12,19 @@ import {
 } from 'react'
 import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
 import type { BookingVariant, PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
+import {
+  resolveBookingExternalUrl,
+  type BookingExternalCtaUrls,
+  type BookingProviderKind,
+} from '@/lib/platform/booking-external-url'
 import { BookingDrawer } from './BookingDrawer'
 
 /**
  * In-page booking embed (Zivar's #1 requirement).
  *
- * The whole storefront shell (Nav + main + Footer) is wrapped in this provider,
- * so EVERY "Boka tid" CTA — in the nav, the hero, and the closing section —
- * opens the SAME slide-over drawer rendered inside the storefront's own React
- * tree. No iframe, no redirect, no foreign portal: the dimmed, branded
- * storefront stays behind the drawer the entire time.
+ * The whole storefront shell (Nav + main + Footer) is wrapped in this provider.
+ * A live Corevo provider opens the shared in-page flow; a live external provider
+ * resolves validated links; an off module exposes neither.
  *
  * SSR-safety (no React #418): `open` initialises CLOSED on both server and the
  * first client render, so hydration matches. We only read the `?boka=1` deep
@@ -35,12 +38,14 @@ import { BookingDrawer } from './BookingDrawer'
 export type BookingMode = 'wizard' | 'compact'
 
 type BookingContextValue = {
-  /** Route-level module gate; false for off/draft, true for live/paused. */
+  /** Route-level module gate; false for off, true for live. */
   reachable: boolean
-  /** Explicit website-only mode. Only an actual module state `off` may enable it. */
-  websiteOnly: boolean
-  /** External destination used only when websiteOnly is true. */
+  /** Provider is independent from the module's on/off visibility. */
+  provider: BookingProviderKind
+  /** External destination used only when the module is on with external provider. */
   externalUrl: string | null
+  /** Resolve a button-specific destination with the global URL as fallback. */
+  externalUrlFor: (slotId?: string) => string | null
   /** True when the salon has bookable services AND a provider is mounted. */
   available: boolean
   /** Active presentation, including iframe-only editor preview changes. */
@@ -76,8 +81,9 @@ export function BookingProvider({
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   reachable = true,
-  websiteOnly = false,
+  provider = 'corevo',
   externalUrl = null,
+  externalCtaUrls = {},
   countryCode,
   locale,
   currency,
@@ -107,12 +113,14 @@ export function BookingProvider({
   /** Barberarbild-läget (settings.booking.staffAvatars) — rå-läses på servern via
    *  readStaffAvatarMode. Default 'initialer'. */
   staffAvatarMode?: StaffAvatarMode
-  /** Whether /boka may be reached (live/paused). Off/draft must stay inert. */
+  /** Whether /boka may be reached. Off must stay inert; live may be used. */
   reachable?: boolean
-  /** True only when the persisted booking module state is explicitly `off`. */
-  websiteOnly?: boolean
-  /** Validated HTTPS destination for website-only tenants. */
+  /** Corevo engine or external provider; module visibility is controlled by reachable. */
+  provider?: BookingProviderKind
+  /** Validated HTTPS destination for tenants using an external provider. */
   externalUrl?: string | null
+  /** Validated button-specific destinations for tenants using an external provider. */
+  externalCtaUrls?: BookingExternalCtaUrls
   countryCode?: string
   locale?: string
   currency?: string
@@ -130,18 +138,20 @@ export function BookingProvider({
   // Render the (potentially heavy) wizard only after the drawer is first opened.
   const [mounted, setMounted] = useState(false)
   const available = services.length > 0
+  const internalBookingAvailable = reachable && provider === 'corevo' && available
 
   const openWith = useCallback(
     (next: BookingMode) => {
-      if (!available) return
+      if (!internalBookingAvailable) return
       setMode(next)
       setMounted(true)
       setOpen(true)
     },
-    [available],
+    [internalBookingAvailable],
   )
 
   const openDrawer = useCallback(() => {
+    if (!internalBookingAvailable) return
     // Inline-varianten: bokningen ligger I sidan — CTA scrollar dit i stället för
     // att öppna en overlay. Saknas sektionen (t.ex. bokning ej live) → overlay-fallback.
     if (previewPrefs.variant === 'inline') {
@@ -152,7 +162,7 @@ export function BookingProvider({
       }
     }
     openWith(variantMode)
-  }, [openWith, previewPrefs.variant, variantMode])
+  }, [internalBookingAvailable, openWith, previewPrefs.variant, variantMode])
   const openQuickBook = useCallback(() => openWith('compact'), [openWith])
 
   const closeDrawer = useCallback(() => {
@@ -169,12 +179,12 @@ export function BookingProvider({
   // because server + first client render are both CLOSED. ?boka=snabb (or
   // #snabbboka) opens straight into the kompakt snabbboka-variant.
   useEffect(() => {
-    if (!available) return
+    if (!internalBookingAvailable) return
     const sp = new URLSearchParams(window.location.search)
     const boka = sp.get('boka')
     if (boka === 'snabb' || window.location.hash === '#snabbboka') openQuickBook()
     else if (boka === '1' || window.location.hash === '#boka') openDrawer()
-  }, [available, openDrawer, openQuickBook])
+  }, [internalBookingAvailable, openDrawer, openQuickBook])
 
   // The same-origin site editor dispatches this event inside its isolated preview
   // iframe. Public pages never dispatch it, so their server-resolved preferences
@@ -199,11 +209,11 @@ export function BookingProvider({
       })
       setMode(nextVariant === 'compact' || nextVariant === 'inline' ? 'compact' : 'wizard')
       const search = new URLSearchParams(window.location.search)
-      const previewShouldOpen = nextVariant !== 'inline' &&
+      const previewShouldOpen = internalBookingAvailable && nextVariant !== 'inline' &&
         (search.get('boka') === '1' || window.location.hash === '#boka')
       setMounted((current) => current || previewShouldOpen)
       setOpen(previewShouldOpen)
-      if (nextVariant === 'inline') {
+      if (internalBookingAvailable && nextVariant === 'inline') {
         window.setTimeout(() => {
           document.getElementById('boka-inline')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }, 0)
@@ -211,7 +221,7 @@ export function BookingProvider({
     }
     window.addEventListener('corevo-booking-preview', onPreview)
     return () => window.removeEventListener('corevo-booking-preview', onPreview)
-  }, [])
+  }, [internalBookingAvailable])
 
   // Reflect open-state in the URL so it is shareable / back-button friendly,
   // without ever navigating to a foreign route.
@@ -233,9 +243,10 @@ export function BookingProvider({
   const value = useMemo<BookingContextValue>(
     () => ({
       reachable,
-      websiteOnly,
+      provider,
       externalUrl,
-      available,
+      externalUrlFor: (slotId) => resolveBookingExternalUrl(externalUrl, externalCtaUrls, slotId),
+      available: internalBookingAvailable,
       variant: previewPrefs.variant,
       pickerMode: previewPrefs.pickerMode,
       staffAvatarMode: previewPrefs.staffAvatarMode,
@@ -243,7 +254,7 @@ export function BookingProvider({
       open: openDrawer,
       openQuickBook,
     }),
-    [available, externalUrl, openDrawer, openQuickBook, previewPrefs, previewTenantName, reachable, websiteOnly],
+    [externalCtaUrls, externalUrl, internalBookingAvailable, openDrawer, openQuickBook, previewPrefs, previewTenantName, provider, reachable],
   )
 
   return (

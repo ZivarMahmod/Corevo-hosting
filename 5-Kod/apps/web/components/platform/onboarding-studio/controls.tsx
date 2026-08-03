@@ -30,6 +30,7 @@ const fieldLabel: CSSProperties = {
 export function Field({
   label,
   hint,
+  error,
   ph,
   type = 'text',
   required = false,
@@ -38,6 +39,7 @@ export function Field({
 }: {
   label: string
   hint?: string
+  error?: string
   ph?: string
   type?: string
   required?: boolean
@@ -45,6 +47,7 @@ export function Field({
   onChange: (v: string) => void
 }) {
   const id = useId()
+  const descriptionId = hint || error ? `${id}-description` : undefined
   const [focused, setFocused] = useState(false)
   return (
     <div>
@@ -53,6 +56,8 @@ export function Field({
         id={id}
         type={type}
         required={required}
+        aria-describedby={descriptionId}
+        aria-invalid={error ? true : undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
@@ -73,7 +78,15 @@ export function Field({
           color: 'var(--c-ink)',
         }}
       />
-      {hint ? <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 6 }}>{hint}</div> : null}
+      {hint || error ? (
+        <div
+          id={descriptionId}
+          role={error ? 'alert' : undefined}
+          style={{ fontSize: 12, color: error ? 'var(--c-danger)' : 'var(--c-ink-3)', marginTop: 6 }}
+        >
+          {error ?? hint}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -87,13 +100,15 @@ export function ModuleStatePills({
   value,
   choices,
   onChange,
+  label,
 }: {
   value: ModuleState
   choices: ModuleState[]
   onChange: (state: ModuleState) => void
+  label: string
 }) {
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    <div role="radiogroup" aria-label={label} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {choices.map((st) => {
         const on = value === st
         return (

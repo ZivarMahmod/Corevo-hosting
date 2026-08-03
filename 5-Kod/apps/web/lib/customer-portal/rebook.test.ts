@@ -3,20 +3,26 @@ import { buildPortalRebookUrl, validatePortalBookingOrigin } from './rebook'
 
 const tenant = {
   tenantSlug: 'freshcut',
-  bookingOrigin: 'https://freshcut.boka.corevo.se',
+  bookingOrigin: 'https://freshcut.corevo.se',
 }
 
 describe('portal rebook origin firewall', () => {
   it.each([
-    ['canonical tenant booking host', 'freshcut', 'https://freshcut.boka.corevo.se'],
+    ['canonical tenant booking host', 'freshcut', 'https://freshcut.corevo.se'],
     ['verified external custom domain', 'freshcut', 'https://boka.freshcut.se'],
   ])('accepts the %s', (_name, tenantSlug, origin) => {
     expect(validatePortalBookingOrigin({ tenantSlug, bookingOrigin: origin })).toBe(origin)
   })
 
+  it('normalizes the legacy tenant booking host', () => {
+    expect(validatePortalBookingOrigin({
+      tenantSlug: 'freshcut',
+      bookingOrigin: 'https://freshcut.boka.corevo.se',
+    })).toBe('https://freshcut.corevo.se')
+  })
+
   it.each([
-    ['legacy tenant host', 'https://freshcut.corevo.se'],
-    ['other tenant', 'https://other.boka.corevo.se'],
+    ['other tenant', 'https://other.corevo.se'],
     ['platform root', 'https://corevo.se'],
     ['internal host', 'https://internal.example.se'],
     ['admin host', 'https://admin.example.se'],
@@ -45,42 +51,49 @@ describe('portal rebook origin firewall', () => {
   it.each(['', '-freshcut', 'freshcut-', 'FreshCut', 'fresh.cut', 'xn--freshct-5za'])('rejects tenant slug %s', (tenantSlug) => {
     expect(validatePortalBookingOrigin({
       tenantSlug,
-      bookingOrigin: 'https://freshcut.boka.corevo.se',
+      bookingOrigin: 'https://freshcut.corevo.se',
     })).toBeNull()
   })
 })
 
 describe('buildPortalRebookUrl', () => {
   it('builds the empty-state target from the bound session origin', () => {
-    expect(buildPortalRebookUrl(tenant)).toBe('https://freshcut.boka.corevo.se/boka')
+    expect(buildPortalRebookUrl(tenant)).toBe('https://freshcut.corevo.se/boka')
   })
 
   it.each([
-    'https://freshcut.boka.corevo.se/boka',
-    'https://freshcut.boka.corevo.se/boka?tjanst=123e4567-e89b-42d3-a456-426614174000',
-    'https://freshcut.boka.corevo.se/boka?plats=223e4567-e89b-42d3-a456-426614174000',
-    'https://freshcut.boka.corevo.se/boka?plats=223e4567-e89b-42d3-a456-426614174000&tjanst=123e4567-e89b-42d3-a456-426614174000',
+    'https://freshcut.corevo.se/boka',
+    'https://freshcut.corevo.se/boka?tjanst=123e4567-e89b-42d3-a456-426614174000',
+    'https://freshcut.corevo.se/boka?plats=223e4567-e89b-42d3-a456-426614174000',
+    'https://freshcut.corevo.se/boka?plats=223e4567-e89b-42d3-a456-426614174000&tjanst=123e4567-e89b-42d3-a456-426614174000',
   ])('accepts a canonical same-origin booking target: %s', (bookingUrl) => {
     expect(buildPortalRebookUrl({ ...tenant, bookingUrl })).toBe(bookingUrl)
   })
 
+  it('normalizes a legacy booking target', () => {
+    expect(buildPortalRebookUrl({
+      tenantSlug: 'freshcut',
+      bookingOrigin: 'https://freshcut.boka.corevo.se',
+      bookingUrl: 'https://freshcut.boka.corevo.se/boka',
+    })).toBe('https://freshcut.corevo.se/boka')
+  })
+
   it.each([
     ['missing booking URL', null],
-    ['other tenant', 'https://other.boka.corevo.se/boka'],
+    ['other tenant', 'https://other.corevo.se/boka'],
     ['other custom origin', 'https://booking.attacker.example/boka'],
-    ['legacy host', 'https://freshcut.corevo.se/boka'],
-    ['internal route', 'https://freshcut.boka.corevo.se/admin'],
-    ['portal route', 'https://freshcut.boka.corevo.se/mina'],
-    ['fragment', 'https://freshcut.boka.corevo.se/boka#x'],
-    ['unknown query', 'https://freshcut.boka.corevo.se/boka?next=https://evil.example'],
-    ['duplicate service', 'https://freshcut.boka.corevo.se/boka?tjanst=123e4567-e89b-42d3-a456-426614174000&tjanst=223e4567-e89b-42d3-a456-426614174000'],
-    ['duplicate location', 'https://freshcut.boka.corevo.se/boka?plats=123e4567-e89b-42d3-a456-426614174000&plats=223e4567-e89b-42d3-a456-426614174000'],
-    ['invalid service', 'https://freshcut.boka.corevo.se/boka?tjanst=not-a-uuid'],
-    ['invalid location', 'https://freshcut.boka.corevo.se/boka?plats=not-a-uuid'],
-    ['reversed context order', 'https://freshcut.boka.corevo.se/boka?tjanst=123e4567-e89b-42d3-a456-426614174000&plats=223e4567-e89b-42d3-a456-426614174000'],
-    ['userinfo', 'https://freshcut.boka.corevo.se@evil.example/boka'],
-    ['port', 'https://freshcut.boka.corevo.se:443/boka'],
-    ['protocol-relative', '//freshcut.boka.corevo.se/boka'],
+    ['internal route', 'https://freshcut.corevo.se/admin'],
+    ['portal route', 'https://freshcut.corevo.se/mina'],
+    ['fragment', 'https://freshcut.corevo.se/boka#x'],
+    ['unknown query', 'https://freshcut.corevo.se/boka?next=https://evil.example'],
+    ['duplicate service', 'https://freshcut.corevo.se/boka?tjanst=123e4567-e89b-42d3-a456-426614174000&tjanst=223e4567-e89b-42d3-a456-426614174000'],
+    ['duplicate location', 'https://freshcut.corevo.se/boka?plats=123e4567-e89b-42d3-a456-426614174000&plats=223e4567-e89b-42d3-a456-426614174000'],
+    ['invalid service', 'https://freshcut.corevo.se/boka?tjanst=not-a-uuid'],
+    ['invalid location', 'https://freshcut.corevo.se/boka?plats=not-a-uuid'],
+    ['reversed context order', 'https://freshcut.corevo.se/boka?tjanst=123e4567-e89b-42d3-a456-426614174000&plats=223e4567-e89b-42d3-a456-426614174000'],
+    ['userinfo', 'https://freshcut.corevo.se@evil.example/boka'],
+    ['port', 'https://freshcut.corevo.se:443/boka'],
+    ['protocol-relative', '//freshcut.corevo.se/boka'],
   ] as const)('hides %s', (_name, bookingUrl) => {
     expect(buildPortalRebookUrl({ ...tenant, bookingUrl })).toBeNull()
   })

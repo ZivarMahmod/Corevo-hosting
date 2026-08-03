@@ -60,10 +60,10 @@ vi.mock('@/lib/platform/guard', () => ({
 
 import { setModuleState } from '@/lib/platform/tenant-modules-admin'
 
-function toggle(enabled: boolean) {
+function toggle(enabled: boolean, moduleKey = 'shop') {
   const fd = new FormData()
   fd.set('tenantId', 'tenant-1')
-  fd.set('moduleKey', 'shop')
+  fd.set('moduleKey', moduleKey)
   fd.set('binary', 'true')
   if (enabled) fd.set('enabled', 'true')
   return fd
@@ -98,5 +98,16 @@ describe('setModuleState', () => {
       success: 'Modul "shop" är av.',
     })
     expect(mocks.update).toHaveBeenCalledWith({ state: 'off' })
+  })
+
+  it('explains why external booking cannot be turned on without a valid URL', async () => {
+    mocks.currentState = 'off'
+    mocks.updateModuleEq.mockResolvedValueOnce({
+      error: { message: 'booking_external_url_required' },
+    })
+
+    await expect(setModuleState({}, toggle(true, 'booking'))).resolves.toEqual({
+      error: 'Lägg in en giltig extern bokningslänk innan modulen slås på.',
+    })
   })
 })

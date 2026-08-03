@@ -64,7 +64,8 @@ export function canTransitionModuleState(
  * public client; scoped by tenant_id app-side (RLS does NOT isolate anon).
  *
  * The narrow RPC is required because the table's anon policy intentionally hides
- * off rows. Both missing rows and read failures resolve to off.
+ * off rows. Missing rows mean off; read failures remain errors so they cannot be
+ * mistaken for a valid module decision.
  */
 export async function getTenantModuleStates(
   tenantId: string,
@@ -76,7 +77,7 @@ export async function getTenantModuleStates(
       const supabase = createPublicClient()
       const { data, error } = await supabase
         .rpc('get_public_tenant_module_states', { p_tenant: tenantId })
-      if (error || !data) return {}
+      if (error || !data) throw new Error('tenant_module_state_read_failed')
       const out: TenantModuleStates = {}
       for (const row of data) {
         const st = parseState(row.state)

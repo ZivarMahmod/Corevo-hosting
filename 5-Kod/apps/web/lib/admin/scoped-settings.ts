@@ -1,5 +1,3 @@
-import type { BookingVerificationMode } from '@/lib/platform/booking-variant'
-
 export const SETTINGS_SCOPES = [
   'all',
   'booking',
@@ -25,8 +23,6 @@ type NotificationSettings = {
 
 export type ScopedSettingsInput = {
   cancellationHours?: number
-  bookingVerificationMode?: BookingVerificationMode
-  bookingExternalUrl?: string | null
   contact?: { email: string | null; phone: string | null }
   customerAccountsEnabled?: boolean
   notifications?: NotificationSettings
@@ -47,26 +43,6 @@ export function mergeScopedSettings(
     }
     if (input.customerAccountsEnabled !== undefined) {
       next.customer_accounts_enabled = input.customerAccountsEnabled
-    }
-    if (
-      input.bookingVerificationMode !== undefined ||
-      input.bookingExternalUrl !== undefined
-    ) {
-      const savedBooking =
-        typeof existing.booking === 'object'
-        && existing.booking !== null
-        && !Array.isArray(existing.booking)
-          ? (existing.booking as Record<string, unknown>)
-          : {}
-      next.booking = {
-        ...savedBooking,
-        ...(input.bookingVerificationMode !== undefined
-          ? { verificationMode: input.bookingVerificationMode }
-          : {}),
-        ...(input.bookingExternalUrl !== undefined
-          ? { external_url: input.bookingExternalUrl }
-          : {}),
-      }
     }
   }
 

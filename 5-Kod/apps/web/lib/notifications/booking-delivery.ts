@@ -114,15 +114,16 @@ async function tenantOrigin(
     .select('domain')
     .eq('tenant_id', tenantId)
     .eq('verified', true)
-  const suffix = process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX ?? 'boka.corevo.se'
+  const canonicalHost = `${slug}.corevo.se`
+  const legacyHost = `${slug}.boka.corevo.se`
   const allowed = new Set([
-    `${slug}.corevo.se`,
-    `${slug}.${suffix}`,
+    canonicalHost,
+    legacyHost,
     ...(domains ?? []).map((item) => item.domain.toLowerCase()),
   ])
-  return isSafeCustomerClaimOrigin(raw, allowed, process.env.NODE_ENV !== 'production')
-    ? new URL(raw).origin
-    : null
+  if (!isSafeCustomerClaimOrigin(raw, allowed, process.env.NODE_ENV !== 'production')) return null
+  const origin = new URL(raw)
+  return origin.hostname === legacyHost ? `https://${canonicalHost}` : origin.origin
 }
 
 /**

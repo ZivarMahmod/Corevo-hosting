@@ -115,23 +115,25 @@ async function canonicalTenantOrigin(
     ])
   if (tenantError || domainsError || !tenant?.slug) throw new Error('tenant_origin_unavailable')
 
-  const suffix = process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX ?? 'boka.corevo.se'
+  const canonicalHost = `${tenant.slug}.corevo.se`
+  const legacyHost = `${tenant.slug}.boka.corevo.se`
   const verifiedDomains = (domains ?? [])
     .map(({ domain }) => domain.trim().toLowerCase())
     .filter(Boolean)
     .sort()
   const allowedHosts = new Set([
-    `${tenant.slug}.corevo.se`,
-    `${tenant.slug}.${suffix}`,
+    canonicalHost,
+    legacyHost,
     ...verifiedDomains,
   ])
   if (
     proposedOrigin
     && isSafeCustomerClaimOrigin(proposedOrigin, allowedHosts, process.env.NODE_ENV !== 'production')
   ) {
-    return new URL(proposedOrigin).origin
+    const origin = new URL(proposedOrigin)
+    return origin.hostname === legacyHost ? `https://${canonicalHost}` : origin.origin
   }
-  return `https://${verifiedDomains[0] ?? `${tenant.slug}.${suffix}`}`
+  return `https://${verifiedDomains[0] ?? canonicalHost}`
 }
 
 /**

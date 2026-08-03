@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { createPublicClient } from '@/lib/supabase/public'
 import { readBookingMode, readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
@@ -44,6 +44,10 @@ export default async function BokaPage({
   const { tenant, settings } = bundle
   const bookingAccess = bookingModuleAccess(await getTenantModuleStates(tenant.id, tenant.slug))
   if (bookingAccess === 'hidden') notFound()
+  if (settings.bookingProvider === 'external') {
+    if (!settings.bookingExternalUrl) notFound()
+    redirect(settings.bookingExternalUrl)
+  }
 
   // BRANSCH-REGELN: verbet kommer ur bransch-lagret, aldrig hårdkodat. En florist
   // bokar konsultation, en restaurang bokar bord — inte "tid".

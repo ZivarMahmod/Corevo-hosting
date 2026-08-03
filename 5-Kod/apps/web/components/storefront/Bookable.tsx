@@ -20,6 +20,7 @@ export function Bookable({
   className,
   label = 'Boka tid',
   enabled = true,
+  slotId,
 }: {
   children: ReactNode
   as?: ElementType
@@ -27,6 +28,7 @@ export function Bookable({
   /** Accessible name for the row (e.g. "Boka — Klippning dam"). */
   label?: string
   enabled?: boolean
+  slotId?: string
 }) {
   const booking = useBooking()
   const router = useRouter()
@@ -47,7 +49,8 @@ export function Bookable({
     }
   }
 
-  const canUseExternal = Boolean(booking?.websiteOnly && booking.externalUrl)
+  const externalUrl = booking?.externalUrlFor(slotId) ?? null
+  const canUseExternal = Boolean(booking?.reachable && booking.provider === 'external' && externalUrl)
 
   if (!enabled && !canUseExternal) {
     return (
@@ -58,21 +61,15 @@ export function Bookable({
   }
 
   if (booking && !booking.reachable) {
-    return booking.websiteOnly && booking.externalUrl ? (
-      <a
-        href={booking.externalUrl}
-        className={className}
-        aria-label={label}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {children}
-      </a>
-    ) : (
-      <Tag className={className} aria-disabled="true">
-        {children}
-      </Tag>
-    )
+    return <Tag className={className} aria-disabled="true">{children}</Tag>
+  }
+
+  if (canUseExternal && externalUrl) {
+    return <a href={externalUrl} className={className} aria-label={label} target="_blank" rel="noopener noreferrer">{children}</a>
+  }
+
+  if (booking?.provider === 'external') {
+    return <Tag className={className} aria-disabled="true">{children}</Tag>
   }
 
   return (

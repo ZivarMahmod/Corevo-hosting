@@ -28,10 +28,12 @@ export function BookCta({
   className = '',
   label = 'Boka tid',
   enabled = true,
+  slotId,
 }: {
   className?: string
   label?: string
   enabled?: boolean
+  slotId?: string
 }) {
   const booking = useBooking()
   const cls = `btn-accent${className ? ` ${className}` : ''}`
@@ -39,31 +41,23 @@ export function BookCta({
   // Embedded: open the in-page drawer. Only when the salon actually has services
   // to book; otherwise fall through to the /boka route which renders its own
   // friendly empty state.
-  const canUseExternal = Boolean(booking?.websiteOnly && booking.externalUrl)
+  const externalUrl = booking?.externalUrlFor(slotId) ?? null
+  const canUseExternal = Boolean(booking?.reachable && booking.provider === 'external' && externalUrl)
 
   if (!enabled && !canUseExternal) {
-    return (
-      <span className={cls} aria-disabled="true">
-        {label}
-      </span>
-    )
+    return null
   }
 
   if (booking && !booking.reachable) {
-    return booking.websiteOnly && booking.externalUrl ? (
-      <a
-        href={booking.externalUrl}
-        className={cls}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {label}
-      </a>
-    ) : (
-      <span className={cls} aria-disabled="true">
-        {label}
-      </span>
-    )
+    return null
+  }
+
+  if (canUseExternal && externalUrl) {
+    return <a href={externalUrl} className={cls} target="_blank" rel="noopener noreferrer">{label}</a>
+  }
+
+  if (booking?.provider === 'external') {
+    return null
   }
 
   if (booking?.available) {

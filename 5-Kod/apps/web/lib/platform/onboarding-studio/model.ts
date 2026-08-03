@@ -1,11 +1,9 @@
 // Onboarding-studio (goal-48) — PURE cfg-state model, shared by the studio shell and
-// its step panels. Ported from the design's app.jsx INIT + chooseVertical/stateFor,
-// but driven by the REAL presets (VerticalPreset has no hero/services/defaultPos —
-// those were cfg-data mockup; content seeding comes from the template, placement is
-// a later wave). Mirrors CreateTenantForm's inline logic so the flag-OFF fallback
-// stays byte-identical; once the studio is proven the form retires and the dup goes.
+// its step panels. Driven by the real vertical presets; content seeding comes from
+// the selected template and every tenant is created through this one studio flow.
 import type { ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant, DEFAULT_BOOKING_VARIANT } from '@/lib/platform/booking-variant'
+import type { BookingProviderKind } from '@/lib/platform/booking-external-url'
 import { modulesForVertical, type VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { COREVO_12_THEME_KEYS, isSelectableTheme } from '@/lib/platform/theme-palettes'
 
@@ -24,6 +22,8 @@ export type StudioCfg = {
   /** template key (settings.theme). Defaults to the built-in default until a bransch sets it. */
   theme: string
   variant: BookingVariant
+  bookingProvider: BookingProviderKind
+  bookingExternalUrl: string
   /** module_key → chosen state (seeded from the bransch preset except booking). */
   moduleStates: Record<string, ModuleState>
   /** accent hex ('' = none picked → theme's own primary wins). */
@@ -54,6 +54,8 @@ export function initStudioCfg(
     slugTouched: false,
     theme: defaultTheme,
     variant,
+    bookingProvider: 'corevo',
+    bookingExternalUrl: '',
     moduleStates: {},
     accent: '',
     tagline: '',

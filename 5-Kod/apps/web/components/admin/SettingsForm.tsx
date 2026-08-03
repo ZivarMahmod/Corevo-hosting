@@ -4,10 +4,6 @@ import { useActionState, useState, type ReactNode } from 'react'
 import { saveSettings, type ActionState } from '@/lib/admin/actions'
 import { Card, Callout } from '@/components/portal/ui'
 import type { SettingsScope } from '@/lib/admin/scoped-settings'
-import {
-  DEFAULT_BOOKING_VERIFICATION_MODE,
-  type BookingVerificationMode,
-} from '@/lib/platform/booking-variant'
 import styles from './admin.module.css'
 
 const TIMEZONES = [
@@ -36,8 +32,6 @@ export type SettingsFormProps = {
   contactEmail: string
   contactPhone: string
   customerAccountsEnabled: boolean
-  bookingVerificationMode?: BookingVerificationMode
-  bookingExternalUrl?: string
   /** Notiser & integritet — defaults match the "absent => on" reader semantics. */
   notifications?: NotificationToggles
   googleReviewUrl?: string
@@ -120,8 +114,6 @@ export function SettingsForm({
   notifications = { confirmation: true, reminder: true, review: true },
   googleReviewUrl = '',
   cookieBannerEnabled = true,
-  bookingVerificationMode = DEFAULT_BOOKING_VERIFICATION_MODE,
-  bookingExternalUrl = '',
   ...props
 }: SettingsFormProps) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(saveSettings, {})
@@ -207,32 +199,6 @@ export function SettingsForm({
           title="Kund-konton"
           desc="Visar inloggning + ”Mitt konto” på din publika sajt (annars endast gästbokning)."
         />
-
-        <label className={styles.field}>
-          <span>Verifieringskod skickas via</span>
-          <select name="booking_verification_mode" defaultValue={bookingVerificationMode}>
-            <option value="sms_only">Endast SMS</option>
-            <option value="sms_with_email_fallback">SMS med mejlreserv</option>
-            <option value="email_only">Endast mejl</option>
-          </select>
-          <span className={styles.muted}>
-            SMS med mejlreserv använder mejl bara när SMS-tjänsten är nere.
-          </span>
-        </label>
-
-        <label className={styles.field}>
-          <span>Extern bokningslänk</span>
-          <input
-            name="booking_external_url"
-            type="url"
-            inputMode="url"
-            placeholder="https://www.bokadirekt.se/..."
-            defaultValue={bookingExternalUrl}
-          />
-          <span className={styles.muted}>
-            Används bara när Corevo-bokningen är Av. Lämna tomt om Boka-knapparna ska vara avstängda.
-          </span>
-        </label>
 
         <label className={styles.field}>
           <span>Avbokning senast (timmar före)</span>

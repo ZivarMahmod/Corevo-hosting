@@ -5,6 +5,10 @@ const existing = {
   layout: { theme: 'saved' },
   cancellation_cutoff_hours: 24,
   customer_accounts_enabled: true,
+  booking: {
+    verificationMode: 'email_only',
+    external_url: 'https://www.bokadirekt.se/places/saved',
+  },
   notifications: { confirmation: true, reminder: true, review: false, sms: true },
   google_review_url: 'https://example.com/old',
   cookie_banner_enabled: true,
@@ -23,17 +27,11 @@ describe('mergeScopedSettings', () => {
       mergeScopedSettings(existing, 'booking', {
         cancellationHours: 12,
         customerAccountsEnabled: false,
-        bookingVerificationMode: 'email_only',
-        bookingExternalUrl: 'https://www.bokadirekt.se/places/test-123',
       }),
     ).toEqual({
       ...existing,
       cancellation_cutoff_hours: 12,
       customer_accounts_enabled: false,
-      booking: {
-        verificationMode: 'email_only',
-        external_url: 'https://www.bokadirekt.se/places/test-123',
-      },
     })
   })
 
