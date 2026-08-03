@@ -8,7 +8,7 @@ import type { ThemeFooterProps, ThemeNavProps } from './florist/types'
 import fc from './freshcut.module.css'
 
 const HOME_LINKS = [
-  { href: '/#tjanster', label: 'Priser' },
+  { href: '/#tjanster', label: 'Tjänster' },
   { href: '/#resultat', label: 'Resultat' },
   { href: '/#salongen', label: 'Salongen' },
   { href: '/#kontakt', label: 'Kontakt' },

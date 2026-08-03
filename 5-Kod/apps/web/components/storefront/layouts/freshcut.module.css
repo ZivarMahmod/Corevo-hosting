@@ -246,7 +246,7 @@
 
 .featuredService {
   display: grid;
-  grid-template-columns: 30px 1fr auto 30px;
+  grid-template-columns: 30px 1fr 30px;
   align-items: center;
   gap: 22px;
   min-height: 112px;
@@ -294,20 +294,6 @@
   letter-spacing: 0.13em;
   text-transform: uppercase;
   transition: color 180ms ease;
-}
-
-.featuredPrice {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.featuredPrice small {
-  color: inherit;
-  font-size: 11px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
 }
 
 .featuredService > i {
@@ -400,7 +386,7 @@
 
 .serviceRow {
   display: grid;
-  grid-template-columns: 44px minmax(340px, 1fr) 92px 104px 84px;
+  grid-template-columns: 44px minmax(340px, 1fr) 92px 84px;
   align-items: center;
   gap: 30px;
   min-height: 92px;
@@ -452,12 +438,6 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   transition: color 180ms ease;
-}
-
-.servicePrice {
-  font-size: 18px;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .serviceAction {
@@ -878,7 +858,7 @@
   }
 
   .serviceRow {
-    grid-template-columns: 42px minmax(300px, 1fr) 90px 100px 80px;
+    grid-template-columns: 42px minmax(300px, 1fr) 90px 80px;
     gap: 18px;
   }
 
@@ -975,7 +955,7 @@
   }
 
   .featuredService {
-    grid-template-columns: 24px 1fr auto 24px;
+    grid-template-columns: 24px 1fr 24px;
     gap: 12px;
     min-height: 96px;
     padding: 22px 18px;
@@ -983,10 +963,6 @@
 
   .featuredName strong {
     font-size: 25px;
-  }
-
-  .featuredPrice {
-    font-size: 18px;
   }
 
   .servicesSection {
@@ -1045,12 +1021,6 @@
   .serviceTime {
     grid-column: 2;
     margin-top: 8px;
-  }
-
-  .servicePrice {
-    grid-column: 3;
-    margin-top: 8px;
-    font-size: 16px;
   }
 
   .serviceAction {

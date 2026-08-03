@@ -85,7 +85,7 @@ describe('FreshCut v2 customer-locked website', () => {
       { href: '/kontakt', label: 'Kontakt' },
       { href: '/blogg', label: 'Blogg' },
     ])).toEqual([
-      { href: '/#tjanster', label: 'Priser' },
+      { href: '/#tjanster', label: 'Tjänster' },
       { href: '/#resultat', label: 'Resultat' },
       { href: '/#salongen', label: 'Salongen' },
       { href: '/#kontakt', label: 'Kontakt' },
@@ -112,7 +112,7 @@ describe('FreshCut v2 customer-locked website', () => {
     for (const service of SERVICES) {
       expect(html).toContain(service.name)
       expect(html).toContain(`${service.duration_min} min`)
-      expect(html).toContain(`${Math.round(service.price_cents / 100)} kr`)
+      expect(html).not.toContain(`${Math.round(service.price_cents / 100)} kr`)
     }
     expect(html).toContain('Bokhållaregatan 2')
     expect(html).toContain('073 876 71 44')

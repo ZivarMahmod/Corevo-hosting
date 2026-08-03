@@ -22,15 +22,9 @@ function serviceDescription(service: Service): string {
   return SERVICE_DESCRIPTIONS.find(([pattern]) => pattern.test(service.name))?.[1] ?? 'Noggrant utfört med fokus på din stil.'
 }
 
-function servicePrice(service: Service): string {
-  return `${Math.round(service.price_cents / 100).toLocaleString('sv-SE')} kr`
-}
-
 function featuredServices(services: Service[]) {
   const pick = (match: (name: string) => boolean) =>
-    services
-      .filter((service) => match(service.name.toLocaleLowerCase('sv-SE')))
-      .sort((a, b) => a.price_cents - b.price_cents)[0]
+    services.find((service) => match(service.name.toLocaleLowerCase('sv-SE')))
 
   return [
     {
@@ -78,7 +72,7 @@ function instagramLabel(url: string): string {
  * FreshCuts customer-locked website.
  *
  * The approved source owns the visual structure. Corevo still owns every live
- * function: services/prices come from the tenant, copy/media can be overridden
+ * function: services come from the tenant, copy/media can be overridden
  * in Sida, and every booking surface goes through BookCta/Bookable.
  */
 export function FreshCutLayout({
@@ -153,10 +147,6 @@ export function FreshCutLayout({
                 <strong>{label}</strong>
                 <small>{service.duration_min} minuter</small>
               </span>
-              <span className={fc.featuredPrice}>
-                {index < 2 ? 'från ' : ''}
-                {Math.round(service.price_cents / 100)} <small>kr</small>
-              </span>
               <i aria-hidden="true">↗</i>
             </Bookable>
           ))}
@@ -170,7 +160,7 @@ export function FreshCutLayout({
         </div>
         <div className={fc.servicesHeading}>
           <h2 id="freshcut-services-title">{content.servicesTitle}</h2>
-          <p>Tydliga priser. Rätt tid för jobbet. Boka online när det passar dig.</p>
+          <p>Rätt behandling och rätt tid. Aktuella priser finns alltid hos Bokadirekt.</p>
         </div>
 
         {services.length > 0 ? (
@@ -180,7 +170,7 @@ export function FreshCutLayout({
                 key={service.id}
                 enabled={bookingReachable}
                 className={fc.serviceRow}
-                label={`Boka ${service.name}, ${service.duration_min} min, ${servicePrice(service)}`}
+                label={`Boka ${service.name}, ${service.duration_min} min`}
               >
                 <span className={fc.serviceIndex}>{String(index + 1).padStart(2, '0')}</span>
                 <span className={fc.serviceName}>
@@ -188,7 +178,6 @@ export function FreshCutLayout({
                   <p>{serviceDescription(service)}</p>
                 </span>
                 <span className={fc.serviceTime}>{service.duration_min} min</span>
-                <strong className={fc.servicePrice}>{servicePrice(service)}</strong>
                 <span className={fc.serviceAction}>
                   Boka <i aria-hidden="true">↗</i>
                 </span>
