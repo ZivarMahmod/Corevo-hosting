@@ -145,7 +145,8 @@ begin
       10
     );
     raise exception 'cross_tenant_asset_succeeded';
-  exception when foreign_key_violation then null;
+  exception when sqlstate '55000' then
+    if sqlerrm <> 'media_reference_requires_ready' then raise; end if;
   end;
 
   begin
