@@ -5,8 +5,12 @@ insert into public.tenants (id, slug, name, status) values
   ('01350000-0000-0000-0000-000000000001', 'external-booking-0135', 'External Booking 0135', 'active');
 alter table public.tenants enable trigger trg_tenant_launch_readiness;
 
+insert into public.tenant_settings (tenant_id, settings) values (
+  '01350000-0000-0000-0000-000000000001',
+  '{"booking":{"provider":"external","external_url":"https://www.bokadirekt.se/places/example"}}'::jsonb
+);
 insert into public.tenant_modules (tenant_id, module_key, state) values
-  ('01350000-0000-0000-0000-000000000001', 'booking', 'off');
+  ('01350000-0000-0000-0000-000000000001', 'booking', 'live');
 
 insert into public.services (id, tenant_id, name, duration_min, price_cents, active) values
   ('01350000-0000-0000-0000-000000000011', '01350000-0000-0000-0000-000000000001', 'Public external service', 30, 39900, true),

@@ -193,10 +193,8 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).not.toContain('href="/boka"')
   })
 
-  it('reserves mobile page space for the fixed booking row', () => {
-    expect(css).toMatch(
-      /@media \(max-width: 780px\) {[\s\S]*?\.page {[^}]*padding-bottom: calc\(84px \+ env\(safe-area-inset-bottom\)\)/,
-    )
+  it('does not cover mobile content with a fixed booking row', () => {
+    expect(css).not.toContain('.mobileBooking')
   })
 
   it('keeps owner copy above the customer template default', () => {

@@ -368,12 +368,6 @@ export function FreshCutLayout({
         </div>
       </section>
 
-      <BookCta
-        slotId="mobile"
-        enabled={bookingReachable}
-        className={fc.mobileBooking}
-        label="Boka direkt ↗"
-      />
     </div>
   )
 }

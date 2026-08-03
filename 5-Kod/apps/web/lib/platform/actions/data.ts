@@ -203,7 +203,7 @@ export async function saveTenantName(_p: ActionState, fd: FormData): Promise<Act
 /** Save only the booking provider and external destinations. Presentation is
  * owned by the site revision so an older draft cannot overwrite these values. */
 export async function updateBookingSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase, tenantId } = await siteRevisionCtx({
+  const { supabase, tenantId } = await siteRevisionCtx({
     tenantId: String(fd.get('tenantId') ?? ''),
   })
   if (!tenantId) return { error: 'Saknar kund.' }
@@ -246,43 +246,7 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
     p_external_cta_urls: externalCtaUrls,
     p_verification_mode: verificationMode,
   })
-  if (error?.code === 'PGRST202') {
-    // ponytail: one rolling-release fallback; the atomic RPC owns all writes once deployed.
-    const { data: existing, error: readError } = await supabase
-      .from('tenant_settings')
-      .select('settings')
-      .eq('tenant_id', tenantId)
-      .maybeSingle()
-    if (readError) {
-      await reportActionError('updateBookingSettings.fallback_read', readError, { tenantId })
-      return { error: GENERIC }
-    }
-    const prev = (existing?.settings ?? {}) as Record<string, unknown>
-    const prevBooking = (prev.booking ?? {}) as Record<string, unknown>
-    const settings = {
-      ...prev,
-      booking: {
-        ...prevBooking,
-        provider,
-        external_url: externalUrl,
-        external_cta_urls: externalCtaUrls,
-        ...(verificationMode ? { verificationMode } : {}),
-      },
-    }
-    const { error: fallbackError } = await supabase
-      .from('tenant_settings')
-      .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
-    if (fallbackError) {
-      await reportActionError('updateBookingSettings.fallback_upsert', fallbackError, { tenantId })
-      return { error: GENERIC }
-    }
-    await logPlatformAction(supabase, {
-      action: 'tenant.update',
-      tenantId,
-      actorId: user.id,
-      meta: { provider, fallback: true },
-    })
-  } else if (error) {
+  if (error) {
     await reportActionError('updateBookingSettings.rpc', error, { tenantId })
     return { error: GENERIC }
   }

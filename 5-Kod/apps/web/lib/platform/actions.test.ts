@@ -459,7 +459,7 @@ describe('updateBookingSettings', () => {
     expect(captured['rpc.update_booking_operational_settings']).toBeUndefined()
   })
 
-  it('keeps booking settings writable during the app-first rolling deploy', async () => {
+  it('fails closed when the atomic booking RPC is unavailable', async () => {
     const { client, captured } = makeSupabase({
       tenants: { data: { slug: 'freshcut' }, error: null },
       tenant_settings: {
@@ -484,19 +484,8 @@ describe('updateBookingSettings', () => {
       'booking_external_cta_url:hero': 'https://www.bokadirekt.se/places/freshcut-hero',
     }))
 
-    expect(result.error).toBeUndefined()
-    expect(captured['tenant_settings.upsert']?.[0]).toEqual({
-      tenant_id: 'tenant-1',
-      settings: {
-        theme: 'freshcut',
-        booking: {
-          variant: 'wizard',
-          provider: 'external',
-          external_url: 'https://www.bokadirekt.se/places/freshcut',
-          external_cta_urls: { hero: 'https://www.bokadirekt.se/places/freshcut-hero' },
-        },
-      },
-    })
+    expect(result.error).toBe('Något gick fel. Försök igen.')
+    expect(captured['tenant_settings.upsert']).toBeUndefined()
   })
 })
 

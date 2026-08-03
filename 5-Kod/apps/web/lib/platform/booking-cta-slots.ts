@@ -10,7 +10,6 @@ const FRESHCUT_PAGE_SLOTS: BookingCtaSlot[] = [
   { id: 'studio', label: 'Om verksamheten', group: 'Sida' },
   { id: 'final', label: 'Avslutande bokning', group: 'Sida' },
   { id: 'contact', label: 'Kontakt', group: 'Sida' },
-  { id: 'mobile', label: 'Fast mobilknapp', group: 'Sida' },
 ]
 
 export function bookingCtaSlots(

@@ -6,12 +6,10 @@ const webRoot = resolve(import.meta.dirname, '../../..')
 const read = (path: string) => readFileSync(resolve(webRoot, path), 'utf8')
 
 describe('customer surface P1 contracts', () => {
-  it('keeps the open mobile menu above the fixed FreshCut booking action', () => {
+  it('keeps the FreshCut storefront free from fixed booking overlays', () => {
     const freshcut = read('components/storefront/layouts/freshcut.module.css')
-    const navigation = read('components/brand/nav-shell.module.css')
 
-    expect(freshcut).toMatch(/\.mobileBooking\s*\{[\s\S]*?z-index:\s*50;/)
-    expect(navigation).toMatch(/\.overlay\s*\{[\s\S]*?z-index:\s*60;/)
+    expect(freshcut).not.toContain('.mobileBooking')
   })
 
   it('returns empty checkout and order confirmation actions to the shop', () => {

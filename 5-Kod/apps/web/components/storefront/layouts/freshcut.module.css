@@ -849,10 +849,6 @@
   font-style: normal;
 }
 
-.mobileBooking {
-  display: none;
-}
-
 @media (max-width: 1120px) {
   .heroGrid {
     grid-template-columns: minmax(0, 1fr) 360px;
@@ -904,10 +900,6 @@
 }
 
 @media (max-width: 780px) {
-  .page {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
-  }
-
   .hero {
     min-height: calc(100svh - var(--nav-h, 89px));
   }
@@ -1136,28 +1128,6 @@
     font-size: 22px;
   }
 
-  .mobileBooking {
-    position: fixed;
-    z-index: 50;
-    right: 12px;
-    bottom: 12px;
-    left: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    min-height: 60px;
-    padding: 16px 19px;
-    color: var(--fc-black);
-    background: var(--fc-signal);
-    border: 0;
-    border-radius: 0;
-    box-shadow: 0 16px 40px rgb(0 0 0 / 28%);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
