@@ -11,7 +11,7 @@ insert into public.tenant_settings (tenant_id, settings, branding) values
     '{"copy":{"heroTitle":"Before"},"theme":"kalla","social":{"instagram":"stale"},"booking":{"keepBooking":"booking"},"customer_accounts_enabled":true,"keep":"settings"}',
     '{"color_primary":"#000000","color_bg":"#ffffff","team":[{"name":"Legacy","role":"Owner","img":""}],"keep_brand":"branding"}'
   ),
-  ('80000000-0000-0000-0000-000000000002', '{}', '{}');
+  ('80000000-0000-0000-0000-000000000002', '{"theme":"kalla"}', '{}');
 insert into public.roles (id, tenant_id, name, level) values
   ('80000000-0000-0000-0000-000000000021', '80000000-0000-0000-0000-000000000001', 'owner', 6),
   ('80000000-0000-0000-0000-000000000022', null, 'super_admin', 8),
