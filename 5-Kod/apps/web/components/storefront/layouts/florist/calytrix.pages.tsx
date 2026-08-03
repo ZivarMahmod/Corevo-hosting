@@ -86,7 +86,7 @@ export function CalytrixTjanster({ content, services, modules }: ThemePageProps)
       ) : (
         <div className={styles.cxCards2}>
           {services.map((s) => (
-            <Bookable enabled={bookingReachable} key={s.id} className={styles.cxFact} label={`Beställ — ${s.name}`}>
+            <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.cxFact} label={`Beställ — ${s.name}`}>
               <span className={styles.cxFactEyebrow}>{s.name}</span>
               <span className={styles.cxFactValue}>{formatPrice(s)}</span>
               <span className={styles.cxFactText}>{serviceDesc(s)}</span>

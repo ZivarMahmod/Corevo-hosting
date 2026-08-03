@@ -110,7 +110,7 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
             {signatures.map((s, i) => (
               <li key={s.id}>
                 <Reveal delay={i * 90}>
-                  <Bookable enabled={bookingReachable} className={styles.siSigCard} label={`Boka — ${s.name}`}>
+                  <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} className={styles.siSigCard} label={`Boka — ${s.name}`}>
                     <p className={styles.siSigNo}>N°{String(i + 1).padStart(2, '0')}</p>
                     <h3 className={styles.siSigName}>{s.name}</h3>
                     <p className={styles.siSigDesc}>{serviceDesc(s)}</p>

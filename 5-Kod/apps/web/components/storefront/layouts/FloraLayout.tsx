@@ -201,7 +201,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
               <div className={styles.sfRowList}>
                 {rows.map((s, i) => (
                   <Reveal key={s.id} delay={i * 60}>
-                    <Bookable enabled={bookingReachable} className={styles.sfRow} label={`Beställ — ${s.name}`}>
+                    <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} className={styles.sfRow} label={`Beställ — ${s.name}`}>
                       <span className={styles.sfRowNum} aria-hidden="true">
                         {serviceNum(i)}
                       </span>

@@ -17,16 +17,12 @@ export function bookingCtaSlots(
   services: readonly { id: string; name: string; active: boolean }[],
   savedUrls: BookingExternalCtaUrls,
 ): BookingCtaSlot[] {
-  const slots = templateKey === 'freshcut'
-    ? [
-        ...FRESHCUT_PAGE_SLOTS,
-        ...services.filter((service) => service.active).map((service) => ({
-          id: `service:${service.id}`,
-          label: service.name,
-          group: 'Tjänster' as const,
-        })),
-      ]
-    : []
+  const serviceSlots = services.filter((service) => service.active).map((service) => ({
+    id: `service:${service.id}`,
+    label: service.name,
+    group: 'Tjänster' as const,
+  }))
+  const slots = [...(templateKey === 'freshcut' ? FRESHCUT_PAGE_SLOTS : []), ...serviceSlots]
   const known = new Set(slots.map((slot) => slot.id))
   return [
     ...slots,

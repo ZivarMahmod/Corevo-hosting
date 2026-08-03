@@ -120,6 +120,7 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
                   <p className={styles.kaCardPrice}>{formatPrice(s)}</p>
                   {/* Filens `s.book` förifyller bokningen → plattformens <Bookable>. */}
                   <Bookable
+                    slotId={`service:${s.id}`}
                     enabled={bookingReachable}
                     as="span"
                     className={styles.kaCardBook}

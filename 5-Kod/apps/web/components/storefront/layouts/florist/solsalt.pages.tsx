@@ -74,7 +74,7 @@ export function SolSaltTjanster({ content, services, modules }: ThemePageProps) 
         ) : (
           <div className={styles.slList}>
             {services.map((s) => (
-              <Bookable enabled={bookingReachable} key={s.id} className={styles.slListRow} label={`Boka — ${s.name}`}>
+              <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.slListRow} label={`Boka — ${s.name}`}>
                 <span>
                   <span className={styles.slListName}>{s.name}</span>
                   <span className={styles.slListDesc}>{serviceDesc(s)}</span>

@@ -97,7 +97,7 @@ export function SiluettTjanster({ content, services, modules }: ThemePageProps) 
               </div>
             ) : null}
             {g.items.map((s) => (
-              <Bookable enabled={bookingReachable} key={s.id} className={styles.siPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.siPriceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.siPriceMain}>
                   <span className={styles.siPriceName}>{s.name}</span>
                   <span className={styles.siPriceDesc}>{serviceDesc(s)}</span>

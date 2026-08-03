@@ -49,7 +49,7 @@ export function AteljeVinterTjanster({ content, services, modules }: ThemePagePr
       ) : (
         <div className={styles.avList}>
           {services.map((s) => (
-            <Bookable enabled={bookingReachable} key={s.id} className={styles.avListRow} label={`beställ — ${s.name}`}>
+            <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.avListRow} label={`beställ — ${s.name}`}>
               <span>
                 <span className={styles.avListName}>{s.name}</span>
                 <span className={styles.avListDesc}>{serviceDesc(s)}</span>

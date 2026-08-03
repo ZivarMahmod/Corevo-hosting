@@ -69,7 +69,7 @@ export function OnyxTjanster({ content, services, modules }: ThemePageProps) {
       ) : (
         <div className={styles.onList}>
           {services.map((s) => (
-            <Bookable enabled={bookingReachable} key={s.id} className={styles.onListRow} label={`BOKA — ${s.name}`}>
+            <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.onListRow} label={`BOKA — ${s.name}`}>
               <span>
                 <span className={styles.onListName}>{s.name}</span>
                 <span className={styles.onListDesc}>{serviceDesc(s)}</span>

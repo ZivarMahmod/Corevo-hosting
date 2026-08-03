@@ -95,7 +95,7 @@ export function AuroraTjanster({ content, services, modules }: ThemePageProps) {
               <p className={styles.auSvcName}>{s.name}</p>
               <p className={styles.auSvcDesc}>{serviceDesc(s)}</p>
               <p className={styles.auSvcPrice}>{formatPrice(s)}</p>
-              <Bookable enabled={bookingReachable} className={styles.auSvcBook} label={`Boka — ${s.name}`}>
+              <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} className={styles.auSvcBook} label={`Boka — ${s.name}`}>
                 Boka plats
               </Bookable>
             </Reveal>

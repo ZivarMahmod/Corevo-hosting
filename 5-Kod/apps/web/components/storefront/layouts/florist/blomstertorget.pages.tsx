@@ -67,7 +67,7 @@ export function BlomstertorgetTjanster({ content, services, modules }: ThemePage
       ) : (
         <div className={styles.btList}>
           {services.map((s) => (
-            <Bookable enabled={bookingReachable} key={s.id} className={styles.btListRow} label={`Boka plats — ${s.name}`}>
+            <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.btListRow} label={`Boka plats — ${s.name}`}>
               <span>
                 <span className={styles.btListName}>{s.name}</span>
                 <span className={styles.btListDesc}>{serviceDesc(s)}</span>

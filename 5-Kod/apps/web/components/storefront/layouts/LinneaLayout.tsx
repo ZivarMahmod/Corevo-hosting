@@ -66,7 +66,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
           <div className={styles.sfCardGrid}>
             {services.map((s, i) => (
               <Reveal as="div" key={s.id} delay={i * 60}>
-                <Bookable enabled={bookingReachable} className={`${styles.sfCard} ${ln.card}`} label={`Boka — ${s.name}`}>
+                <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} className={`${styles.sfCard} ${ln.card}`} label={`Boka — ${s.name}`}>
                   <span className={styles.sfCardIcon}>
                     <StorefrontIcon name="scissors" size={20} />
                   </span>

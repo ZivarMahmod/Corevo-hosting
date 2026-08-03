@@ -69,7 +69,7 @@ export function SivSavTjanster({ content, services, modules }: ThemePageProps) {
       ) : (
         <div className={styles.ssServiceList}>
           {services.map((s) => (
-            <Bookable enabled={bookingReachable} key={s.id} className={styles.ssServiceRow} label={`Boka — ${s.name}`}>
+            <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.ssServiceRow} label={`Boka — ${s.name}`}>
               <span>
                 <span className={styles.ssServiceName}>{s.name}</span>
                 <span className={styles.ssServiceDesc}>{serviceDesc(s)}</span>

@@ -75,7 +75,7 @@ export function LunariaTjanster({ content, services, modules }: ThemePageProps) 
         ) : (
           <div className={styles.lnServiceList}>
             {services.map((s) => (
-              <Bookable enabled={bookingReachable} key={s.id} className={styles.lnServiceRow} label={`Boka — ${s.name}`}>
+              <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.lnServiceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.lnDiamond} aria-hidden="true" />
                 <span className={styles.lnServiceName}>
                   {s.name}

@@ -73,7 +73,7 @@ export function EloriaTjanster({ content, services, modules }: ThemePageProps) {
         <>
           <div className={styles.elPriceList}>
             {services.map((s) => (
-              <Bookable enabled={bookingReachable} key={s.id} className={styles.elPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.elPriceRow} label={`Boka — ${s.name}`}>
                 <span>
                   <span className={styles.elPriceName}>{s.name}</span>
                   <span className={styles.elPriceDesc}>{serviceDesc(s)}</span>

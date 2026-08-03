@@ -107,7 +107,7 @@ export function KallaTjanster({ content, services, modules }: ThemePageProps) {
               </div>
             ) : null}
             {g.items.map((s) => (
-              <Bookable enabled={bookingReachable} key={s.id} className={styles.kaPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.kaPriceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.kaPriceMain}>
                   <span className={styles.kaPriceName}>{s.name}</span>
                   <span className={styles.kaPriceDesc}>{serviceDesc(s)}</span>

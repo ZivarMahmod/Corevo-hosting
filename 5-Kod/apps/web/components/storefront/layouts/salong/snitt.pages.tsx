@@ -46,7 +46,7 @@ export function groupServices(services: Service[]): { name: string | null; items
  *  <Bookable>, aldrig en egen boknings-logik. */
 export function SnittPriceRow({ service, enabled }: { service: Service; enabled: boolean }) {
   return (
-    <Bookable enabled={enabled} className={styles.snRow} label={`Boka — ${service.name}`}>
+    <Bookable slotId={`service:${service.id}`} enabled={enabled} className={styles.snRow} label={`Boka — ${service.name}`}>
       <span className={styles.snRowMain}>
         <span className={styles.snRowName}>{service.name}</span>
         <span className={styles.snRowDesc}>{serviceDesc(service)}</span>

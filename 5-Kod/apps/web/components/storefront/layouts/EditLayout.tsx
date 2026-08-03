@@ -63,7 +63,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
           {services.length > 0 ? (
             <div className={styles.sfEditGrid}>
               {services.map((s, i) => (
-                <Bookable enabled={bookingReachable} key={s.id} className={styles.sfEditRow} label={`Boka — ${s.name}`}>
+                <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.sfEditRow} label={`Boka — ${s.name}`}>
                   <span className={styles.sfEditNum} aria-hidden="true">
                     {serviceNum(i)}
                   </span>

@@ -62,7 +62,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
         <div className={styles.sfBandLabel}>Tjänster</div>
         {services.length > 0 ? (
           services.map((s, i) => (
-            <Bookable enabled={bookingReachable} key={s.id} className={styles.sfBand} label={`Boka — ${s.name}`}>
+            <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.sfBand} label={`Boka — ${s.name}`}>
               <span className={styles.sfBandNum} aria-hidden="true">
                 {serviceNum(i)}
               </span>

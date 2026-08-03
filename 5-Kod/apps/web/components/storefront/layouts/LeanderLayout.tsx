@@ -63,7 +63,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
         {services.length > 0 ? (
           <div className={styles.sfPriceGrid}>
             {services.map((s) => (
-              <Bookable enabled={bookingReachable} key={s.id} className={styles.sfPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} key={s.id} className={styles.sfPriceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.sfPriceName}>{s.name}</span>
                 <span className={styles.sfPriceDots} aria-hidden="true" />
                 <span className={styles.sfPriceVal}>{formatPrice(s)}</span>
