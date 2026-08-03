@@ -105,7 +105,6 @@ declare
   v_service_b uuid := gen_random_uuid();
   v_booking_a uuid := gen_random_uuid();
   v_booking_b uuid := gen_random_uuid();
-  v_history_booking uuid;
   v_link uuid;
   v_session uuid := gen_random_uuid();
   v_result record;
@@ -463,20 +462,20 @@ begin
     raise exception 'portal_generic_fifth_attempt_not_locked:%', row_to_json(v_result);
   end if;
 
+  perform pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', true);
   for v_i in 1..20 loop
     insert into public.bookings (
       id, tenant_id, location_id, staff_id, service_id, customer_id,
       start_ts, end_ts, status, price_cents
     ) values (
       gen_random_uuid(), v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
-      date_trunc('hour', statement_timestamp()) + interval '30 days'
-        + pg_catalog.make_interval(days => v_i),
-      date_trunc('hour', statement_timestamp()) + interval '30 days 30 minutes'
-        + pg_catalog.make_interval(days => v_i),
-      'confirmed', 10000
-    ) returning id into v_history_booking;
-    update public.bookings set status = 'completed' where id = v_history_booking;
+      date_trunc('hour', statement_timestamp()) - pg_catalog.make_interval(days => v_i),
+      date_trunc('hour', statement_timestamp()) - pg_catalog.make_interval(days => v_i)
+        + interval '30 minutes',
+      'completed', 10000
+    );
   end loop;
+  perform pg_catalog.set_config('request.jwt.claims', '{}', true);
 
   select public.customer_portal_list_bookings(
     v_session, repeat('b', 64), 'history', null, null, 20
