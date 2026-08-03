@@ -199,7 +199,8 @@ create policy tenant_module_revisions_authenticated_read
   for select to authenticated
   using ((select private.can_access_tenant(tenant_module_revisions.tenant_id)));
 
-grant select on public.tenant_module_revisions to anon, authenticated, service_role;
+grant select on public.tenant_module_revisions to anon, authenticated;
+grant all privileges on public.tenant_module_revisions to service_role;
 
 create function private.signal_tenant_module_change()
 returns trigger
