@@ -500,6 +500,7 @@ begin
     raise exception 'portal_exact_page_pagination_invalid:%', v_payload;
   end if;
 
+  perform pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', true);
   insert into public.bookings (
     id, tenant_id, location_id, staff_id, service_id, customer_id,
     start_ts, end_ts, status, price_cents
@@ -509,6 +510,7 @@ begin
     statement_timestamp() + interval '30 days 30 minutes',
     'awaiting_review', 10000
   );
+  perform pg_catalog.set_config('request.jwt.claims', '{}', true);
 
   select public.customer_portal_list_bookings(
     v_session, v_session_digest, 'history', null, null, 20
