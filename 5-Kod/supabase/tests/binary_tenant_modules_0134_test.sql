@@ -71,6 +71,12 @@ begin
   if not private.module_public_readable(v_row.tenant_id, v_row.module_key) then
     raise exception 'live_module_not_publicly_readable';
   end if;
+  if not exists (
+    select 1 from public.tenant_module_revisions r
+    where r.tenant_id = v_row.tenant_id and r.revision >= 2
+  ) then
+    raise exception 'module_realtime_signal_missing';
+  end if;
 
   begin
     update public.tenant_modules set state = 'draft' where id = v_row.id;
@@ -85,6 +91,19 @@ begin
   exception when check_violation then
     null;
   end;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_catalog.pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'tenant_module_revisions'
+  ) then
+    raise exception 'module_realtime_publication_missing';
+  end if;
 end;
 $$;
 

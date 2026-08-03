@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { requirePlatformOperator } from '@/lib/auth/session'
 import { PortalShell } from '@/components/portal/PortalShell'
 import { RealtimeBookingsLazy } from '@/components/realtime/RealtimeBookingsLazy'
+import { RealtimeTenantModulesLazy } from '@/components/realtime/RealtimeTenantModulesLazy'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
     <PortalShell user={user} title="Plattform" world="backoffice" portal="platform">
       {/* No tenantId: the server resolves global vs partner scope. */}
       <RealtimeBookingsLazy />
+      <RealtimeTenantModulesLazy />
       {children}
     </PortalShell>
   )

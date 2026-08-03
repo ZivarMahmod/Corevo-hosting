@@ -29,6 +29,7 @@ import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { LocalBusinessJsonLd } from '@/components/storefront/seo'
 import { countTeamMembers } from '@/lib/storefront/team/load-team'
+import { RealtimeTenantModulesLazy } from '@/components/realtime/RealtimeTenantModulesLazy'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Per-request, host-resolved tenant → never prerender.
@@ -81,9 +82,8 @@ export default async function PublicLayout({ children }: { children: React.React
   // storefront-sidvisning (auditens vattenfall). Ett Promise.all gör dem parallella.
   // Modulgrindarna härleds efteråt ur samma reachability som startsidans layouts.
   //   copy        — footer-tagline (ägar-override annars tema-default; utility tema-fast)
-  //   moduleStates— per-modul-livscykel (spår 5): storefronten renderar bara LIVE-moduler;
-  //                 draft/off ej publikt, paused → banner + inerta CTA. Saknad rad → 'live'
-  //                 (moduleState-default) så FreshCut/omigrerade salonger ser EXAKT ut som förr.
+  //   moduleStates— storefronten renderar bara LIVE-moduler. Off eller saknad rad
+  //                 betyder att modulen är av och inte visas.
   //   wizard-trion— services/locations/prefs för den inbäddade bokningswizarden (som /boka).
   //   staffNoun   — bransch-substantiv (default 'Frisör') för drawern.
   //   rawPrimaryCta—bransch-styrd huvud-CTA (config-first); modul-gatas nedan.
@@ -117,8 +117,8 @@ export default async function PublicLayout({ children }: { children: React.React
   const bookingLive = bookingState === 'live'
   // Korgen visas bara när shop-routen är reachable och har publika produkter.
   const cartEnabled = layoutModules.shopReachable
-  // Booking gating: bara en LIVE booking-modul får riktiga tjänster; draft/off/paused
-  // ger en TOM lista så varje "Boka tid"-CTA är inert (BookingProvider.available=false).
+  // Booking gating: bara en LIVE booking-modul får riktiga tjänster. Off ger en
+  // TOM lista så varje "Boka tid"-CTA är inert (BookingProvider.available=false).
   const wizardServices = bookingLive ? allWizardServices : []
   // BRANSCH-REGELN: bokningens VERB (drawer/aria/footer/inline) ur bransch-lagret.
   const bokning = branschBokning(tenant.vertical_id)
@@ -169,6 +169,7 @@ export default async function PublicLayout({ children }: { children: React.React
       data-tenant={tenant.id}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
+      <RealtimeTenantModulesLazy tenantId={tenant.id} />
       {/* schema.org LocalBusiness — tenant name/url/phone/image always; address +
           opening hours only when real (no invented data, no fabricated geo). */}
       <LocalBusinessJsonLd
@@ -198,15 +199,13 @@ export default async function PublicLayout({ children }: { children: React.React
         currency={settings.currency}
         defaultTimeZone={settings.defaultTimeZone}
       >
-        {/* Paused booking → "stängt"-banner at the very top (draft/off render
-            nothing public, so only 'paused' surfaces here). */}
         {/* CartProvider omsluter HELA skalet (nav + main + footer) — navens
             CartNavButton och mobil-overlayns korg-rad använder useCart, så
             providern måste ligga ovanför Nav (goal-55 7B). Den flytande
             CartButton-bollen är borttagen här — korgen bor i naven. */}
         <CartProvider>
         {/* Modulstyrd meny: Butik/Blogg får en riktig plats i navigationen när
-            modulerna är live/paused — modulens egen sida är dess hem, startsidan
+            modulerna är live — modulens egen sida är dess hem, startsidan
             visar bara teasers ("mosas in"-fixen). */}
         {chrome.Nav ? (
           // Mallens EGET sidhuvud som markup i plattformens NavShell — formen är

@@ -175,3 +175,61 @@ $$;
 
 comment on column public.tenant_modules.state is
   'Binary module visibility: live = enabled and public, off = disabled and hidden.';
+
+-- Realtime carries only an invalidation signal. Module config never leaves through
+-- the socket; clients refresh and read the real state through their normal RLS path.
+create table public.tenant_module_revisions (
+  tenant_id uuid primary key references public.tenants(id) on delete cascade,
+  revision bigint not null default 1,
+  changed_at timestamptz not null default pg_catalog.now()
+);
+
+alter table public.tenant_module_revisions enable row level security;
+
+create policy tenant_module_revisions_public_read
+  on public.tenant_module_revisions
+  for select to anon
+  using (exists (
+    select 1 from public.tenants t
+    where t.id = tenant_module_revisions.tenant_id and t.status = 'active'
+  ));
+
+create policy tenant_module_revisions_authenticated_read
+  on public.tenant_module_revisions
+  for select to authenticated
+  using ((select private.can_access_tenant(tenant_module_revisions.tenant_id)));
+
+grant select on public.tenant_module_revisions to anon, authenticated, service_role;
+
+create function private.signal_tenant_module_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.tenant_module_revisions (tenant_id)
+  values (new.tenant_id)
+  on conflict (tenant_id) do update
+    set revision = public.tenant_module_revisions.revision + 1,
+        changed_at = pg_catalog.now();
+  return new;
+end;
+$$;
+
+create trigger trg_tenant_module_realtime
+after insert or update of state on public.tenant_modules
+for each row execute function private.signal_tenant_module_change();
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_catalog.pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'tenant_module_revisions'
+  ) then
+    alter publication supabase_realtime add table public.tenant_module_revisions;
+  end if;
+end;
+$$;

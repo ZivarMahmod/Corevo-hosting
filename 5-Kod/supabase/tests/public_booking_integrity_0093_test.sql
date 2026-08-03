@@ -7,11 +7,13 @@ select set_config(
   (date_trunc('day', current_timestamp) + interval '7 days')::text,
   true
 );
+insert into public.tenants (id, slug, name) values
+  ('93000000-0000-0000-0000-000000000001', 'public-0093', 'Public 0093');
+insert into public.tenant_modules (tenant_id, module_key, state) values
+  ('93000000-0000-0000-0000-000000000001', 'booking', 'live');
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
-insert into public.tenants (id, slug, name) values
-  ('93000000-0000-0000-0000-000000000001', 'public-0093', 'Public 0093');
 insert into public.locations (
   id, tenant_id, name, is_primary, timezone,
   slot_step_min, min_notice_min, max_advance_days
