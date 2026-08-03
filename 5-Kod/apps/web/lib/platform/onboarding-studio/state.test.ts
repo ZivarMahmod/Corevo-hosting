@@ -144,11 +144,11 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
     expect(modules.booking).toBe('live')
   })
 
-  it('keeps booking at paused when explicitly paused', () => {
-    const cfg = reducer(initStudioCfg('salvia'), { type: 'setModule', key: 'booking', state: 'paused' })
+  it('keeps booking off when explicitly off', () => {
+    const cfg = reducer(initStudioCfg('salvia'), { type: 'setModule', key: 'booking', state: 'off' })
     const fd = buildCreateTenantFormData(cfg)
     const modules = JSON.parse(String(fd.get('modules'))) as Record<string, string>
-    expect(modules.booking).toBe('paused')
+    expect(modules.booking).toBe('off')
   })
 
   it('omits color_accent when no accent is picked, includes it when set', () => {

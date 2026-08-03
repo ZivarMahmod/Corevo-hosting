@@ -7,8 +7,8 @@
 // tenant's modules (modules catalog LEFT-joined onto its tenant_modules rows) and the
 // per-module state writer behind the "Moduler"-card on /kunder/[id].
 //
-// Why the write passes the DB state-guard (migration 0026 §9): off→draft (module
-// ACTIVATION) is super-admin only. Every write here runs under platformCtx → the authed
+// Why the write passes the DB state-guard: off↔live is super-admin only. Every
+// write here runs under platformCtx → the authed
 // cookie client carries the platform_admin JWT claim (private.is_platform_admin()), so
 // the guard admits an INSERT/UPDATE that leaves 'off'. A tenant-admin going through
 // PostgREST without that claim is blocked (42501) — exactly the contract. RLS on
@@ -61,8 +61,10 @@ export async function listTenantModules(tenantId: string): Promise<TenantModuleR
       .eq('tenant_id', tenantId),
   ])
 
-  const catalog = (catalogRes.data ?? []) as { key: string; name: string }[]
-  const own = (ownRes.data ?? []) as {
+  if (catalogRes.error || ownRes.error) throw new Error('Kunde inte läsa modulstatus.')
+
+  const catalog = catalogRes.data as { key: string; name: string }[]
+  const own = ownRes.data as {
     module_key: string
     state: string
     activated_at: string | null
@@ -84,9 +86,9 @@ export async function listTenantModules(tenantId: string): Promise<TenantModuleR
 
 /**
  * Set a module's state for a tenant (super-admin write). Existing rows are updated.
- * First activation inserts the DB-required `off` row before the legal off→draft
- * transition. activated_at is stamped by the guard the first time state leaves 'off'.
- * Returning draft/live to 'off' parks the module but keeps the row + history —
+ * First activation inserts the DB-required `off` row before switching to `live`.
+ * activated_at is stamped by the guard the first time state leaves 'off'.
+ * Returning live to 'off' keeps the row + history —
  * build-once-never-delete; we never .delete().
  *
  * Form fields: tenantId, moduleKey, state.
@@ -95,13 +97,8 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   const moduleKey = String(fd.get('moduleKey') ?? '').trim()
-  const binary = fd.get('binary') === 'true'
   const enabled = fd.get('enabled')
-  const state = binary
-    ? enabled === 'true'
-      ? 'live'
-      : 'off'
-    : String(fd.get('state') ?? '')
+  const state = enabled === 'true' ? 'live' : 'off'
   if (!tenantId || !moduleKey) return { error: 'Saknar kund eller modul.' }
   if (!isState(state)) return { error: 'Ogiltigt modul-läge.' }
 
@@ -138,27 +135,16 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
     if (insertError) return { error: GENERIC }
   }
 
-  const transitions: ModuleState[] =
-    binary && currentState === 'off' && state === 'live'
-      ? ['draft', 'live']
-      : binary && currentState === 'paused' && state === 'off'
-        ? ['live', 'off']
-        : [state]
-
-  let from = currentState
-  for (const next of transitions) {
-    if (!canTransitionModuleState(from, next, true)) {
-      return { error: 'Otillåten ändring av modul-läge.' }
-    }
-    if (from === next || (!currentRow && next === 'off')) continue
-
+  if (!canTransitionModuleState(currentState, state, true)) {
+    return { error: 'Otillåten ändring av modul-läge.' }
+  }
+  if (currentState !== state) {
     const { error } = await supabase
       .from('tenant_modules')
-      .update({ state: next })
+      .update({ state })
       .eq('tenant_id', tenantId)
       .eq('module_key', moduleKey)
     if (error) return { error: GENERIC }
-    from = next
   }
 
   // Bust the per-tenant storefront cache (module gating reads tenant_modules, tagged
@@ -175,8 +161,6 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
   })
 
   return {
-    success: binary
-      ? `Modul "${moduleKey}" är ${state === 'live' ? 'på' : 'av'}.`
-      : `Modul "${moduleKey}" satt till ${state}.`,
+    success: `Modul "${moduleKey}" är ${state === 'live' ? 'på' : 'av'}.`,
   }
 }

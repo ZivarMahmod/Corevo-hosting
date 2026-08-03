@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadUpcomingEvents, loadKurserConfig } from '@/lib/storefront/kurser/load-kurser'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { KurserSection } from '@/components/storefront/kurser/KurserSection'
@@ -32,9 +32,8 @@ export default async function PreviewKurserPage({
   const { tenant } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'kurser')
   const checkoutLive = isModuleLive(states, 'shop') && commerceReleaseGate(tenant.id).shop
-  const off = !isModuleLive(states, 'kurser') && !paused
+  const off = !isModuleLive(states, 'kurser')
 
   const View = themeModuleViews(theme).kurser
   const data =
@@ -47,9 +46,9 @@ export default async function PreviewKurserPage({
       {off ? (
         <PreviewModuleOff moduleLabel="Kurser & event" />
       ) : View && data ? (
-        <View events={data[0]} config={data[1]} paused={paused || (data[1].payment === 'checkout' && !checkoutLive)} />
+        <View events={data[0]} config={data[1]} paused={data[1].payment === 'checkout' && !checkoutLive} />
       ) : (
-        <KurserSection tenantId={tenant.id} slug={tenant.slug} paused={paused} checkoutLive={checkoutLive} pageHero />
+        <KurserSection tenantId={tenant.id} slug={tenant.slug} paused={false} checkoutLive={checkoutLive} pageHero />
       )}
     </PreviewShell>
   )

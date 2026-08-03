@@ -139,7 +139,7 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   fd.set('booking_variant', cfg.variant)
 
   const modules: Record<string, ModuleState> = { ...cfg.moduleStates }
-  modules.booking = modules.booking === 'paused' || modules.booking === 'off' ? modules.booking : 'live'
+  modules.booking = modules.booking === 'off' ? 'off' : 'live'
   fd.set('modules', JSON.stringify(modules))
 
   if (cfg.accent !== '') fd.set('color_accent', cfg.accent)

@@ -48,19 +48,6 @@ export default async function BokaPage({
   // BRANSCH-REGELN: verbet kommer ur bransch-lagret, aldrig hårdkodat. En florist
   // bokar konsultation, en restaurang bokar bord — inte "tid".
   const bokning = branschBokning(tenant.vertical_id)
-  if (bookingAccess === 'paused') {
-    return (
-      <section className="section">
-        <div className="section-inner">
-          <h1>
-            {bokning.hosPrefix} {tenant.name}
-          </h1>
-          <p className="prose">Onlinebokningen är tillfälligt pausad. Kontakta verksamheten för hjälp.</p>
-        </div>
-      </section>
-    )
-  }
-
   const sp = await searchParams
   const [services, locations] = await Promise.all([
     getServices(tenant.id, tenant.slug),

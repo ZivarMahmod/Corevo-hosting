@@ -2,6 +2,16 @@
 -- public read/action decisions, readiness shape, policy inventory and grants.
 -- Every fixture and catalog tweak is rolled back.
 
+select pg_catalog.position('draft' in pg_catalog.pg_get_constraintdef(c.oid)) = 0 as binary_modules
+from pg_catalog.pg_constraint c
+where c.conrelid = 'public.tenant_modules'::regclass
+  and c.conname = 'tenant_modules_state_check'
+\gset
+
+\if :binary_modules
+\echo 'goal87 legacy four-state test superseded by binary_tenant_modules_0134_test.sql'
+\else
+
 begin;
 
 select pg_catalog.set_config('request.jwt.claim.sub', '', true);
@@ -1236,3 +1246,4 @@ end;
 $$;
 
 rollback;
+\endif

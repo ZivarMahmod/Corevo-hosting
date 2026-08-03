@@ -39,7 +39,7 @@ const presets: VerticalPresetData = {
       key: 'frisor',
       name: 'Frisörsalong',
       defaultTemplate: 'kalla',
-      defaultModules: { booking: 'live', lojalitet: 'draft', shop: 'off' },
+      defaultModules: { booking: 'live', lojalitet: 'off', shop: 'off' },
       terminology: { service: 'Behandling', staff: 'Stylist' },
     },
     { key: 'generell', name: 'Generell', defaultTemplate: null, defaultModules: {}, terminology: {} },

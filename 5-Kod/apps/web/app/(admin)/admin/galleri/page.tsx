@@ -51,7 +51,7 @@ export default async function GalleriPage() {
         assets={assets}
         tenantName={tenant.name}
         previewHref={`/salong-preview/${tenant.slug}/galleri`}
-        readOnly={state === 'paused'}
+        readOnly={false}
       />
     </section>
   )

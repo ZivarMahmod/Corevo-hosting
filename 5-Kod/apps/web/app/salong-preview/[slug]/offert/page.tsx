@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { OffertSection } from '@/components/storefront/OffertSection'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { loadOffertData } from '@/lib/storefront/offert/load-offert'
@@ -29,8 +29,7 @@ export default async function PreviewOffertPage({
   const { tenant } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'offert')
-  const off = !isModuleLive(states, 'offert') && !paused
+  const off = !isModuleLive(states, 'offert')
 
   const View = themeModuleViews(theme).offert
   const data = View && !off ? await loadOffertData(tenant.id, tenant.slug) : null
@@ -40,9 +39,9 @@ export default async function PreviewOffertPage({
       {off ? (
         <PreviewModuleOff moduleLabel="Offert" />
       ) : View && data ? (
-        <View config={data.config} paused={paused} />
+        <View config={data.config} paused={false} />
       ) : (
-        <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
+        <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
       )}
     </PreviewShell>
   )

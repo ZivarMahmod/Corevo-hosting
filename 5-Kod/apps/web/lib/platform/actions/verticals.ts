@@ -88,11 +88,6 @@ export async function saveVerticalDefaults(_p: ActionState, fd: FormData): Promi
     const v = String(fd.get(`mod_${m.key}`) ?? '')
     if ((MODULE_STATES as readonly string[]).includes(v)) defaultModules[m.key] = v as ModuleState
   }
-  // Bokningen golvas till live — samma regel som onboardingen (booking är kärnan).
-  if (defaultModules.booking === 'off' || defaultModules.booking === 'draft') {
-    defaultModules.booking = 'live'
-  }
-
   const rawTemplate = String(fd.get('default_template') ?? '').trim()
   const defaultTemplate = isSelectableTheme(rawTemplate) ? rawTemplate : null
 

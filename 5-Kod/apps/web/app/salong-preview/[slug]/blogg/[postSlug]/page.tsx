@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { BloggPostView } from '@/components/storefront/blogg/BloggPostView'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadBlogPostBySlug } from '@/lib/storefront/blogg/load-blogg-post'
 import {
   loadPreviewBundle,
@@ -30,8 +30,7 @@ export default async function PreviewBloggPostPage({
   const theme = resolvePreviewTheme(bundle, themeParam)
   const copyMode = resolvePreviewCopyMode(copyParam)
   const states = await getTenantModuleStates(bundle.tenant.id, bundle.tenant.slug)
-  const paused = isModulePaused(states, 'blogg')
-  const off = !isModuleLive(states, 'blogg') && !paused
+  const off = !isModuleLive(states, 'blogg')
 
   let body
   if (off) {

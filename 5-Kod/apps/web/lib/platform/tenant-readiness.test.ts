@@ -65,7 +65,7 @@ describe('tenant launch readiness presentation', () => {
             public_action_allowed: false,
           },
           shop: {
-            state: 'paused',
+            state: 'live',
             missing: [],
             public_readable: true,
             public_action_allowed: false,
@@ -83,7 +83,7 @@ describe('tenant launch readiness presentation', () => {
           publicActionAllowed: false,
         },
         shop: {
-          state: 'paused',
+          state: 'live',
           missing: [],
           publicReadable: true,
           publicActionAllowed: false,

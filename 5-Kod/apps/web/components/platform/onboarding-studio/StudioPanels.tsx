@@ -69,10 +69,8 @@ const groupEyebrow: CSSProperties = {
 
 /** Svenska hint per modul-läge (presentational; mirrors CreateTenantForm). */
 const MODULE_STATE_HINTS: Record<ModuleState, string> = {
-  off: 'Inte aktiverad.',
-  draft: 'Aktiverad men dold publikt — syns bara internt.',
-  live: 'Publik på storefronten.',
-  paused: 'Tillfälligt stängd — visar "stängt" publikt.',
+  off: 'Av och dold för kunden.',
+  live: 'På och synlig för kunden.',
 }
 
 
@@ -341,7 +339,7 @@ function PanelTema({ cfg, dispatch, presets }: PanelProps) {
 
 /** modval — W1-REAL UI + W3 booking-variant sub-choice. Real catalog × preset state
  *  from modulesForVertical; rec/opt grouping derived from defaultState!=='off' (§10.7);
- *  booking supports live/paused/off; everything else off/draft/live/paused. setModule
+ *  every module supports off/live. setModule
  *  writes cfg.moduleStates. The booking row also carries the bokningsvariant picker
  *  (W3, form-parity → setVariant → cfg.variant). */
 function PanelModval({ cfg, dispatch, presets }: PanelProps) {
@@ -353,7 +351,7 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
   const renderRow = (moduleKey: string, name: string) => {
     const isBooking = moduleKey === 'booking'
     const cur = resolveModuleState(cfg, moduleKey, presets)
-    const choices: ModuleState[] = isBooking ? ['live', 'paused', 'off'] : [...MODULE_STATES]
+    const choices: ModuleState[] = [...MODULE_STATES]
     return (
       <div
         key={moduleKey}

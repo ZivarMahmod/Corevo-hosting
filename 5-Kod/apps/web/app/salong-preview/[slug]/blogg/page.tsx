@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
 import { BloggSection } from '@/components/storefront/BloggSection'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
@@ -30,8 +30,7 @@ export default async function PreviewBloggPage({
   const { tenant, settings } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'blogg')
-  const off = !isModuleLive(states, 'blogg') && !paused
+  const off = !isModuleLive(states, 'blogg')
 
   let body
   if (off) {
@@ -43,8 +42,8 @@ export default async function PreviewBloggPage({
       const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
       const content = resolveThemeContent(theme, settings.branding, copy)
       body = (
-        <>
-          <View posts={data?.posts ?? []} content={content} tenantName={tenant.name} />
+      <>
+        <View posts={data?.posts ?? []} content={content} tenantName={tenant.name} />
           {data ? (
             <BloggPagination page={data.pagination.page} totalPages={data.pagination.totalPages} />
           ) : null}
@@ -55,7 +54,7 @@ export default async function PreviewBloggPage({
         <BloggSection
           tenantId={tenant.id}
           slug={tenant.slug}
-          paused={paused}
+          paused={false}
           pageHero
           page={page}
           data={data}

@@ -60,20 +60,20 @@ describe('W2 StorefrontPreview', () => {
     expect(html).not.toContain('--color-accent:')
   })
 
-  it('resolveModuleState gates sections: live → present, off → absent, paused → notice', () => {
+  it('resolveModuleState gates sections: live → present, off → absent', () => {
     const states: Record<string, ModuleState> = {
       booking: 'live',
       shop: 'live',
       offert: 'off',
-      lojalitet: 'paused',
+      lojalitet: 'off',
     }
     const html = render(cfgWith({ branch: 'frisor', moduleStates: states }))
     expect(html).toContain('Webshop') // shop live → section present
     expect(html).toContain('href="/shop"')
     expect(html).toContain('Varukorg')
     expect(html).not.toContain('Begär offert') // offert off → absent
-    expect(html).toContain('Stammis') // lojalitet paused → present
-    expect(html).toContain('Pausad') // …with the read-only paused notice
+    expect(html).not.toContain('Stammis') // lojalitet off → absent
+    expect(html).not.toContain('Pausad')
     // every live mock carries the honest visible marker
     expect(html).toContain('byggs vid lansering')
   })
@@ -83,10 +83,10 @@ describe('W2 StorefrontPreview', () => {
       shop: 'live',
       kurser: 'live',
       blogg: 'live',
-      offert: 'paused',
-      presentkort: 'paused',
+      offert: 'live',
+      presentkort: 'live',
       lojalitet: 'live',
-      galleri: 'paused',
+      galleri: 'live',
     }
     const html = render(cfgWith({ branch: 'frisor', moduleStates: states }))
     for (const href of ['/shop', '/kurser', '/blogg', '/offert', '/presentkort', '/klubb', '/galleri']) {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const lifecycle = vi.hoisted(() => ({
-  shop: 'live' as 'off' | 'draft' | 'live' | 'paused' | null,
+  shop: 'live' as 'off' | 'live' | null,
 }))
 
 vi.mock('next/headers', () => ({
@@ -69,7 +69,7 @@ beforeEach(() => {
 })
 
 describe('reserveOrder — shop lifecycle gate', () => {
-  it.each(['off', 'draft', 'paused', null] as const)(
+  it.each(['off', null] as const)(
     'denies before checkout work when shop state is %s',
     async (state) => {
       lifecycle.shop = state
@@ -102,11 +102,9 @@ describe('reserveOrder — shop lifecycle gate', () => {
     })
   })
 
-  it('keeps an existing token-gated order readable while shop is paused', async () => {
-    lifecycle.shop = 'paused'
+  it('hides existing token-gated orders while shop is off', async () => {
+    lifecycle.shop = 'off'
 
-    await expect(getShopOrder('order-a', 'session-token')).resolves.toMatchObject({
-      id: 'order-a',
-    })
+    await expect(getShopOrder('order-a', 'session-token')).resolves.toBeNull()
   })
 })

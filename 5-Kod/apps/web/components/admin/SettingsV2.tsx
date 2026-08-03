@@ -198,7 +198,6 @@ export function SettingsV2({
               <div className={styles.modeGrid}>
                 {[
                   ['På', 'Kunder bokar själva på din sida, dygnet runt.'],
-                  ['Pausad', 'Sidan visas men nya bokningar är stängda.'],
                   ['Av', 'Bokningen syns inte på den publika sidan.'],
                 ].map(([label, copy]) => {
                   const active = statuses.bokningsregler.label === label

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { GalleriSection } from '@/components/storefront/galleri/GalleriSection'
 import { loadGalleriData } from '@/lib/storefront/galleri/load-galleri'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
@@ -24,8 +24,7 @@ export default async function PreviewGalleriPage({
   const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'galleri')
-  const off = !isModuleLive(states, 'galleri') && !paused
+  const off = !isModuleLive(states, 'galleri')
   const View = themeModuleViews(theme).galleri
 
   let body
@@ -35,9 +34,13 @@ export default async function PreviewGalleriPage({
     const data = await loadGalleriData(tenant.id, tenant.slug)
     const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
     const content = resolveThemeContent(theme, settings.branding, copy)
-    body = <View items={data?.items ?? []} content={content} tenantName={tenant.name} />
+    body = (
+      <>
+        <View items={data?.items ?? []} content={content} tenantName={tenant.name} />
+      </>
+    )
   } else {
-    body = <GalleriSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
+    body = <GalleriSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
   }
 
   return <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>{body}</PreviewShell>

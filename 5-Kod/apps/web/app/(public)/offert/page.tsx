@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { OffertSection } from '@/components/storefront/OffertSection'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { loadOffertData } from '@/lib/storefront/offert/load-offert'
@@ -19,8 +19,7 @@ export default async function OffertPage() {
   if (!bundle) notFound()
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'offert')
-  if (!isModuleLive(states, 'offert') && !paused) notFound()
+  if (!isModuleLive(states, 'offert')) notFound()
 
   // goal-64 (regression): har mallen en egen beställningsverk-vy renderar vi datan i
   // MALLENS form (filens hårlinjefält + svarta knapp). Modulen äger fortfarande datan
@@ -30,8 +29,8 @@ export default async function OffertPage() {
   if (View) {
     const data = await loadOffertData(tenant.id, tenant.slug)
     if (!data) notFound()
-    return <View config={data.config} paused={paused} />
+    return <View config={data.config} paused={false} />
   }
 
-  return <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
+  return <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
 }

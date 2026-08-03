@@ -206,7 +206,7 @@ export function VerticalEditor({
                 <div key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ width: 150, fontSize: 13.5, fontWeight: 600 }}>{m.name}</span>
                   <div style={{ display: 'flex', gap: 6 }} role="radiogroup" aria-label={m.name}>
-                    {MODULE_STATES.filter((s) => (m.key === 'booking' ? s === 'live' || s === 'paused' : true)).map(
+                    {MODULE_STATES.map(
                       (s) => (
                         <label
                           key={s}

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadBlogPostBySlug } from '@/lib/storefront/blogg/load-blogg-post'
 import { BloggPostView } from '@/components/storefront/blogg/BloggPostView'
 
@@ -49,8 +49,7 @@ export default async function BloggPostPage({
   if (!bundle) notFound()
   const { tenant } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'blogg')
-  if (!isModuleLive(states, 'blogg') && !paused) notFound()
+  if (!isModuleLive(states, 'blogg')) notFound()
 
   const post = await loadBlogPostBySlug(tenant.id, tenant.slug, slug)
   if (!post) notFound()

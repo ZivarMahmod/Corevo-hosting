@@ -6,6 +6,7 @@ import { logPlatformAction } from '../audit'
 import { revalidateTenantById } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
+import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
 
 // ── Offertens FÖRFRÅGNINGSTYPER (goal-64) ─────────────────────────────────────
 // Mallarna ritar chips FÖRE fritexten: Aurora ['Bröllop','Företag','Event & fest',
@@ -30,6 +31,10 @@ const MAX_SUBJECT_LEN = 60
 export async function saveOffertSubjects(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar kund.' }
+  const state = moduleAdminState(await getAdminModuleStates(tenantId), 'offert')
+  if (state !== 'live') {
+    return { error: 'Offertmodulen är avstängd.' }
+  }
 
   // En rad per typ i en textarea — enklaste ytan som inte kan gå sönder. Tomma rader
   // faller bort, dubbletter tas bort (samma chip två gånger är alltid ett misstag).

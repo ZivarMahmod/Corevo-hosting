@@ -141,8 +141,7 @@ export async function PortalShell({
     let activeModuleKeys: string[] | undefined
     if (moduleStates) {
       // Modul-nycklarna läses ur NAV (nav-items.ts) — samma poster som sidomenyn.
-      // 'booking' är default-live utan tenant_modules-rad (isBookingActivated) —
-      // övriga moduler är opt-in (rad krävs, isModuleActivated).
+      // Every module requires an explicit live state.
       const moduleKeys = NAV.admin.items.flatMap((e) => (!isGroup(e) && e.module ? [e.module] : []))
       activeModuleKeys = moduleKeys.filter((k) =>
         k === 'booking' ? isBookingActivated(moduleStates) : isModuleActivated(moduleStates, k),

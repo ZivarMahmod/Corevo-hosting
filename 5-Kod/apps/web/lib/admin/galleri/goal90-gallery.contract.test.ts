@@ -96,7 +96,7 @@ describe('Goal 90 gallery/media contract', () => {
     expect(nav).toContain("href: '/admin/galleri'")
     expect(page).toContain("requireAdminArea('galleri')")
     expect(page).toContain("moduleAdminState(states, 'galleri')")
-    expect(page).toContain('readOnly={state ===')
+    expect(page).toContain('readOnly={false}')
     expect(actions).toContain("moduleCtx(fd, 'galleri')")
     expect(actions).not.toContain("fd.get('tenantId')")
   })

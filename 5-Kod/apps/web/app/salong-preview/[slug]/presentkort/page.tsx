@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { PresentkortSection } from '@/components/storefront/PresentkortSection'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { loadPresentkortData } from '@/lib/storefront/presentkort/load-presentkort'
@@ -27,9 +27,8 @@ export default async function PreviewPresentkortPage({
   const { tenant } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'presentkort')
   const checkoutLive = isModuleLive(states, 'shop') && commerceReleaseGate(tenant.id).shop
-  const off = !isModuleLive(states, 'presentkort') && !paused
+  const off = !isModuleLive(states, 'presentkort')
   const View = themeModuleViews(theme).presentkort
   const data = View && !off ? await loadPresentkortData(tenant.id, tenant.slug) : null
 
@@ -38,9 +37,9 @@ export default async function PreviewPresentkortPage({
       {off ? (
         <PreviewModuleOff moduleLabel="Presentkort" />
       ) : View && data ? (
-        <View config={data.config} paused={paused || !checkoutLive} tenantName={tenant.name} />
+        <View config={data.config} paused={!checkoutLive} tenantName={tenant.name} />
       ) : (
-        <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={paused} checkoutLive={checkoutLive} />
+        <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={false} checkoutLive={checkoutLive} />
       )}
     </PreviewShell>
   )

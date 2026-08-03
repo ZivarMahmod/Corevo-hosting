@@ -7,7 +7,7 @@ import type { ModuleState } from '@/lib/tenant-modules'
 export type ModuleOption = {
   key: string
   name: string
-  /** Preset state for the CURRENTLY selected vertical (off/draft/live/paused). */
+  /** Preset state for the currently selected vertical (off/live). */
   defaultState: ModuleState
 }
 

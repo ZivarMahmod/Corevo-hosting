@@ -24,21 +24,14 @@ import mobileStyles from './CreateTenantForm.module.css'
 import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
 
 // ── Module-state UI metadata (the "Moduler" step / multi-bransch spår 5) ─────────
-// state-toggle per module: a tenant_modules.state. Booking defaults safely to live,
-// but may explicitly be off for a website-only tenant; every other module can also
-// sit at draft/off. The publishable states the
-// operator can pick in the wizard (the DB also knows 'off' = simply not selected).
+// One on/off choice per tenant module.
 const MODULE_STATE_LABELS: Record<ModuleState, string> = {
   off: 'Av',
-  draft: 'Utkast',
-  live: 'Live',
-  paused: 'Pausad',
+  live: 'På',
 }
 const MODULE_STATE_HINTS: Record<ModuleState, string> = {
-  off: 'Inte aktiverad.',
-  draft: 'Aktiverad men dold publikt — syns bara internt.',
-  live: 'Publik på storefronten.',
-  paused: 'Tillfälligt stängd — visar "stängt" publikt.',
+  off: 'Av och dold för kunden.',
+  live: 'På och synlig för kunden.',
 }
 
 // Palette, fonts och copy härleds ur samma runtime-definitioner som storefronten.
@@ -122,7 +115,7 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-/** "Bokning (Live), Bildbibliotek (Utkast)" — the non-off modules for the summary. */
+/** "Bokning (På), Bildbibliotek (På)" — enabled modules for the summary. */
 function liveModuleSummary(
   options: { key: string; name: string }[],
   stateFor: (key: string) => ModuleState,
@@ -155,7 +148,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const [theme, setTheme] = useState<string>('salvia')
   const [variant, setVariant] = useState<BookingVariant>(DEFAULT_BOOKING_VARIANT)
   // Per-module states (the "Moduler" step) → tenant_modules rows. Keyed by module_key.
-  // Seeded from the bransch preset; booking defaults to live until explicitly changed.
+  // Seeded from the bransch preset; every module remains an explicit on/off choice.
   const [moduleStates, setModuleStates] = useState<Record<string, ModuleState>>({})
   const [accent, setAccent] = useState('') // '' = none picked yet
   const [tagline, setTagline] = useState('')
@@ -201,19 +194,14 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   // Display name of the currently chosen template (from the option list when present).
   const themeName = templateOptions.find((o) => o.key === theme)?.name
   const t = wizardTheme(theme, themeName)
-  // Resolve a module's CURRENT chosen state: explicit pick → preset default → 'off'.
-  // Booking ignores preset-off and defaults live, but an operator pick may be off.
+  // Resolve a module's current chosen state: explicit pick → preset default → off.
   const stateFor = (key: string): ModuleState => {
     const picked = moduleStates[key]
-    if (key === 'booking') {
-      return picked === 'off' || picked === 'paused' || picked === 'live' ? picked : 'live'
-    }
     const preset = moduleOptions.find((m) => m.key === key)?.defaultState ?? 'off'
     return picked ?? preset
   }
   // The exact { module_key: state } map submitted to the server (hidden `modules`
-  // field). Booking preserves explicit off as website-only; other off-state modules
-  // are included and dropped by the write helper.
+  // field). Every selected on/off value is preserved by the write helper.
   const moduleSubmitMap = useMemo(() => {
     const out: Record<string, ModuleState> = {}
     for (const m of moduleOptions) out[m.key] = stateFor(m.key)
@@ -238,17 +226,14 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
       branschTemplates[0]?.key ??
       null
     if (next) setTheme(next)
-    // Seed preset states except booking: booking must default live unless the
-    // operator explicitly chooses website-only.
     const seeded: Record<string, ModuleState> = {}
     for (const m of modulesForVertical(presets, key)) {
-      if (m.key !== 'booking') seeded[m.key] = m.defaultState
+      seeded[m.key] = m.defaultState
     }
     setModuleStates(seeded)
   }
 
-  /** Set one module state. Booking offers live/paused/off; draft is never valid
-   *  at create-time. Other modules offer the full state set. */
+  /** Set one module on or off. */
   const setModule = (key: string, next: ModuleState) =>
     setModuleStates((prev) => ({ ...prev, [key]: next }))
 
@@ -469,18 +454,14 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
           {STEPS[step] === 'Moduler' && (
             <div>
               <p className="body" style={{ marginTop: 0, marginBottom: 16 }}>
-                Slå på modulerna kunden ska ha. Varje modul har ett <b>läge</b>: utkast (dold publikt),
-                live (publik) eller pausad. Bokning kan också vara av för en kund som
-                bara ska ha webbplats och länka till ett externt bokningssystem.
+                Slå på modulerna kunden ska ha. På betyder att modulen syns och fungerar
+                på kundens sida. Av betyder att den inte syns.
               </p>
               <div style={{ display: 'grid', gap: 12 }}>
                 {moduleOptions.map((m) => {
                   const isBooking = m.key === 'booking'
                   const cur = stateFor(m.key)
-                  // booking → live/paused/off; others → off/draft/live/paused.
-                  const choices: ModuleState[] = isBooking
-                    ? (['live', 'paused', 'off'] as ModuleState[])
-                    : ([...MODULE_STATES] as ModuleState[])
+                  const choices: ModuleState[] = [...MODULE_STATES]
                   return (
                     <div
                       key={m.key}
@@ -661,7 +642,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                 <b>{name || `${kundLabel[0]?.toUpperCase()}${kundLabel.slice(1)}`}</b> skapas på{' '}
                 <b>{tenantStorefrontHost(slug || 'subdomän')}</b>
                 {vertical ? <> i branschen <b>{vertical.name}</b></> : null} med tema <b>{t.name}</b>.
-                Moduler: <b>{liveModuleSummary(moduleOptions, stateFor) || 'Bokning (Live)'}</b>.
+                Moduler: <b>{liveModuleSummary(moduleOptions, stateFor) || 'Inga moduler på'}</b>.
                 Ägaren bjuds in som administratör.
               </Callout>
               <InfoLine icon="link">

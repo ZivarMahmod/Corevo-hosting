@@ -28,14 +28,14 @@ describe('getTenantModuleStates', () => {
     rpcResult.value = { data: [], error: null }
   })
 
-  it('distinguishes a proven missing booking row from an RPC failure', async () => {
+  it('fails closed for both missing rows and RPC failures', async () => {
     const missing = await getTenantModuleStates('tenant-1', 'demo')
     expect(missing).toEqual({})
-    expect(moduleState(missing, 'booking')).toBe('live')
+    expect(moduleState(missing, 'booking')).toBe('off')
 
     rpcResult.value = { data: null, error: { message: 'unavailable' } }
     const failed = await getTenantModuleStates('tenant-1', 'demo')
-    expect(failed).toEqual({ booking: 'off' })
+    expect(failed).toEqual({})
     expect(isModuleLive(failed, 'booking')).toBe(false)
   })
 })

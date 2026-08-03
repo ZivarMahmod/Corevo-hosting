@@ -20,8 +20,8 @@ describe('activeModuleKeys (what flows into the look preview)', () => {
     expect(keys).not.toContain('booking') // booking weaves into the look HTML, not as a section
     expect(keys).not.toContain('offert')
   })
-  it('includes paused modules (shown read-only) but never off ones', () => {
-    const keys = activeModuleKeys(cfgWith({ shop: 'paused', presentkort: 'off' }))
+  it('includes live modules but never off ones', () => {
+    const keys = activeModuleKeys(cfgWith({ shop: 'live', presentkort: 'off' }))
     expect(keys).toContain('shop')
     expect(keys).not.toContain('presentkort')
   })

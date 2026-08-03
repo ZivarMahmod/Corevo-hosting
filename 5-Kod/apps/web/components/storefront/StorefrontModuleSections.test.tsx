@@ -3,11 +3,10 @@ import { renderToReadableStream } from 'react-dom/server'
 
 vi.mock('@/lib/tenant-modules', () => ({
   getTenantModuleStates: vi.fn(async () => ({
-    kurser: 'paused',
-    galleri: 'paused',
+    kurser: 'live',
+    galleri: 'live',
   })),
   isModuleLive: (states: Record<string, string>, key: string) => states[key] === 'live',
-  isModulePaused: (states: Record<string, string>, key: string) => states[key] === 'paused',
 }))
 
 vi.mock('@/components/storefront/ShopSection', () => ({ ShopSection: () => null }))
@@ -30,16 +29,14 @@ vi.mock('@/lib/storefront/galleri/load-galleri', () => ({
 import { StorefrontModuleSections } from './StorefrontModuleSections'
 
 describe('StorefrontModuleSections fallback', () => {
-  it('renders paused kurser and galleri instead of leaving reachable modules blank', async () => {
+  it('renders the empty state for a live gallery', async () => {
     const sections = await StorefrontModuleSections({
       tenantId: 'tenant-1',
       slug: 'demosalong',
       variant: 'teaser',
     })
     const html = await new Response(await renderToReadableStream(sections)).text()
-    expect(html).toContain('data-module="kurser"')
     expect(html).toContain('data-module="galleri"')
-    expect(html).toContain('Anmälan är stängd')
-    expect(html).toContain('Galleriet är pausat')
+    expect(html).toContain('Bilder visas snart.')
   })
 })

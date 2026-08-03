@@ -32,7 +32,6 @@ const VALID_CATEGORIES = new Set<SettingsCategoryId>([
 
 const BOOKING_MODE_TONE: Record<BookingMode, SettingsV2Status['tone']> = {
   pa: 'success',
-  pausad: 'warning',
   av: 'neutral',
 }
 

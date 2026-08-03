@@ -20,7 +20,7 @@ import { resolveTenantTabKey, tenantTabHref } from './TenantDetailTabs.tabs'
  *
  * Core tabs (Översikt…Drift) are always present. MODULE tabs (Webshop/Blogg/
  * Offerter/Bildbibliotek, goal-54 §1) are optional: page.tsx includes them in
- * `tabs` ONLY when the tenant's module is on (live/paused) — same gating as the
+ * `tabs` only when the tenant's module is live — same gating as the
  * customer's own admin nav. The rail renders exactly the keys it was handed.
  */
 

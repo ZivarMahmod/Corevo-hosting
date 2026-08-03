@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { createClient } from '@/lib/supabase/server'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { loadCheckoutOptions } from '@/lib/storefront/shop/checkout-options'
 import { CheckoutForm } from '@/app/butik/kassa/CheckoutForm'
@@ -33,22 +33,7 @@ export default async function KassaPage() {
   if (!commerceReleaseGate(tenant.id).shop) notFound()
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  if (!isModuleLive(states, 'shop')) {
-    // Strandad varukorg (goal-54): PAUSED = tillfälligt stängd → ärlig vy i stället
-    // för 404 (kunden kan ha en varukorg kvar). off/draft → notFound som tidigare.
-    if (!isModulePaused(states, 'shop')) notFound()
-    return (
-      <section className={`section ${s.closed}`}>
-        <h1 className={s.closedTitle}>Butiken är tillfälligt stängd</h1>
-        <p className={s.closedText}>
-          Vi tar inte emot beställningar just nu. Din varukorg finns kvar — välkommen tillbaka snart.
-        </p>
-        <Link href="/" className={s.link}>
-          Till startsidan
-        </Link>
-      </section>
-    )
-  }
+  if (!isModuleLive(states, 'shop')) notFound()
 
   const shop = await loadShopData(tenant.id, tenant.slug)
   const fulfilment = shop?.config.fulfilment ?? 'ship'

@@ -91,7 +91,7 @@ export const FLAT_STEP_ORDER: StepId[] = PHASES.flatMap((p) => p.steps.map((s) =
  *   branch  → a bransch is picked
  *   namn    → a slug exists
  *   tema    → a theme is set (always truthy — theme defaults to the built-in default)
- *   modval  → at least one module resolves to live/draft (booking floors to live)
+ *   modval  → at least one module is on
  *   agare   → an owner email is filled
  *   tjanster→ at least one service with a non-empty name (W4; matches design's
  *             cfg.content.services.length > 0 launch gate)
@@ -108,7 +108,7 @@ export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPreset
     case 'modval':
       return presets.modules.some((m) => {
         const st = resolveModuleState(cfg, m.key, presets)
-        return st === 'live' || st === 'draft'
+        return st === 'live'
       })
     case 'agare':
       return !!cfg.ownerEmail

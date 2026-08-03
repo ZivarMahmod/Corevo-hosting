@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadUpcomingEvents, loadKurserConfig } from '@/lib/storefront/kurser/load-kurser'
 import { formatEventPrice, formatEventStart } from '@/lib/storefront/kurser/types'
 import { KursAnmalanForm } from '@/components/storefront/KursAnmalanForm'
@@ -29,9 +29,8 @@ export default async function KurserPage() {
   if (!bundle) notFound()
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'kurser')
   const checkoutLive = isModuleLive(states, 'shop') && commerceReleaseGate(tenant.id).shop
-  if (!isModuleLive(states, 'kurser') && !paused) notFound()
+  if (!isModuleLive(states, 'kurser')) notFound()
 
   const [events, kurserConfig] = await Promise.all([
     loadUpcomingEvents(tenant.id, tenant.slug),
@@ -44,7 +43,7 @@ export default async function KurserPage() {
   // formen är mallens. Ingen vy → den delade sidan nedan, byte-identiskt.
   const View = themeModuleViews(settings.theme).kurser
   if (View) {
-    return <View events={events} config={kurserConfig} paused={paused || (köpIKassan && !checkoutLive)} />
+    return <View events={events} config={kurserConfig} paused={köpIKassan && !checkoutLive} />
   }
 
   return (
@@ -65,12 +64,6 @@ export default async function KurserPage() {
       />
     <section className="section" data-module="kurser">
       <div className="section-inner">
-
-        {paused ? (
-          <p role="status" className={s.paused}>
-            Anmälan är stängd just nu — kommande tillfällen visas, men det går inte att anmäla sig för tillfället.
-          </p>
-        ) : null}
 
         {events.length === 0 ? (
           <p className={s.empty}>Inga kommande tillfällen just nu — titta in igen snart.</p>
@@ -102,7 +95,7 @@ export default async function KurserPage() {
                   </p>
 
                   {/* Ett fullbokat tillfälle SÄGER varför anmälan saknas — tomhet är inget besked. */}
-                  {full && !paused ? (
+                  {full ? (
                     <p className={s.fullNote}>
                       Det här tillfället är fullbokat. Håll utkik — vi lägger ut fler datum löpande.
                     </p>
@@ -113,7 +106,7 @@ export default async function KurserPage() {
                       en plats i capacity) och betalas i kassan. Anmälan skapas när ordern
                       är betald. 'onsite' (default) → anmälningsformuläret, ORÖRT: avgiften
                       visas och betalas på plats, precis som förut. */}
-                  {!paused && !full ? (
+                  {!full ? (
                     kurserConfig.payment === 'checkout' && checkoutLive ? (
                       <EventSeatBuy
                         eventId={ev.id}

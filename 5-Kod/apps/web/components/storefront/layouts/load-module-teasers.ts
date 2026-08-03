@@ -8,7 +8,7 @@
 // kräver innehåll blir bara reachable när samma publika data faktiskt finns.
 
 import { cache } from 'react'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
 import { loadGalleriData } from '@/lib/storefront/galleri/load-galleri'
@@ -47,8 +47,7 @@ async function loadLayoutModuleTeasersUncached(
   const moduleStates = await safeLoad(() => getTenantModuleStates(tenantId, slug), null)
   if (!moduleStates) return { ...EMPTY_LAYOUT_MODULE_TEASERS }
 
-  const reachableState = (key: string) =>
-    isModuleLive(moduleStates, key) || isModulePaused(moduleStates, key)
+  const reachableState = (key: string) => isModuleLive(moduleStates, key)
   const commerceRelease = commerceReleaseGate(tenantId)
   const bookingReachable = reachableState('booking')
   const shopStateReachable = commerceRelease.shop && reachableState('shop')

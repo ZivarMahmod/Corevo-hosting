@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { BloggSection } from '@/components/storefront/BloggSection'
 import { pageMetadata } from '@/components/storefront/seo'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
@@ -28,8 +28,7 @@ export default async function BloggPage({
   if (!bundle) notFound()
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'blogg')
-  if (!isModuleLive(states, 'blogg') && !paused) notFound()
+  if (!isModuleLive(states, 'blogg')) notFound()
 
   const data = await loadBloggData(tenant.id, tenant.slug, page)
   if (data && page > data.pagination.totalPages) notFound()
@@ -53,7 +52,7 @@ export default async function BloggPage({
     <BloggSection
       tenantId={tenant.id}
       slug={tenant.slug}
-      paused={paused}
+      paused={false}
       pageHero
       page={page}
       data={data}

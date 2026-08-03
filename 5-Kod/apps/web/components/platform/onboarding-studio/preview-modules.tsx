@@ -41,9 +41,9 @@ const NO_PRESETS: VerticalPresetData = { verticals: [], modules: [], templatesBy
 export function moduleState(cfg: StudioCfg, key: string) {
   return resolveModuleState(cfg, key, NO_PRESETS)
 }
-/** A module is shown in the preview when it is live (rendered) or paused (read-only). */
+/** A module is shown in the preview only when it is on. */
 export function isActive(state: ReturnType<typeof moduleState>): boolean {
-  return state === 'live' || state === 'paused'
+  return state === 'live'
 }
 
 // Module-key lists live in a plain (server-safe) module so the look preview ROUTE (a
@@ -194,36 +194,13 @@ function PreviewTag() {
   )
 }
 
-/** Paused = the module is configured but hidden from the public site (read-only). */
-function PausedTag() {
-  return (
-    <span
-      style={{
-        fontFamily: 'var(--font-body)',
-        fontSize: 10.5,
-        fontWeight: 600,
-        letterSpacing: '.04em',
-        textTransform: 'uppercase',
-        color: 'var(--color-fg-2)',
-        border: '1px dashed var(--color-line)',
-        borderRadius: 999,
-        padding: '3px 10px',
-      }}
-    >
-      Pausad · visas inte publikt
-    </span>
-  )
-}
-
 function Section({
   title,
   eyebrow,
-  paused,
   children,
 }: {
   title: string
   eyebrow: string
-  paused: boolean
   children: ReactNode
 }) {
   return (
@@ -243,7 +220,6 @@ function Section({
             {title}
           </h2>
           <PreviewTag />
-          {paused ? <PausedTag /> : null}
         </div>
         <span
           style={{
@@ -500,8 +476,7 @@ function renderBody(key: string, branch: string, serviceWord: string): ReactNode
 }
 
 /** All active PUBLIC main sections: the 7 BUILT mocks + roadmap dashed cards, in the
- *  real composition order, each gated by resolveModuleState (live → render, paused →
- *  read-only notice, off/draft → absent). Returns null when none are active → the
+ *  real composition order. Live renders and off stays absent. Returns null when none are active → the
  *  preview is the bare <Layout/> (its services rows already cover booking). */
 export function ModuleSections({ cfg }: { cfg: StudioCfg }) {
   const branch = cfg.branch ?? 'generell'
@@ -514,8 +489,8 @@ export function ModuleSections({ cfg }: { cfg: StudioCfg }) {
   if (sections.length === 0) return null
   return (
     <>
-      {sections.map(({ key, state }) => (
-        <Section key={key} title={SECTION_TITLES[key] ?? key} eyebrow={meta.eyebrow} paused={state === 'paused'}>
+      {sections.map(({ key }) => (
+        <Section key={key} title={SECTION_TITLES[key] ?? key} eyebrow={meta.eyebrow}>
           {renderBody(key, branch, term('service', meta.serviceWord))}
         </Section>
       ))}

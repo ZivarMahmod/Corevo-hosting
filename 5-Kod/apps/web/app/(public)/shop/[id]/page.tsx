@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { AddToCart } from '@/components/storefront/shop/AddToCart'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import { loadShopProduct } from '@/lib/storefront/shop/load-shop'
@@ -44,8 +44,7 @@ export default async function ShopProductPage({
   if (!bundle) notFound()
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'shop')
-  if (!isModuleLive(states, 'shop') && !paused) notFound()
+  if (!isModuleLive(states, 'shop')) notFound()
 
   const data = await loadShopProduct(tenant.id, tenant.slug, id)
   if (!data) notFound()
@@ -54,7 +53,7 @@ export default async function ShopProductPage({
   // Mallens eget skyltfönster vinner; den delade vyn är bara fallback.
   const OwnProduct = themeModuleViews(settings.theme).product
   if (OwnProduct) {
-    return <OwnProduct config={config} product={product} paused={paused} />
+    return <OwnProduct config={config} product={product} paused={false} />
   }
 
   const paragraphs = (product.description ?? '')
@@ -93,15 +92,9 @@ export default async function ShopProductPage({
               </p>
             ))}
 
-            {paused ? (
-              <p role="status" className={s.paused}>
-                Webshoppen är tillfälligt stängd för nya beställningar. Vi öppnar igen snart.
-              </p>
-            ) : (
-              <div className={s.buy}>
-                <AddToCart product={product} fulfilment={config.fulfilment} />
-              </div>
-            )}
+            <div className={s.buy}>
+              <AddToCart product={product} fulfilment={config.fulfilment} />
+            </div>
           </div>
         </div>
       </div>

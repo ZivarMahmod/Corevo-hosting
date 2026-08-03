@@ -8,9 +8,8 @@ import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 // AUTHENTICATED server client so a logged-in salon admin sees their own tenant's
 // module rows under RLS (tenant_modules_rls: tenant_id = private.tenant_id()).
 //
-// SCOPE: this layer is READ-ONLY. The per-tenant lifecycle state (off/draft/live/
-// paused) is flipped by the SUPER-ADMIN only (locked principle: "bara Zivar gör
-// off→draft", state-vakt in 0026 §9). The tenant admin uses these reads to (a)
+// SCOPE: this layer is READ-ONLY. The per-tenant state (off/live) is flipped by
+// the SUPER-ADMIN only. The tenant admin uses these reads to (a)
 // decide whether to show a module's admin surface and (b) display the current
 // variant/config read-only. It NEVER writes tenant_modules.
 
@@ -28,8 +27,8 @@ function parseState(raw: unknown): ModuleState {
 /**
  * Read every tenant_modules row for one tenant via the authenticated client.
  * Returns a map module_key → { state, config }. Modules with no row are ABSENT
- * (callers treat absent as 'off'). Returns {} on any error so a read miss can
- * never crash an admin page — the surface then shows the "not active" notice.
+ * (callers treat absent as 'off'). A read error must stay distinct from an empty
+ * result; otherwise the UI would falsely claim that every module is off.
  */
 // Prestanda C2: request-scopad cache() — PortalShell OCH modul-sidorna läser
 // tenant_modules per request; dedupar dubbla läsningar (RLS-scopat, samma request
@@ -40,7 +39,7 @@ export const getAdminModuleStates = cache(async (tenantId: string): Promise<Admi
     .from('tenant_modules')
     .select('module_key, state, config')
     .eq('tenant_id', tenantId)
-  if (error || !data) return {}
+  if (error || !data) throw new Error('Kunde inte läsa modulstatus.')
   const out: AdminModuleStates = {}
   for (const row of data) {
     out[row.module_key] = {
@@ -57,20 +56,15 @@ export function moduleAdminState(states: AdminModuleStates, key: string): Module
 }
 
 /**
- * True when the tenant has activated the module (draft/live/paused) — i.e. the
- * admin surface should be usable. 'off' or missing → not active (show notice).
+ * True when the module is on and its admin surface should be usable.
  */
 export function isModuleActivated(states: AdminModuleStates, key: string): boolean {
-  return moduleAdminState(states, key) !== 'off'
+  return moduleAdminState(states, key) === 'live'
 }
 
-/**
- * Booking-specialfallet (speglar lib/tenant-modules.ts DEFAULT_MODULE_STATE):
- * före tenant_modules fanns körde varje tenant booking — en SAKNAD booking-rad
- * betyder därför "live", inte "off". Endast en EXPLICIT off-rad stänger av.
- */
+/** Booking follows the same binary rule as every other module. */
 export function isBookingActivated(states: AdminModuleStates): boolean {
-  return !('booking' in states) || isModuleActivated(states, 'booking')
+  return isModuleActivated(states, 'booking')
 }
 
 /** Read one module's config jsonb (read-only display). Empty object if absent. */

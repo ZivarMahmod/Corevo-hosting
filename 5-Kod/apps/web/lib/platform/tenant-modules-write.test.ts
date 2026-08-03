@@ -7,16 +7,14 @@ import {
 } from '@/lib/platform/tenant-modules-write'
 
 // Multi-bransch spår 5 — the create-path module write. These pin the two pure
-// transforms: parsing the wizard's JSON `modules` field, and normalizing it so
-// missing/draft booking keeps the safe live default while an explicit booking=off
-// survives as the website-only contract. Other off rows are dropped.
+// transforms: parsing the wizard's JSON `modules` field and preserving exact choices.
 
 describe('parseModuleSelections — wizard `modules` field → clean list', () => {
   it('parses a valid { module_key: state } map', () => {
-    const out = parseModuleSelections(JSON.stringify({ booking: 'live', media_library: 'draft' }))
+    const out = parseModuleSelections(JSON.stringify({ booking: 'live', media_library: 'off' }))
     expect(out).toEqual<ModuleSelection[]>([
       { moduleKey: 'booking', state: 'live' },
-      { moduleKey: 'media_library', state: 'draft' },
+      { moduleKey: 'media_library', state: 'off' },
     ])
   })
 
@@ -39,17 +37,10 @@ describe('parseModuleSelections — wizard `modules` field → clean list', () =
   })
 })
 
-describe('normalizeSelections — safe booking default + explicit website-only', () => {
-  it('floors a missing booking to live', () => {
+describe('normalizeSelections — exact on/off choices', () => {
+  it('does not add a missing booking choice', () => {
     const out = normalizeSelections([{ moduleKey: 'media_library', state: 'live' }])
-    expect(out).toContainEqual({ moduleKey: 'booking', state: 'live' })
-    expect(out).toContainEqual({ moduleKey: 'media_library', state: 'live' })
-  })
-
-  it('raises a draft booking up to live', () => {
-    expect(normalizeSelections([{ moduleKey: 'booking', state: 'draft' }])).toEqual([
-      { moduleKey: 'booking', state: 'live' },
-    ])
+    expect(out).toEqual([{ moduleKey: 'media_library', state: 'live' }])
   })
 
   it('preserves an explicitly off booking as the website-only state', () => {
@@ -58,27 +49,19 @@ describe('normalizeSelections — safe booking default + explicit website-only',
     ])
   })
 
-  it('keeps an explicitly paused booking as paused (only floors below live)', () => {
-    // NOTE: the wizard never offers booking below live, but if it did, paused is a
-    // legitimate publish state above the off/draft floor and must survive.
-    expect(normalizeSelections([{ moduleKey: 'booking', state: 'paused' }])).toEqual([
-      { moduleKey: 'booking', state: 'paused' },
-    ])
-  })
-
-  it('drops off-state modules (absence == off on read)', () => {
+  it('preserves off-state modules', () => {
     const out = normalizeSelections([
       { moduleKey: 'booking', state: 'live' },
       { moduleKey: 'media_library', state: 'off' },
-      { moduleKey: 'lojalitet', state: 'draft' },
+      { moduleKey: 'lojalitet', state: 'live' },
     ])
-    expect(out.find((s) => s.moduleKey === 'media_library')).toBeUndefined()
-    expect(out).toContainEqual({ moduleKey: 'lojalitet', state: 'draft' })
+    expect(out).toContainEqual({ moduleKey: 'media_library', state: 'off' })
+    expect(out).toContainEqual({ moduleKey: 'lojalitet', state: 'live' })
     expect(out).toContainEqual({ moduleKey: 'booking', state: 'live' })
   })
 
-  it('always includes booking even from an empty selection', () => {
-    expect(normalizeSelections([])).toEqual([{ moduleKey: 'booking', state: 'live' }])
+  it('keeps an empty selection empty', () => {
+    expect(normalizeSelections([])).toEqual([])
   })
 })
 
@@ -103,7 +86,7 @@ describe('writeTenantVerticalAndModules — catalog fence', () => {
     expect(insert).not.toHaveBeenCalled()
   })
 
-  it('provisions requested states through off → draft → live → paused without app-owned config', async () => {
+  it('provisions requested binary states directly without app-owned config', async () => {
     const insert = vi.fn().mockResolvedValue({ error: null })
     const transitions: { state: string; keys: string[] }[] = []
     const update = vi.fn((value: { state: string }) => ({
@@ -135,20 +118,16 @@ describe('writeTenantVerticalAndModules — catalog fence', () => {
     await expect(
       writeTenantVerticalAndModules(supabase as never, 'tenant-a', null, [
         { moduleKey: 'booking', state: 'live' },
-        { moduleKey: 'shop', state: 'paused' },
-        { moduleKey: 'lojalitet', state: 'draft' },
+        { moduleKey: 'shop', state: 'live' },
+        { moduleKey: 'lojalitet', state: 'off' },
       ]),
     ).resolves.toEqual({ ok: true })
 
     expect(insert).toHaveBeenCalledWith([
-      { tenant_id: 'tenant-a', module_key: 'booking', state: 'off' },
-      { tenant_id: 'tenant-a', module_key: 'shop', state: 'off' },
+      { tenant_id: 'tenant-a', module_key: 'booking', state: 'live' },
+      { tenant_id: 'tenant-a', module_key: 'shop', state: 'live' },
       { tenant_id: 'tenant-a', module_key: 'lojalitet', state: 'off' },
     ])
-    expect(transitions).toEqual([
-      { state: 'draft', keys: ['booking', 'shop', 'lojalitet'] },
-      { state: 'live', keys: ['booking', 'shop'] },
-      { state: 'paused', keys: ['shop'] },
-    ])
+    expect(transitions).toEqual([])
   })
 })

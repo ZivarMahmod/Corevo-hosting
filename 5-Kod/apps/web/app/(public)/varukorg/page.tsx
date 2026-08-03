@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { CartPageContents } from '@/components/storefront/shop/CartPageContents'
 import { SubpageHero } from '@/components/storefront/sections'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
@@ -34,20 +34,7 @@ export default async function VarukorgPage() {
   if (!commerceReleaseGate(tenant.id).shop) notFound()
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  if (!isModuleLive(states, 'shop')) {
-    if (!isModulePaused(states, 'shop')) notFound()
-    return (
-      <section className={`section ${styles.closed}`}>
-        <h1 className={styles.closedTitle}>Butiken är tillfälligt stängd</h1>
-        <p className={styles.closedText}>
-          Vi tar inte emot beställningar just nu. Din varukorg finns kvar — välkommen tillbaka snart.
-        </p>
-        <Link href="/" className={styles.closedLink}>
-          Till startsidan
-        </Link>
-      </section>
-    )
-  }
+  if (!isModuleLive(states, 'shop')) notFound()
 
   // Mallens egen korg vinner; den delade är bara fallback tills varje mall byggt sin.
   //

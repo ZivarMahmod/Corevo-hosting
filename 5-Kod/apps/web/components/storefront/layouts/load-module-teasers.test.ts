@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  states: {} as Record<string, 'off' | 'draft' | 'live' | 'paused'>,
+  states: {} as Record<string, 'off' | 'live'>,
   products: [] as { id: string }[],
   posts: [] as { id: string }[],
   galleryItems: [] as { id: string }[],
@@ -15,7 +15,6 @@ vi.mock('@/lib/tenant-modules', () => ({
     return mocks.states
   }),
   isModuleLive: (states: typeof mocks.states, key: string) => states[key] === 'live',
-  isModulePaused: (states: typeof mocks.states, key: string) => states[key] === 'paused',
 }))
 
 vi.mock('@/lib/storefront/shop/load-shop', () => ({
@@ -68,9 +67,9 @@ describe('loadLayoutModuleTeasers reachability contract', () => {
     mocks.throwOn.clear()
   })
 
-  it.each(['off', 'draft'] as const)('keeps %s modules unreachable even when data exists', async (state) => {
+  it('keeps off modules unreachable even when data exists', async () => {
     mocks.states = Object.fromEntries(
-      ['booking', 'shop', 'blogg', 'offert', 'presentkort', 'lojalitet', 'kurser', 'galleri'].map((key) => [key, state]),
+      ['booking', 'shop', 'blogg', 'offert', 'presentkort', 'lojalitet', 'kurser', 'galleri'].map((key) => [key, 'off']),
     )
     mocks.products = [{ id: 'product-1' }]
     mocks.galleryItems = [{ id: 'image-1' }]
@@ -90,9 +89,9 @@ describe('loadLayoutModuleTeasers reachability contract', () => {
     })
   })
 
-  it.each(['live', 'paused'] as const)('requires target data for %s shop, courses and gallery links', async (state) => {
+  it('requires target data for live shop, courses and gallery links', async () => {
     mocks.states = Object.fromEntries(
-      ['booking', 'shop', 'blogg', 'offert', 'presentkort', 'lojalitet', 'kurser', 'galleri'].map((key) => [key, state]),
+      ['booking', 'shop', 'blogg', 'offert', 'presentkort', 'lojalitet', 'kurser', 'galleri'].map((key) => [key, 'live']),
     )
 
     const empty = await loadLayoutModuleTeasers('tenant-1', 'tenant')

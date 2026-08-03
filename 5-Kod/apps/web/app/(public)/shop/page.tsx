@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { ShopSection } from '@/components/storefront/ShopSection'
 import { pageMetadata } from '@/components/storefront/seo'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
@@ -32,8 +32,7 @@ export default async function ShopPage({
   const { tenant, settings } = bundle
   if (!commerceReleaseGate(tenant.id).shop) notFound()
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'shop')
-  if (!isModuleLive(states, 'shop') && !paused) notFound()
+  if (!isModuleLive(states, 'shop')) notFound()
 
   const sp = (await searchParams) ?? {}
   const rawCat = Array.isArray(sp.kategori) ? sp.kategori[0] : sp.kategori
@@ -49,8 +48,8 @@ export default async function ShopPage({
     if (!data) notFound()
     const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
     const content = resolveThemeContent(settings.theme, settings.branding, copy)
-    return <View data={data} paused={paused} content={content} tenantName={tenant.name} />
+    return <View data={data} paused={false} content={content} tenantName={tenant.name} />
   }
 
-  return <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
+  return <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
 }

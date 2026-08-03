@@ -7,7 +7,7 @@ import styles from './platform.module.css'
 function ModuleRow({ tenantId, module }: { tenantId: string; module: TenantModuleRow }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setModuleState, {})
   const formRef = useRef<HTMLFormElement>(null)
-  const visible = module.state === 'live' || module.state === 'paused'
+  const visible = module.state === 'live'
   const [enabled, setEnabled] = useState(visible)
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export function ModulesCard({ tenantId, modules }: { tenantId: string; modules: 
   if (modules.length === 0) {
     return (
       <p className={styles.empty}>
-        Inga moduler i katalogen ännu — seedas via migration (booking, media_library).
+        Modulkatalogen är tom. Kontrollera plattformsinställningarna.
       </p>
     )
   }

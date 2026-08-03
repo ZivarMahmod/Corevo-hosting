@@ -15,17 +15,17 @@ describe('commerce and loyalty UX gating', () => {
 
     const coursePage = read('../../app/(public)/kurser/page.tsx')
     const giftPage = read('../../app/(public)/presentkort/page.tsx')
-    expect(coursePage).toContain('paused={paused || (köpIKassan && !checkoutLive)}')
-    expect(giftPage).toContain('paused={paused || !checkoutLive}')
+    expect(coursePage).toContain('paused={köpIKassan && !checkoutLive}')
+    expect(giftPage).toContain('paused={!checkoutLive}')
   })
 
-  it('keeps paused loyalty read-only and makes the homepage CTA a real route', () => {
+  it('renders live loyalty and makes the homepage CTA a real route', () => {
     const publicPage = read('../../app/(public)/klubb/page.tsx')
     const previewPage = read('../../app/salong-preview/[slug]/klubb/page.tsx')
     const section = read('../../components/storefront/LojalitetSection.tsx')
 
-    expect(publicPage).toContain('if (View && !paused)')
-    expect(previewPage).toContain('else if (View && !paused)')
+    expect(publicPage).toContain('if (View)')
+    expect(previewPage).toContain('else if (View)')
     expect(section).toContain('<Link href="/klubb"')
   })
 

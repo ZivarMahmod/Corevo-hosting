@@ -9,7 +9,7 @@ describe('superadmin module toggle', () => {
     expect(source).toContain('name="binary"')
     expect(source).toContain('name="enabled"')
     expect(source).toContain('formRef.current?.requestSubmit()')
-    expect(source).toContain("module.state === 'live' || module.state === 'paused'")
+    expect(source).toContain("module.state === 'live'")
     expect(source).not.toContain('<select')
   })
 })

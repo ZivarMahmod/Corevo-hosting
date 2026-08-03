@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { ShopSection } from '@/components/storefront/ShopSection'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
@@ -30,8 +30,7 @@ export default async function PreviewShopPage({
   const { tenant, settings } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'shop')
-  const off = !isModuleLive(states, 'shop') && !paused
+  const off = !isModuleLive(states, 'shop')
 
   let body
   if (off) {
@@ -42,9 +41,9 @@ export default async function PreviewShopPage({
     if (View && data) {
       const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
       const content = resolveThemeContent(theme, settings.branding, copy)
-      body = <View data={data} paused={paused} content={content} tenantName={tenant.name} />
+      body = <View data={data} paused={false} content={content} tenantName={tenant.name} />
     } else {
-      body = <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
+      body = <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
     }
   }
 

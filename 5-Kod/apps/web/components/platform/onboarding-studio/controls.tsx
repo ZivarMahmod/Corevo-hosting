@@ -12,9 +12,7 @@ import { type ModuleState } from '@/lib/tenant-modules'
  *  — presentational only; the lifecycle itself lives in tenant-modules). */
 export const MODULE_STATE_LABELS: Record<ModuleState, string> = {
   off: 'Av',
-  draft: 'Utkast',
-  live: 'Live',
-  paused: 'Pausad',
+  live: 'På',
 }
 
 const fieldLabel: CSSProperties = {
@@ -81,8 +79,8 @@ export function Field({
 }
 
 /**
- * The off/draft/live/paused pill control (mirrors CreateTenantForm's module pills).
- * `choices` lets the caller restrict the set (booking → live/paused only); the active
+ * The off/live pill control (mirrors CreateTenantForm's module pills).
+ * The active
  * pill is forest-bordered on paper-2, the rest muted. Pure presentational.
  */
 export function ModuleStatePills({

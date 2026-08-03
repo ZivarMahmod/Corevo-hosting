@@ -3,11 +3,8 @@ import 'server-only'
 // turns the wizard's chosen vertical + module states into `tenants.vertical_id`
 // + `tenant_modules` rows, written with the authed PLATFORM client.
 //
-// Why this passes the DB state-guard (migration 0026 §9): off→draft (module
-// activation) is super-admin only. createTenant runs under platformCtx → the authed
-// client carries the platform_admin JWT claim (private.is_platform_admin()), so the
-// guard admits the legal off→draft activation. Requested live/paused states are then
-// reached through the same state machine; no privileged shortcut bypasses it.
+// off↔live is super-admin only. createTenant runs under platformCtx, so the authed
+// client carries the platform_admin JWT claim required by the DB guard.
 //
 // Atomicity: these writes happen INSIDE createTenant's cascade-rollback window
 // (tenants is the parent; tenant_modules FKs it ON DELETE CASCADE). The caller calls
@@ -53,22 +50,11 @@ export function parseModuleSelections(raw: FormDataEntryValue | null): ModuleSel
   return out
 }
 
-/**
- * Missing booking keeps the platform's safe live default. Draft is not a valid
- * public booking state at create-time and is raised to live. An EXPLICIT off row
- * survives because it is the website-only contract; other off rows are still
- * dropped (absence == off on read).
- */
+/** De-duplicate selections without changing the operator's on/off choices. */
 export function normalizeSelections(selections: ModuleSelection[]): ModuleSelection[] {
   const byKey = new Map<string, ModuleState>()
   for (const s of selections) byKey.set(s.moduleKey, s.state)
-  const hasExplicitBooking = byKey.has('booking')
-  const booking = byKey.get('booking')
-  if (!hasExplicitBooking || booking === 'draft') byKey.set('booking', 'live')
-  // Preserve booking=off; it distinguishes an intentional website-only tenant
-  // from a missing row, which retains the historic Corevo-booking default.
   return [...byKey.entries()]
-    .filter(([key, state]) => state !== 'off' || key === 'booking')
     .map(([moduleKey, state]) => ({ moduleKey, state }))
 }
 
@@ -76,7 +62,7 @@ export function normalizeSelections(selections: ModuleSelection[]): ModuleSelect
  * Validate the chosen module keys against the real `modules` catalog (FK target).
  * Returns only the selections whose key exists, so a stale/typo'd key from the client
  * can never 23503 the whole insert. A failed or incomplete catalog must abort
- * onboarding; otherwise an explicit booking=off could silently become missing=live.
+ * onboarding so the saved choices stay exact.
  */
 async function filterToCatalog(
   supabase: PlatformClient,
@@ -96,9 +82,8 @@ async function filterToCatalog(
  *
  * Steps:
  *  1) tenants.vertical_id = verticalKey (when a bransch was chosen; null = skip).
- *  2) tenant_modules: one off row per normalized, catalog-validated selection.
- *     Requested draft/live/paused targets are reached in legal follow-up steps. The
- *     DB guard copies default_config and stamps activated_at on first activation.
+ *  2) tenant_modules: one row per normalized, catalog-validated selection.
+ *     The DB guard copies default_config and stamps activated_at on activation.
  */
 export async function writeTenantVerticalAndModules(
   supabase: PlatformClient,
@@ -116,57 +101,19 @@ export async function writeTenantVerticalAndModules(
     if (vErr) return { ok: false }
   }
 
-  // 2) tenant_modules rows — normalize (safe booking default; explicit off kept) then
-  //    fence to the catalog so no unknown key 23503s the insert.
+  // 2) tenant_modules rows — preserve exact choices, then fence to the catalog.
   const normalized = normalizeSelections(selections)
+  if (normalized.length === 0) return { ok: true }
   const valid = await filterToCatalog(supabase, normalized)
-  if (!valid || !valid.some((selection) => selection.moduleKey === 'booking')) {
-    return { ok: false }
-  }
+  if (!valid || valid.length !== normalized.length) return { ok: false }
 
   const rows = valid.map((s) => ({
     tenant_id: tenantId,
     module_key: s.moduleKey,
-    state: 'off' as const,
+    state: s.state,
   }))
   const { error: mErr } = await supabase.from('tenant_modules').insert(rows)
   if (mErr) return { ok: false }
-
-  const draftKeys = valid
-    .filter((selection) => selection.state !== 'off')
-    .map((selection) => selection.moduleKey)
-  if (draftKeys.length > 0) {
-    const { error } = await supabase
-      .from('tenant_modules')
-      .update({ state: 'draft' })
-      .eq('tenant_id', tenantId)
-      .in('module_key', draftKeys)
-    if (error) return { ok: false }
-  }
-
-  const liveKeys = valid
-    .filter((selection) => selection.state === 'live' || selection.state === 'paused')
-    .map((selection) => selection.moduleKey)
-  if (liveKeys.length > 0) {
-    const { error } = await supabase
-      .from('tenant_modules')
-      .update({ state: 'live' })
-      .eq('tenant_id', tenantId)
-      .in('module_key', liveKeys)
-    if (error) return { ok: false }
-  }
-
-  const pausedKeys = valid
-    .filter((selection) => selection.state === 'paused')
-    .map((selection) => selection.moduleKey)
-  if (pausedKeys.length > 0) {
-    const { error } = await supabase
-      .from('tenant_modules')
-      .update({ state: 'paused' })
-      .eq('tenant_id', tenantId)
-      .in('module_key', pausedKeys)
-    if (error) return { ok: false }
-  }
 
   return { ok: true }
 }

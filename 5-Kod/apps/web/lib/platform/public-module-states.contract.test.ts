@@ -25,7 +25,7 @@ describe('public module state read', () => {
     expect(migration).not.toContain('returns setof public.tenant_modules')
   })
 
-  it('uses the narrow RPC so explicit off/draft rows are not mistaken for missing', () => {
+  it('uses the narrow RPC so explicit off rows are not mistaken for missing', () => {
     expect(reader).toContain(".rpc('get_public_tenant_module_states'")
     expect(reader).not.toContain(".from('tenant_modules')")
   })

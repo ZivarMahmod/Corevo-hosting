@@ -102,7 +102,7 @@ export function resolveModuleState(
 ): ModuleState {
   const picked = cfg.moduleStates[key]
   if (key === 'booking') {
-    return picked === 'live' || picked === 'paused' || picked === 'off' ? picked : 'live'
+    return picked === 'live' || picked === 'off' ? picked : 'live'
   }
   const preset = modulesForVertical(presets, cfg.branch).find((m) => m.key === key)?.defaultState ?? 'off'
   return picked ?? preset

@@ -8,6 +8,7 @@ import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
 import { revalidateTenantById } from '@/lib/admin/tenant'
 import { LOYALTY_INTERVALS, type LoyaltyInterval } from '@/lib/storefront/lojalitet/types'
+import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
 
 // KLUBBENS NIVÅER i kundkortet (goal-64). Super-admin fyller loyalty_plans (0057) åt en
 // VALD kund: namn, pris, intervall, förmåner, markerad nivå, ordning.
@@ -49,6 +50,11 @@ function sortFrom(fd: FormData): number {
   return Number.isInteger(n) && n >= 0 ? n : 0
 }
 
+async function loyaltyWritable(tenantId: string): Promise<boolean> {
+  const state = moduleAdminState(await getAdminModuleStates(tenantId), 'lojalitet')
+  return state === 'live'
+}
+
 /** Lägg till en nivå i kundens klubb. */
 export async function createLoyaltyPlan(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
@@ -57,6 +63,9 @@ export async function createLoyaltyPlan(_p: ActionState, fd: FormData): Promise<
   const name = String(fd.get('name') ?? '').trim().slice(0, 80)
   if (!tenantId) return { error: 'Saknar kund.' }
   if (!name) return { error: 'Ge nivån ett namn (t.ex. Droppe).' }
+  if (!(await loyaltyWritable(tenantId))) {
+    return { error: 'Lojalitetsmodulen är avstängd.' }
+  }
 
   // Tenanten måste finnas — klientens tenantId är bara en påstådd sträng tills nu.
   const { data: tenant } = await supabase.from('tenants').select('id').eq('id', tenantId).maybeSingle()
@@ -102,6 +111,9 @@ export async function updateLoyaltyPlan(_p: ActionState, fd: FormData): Promise<
   const name = String(fd.get('name') ?? '').trim().slice(0, 80)
   if (!tenantId || !planId) return { error: 'Saknar nivå.' }
   if (!name) return { error: 'Ge nivån ett namn.' }
+  if (!(await loyaltyWritable(tenantId))) {
+    return { error: 'Lojalitetsmodulen är avstängd.' }
+  }
 
   const { error } = await supabase
     .from('loyalty_plans')
@@ -141,6 +153,9 @@ export async function deleteLoyaltyPlan(_p: ActionState, fd: FormData): Promise<
   const tenantId = String(fd.get('tenantId') ?? '')
   const planId = String(fd.get('planId') ?? '')
   if (!tenantId || !planId) return { error: 'Saknar nivå.' }
+  if (!(await loyaltyWritable(tenantId))) {
+    return { error: 'Lojalitetsmodulen är avstängd.' }
+  }
 
   const { error } = await supabase
     .from('loyalty_plans')

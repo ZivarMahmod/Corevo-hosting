@@ -68,11 +68,9 @@ describe('moduleCtx — salon_admin (JWT-forced tenant)', () => {
   })
 
   it.each([
-    ['draft', true],
     ['live', true],
     ['off', false],
-    ['paused', false],
-  ] as const)('allows blogg mutations=%s only in draft/live', async (state, allowed) => {
+  ] as const)('allows blogg mutations=%s only when live', async (state, allowed) => {
     mModuleStates.mockResolvedValue({ blogg: { state, config: {} } })
 
     const ctx = await moduleCtx(fd({}), 'blogg')
@@ -129,7 +127,7 @@ describe('moduleCtx — partner operator (RLS-scoped tenant from the form)', () 
       tenantId: null,
     } as never)
     mById.mockResolvedValue(OTHER as never)
-    mModuleStates.mockResolvedValue({ blogg: { state: 'draft', config: {} } })
+    mModuleStates.mockResolvedValue({ blogg: { state: 'live', config: {} } })
 
     const ctx = await moduleCtx(fd({ tenantId: 't-other' }), 'blogg')
 

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { LojalitetPage } from '@/components/storefront/lojalitet/LojalitetPage'
 import { pageMetadata } from '@/components/storefront/seo'
 import { loadLojalitetData } from '@/lib/storefront/lojalitet/load-lojalitet'
@@ -31,8 +31,7 @@ export default async function KlubbPage() {
   if (!bundle) notFound()
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'lojalitet')
-  if (!isModuleLive(states, 'lojalitet') && !paused) notFound()
+  if (!isModuleLive(states, 'lojalitet')) notFound()
 
   const data = await loadLojalitetData(tenant.id, tenant.slug)
   // Modulen är live men har ingen config-rad → ingenting att visa. 404 hellre än en
@@ -40,7 +39,7 @@ export default async function KlubbPage() {
   if (!data) notFound()
 
   const View = themeModuleViews(settings.theme).lojalitet
-  if (View && !paused) {
+  if (View) {
     const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
     const content = resolveThemeContent(settings.theme, settings.branding, copy)
     return (
@@ -53,5 +52,5 @@ export default async function KlubbPage() {
     )
   }
 
-  return <LojalitetPage config={data.config} plans={data.plans} paused={paused} />
+  return <LojalitetPage config={data.config} plans={data.plans} paused={false} />
 }

@@ -6,7 +6,7 @@
 // Each <Section> self-resolves to null when the tenant has no module config, so this is
 // safe to mount whenever. A LIVE module renders its section; 'paused' renders it
 // read-only (closed-state) via `paused`; draft/off stay invisible.
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { ShopSection } from '@/components/storefront/ShopSection'
 import { OffertSection } from '@/components/storefront/OffertSection'
 import { BloggSection } from '@/components/storefront/BloggSection'
@@ -35,70 +35,63 @@ export async function StorefrontModuleSections({
   const teaser = variant === 'teaser'
   const moduleStates = await getTenantModuleStates(tenantId, slug)
   const shopLive = isModuleLive(moduleStates, 'shop')
-  const shopPaused = isModulePaused(moduleStates, 'shop')
   const checkoutLive = shopLive && commerceReleaseGate(tenantId).shop
   const kurserLive = isModuleLive(moduleStates, 'kurser')
-  const kurserPaused = isModulePaused(moduleStates, 'kurser')
   const bloggLive = isModuleLive(moduleStates, 'blogg')
-  const bloggPaused = isModulePaused(moduleStates, 'blogg')
   const offertLive = isModuleLive(moduleStates, 'offert')
-  const offertPaused = isModulePaused(moduleStates, 'offert')
   const presentkortLive = isModuleLive(moduleStates, 'presentkort')
-  const presentkortPaused = isModulePaused(moduleStates, 'presentkort')
   const lojalitetLive = isModuleLive(moduleStates, 'lojalitet')
-  const lojalitetPaused = isModulePaused(moduleStates, 'lojalitet')
   const galleriLive = isModuleLive(moduleStates, 'galleri')
-  const galleriPaused = isModulePaused(moduleStates, 'galleri')
 
   return (
     <>
-      {shopLive || shopPaused ? (
+      {shopLive ? (
         <ShopSection
           tenantId={tenantId}
           slug={slug}
-          paused={shopPaused}
+          paused={false}
           {...(teaser ? { limit: 3, moreHref: '/shop' } : {})}
         />
       ) : null}
 
-      {kurserLive || kurserPaused ? (
+      {kurserLive ? (
         <KurserSection
           tenantId={tenantId}
           slug={slug}
-          paused={kurserPaused}
+          paused={false}
           checkoutLive={checkoutLive}
           {...(teaser ? { limit: 3, moreHref: '/kurser' } : {})}
         />
       ) : null}
 
-      {bloggLive || bloggPaused ? (
+      {bloggLive ? (
         <BloggSection
           tenantId={tenantId}
           slug={slug}
-          paused={bloggPaused}
+          paused={false}
           {...(teaser ? { limit: 3, moreHref: '/blogg' } : {})}
         />
       ) : null}
 
-      {offertLive || offertPaused ? (
-        <OffertSection tenantId={tenantId} slug={slug} paused={offertPaused} teaser={teaser} />
+      {offertLive ? (
+        <OffertSection tenantId={tenantId} slug={slug} paused={false} teaser={teaser} />
       ) : null}
 
-      {presentkortLive || presentkortPaused ? (
+      {presentkortLive ? (
         <PresentkortSection
           tenantId={tenantId}
           slug={slug}
-          paused={presentkortPaused}
+          paused={false}
           checkoutLive={checkoutLive}
         />
       ) : null}
 
-      {lojalitetLive || lojalitetPaused ? (
-        <LojalitetSection tenantId={tenantId} slug={slug} paused={lojalitetPaused} />
+      {lojalitetLive ? (
+        <LojalitetSection tenantId={tenantId} slug={slug} paused={false} />
       ) : null}
 
-      {galleriLive || galleriPaused ? (
-        <GalleriSection tenantId={tenantId} slug={slug} paused={galleriPaused} />
+      {galleriLive ? (
+        <GalleriSection tenantId={tenantId} slug={slug} paused={false} />
       ) : null}
     </>
   )

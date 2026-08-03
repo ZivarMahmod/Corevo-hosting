@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  currentState: 'paused' as string | null,
+  currentState: 'live' as string | null,
   insert: vi.fn(),
   update: vi.fn(),
   updateTenantEq: vi.fn(),
@@ -60,14 +60,6 @@ vi.mock('@/lib/platform/guard', () => ({
 
 import { setModuleState } from '@/lib/platform/tenant-modules-admin'
 
-function form(state: string) {
-  const fd = new FormData()
-  fd.set('tenantId', 'tenant-1')
-  fd.set('moduleKey', 'shop')
-  fd.set('state', state)
-  return fd
-}
-
 function toggle(enabled: boolean) {
   const fd = new FormData()
   fd.set('tenantId', 'tenant-1')
@@ -79,7 +71,7 @@ function toggle(enabled: boolean) {
 
 describe('setModuleState', () => {
   beforeEach(() => {
-    mocks.currentState = 'paused'
+    mocks.currentState = 'live'
     mocks.insert.mockReset().mockResolvedValue({ error: null })
     mocks.updateModuleEq.mockReset().mockResolvedValue({ error: null })
     mocks.updateTenantEq.mockReset().mockReturnValue({ eq: mocks.updateModuleEq })
@@ -87,44 +79,7 @@ describe('setModuleState', () => {
     mocks.upsert.mockReset().mockResolvedValue({ error: null })
   })
 
-  it('rejects an illegal shortcut before writing', async () => {
-    await expect(setModuleState({}, form('off'))).resolves.toEqual({
-      error: 'Otillåten ändring av modul-läge.',
-    })
-    expect(mocks.insert).not.toHaveBeenCalled()
-    expect(mocks.update).not.toHaveBeenCalled()
-    expect(mocks.upsert).not.toHaveBeenCalled()
-  })
-
-  it('allows the canonical paused → live transition', async () => {
-    await expect(setModuleState({}, form('live'))).resolves.toEqual({
-      success: 'Modul "shop" satt till live.',
-    })
-    expect(mocks.update).toHaveBeenCalledWith({ state: 'live' })
-    expect(mocks.updateTenantEq).toHaveBeenCalledWith('tenant_id', 'tenant-1')
-    expect(mocks.updateModuleEq).toHaveBeenCalledWith('module_key', 'shop')
-    expect(mocks.insert).not.toHaveBeenCalled()
-    expect(mocks.upsert).not.toHaveBeenCalled()
-  })
-
-  it('creates missing modules at off before the legal off → draft transition', async () => {
-    mocks.currentState = null
-
-    await expect(setModuleState({}, form('draft'))).resolves.toEqual({
-      success: 'Modul "shop" satt till draft.',
-    })
-    expect(mocks.insert).toHaveBeenCalledWith({
-      tenant_id: 'tenant-1',
-      module_key: 'shop',
-      state: 'off',
-    })
-    expect(mocks.update).toHaveBeenCalledWith({ state: 'draft' })
-    expect(mocks.updateTenantEq).toHaveBeenCalledWith('tenant_id', 'tenant-1')
-    expect(mocks.updateModuleEq).toHaveBeenCalledWith('module_key', 'shop')
-    expect(mocks.upsert).not.toHaveBeenCalled()
-  })
-
-  it('turns a missing module on through the canonical off → draft → live path', async () => {
+  it('turns a missing module on through off → live', async () => {
     mocks.currentState = null
 
     await expect(setModuleState({}, toggle(true))).resolves.toEqual({
@@ -135,15 +90,13 @@ describe('setModuleState', () => {
       module_key: 'shop',
       state: 'off',
     })
-    expect(mocks.update).toHaveBeenNthCalledWith(1, { state: 'draft' })
-    expect(mocks.update).toHaveBeenNthCalledWith(2, { state: 'live' })
+    expect(mocks.update).toHaveBeenCalledWith({ state: 'live' })
   })
 
-  it('turns a paused module off through the canonical paused → live → off path', async () => {
+  it('turns a live module off directly', async () => {
     await expect(setModuleState({}, toggle(false))).resolves.toEqual({
       success: 'Modul "shop" är av.',
     })
-    expect(mocks.update).toHaveBeenNthCalledWith(1, { state: 'live' })
-    expect(mocks.update).toHaveBeenNthCalledWith(2, { state: 'off' })
+    expect(mocks.update).toHaveBeenCalledWith({ state: 'off' })
   })
 })

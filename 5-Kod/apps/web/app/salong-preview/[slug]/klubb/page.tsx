@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { LojalitetPage } from '@/components/storefront/lojalitet/LojalitetPage'
 import { loadLojalitetData } from '@/lib/storefront/lojalitet/load-lojalitet'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
@@ -24,20 +24,19 @@ export default async function PreviewKlubbPage({
   const copyMode = resolvePreviewCopyMode(copyParam)
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'lojalitet')
-  const off = !isModuleLive(states, 'lojalitet') && !paused
+  const off = !isModuleLive(states, 'lojalitet')
   const data = off ? null : await loadLojalitetData(tenant.id, tenant.slug)
   const View = themeModuleViews(theme).lojalitet
 
   let body
   if (off || !data) {
     body = <PreviewModuleOff moduleLabel="Klubben" />
-  } else if (View && !paused) {
+  } else if (View) {
     const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
     const content = resolveThemeContent(theme, settings.branding, copy)
     body = <View config={data.config} plans={data.plans} content={content} tenantName={tenant.name} />
   } else {
-    body = <LojalitetPage config={data.config} plans={data.plans} paused={paused} />
+    body = <LojalitetPage config={data.config} plans={data.plans} paused={false} />
   }
 
   return <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>{body}</PreviewShell>

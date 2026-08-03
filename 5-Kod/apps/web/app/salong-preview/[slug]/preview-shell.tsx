@@ -10,7 +10,6 @@ import { Nav } from '@/components/brand/Nav'
 import { NavShell } from '@/components/brand/NavShell'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
-import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
@@ -120,8 +119,7 @@ export async function PreviewShell({
   const layoutModules = await loadLayoutModuleTeasers(tenant.id, tenant.slug)
   const bookingState = moduleState(moduleStates, 'booking')
   const bookingLive = bookingState === 'live'
-  const bookingPaused = bookingState === 'paused'
-  const bookingReachable = bookingLive || bookingState === 'paused'
+  const bookingReachable = bookingLive
   const [allWizardServices, wizardLocations, staffNoun, bookingPrefs, teamCount] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
@@ -230,7 +228,6 @@ export async function PreviewShell({
           />
         )}
         <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
-        {bookingPaused ? <ModulePausedBanner /> : null}
         {wizardServices.length > 0 ? (
           <InlineBooking
             services={wizardServices}

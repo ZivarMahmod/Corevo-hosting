@@ -95,9 +95,9 @@ describe('resolveModuleState', () => {
     expect(resolveModuleState(initStudioCfg('salvia'), 'booking', presets)).toBe('live')
   })
 
-  it('lets booking sit at paused', () => {
-    const cfg = { ...initStudioCfg('salvia'), moduleStates: { booking: 'paused' as const } }
-    expect(resolveModuleState(cfg, 'booking', presets)).toBe('paused')
+  it('lets booking be explicitly off', () => {
+    const cfg = { ...initStudioCfg('salvia'), moduleStates: { booking: 'off' as const } }
+    expect(resolveModuleState(cfg, 'booking', presets)).toBe('off')
   })
 
   it('returns a non-booking module state as picked, else off', () => {

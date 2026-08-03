@@ -13,7 +13,6 @@ import { freshCutNavigationLinks } from '@/components/storefront/layouts/FreshCu
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
-import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 import {
@@ -116,7 +115,6 @@ export default async function PublicLayout({ children }: { children: React.React
 
   const bookingState = moduleState(moduleStates, 'booking')
   const bookingLive = bookingState === 'live'
-  const bookingPaused = bookingState === 'paused'
   // Korgen visas bara när shop-routen är reachable och har publika produkter.
   const cartEnabled = layoutModules.shopReachable
   // Booking gating: bara en LIVE booking-modul får riktiga tjänster; draft/off/paused
@@ -202,7 +200,6 @@ export default async function PublicLayout({ children }: { children: React.React
       >
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
-        {bookingPaused ? <ModulePausedBanner /> : null}
         {/* CartProvider omsluter HELA skalet (nav + main + footer) — navens
             CartNavButton och mobil-overlayns korg-rad använder useCart, så
             providern måste ligga ovanför Nav (goal-55 7B). Den flytande
