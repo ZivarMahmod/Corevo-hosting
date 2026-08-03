@@ -42,8 +42,8 @@ begin
 
     -- One negative case: removing a common requirement must block both the RPC
     -- and a direct status bypass, while leaving the tenant provisioning.
-    update public.tenants set status = 'provisioning' where id = v_tenant;
     delete from public.tenant_settings where tenant_id = v_tenant;
+    update public.tenants set status = 'provisioning' where id = v_tenant;
 
     if not ('tenant_settings' = any (
       private.tenant_launch_missing(v_tenant)
