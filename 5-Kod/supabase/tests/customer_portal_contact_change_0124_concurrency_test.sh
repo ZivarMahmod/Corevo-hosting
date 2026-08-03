@@ -58,7 +58,12 @@ SQL
   [ "$waiting" = "2" ] && break
   sleep 0.1
 done
-[ "$waiting" = "2" ]
+if [ "$waiting" != "2" ]; then
+  wait "$finalize_a_pid" || true
+  wait "$finalize_b_pid" || true
+  cat "$tmp_dir/finalize-a" "$tmp_dir/finalize-b" >&2
+  exit 1
+fi
 
 wait "$barrier_pid"
 wait "$finalize_a_pid"
