@@ -13,3 +13,57 @@ index b0616a9a1a2729c3bc1cf03dd88edde8afa09d08..e95c853db3879e7fb812aeb31541242c
              // Factor out large values into separate variables to reduce the overall size of the generated code.
              let manifest = await readFile(path, "utf-8");
              for (const key of [
+@@ -108,8 +108,9 @@ async function getEvalManifestRule(buildOpts) {
+     }
+     // Map of factored values in an object
+     const factoredValues = new Map();
++    const repeatedObjectValues = countRepeatedObjectValues(factoredObjects.values());
+     for (const [varName, value] of factoredObjects) {
+-        factoredObjects.set(varName, factorObjectValues(value, factoredValues, prefixMap));
++        factoredObjects.set(varName, factorObjectValues(value, factoredValues, prefixMap, repeatedObjectValues));
+     }
+     // Prepend chunks variable declarations before the factored values
+     const factoredValueCode = [...factoredValues.entries()]
+@@ -214,9 +215,19 @@ export function factorManifestValue(manifest, key, values, prefixMap) {
+  * @param prefixMap Map of short hash prefix → full hash, updated in place for
+  *   collision resolution across calls.
+  * @returns The rewritten value text with chunks arrays replaced by variable refs.
+  */
+-export function factorObjectValues(valueText, sharedVars, prefixMap) {
+-    const rootNode = parse(Lang.JavaScript, valueText).root();
++export function factorObjectValues(valueText, sharedVars, prefixMap, repeatedValues = new Set()) {
++    const value = JSON.parse(valueText);
++    const entries = Object.entries(value).map(([key, entryValue]) => {
++        const text = JSON.stringify(entryValue);
++        if (text.length <= 30 || !repeatedValues.has(text))
++            return `${JSON.stringify(key)}:${text}`;
++        const varName = getOrCreateVarName(text, prefixMap);
++        sharedVars.set(varName, text);
++        return `${JSON.stringify(key)}:${varName}`;
++    });
++    const factoredText = `{${entries.join(",")}}`;
++    const rootNode = parse(Lang.JavaScript, factoredText).root();
+     // Find all "chunks": [...] pairs
+     const chunksRule = `
+ rule:
+@@ -244,8 +255,19 @@ rule:
+         edits.push({ match, replacement: `"chunks": ${varName}` });
+     }
+     return edits.length === 0
+-        ? valueText
++        ? factoredText
+         : rootNode.commitEdits(edits.map((e) => e.match.replace(e.replacement)));
+ }
++function countRepeatedObjectValues(valueTexts) {
++    const counts = new Map();
++    for (const valueText of valueTexts) {
++        for (const value of Object.values(JSON.parse(valueText))) {
++            const text = JSON.stringify(value);
++            if (text.length > 30)
++                counts.set(text, (counts.get(text) ?? 0) + 1);
++        }
++    }
++    return new Set([...counts].filter(([, count]) => count > 1).map(([text]) => text));
++}
+ /** Minimum number of hex characters used for short hash prefixes. */
+ const MIN_PREFIX_LENGTH = 3;
