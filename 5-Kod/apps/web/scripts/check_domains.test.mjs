@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { buildProbeTargets, isHealthyStatus } from './check_domains.mjs'
+import { buildFixedProbeTargets, buildProbeTargets, isHealthyStatus } from './check_domains.mjs'
 
 describe('buildProbeTargets', () => {
-  it('probes each active tenant on the canonical booking path', () => {
-    expect(buildProbeTargets(['FreshCut', ' demo '])).toEqual([
-      { host: 'freshcut.boka.corevo.se', path: '/boka' },
+  it('probes committed custom domains before falling back to the booking path', () => {
+    expect(buildProbeTargets(['FreshCut', ' demo '], ['freshcut.corevo.se'])).toEqual([
+      { host: 'freshcut.corevo.se', path: '/' },
       { host: 'demo.boka.corevo.se', path: '/boka' },
+    ])
+  })
+})
+
+describe('buildFixedProbeTargets', () => {
+  it('probes the customer portal on its real route', () => {
+    expect(buildFixedProbeTargets(['booking.corevo.se', 'mina.corevo.se'])).toEqual([
+      { host: 'booking.corevo.se', path: '/' },
+      { host: 'mina.corevo.se', path: '/mina' },
     ])
   })
 })

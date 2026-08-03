@@ -1,7 +1,7 @@
 // goal-32 F4 — domain health guard (offline; NEVER runs in the Worker).
 //
 // Lists every active tenant (the SAME source the deploy generator uses) and asserts:
-//   1. each <slug>.boka.corevo.se/boka responds with 2xx/3xx,
+//   1. each active tenant's committed custom domain, or fallback booking host, responds,
 //   2. the fixed application hosts are alive.
 // Exit 0 = all up, 1 = something drifted. Run after every prod deploy:
 //   node scripts/check_domains.mjs
@@ -13,15 +13,26 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { fetchActiveSlugs, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
+import { readCustomDomainPatterns, ROOT_DOMAIN } from './domain-routes.mjs'
 
 const TENANT_SUFFIX = 'boka.corevo.se'
 const TIMEOUT_MS = 12000
 
-export function buildProbeTargets(slugs) {
+export function buildFixedProbeTargets(hosts) {
+  return hosts.map((host) => ({ host, path: host === 'mina.corevo.se' ? '/mina' : '/' }))
+}
+
+export function buildProbeTargets(slugs, customDomains = []) {
+  const custom = new Set(customDomains.map((host) => String(host).trim().toLowerCase()))
   return slugs
     .map((slug) => String(slug || '').trim().toLowerCase())
     .filter(Boolean)
-    .map((slug) => ({ host: `${slug}.${TENANT_SUFFIX}`, path: '/boka' }))
+    .map((slug) => {
+      const customHost = `${slug}.${ROOT_DOMAIN}`
+      return custom.has(customHost)
+        ? { host: customHost, path: '/' }
+        : { host: `${slug}.${TENANT_SUFFIX}`, path: '/boka' }
+    })
 }
 
 export function isHealthyStatus(status) {
@@ -57,9 +68,9 @@ async function main() {
   if (!supaUrl || !anonKey) throw new Error('check_domains: missing Supabase URL / anon key')
 
   const slugs = await fetchActiveSlugs(supaUrl, anonKey)
-  const tenantTargets = buildProbeTargets(slugs)
+  const tenantTargets = buildProbeTargets(slugs, readCustomDomainPatterns(resolve(here, '..', 'wrangler.jsonc')))
   const targets = [
-    ...REQUIRED_FIXED_HOSTS.map((host) => ({ host, path: '/' })),
+    ...buildFixedProbeTargets(REQUIRED_FIXED_HOSTS),
     ...tenantTargets,
   ]
 
