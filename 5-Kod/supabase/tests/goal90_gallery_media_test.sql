@@ -117,6 +117,13 @@ insert into public.media_assets (id, tenant_id, r2_key, url, alt) values
   ('90910000-0000-0000-0000-000000000105', '90910000-0000-0000-0000-000000000001', 'goal90/a-unused', 'https://example.test/a-unused.jpg', null),
   ('90910000-0000-0000-0000-000000000201', '90910000-0000-0000-0000-000000000002', 'goal90/b-1', 'https://example.test/b-1.jpg', null);
 
+update public.media_assets
+   set status = 'ready',
+       variants = jsonb_build_object('thumb', url, 'card', url, 'hero', url),
+       lifecycle_version = 1
+ where id between '90910000-0000-0000-0000-000000000101'
+              and '90910000-0000-0000-0000-000000000201';
+
 insert into public.gallery_items (
   id, tenant_id, asset_id, alt_override, decorative, sort_order
 ) values
