@@ -21,6 +21,8 @@ grant execute on function extensions.gen_random_uuid() to authenticated;
 
 insert into public.tenants (id, slug, name) values
   ('77000000-0000-0000-0000-000000000001', 'rpc-0077-a', 'RPC 0077 A');
+insert into public.tenant_modules (tenant_id, module_key, state) values
+  ('77000000-0000-0000-0000-000000000001', 'booking', 'live');
 insert into public.locations (id, tenant_id, name, is_primary) values
   ('77000000-0000-0000-0000-000000000011', '77000000-0000-0000-0000-000000000001', 'A', true),
   ('77000000-0000-0000-0000-000000000012', '77000000-0000-0000-0000-000000000001', 'B', false);

@@ -21,9 +21,11 @@ revoke insert, update, delete on public.location_opening_hours, public.time_off
 grant usage on schema extensions to authenticated;
 grant execute on function extensions.gen_random_uuid() to authenticated;
 
-select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.tenants (id, slug, name) values
   ('78000000-0000-0000-0000-000000000001', 'hardening-0078', 'Hardening 0078');
+insert into public.tenant_modules (tenant_id, module_key, state) values
+  ('78000000-0000-0000-0000-000000000001', 'booking', 'live');
+select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.locations (id, tenant_id, name, timezone, is_primary) values
   ('78000000-0000-0000-0000-000000000011', '78000000-0000-0000-0000-000000000001', 'A', 'Europe/Stockholm', true),
   ('78000000-0000-0000-0000-000000000012', '78000000-0000-0000-0000-000000000001', 'B', 'Europe/Stockholm', false);
