@@ -6,6 +6,9 @@ declare
   v_start regprocedure := to_regprocedure(
     'public.start_booking_verification(text,uuid,uuid,timestamptz,uuid,text,text,text,text,uuid)'
   );
+  v_start_impl regprocedure := to_regprocedure(
+    'private.start_booking_verification_goal87_impl(text,uuid,uuid,timestamptz,uuid,text,text,text,text,uuid)'
+  );
   v_finalize regprocedure := to_regprocedure(
     'public.finalize_verified_storefront_booking(uuid,uuid,text,text,text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid,boolean)'
   );
@@ -14,7 +17,7 @@ begin
   if to_regclass('private.booking_verification_challenges') is null then
     raise exception 'booking_verification_challenges_missing';
   end if;
-  if v_start is null or v_finalize is null then
+  if v_start is null or v_start_impl is null or v_finalize is null then
     raise exception 'verified_booking_rpcs_missing';
   end if;
   if has_function_privilege('anon', v_start, 'EXECUTE')
@@ -23,7 +26,7 @@ begin
     raise exception 'start_booking_verification_grants_invalid';
   end if;
 
-  select pg_get_functiondef(v_start) into v_definition;
+  select pg_get_functiondef(v_start_impl) into v_definition;
   if v_definition not like '%booking_verification_pin%'
      or v_definition like '%''pin'',%'
      or v_definition like '%''contact'',%' then
