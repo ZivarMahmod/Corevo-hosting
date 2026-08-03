@@ -16,6 +16,11 @@ export type PaymentGate = {
   canTakeOnline: boolean
 }
 
+export type PaymentSettingsStatus = {
+  label: 'AV I PILOT' | 'Inte kopplat' | 'AV' | 'PÅ'
+  tone: 'neutral' | 'success'
+}
+
 /** Pure form — used by the confirmation page where flags come from the RPC. */
 export function paymentGateFromFlags(
   paymentsEnabled: boolean,
@@ -28,6 +33,13 @@ export function paymentGateFromFlags(
     releaseEnabled,
     canTakeOnline: paymentsEnabled && chargesEnabled && releaseEnabled,
   }
+}
+
+export function paymentSettingsStatus(gate: PaymentGate): PaymentSettingsStatus {
+  if (!gate.releaseEnabled) return { label: 'AV I PILOT', tone: 'neutral' }
+  if (!gate.chargesEnabled) return { label: 'Inte kopplat', tone: 'neutral' }
+  if (!gate.paymentsEnabled) return { label: 'AV', tone: 'neutral' }
+  return { label: 'PÅ', tone: 'success' }
 }
 
 /** Read the gate for a tenant (works with the anon public client or service-role). */

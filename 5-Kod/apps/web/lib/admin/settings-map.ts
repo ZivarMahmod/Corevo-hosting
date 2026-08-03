@@ -1,4 +1,4 @@
-import type { AdminArea } from '@/lib/auth/admin-areas'
+import { canAccessAdminArea, type AdminArea } from '@/lib/auth/admin-areas'
 import type {
   SettingsNavigationCategory,
   SettingsNavigationSearchEntry,
@@ -92,7 +92,7 @@ export function settingsCategories(terminology?: Terminology | null): SettingsCa
     },
     {
       id: 'integrationer', group: 'KOMMUNIKATION', href: '/admin/installningar/integrationer', label: 'Integrationer',
-      hint: 'Externa kopplingar och recensioner', icon: 'link', area: 'sida',
+      hint: 'Externa kopplingar och recensioner', icon: 'link', area: 'installningar',
       keywords: 'google recension betyg stjärnor integration koppla',
     },
     {
@@ -107,10 +107,21 @@ export function settingsCategories(terminology?: Terminology | null): SettingsCa
     },
     {
       id: 'sekretess', group: 'KONTO', href: '/admin/installningar/sekretess', label: 'Sekretess & GDPR',
-      hint: 'Kunddata, export och anonymisering', icon: 'lock', area: 'kunder',
+      hint: 'Kunddata, export och anonymisering', icon: 'lock', area: 'installningar',
       keywords: 'gdpr sekretess export radera anonymisera kunddata biträdesavtal',
     },
   ]
+}
+
+export function settingsCategoriesForAccess(
+  terminology: Terminology | null | undefined,
+  user: { roleLevel: number; platformAdmin?: boolean },
+  grantedAreas: readonly AdminArea[] = [],
+): SettingsCategory[] {
+  return settingsCategories(terminology).filter(
+    (category) =>
+      canAccessAdminArea(category.area, user) || grantedAreas.includes(category.area),
+  )
 }
 
 const SETTINGS_SEARCH_DEFS: ReadonlyArray<{

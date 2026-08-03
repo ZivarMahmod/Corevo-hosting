@@ -4,14 +4,18 @@ import { notFound } from 'next/navigation'
 import { createPublicClient } from '@/lib/supabase/public'
 import { currentTenant } from '@/lib/tenant-data'
 import { commerceReleaseGate } from '@/lib/release/commerce'
-import { buildCancelToken } from '@/lib/booking/cancel-token'
+import { verifyCancelToken } from '@/lib/booking/cancel-token'
 import { bookingStatusPresentation } from '@/lib/booking/confirmation-status'
 import { GoogleReviewNudge } from '@/components/kund/GoogleReviewNudge'
 import { formatTenantMoney } from '@/lib/tenant-region'
 import '../../../ticket.css'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Bokningsstatus' }
+export const metadata: Metadata = {
+  title: 'Bokningsstatus',
+  robots: { index: false, follow: false },
+  referrer: 'no-referrer',
+}
 
 // ── "Lägg till i kalender": en RFC5545-iCal-fil (.ics) byggd server-side från
 // fält vi redan har (start_ts/end_ts/service/personal/salong). Inget extra
@@ -72,10 +76,14 @@ export default async function ConfirmationPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ betald?: string; avbruten?: string }>
+  searchParams: Promise<{ t?: string; betald?: string; avbruten?: string }>
 }) {
   const { id } = await params
-  const { avbruten } = await searchParams
+  const { t, avbruten } = await searchParams
+
+  // Booking-id is not a capability. Verify before the public RPC so an ID-only
+  // request cannot read details or mint a cancellation link.
+  if (!(await verifyCancelToken(id, t))) notFound()
 
   const supabase = createPublicClient()
   const { data } = await supabase.rpc('get_public_booking', { p_id: id })
@@ -130,10 +138,7 @@ export default async function ConfirmationPage({
     }),
   )}`
 
-  // Avboka-länk: samma HMAC-capability som mejlets manage-länk. buildCancelToken
-  // failar SAFE till '' utan nyckel → länken utelämnas då (ingen död länk).
-  const cancelToken = await buildCancelToken(booking.id ?? id)
-  const cancelHref = cancelToken ? `/avboka/${booking.id ?? id}?t=${encodeURIComponent(cancelToken)}` : null
+  const cancelHref = `/avboka/${booking.id ?? id}?t=${encodeURIComponent(t!)}`
 
   // Biljett-fotens etikett: designens "Att betala på plats" gäller obetald bokning;
   // en online-betald/återbetald bokning får inte påstå att pris återstår på plats.

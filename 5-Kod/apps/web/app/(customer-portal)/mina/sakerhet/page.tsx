@@ -49,7 +49,7 @@ export default async function CustomerPortalSecurityPage() {
       ) : (
         <section className="cp-card cp-error">
           <h1>Säkerheten kunde inte visas</h1>
-          <a className="cp-btn" href="">Försök igen</a>
+          <a className="cp-btn" href="/mina/sakerhet">Försök igen</a>
         </section>
       )}
     </PortalShell>

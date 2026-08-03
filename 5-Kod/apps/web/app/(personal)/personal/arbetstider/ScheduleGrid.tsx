@@ -1,6 +1,7 @@
 import type { WorkingHoursRow } from '@/lib/personal/schedule'
 import type { StaffBooking } from '@/lib/personal/calendar'
 import { fmtTime } from '@/lib/personal/format'
+import styles from './ScheduleGrid.module.css'
 
 /** One column's data: the calendar day + its label + real cells. */
 export type ScheduleDay = {
@@ -35,16 +36,16 @@ export type ScheduleDay = {
  */
 export function ScheduleGrid({ days }: { days: ScheduleDay[] }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${days.length}, 1fr)` }}>
+    <div className={styles.grid}>
       {days.map((d, i) => {
         const closed = d.windows.length === 0
         const booked = [...d.bookings].sort((a, b) => (a.startTs < b.startTs ? -1 : 1))
         return (
           <div
             key={d.dateStr}
+            className={styles.day}
             style={{
               borderRight: i < days.length - 1 ? '1px solid var(--c-line)' : 'none',
-              minHeight: 380,
             }}
           >
             {/* Column header — day label + Playfair day-number, today gold-tinted */}
@@ -73,7 +74,7 @@ export function ScheduleGrid({ days }: { days: ScheduleDay[] }) {
             </div>
 
             {/* Cells: real bookings (info-bg) + real working window (dashed/Ledig) */}
-            <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <div className={styles.cells}>
               {booked.map((b) => (
                 <div
                   key={b.id}

@@ -82,6 +82,18 @@ export function ServicesManager({
           .services-2col { grid-template-columns: 1fr; }
           .services-site-map { position: static !important; }
         }
+        @media (max-width: 600px) {
+          .services-table .ptable { min-width: 0; table-layout: fixed; }
+          .services-table .ptable th,
+          .services-table .ptable td { padding-inline: 8px; }
+          .services-table .ptable th:nth-child(4),
+          .services-table .ptable td:nth-child(4) { display: none; }
+          .services-table .ptable th:nth-child(1) { width: 34%; }
+          .services-table .ptable th:nth-child(2) { width: 17%; }
+          .services-table .ptable th:nth-child(3) { width: 21%; }
+          .services-table .ptable th:nth-child(5),
+          .services-table .ptable th:nth-child(6) { width: 14%; }
+        }
       `}</style>
       <div className="bo-2col services-2col" style={{ alignItems: 'start', marginTop: 16 }}>
         <Card pad={0}>
@@ -96,9 +108,10 @@ export function ServicesManager({
               </p>
             </div>
           ) : (
-            <Table
-              cols={['Tjänst', 'Tid', 'Pris', 'Storefront', 'Online', '']}
-              rows={services.map((s) => [
+            <div className="services-table">
+              <Table
+                cols={['Tjänst', 'Tid', 'Pris', 'Storefront', 'Online', '']}
+                rows={services.map((s) => [
                 <ServiceCell key="namn" service={s} />,
                 <span key="tid" className="num">
                   {s.duration_min} min
@@ -129,8 +142,9 @@ export function ServicesManager({
                 >
                   <Icon name="edit" size={17} />
                 </button>,
-              ])}
-            />
+                ])}
+              />
+            </div>
           )}
         </Card>
 

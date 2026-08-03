@@ -43,6 +43,7 @@ import { dispatchNotificationOutboxById } from '@/lib/notifications/outbox'
 import { deliverImmediateBookingOutbox } from '@/lib/notifications/booking-immediate'
 import { logger } from '@/lib/observability'
 import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
+import { buildCancelToken, verifyCancelToken } from '@/lib/booking/cancel-token'
 
 // Public reads run as anon. Proposed starts are filtered through
 // get_public_bookable_starts (never raw busy intervals). The rate-limited server
@@ -115,6 +116,7 @@ export type VerifyBookingResult =
   | {
       ok: true
       bookingId: string
+      confirmationToken: string
       outboxId: string
       requiresPayment: boolean
       bookingStatus: 'pending' | 'confirmed'
@@ -934,9 +936,11 @@ export async function verifyAndCreateBooking(
   }
 
   const bookingStatus = row.booking_status === 'confirmed' ? 'confirmed' : 'pending'
+  const confirmationToken = await buildCancelToken(row.booking_id)
   return {
     ok: true,
     bookingId: row.booking_id,
+    confirmationToken,
     outboxId: row.outbox_id,
     requiresPayment: Boolean(row.requires_payment),
     bookingStatus,
@@ -957,7 +961,13 @@ export type CheckoutResult =
  * to anon, and the connected account id must stay server-side. Degrades to
  * { unavailable } (→ "betala på plats") when Stripe/secret saknas eller gaten är av.
  */
-export async function startBookingCheckout(bookingId: string): Promise<CheckoutResult> {
+export async function startBookingCheckout(
+  bookingId: string,
+  confirmationToken: string,
+): Promise<CheckoutResult> {
+  if (!(await verifyCancelToken(bookingId, confirmationToken))) {
+    return { ok: false, reason: 'error', message: 'Bokningen kunde inte verifieras.' }
+  }
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'error', message: 'Något gick fel — ladda om sidan och försök igen.' }
   if (!bookingId) return { ok: false, reason: 'error', message: 'Saknar bokning.' }
@@ -1011,8 +1021,8 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
         // application_fee_amount UTELÄMNAS medvetet ⇒ fee = 0.
         payment_intent_data: { metadata: { booking_id: bookingId, tenant_id: ctx.tenantId } },
         metadata: { booking_id: bookingId, tenant_id: ctx.tenantId },
-        success_url: `${origin}/boka/bekraftelse/${bookingId}?betald=1`,
-        cancel_url: `${origin}/boka/bekraftelse/${bookingId}?avbruten=1`,
+        success_url: `${origin}/boka/bekraftelse/${bookingId}?t=${encodeURIComponent(confirmationToken)}&betald=1`,
+        cancel_url: `${origin}/boka/bekraftelse/${bookingId}?t=${encodeURIComponent(confirmationToken)}&avbruten=1`,
       },
       {
         stripeAccount: tenant.stripe_account_id,

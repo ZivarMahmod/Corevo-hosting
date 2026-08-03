@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig, moduleAdminState } from '@/lib/admin/modules'
 import { listLoyaltyMembers, recentLoyaltyActivity } from '@/lib/admin/lojalitet/data'
 import { parseLoyaltyConfig } from '@/lib/admin/lojalitet/types'
 import { LojalitetAdmin } from '@/components/admin/LojalitetAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
+import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Lojalitet · Adminpanel' }
@@ -43,12 +44,14 @@ export default async function LojalitetPage() {
 
   return (
     <section className="portal-section">
-      <LojalitetAdmin
-        config={config}
-        members={members}
-        activity={activity}
-        tenantName={tenant.name}
-      />
+      <ModuleWriteBoundary readOnly={false}>
+        <LojalitetAdmin
+          config={config}
+          members={members}
+          activity={activity}
+          tenantName={tenant.name}
+        />
+      </ModuleWriteBoundary>
     </section>
   )
 }

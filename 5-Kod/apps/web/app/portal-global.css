@@ -77,6 +77,16 @@
 
 /* ---- shell: forest sidebar + content column on cream ---- */
 [data-world="backoffice"].portal-shell {
+  --z-bo-content: 0;
+  --z-bo-sticky: 20;
+  --z-bo-nav: 40;
+  --z-bo-scrim: 70;
+  --z-bo-sidebar: 80;
+  --z-bo-drawer: 90;
+  --z-bo-modal: 100;
+  --z-bo-command: 110;
+  --z-bo-toast: 120;
+  --z-bo-tooltip: 130;
   display: flex;
   flex-direction: row; /* override .tenant-root's column (globals.css) */
   min-height: 100vh;
@@ -275,7 +285,7 @@
   backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: var(--z-bo-sticky);
 }
 [data-world="backoffice"] .portal-search { position: relative; width: 280px; max-width: 40vw; }
 
@@ -771,7 +781,7 @@
 [data-world="backoffice"] .bo-drawer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: var(--z-bo-drawer);
   display: flex;
   justify-content: flex-end;
   background: rgba(20, 30, 24, 0.34); /* green-tinted scrim, never neutral black */
@@ -893,7 +903,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 80;
+  z-index: var(--z-bo-toast);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1027,7 +1037,7 @@
 [data-world="backoffice"] .bo-cmdk-overlay {
   position: fixed;
   inset: 0;
-  z-index: 95;
+  z-index: var(--z-bo-command);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -1179,7 +1189,7 @@
     gap: 10px;
     position: sticky;
     top: 0;
-    z-index: 60;
+    z-index: var(--z-bo-nav);
     background: var(--c-sidebar);
     color: var(--c-on-forest);
     padding: 10px 14px;
@@ -1218,7 +1228,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 70;
+    z-index: var(--z-bo-scrim);
     background: rgba(23, 17, 11, 0.45);
   }
 
@@ -1231,7 +1241,7 @@
     width: min(290px, 84vw);
     height: 100dvh;
     min-height: 0;
-    z-index: 80;
+    z-index: var(--z-bo-sidebar);
     transform: translateX(-100%);
     transition: transform 0.2s ease;
     overflow-y: auto;
@@ -1568,7 +1578,7 @@
   visibility: hidden;
   pointer-events: none;
   transition: opacity 140ms ease, translate 140ms ease, visibility 0s 140ms;
-  z-index: 20;
+  z-index: var(--z-bo-tooltip);
 }
 [data-world="backoffice"] [data-tip]:hover::after,
 [data-world="backoffice"] [data-tip]:focus-visible::after {

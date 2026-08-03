@@ -27,7 +27,7 @@
 
 .bottomNav {
   position: fixed;
-  z-index: 25;
+  z-index: var(--z-bo-sticky, 20);
   left: 50%;
   bottom: 0;
   width: min(470px, 100%);
@@ -241,7 +241,7 @@
 
 .sheetLayer {
   position: fixed;
-  z-index: 40;
+  z-index: var(--z-bo-modal, 100);
   inset: 0;
   width: 100%;
   max-width: none;

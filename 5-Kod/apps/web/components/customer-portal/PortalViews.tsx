@@ -355,7 +355,7 @@ export function PortalErrorState({
       <svg className="cp-icon cp-error-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
       <Heading>{text || 'Något gick fel hos oss.'}</Heading>
       {!text && <p>Försök igen om en stund.</p>}
-      <a className="cp-btn" href="">Försök igen</a>
+      <a className="cp-btn" href="/mina">Försök igen</a>
     </section>
   )
 }

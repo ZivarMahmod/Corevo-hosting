@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminState } from '@/lib/admin/modules'
 import { listOffertRequests } from '@/lib/admin/offert/data'
 import { OffertInbox } from '@/components/admin/OffertInbox'
 import { PageHead, Callout } from '@/components/portal/ui'
+import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Offertförfrågningar · Adminpanel' }
@@ -38,7 +39,9 @@ export default async function OfferterPage() {
 
   return (
     <section className="portal-section">
-      <OffertInbox requests={requests} tenantName={tenant.name} />
+      <ModuleWriteBoundary readOnly={false}>
+        <OffertInbox requests={requests} tenantName={tenant.name} />
+      </ModuleWriteBoundary>
     </section>
   )
 }

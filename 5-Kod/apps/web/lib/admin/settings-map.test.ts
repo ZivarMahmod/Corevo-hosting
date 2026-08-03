@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { settingsCategories, settingsSearchEntries, SETTINGS_GROUPS } from './settings-map'
+import {
+  settingsCategories,
+  settingsCategoriesForAccess,
+  settingsSearchEntries,
+  SETTINGS_GROUPS,
+} from './settings-map'
 
 describe('settingsCategories v2', () => {
   const categories = settingsCategories()
@@ -34,7 +39,10 @@ describe('settingsCategories v2', () => {
   })
 
   it('indexerar designpaketets viktigaste synonymer', () => {
-    const index = categories.map((category) => `${category.label} ${category.hint} ${category.keywords}`).join(' ').toLowerCase()
+    const index = categories
+      .map((category) => `${category.label} ${category.hint} ${category.keywords}`)
+      .join(' ')
+      .toLowerCase()
     for (const word of ['öppettider', 'semester', 'lösenord', 'behörighet', 'recension']) {
       expect(index).toContain(word)
     }
@@ -56,7 +64,26 @@ describe('settingsCategories v2', () => {
   })
 
   it('hårdkodar ingen bransch som plattformens standard', () => {
-    const text = categories.map((category) => `${category.label} ${category.hint} ${category.keywords}`).join(' ').toLowerCase()
-    for (const word of ['salong', 'frisör', 'barber', 'klippning']) expect(text).not.toContain(word)
+    const text = categories
+      .map((category) => `${category.label} ${category.hint} ${category.keywords}`)
+      .join(' ')
+      .toLowerCase()
+    for (const word of ['salong', 'frisör', 'barber', 'klippning']) {
+      expect(text).not.toContain(word)
+    }
+  })
+})
+
+describe('settingsCategoriesForAccess', () => {
+  it('visar bara bokningsflödet för personal med explicit sida-behörighet', () => {
+    expect(
+      settingsCategoriesForAccess(undefined, { roleLevel: 3 }, ['sida']).map(
+        (category) => category.id,
+      ),
+    ).toEqual(['bokningsflode'])
+  })
+
+  it('visar hela inställningsmenyn för kundadmin', () => {
+    expect(settingsCategoriesForAccess(undefined, { roleLevel: 6 })).toHaveLength(12)
   })
 })

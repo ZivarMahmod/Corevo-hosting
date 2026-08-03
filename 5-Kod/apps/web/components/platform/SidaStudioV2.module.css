@@ -500,22 +500,23 @@
   .panel,
   .embedded .panel {
     width: 100%;
-    padding: 12px 12px 142px;
+    padding: 12px;
     border-right: 0;
     box-sizing: border-box;
   }
   .embedded .panel { overflow: visible; }
   .card { max-width: 100%; box-sizing: border-box; }
-  .preview { height: calc(100dvh - 220px); min-height: 520px; padding-bottom: 142px; box-sizing: border-box; }
+  .preview { height: calc(100dvh - 220px); min-height: 520px; box-sizing: border-box; }
   .previewDevice,
   .mobileDevice { width: 100%; border: 0; }
   .mobileHidden { display: none; }
   .embedded .mobileHidden { display: none; }
   .mobileActions {
-    position: fixed;
+    position: sticky;
     right: 12px;
     bottom: calc(82px + env(safe-area-inset-bottom));
     left: 12px;
+    margin: 0 12px 12px;
     z-index: var(--z-bo-drawer, 90);
     display: grid;
     grid-template-columns: 1fr 1fr;

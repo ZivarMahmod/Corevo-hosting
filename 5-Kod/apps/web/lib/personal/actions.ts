@@ -197,7 +197,6 @@ export async function rebookOwnBooking(
   const staff = await getMyStaff(user.id)
   if (staff.length === 0) return { error: NO_PROFILE }
   const myStaffIds = staff.map((s) => s.id)
-  const tz = staff[0]?.timeZone ?? 'Europe/Stockholm'
 
   const supabase = await createClient()
   const nowIso = new Date().toISOString()
@@ -205,7 +204,7 @@ export async function rebookOwnBooking(
   // Load the OWN active booking and preserve its original duration snapshot.
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, start_ts, end_ts')
+    .select('id, start_ts, end_ts, staff_id')
     .eq('id', bookingId)
     .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
@@ -213,6 +212,8 @@ export async function rebookOwnBooking(
     .gt('end_ts', nowIso)
     .maybeSingle()
   if (!booking) return { error: 'Bokningen behöver avslutas som Genomförd eller Uteblev.' }
+  const tz = staff.find((member) => member.id === booking.staff_id)?.timeZone
+  if (!tz) return { error: 'Bokningens plats saknar en giltig tidszon.' }
   const durationMs = new Date(booking.end_ts).getTime() - new Date(booking.start_ts).getTime()
   if (!Number.isFinite(durationMs) || durationMs <= 0) {
     return { error: 'Bokningens längd är ogiltig — kan inte omboka.' }

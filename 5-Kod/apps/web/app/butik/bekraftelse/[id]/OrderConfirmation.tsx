@@ -84,7 +84,7 @@ export function OrderConfirmation({
         <p className={styles.lead}>
           Vi kunde inte visa den här beställningen i den här webbläsaren. Kontrollera bekräftelsemejlet.
         </p>
-        <Link href="/" className={styles.backLink}>
+        <Link href="/shop" className={styles.backLink}>
           ← Tillbaka till butiken
         </Link>
       </div>
@@ -176,7 +176,7 @@ export function OrderConfirmation({
       </div>
 
       <div className={styles.actions}>
-        <Link href="/" className={styles.cta}>
+        <Link href="/shop" className={styles.cta}>
           ← Fortsätt handla
         </Link>
       </div>

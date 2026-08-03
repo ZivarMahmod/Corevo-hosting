@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { paymentGateFromFlags } from './payment-gate'
+import { paymentGateFromFlags, paymentSettingsStatus } from './payment-gate'
 
 // The G09 charge-gate invariant (DoD): online betalning vid bokning kräver BÅDA
 // payments_enabled (salongens master-toggle) OCH charges_enabled (Connect redo).
@@ -29,5 +29,26 @@ describe('paymentGateFromFlags', () => {
     const g = paymentGateFromFlags(true, false, true)
     expect(g.paymentsEnabled).toBe(true)
     expect(g.chargesEnabled).toBe(false)
+  })
+})
+
+describe('paymentSettingsStatus', () => {
+  it('visar AV när Stripe är kopplat men betalning vid bokning är avstängd', () => {
+    expect(paymentSettingsStatus(paymentGateFromFlags(false, true, true))).toEqual({
+      label: 'AV',
+      tone: 'neutral',
+    })
+  })
+
+  it('visar PÅ först när release, Stripe och kundens reglage är aktiva', () => {
+    expect(paymentSettingsStatus(paymentGateFromFlags(true, true, true))).toEqual({
+      label: 'PÅ',
+      tone: 'success',
+    })
+  })
+
+  it('skiljer pilotgrind från ett ej kopplat Stripe-konto', () => {
+    expect(paymentSettingsStatus(paymentGateFromFlags(true, true, false)).label).toBe('AV I PILOT')
+    expect(paymentSettingsStatus(paymentGateFromFlags(true, false, true)).label).toBe('Inte kopplat')
   })
 })

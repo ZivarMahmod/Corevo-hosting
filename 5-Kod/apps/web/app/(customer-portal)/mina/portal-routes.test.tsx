@@ -191,6 +191,17 @@ describe('/mina', () => {
     expect(mocks.listPortalBookings).not.toHaveBeenCalled()
   })
 
+  it('renders a usable recovery surface when an expired session has no tenant binding', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValue({ outcome: 'expired', recoveryTenantSlug: null })
+    const html = renderToStaticMarkup(await HomePage())
+
+    expect(html).toContain('Kom åt dina bokningar igen')
+    expect(html).toContain('bokningsbekräftelse')
+    expect(html).toContain('href="/hjalp"')
+    expect(html).not.toMatch(/Något gick fel|href=""|\/mina\/profil|Huvudmeny/)
+    expect(mocks.listPortalBookings).not.toHaveBeenCalled()
+  })
+
   it('carries the neutral session-expired flag if the session ends during the booking query', async () => {
     mocks.listPortalBookings.mockResolvedValue({ outcome: 'expired' })
     await expect(HomePage()).rejects.toThrow('NEXT_REDIRECT:/aterhamta/freshcut?session=expired')

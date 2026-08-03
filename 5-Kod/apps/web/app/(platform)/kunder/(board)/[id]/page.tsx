@@ -22,7 +22,7 @@ import { BookingPanel } from '@/components/platform/BookingSettings'
 import { CustomerAccountsCard } from '@/components/platform/CustomerAccountsCard'
 import { TenantLegalCard } from '@/components/platform/TenantLegalCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig, moduleAdminState } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders, listShippingOptions } from '@/lib/admin/shop/data'
 import { shopRailsStatus } from '@/lib/storefront/shop/checkout-options'
 import { parsePaymentMethods } from '@/lib/storefront/shop/types'
@@ -44,6 +44,7 @@ import { BloggAdmin } from '@/components/admin/BloggAdmin'
 import { KursAdmin } from '@/components/admin/KursAdmin'
 import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { OffertInbox } from '@/components/admin/OffertInbox'
+import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
 import { SidaStudioV2Lazy } from '@/components/platform/SidaStudioV2Lazy'
 import { getVerticalCopy } from '@/components/storefront/vertical-copy'
@@ -176,11 +177,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   ])
 
   // MODUL-KONTROLLRUMMET (goal-54 §1): för varje modul som är PÅ (activated =
-  // live/paused, samma gate som kund-adminens nav) får kundkortet en flik med
+  // live, samma gate som kund-adminens nav) får kundkortet en flik med
   // SAMMA verktyg som kundens egen admin. Platform-adminens cookie-klient läser
   // cross-tenant via platform_admin-claimet; skrivvägen går via moduleCtx-dual-
   // guarden (hidden tenantId i varje formulär via TenantScope). Data laddas
-  // ENDAST för moduler som är på — av- och draft-moduler kostar inga reads.
+  // ENDAST för moduler som är på — av-moduler kostar inga reads.
   const shopOn = isModuleActivated(moduleStates, 'shop')
   const bloggOn = isModuleActivated(moduleStates, 'blogg')
   const offertOn = isModuleActivated(moduleStates, 'offert')
@@ -193,6 +194,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // Lojalitet (goal-64): klubbens nivåer fylls här. Fliken visas bara när modulen är på —
   // och /klubb finns bara då, så en nivå utan modul vore en rad ingen kan se.
   const lojalitetOn = isModuleActivated(moduleStates, 'lojalitet')
+  const moduleReadOnly = (_key: string) => false
   const needAssets = shopOn || bloggOn || mediaOn || galleriOn
   const mediaQuotaCfg = moduleAdminConfig(moduleStates, 'media_library')
   const mediaQuota =
@@ -423,7 +425,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <Card>
             <div className={styles.sectionHead}>
               <h2 className={styles.h2}>Prismodell (fakturering)</h2>
-              <span className={styles.chip}>FLÖDE 2</span>
+              <span className={styles.chip}>Fakturering</span>
             </div>
             <p className={styles.noteText} style={{ marginBottom: 14 }}>
               Nuvarande:{' '}
@@ -478,8 +480,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             </div>
             <p className={styles.noteText}>
               {customizationLevel === 1
-                ? 'Bas — färgtokens (no-code). Välj temamall + logo/font i Sida-fliken för nivå 2.'
-                : 'Token-branding (no-code: temamall + färg/font/logo) aktiv och slår igenom utan deploy. Premium nivå-3 scoped CSS-overrides görs med kod i säker miljö — aldrig via no-code-UI.'}
+                ? 'Basnivå. Välj temamall, färger, logotyp och typsnitt under Sida.'
+                : 'Anpassat tema med egna färger, logotyp och typsnitt. Avancerade ändringar görs av Corevo.'}
             </p>
           </Card>
         </div>
@@ -569,12 +571,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <p className={styles.noteText}>
             Kundens kurser &amp; event — tillfällen med datum, platser och avgift.
           </p>
-          <KursAdmin
-            tenantId={tenant.id}
-            events={tenantEvents}
-            registrations={eventRegistrations}
-            tenantName={tenant.name}
-          />
+          <ModuleWriteBoundary readOnly={moduleReadOnly('kurser')}>
+            <KursAdmin
+              tenantId={tenant.id}
+              events={tenantEvents}
+              registrations={eventRegistrations}
+              tenantName={tenant.name}
+            />
+          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -588,9 +592,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             Kundens klubb — nivåerna som visas på /klubb. Namn, pris, intervall och förmåner.
             Inga nivåer är helt OK: klubben visar då bara programmet (poäng eller stämpelkort).
           </p>
-          <Card>
-            <LoyaltyPlansCard tenantId={tenant.id} plans={loyaltyPlans} />
-          </Card>
+          <ModuleWriteBoundary readOnly={moduleReadOnly('lojalitet')}>
+            <Card>
+              <LoyaltyPlansCard tenantId={tenant.id} plans={loyaltyPlans} />
+            </Card>
+          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -603,9 +609,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             Kundens galleri — bilderna på /galleri. Välj foton ur kundens bildbibliotek och
             sätt bildtext, tagg, år och bildformat. Ordningen styr rutnätet.
           </p>
-          <Card>
-            <GalleriCard tenantId={tenant.id} items={galleryItems} assets={mediaAssets} />
-          </Card>
+          <ModuleWriteBoundary readOnly={moduleReadOnly('galleri')}>
+            <Card>
+              <GalleriCard tenantId={tenant.id} items={galleryItems} assets={mediaAssets} />
+            </Card>
+          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -613,21 +621,22 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       Webshop: (
         <div className={styles.maxCol}>
           <p className={styles.noteText}>
-            Kundens webshop — samma verktyg som i kundens egen admin. Allt du ändrar här
-            slår igenom direkt på kundens publika sida.
+            Kundens webshop — samma verktyg som i kundens egen admin.
           </p>
-          <ShopAdmin
-            tenantId={tenant.id}
-            products={shopProducts}
-            orders={shopOrders}
-            fulfilment={shopFulfilment}
-            tenantName={tenant.name}
-            assets={mediaAssets}
-            shippingOptions={shopShippingOptions}
-            paymentMethods={shopPaymentMethods}
-            stripeReady={shopRails.stripeReady}
-            paypalReady={shopRails.paypalReady}
-          />
+          <ModuleWriteBoundary readOnly={moduleReadOnly('shop')}>
+            <ShopAdmin
+              tenantId={tenant.id}
+              products={shopProducts}
+              orders={shopOrders}
+              fulfilment={shopFulfilment}
+              tenantName={tenant.name}
+              assets={mediaAssets}
+              shippingOptions={shopShippingOptions}
+              paymentMethods={shopPaymentMethods}
+              stripeReady={shopRails.stripeReady}
+              paypalReady={shopRails.paypalReady}
+            />
+          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -637,13 +646,15 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <p className={styles.noteText}>
             Kundens blogg — skriv, publicera och avpublicera inlägg åt kunden.
           </p>
-          <BloggAdmin
-            tenantId={tenant.id}
-            posts={blogPosts}
-            tenantName={tenant.name}
-            layoutVariant={bloggLayout}
-            assets={mediaAssets}
-          />
+          <ModuleWriteBoundary readOnly={moduleReadOnly('blogg')}>
+            <BloggAdmin
+              tenantId={tenant.id}
+              posts={blogPosts}
+              tenantName={tenant.name}
+              layoutVariant={bloggLayout}
+              assets={mediaAssets}
+            />
+          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -656,10 +667,12 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           {/* goal-64: förfrågningstyperna (chipsen mallen ritar överst i formuläret).
               Storefronten läste redan config.subjects — men ingen yta kunde SKRIVA
               listan. Här äger kunden sina egna typer. */}
-          <Card>
-            <OffertSubjectsCard tenantId={tenant.id} subjects={offertSubjects} />
-          </Card>
-          <OffertInbox tenantId={tenant.id} tenantName={tenant.name} requests={offertRequests} />
+          <ModuleWriteBoundary readOnly={moduleReadOnly('offert')}>
+            <Card>
+              <OffertSubjectsCard tenantId={tenant.id} subjects={offertSubjects} />
+            </Card>
+            <OffertInbox tenantId={tenant.id} tenantName={tenant.name} requests={offertRequests} />
+          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -682,12 +695,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
                 Kundens bildbibliotek — ladda upp bilder åt kunden. Webshop och blogg
                 hämtar sina bilder härifrån.
               </p>
-              <MediaLibrary
-                tenantId={tenant.id}
-                assets={mediaAssets}
-                usage={mediaUsage}
-                tenantName={tenant.name}
-              />
+              <ModuleWriteBoundary readOnly={moduleReadOnly('media_library')}>
+                <MediaLibrary
+                  tenantId={tenant.id}
+                  assets={mediaAssets}
+                  usage={mediaUsage}
+                  tenantName={tenant.name}
+                />
+              </ModuleWriteBoundary>
             </div>
           ),
         }
@@ -697,7 +712,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     // som har med sidan att göra"): förhandsvisning + utseende + text/bilder + kund-
     // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
-      <>
+      <div className={styles.siteTabStack}>
         <SidaStudioV2Lazy
           surface="embedded"
           tenantId={tenant.id}
@@ -739,7 +754,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             hasStaffPhoto={staffList.some((staff) => Boolean(staff.avatar_url))}
           />
         </section>
-      </>
+      </div>
     ),
 
     Integrationer: (
@@ -788,7 +803,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Domän</h2>
-            <span className={styles.chip}>tenant_domains</span>
+            <span className={styles.chip}>Webbadresser</span>
           </div>
           <DomainPanel slug={tenant.slug} tenantId={tenant.id} />
         </Card>
@@ -804,7 +819,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Moduler</h2>
-            <span className={styles.chip}>tenant_modules</span>
+            <span className={styles.chip}>Funktioner</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 4 }}>
             Slå på en modul för att visa den för kunden. Slå av den för att dölja den direkt.
@@ -817,7 +832,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Kund-konton</h2>
-            <span className={styles.chip}>settings.customer_accounts_enabled</span>
+            <span className={styles.chip}>Kundinloggning</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 4 }}>
             Styr om kundens besökare kan logga in och få ”Mitt konto” på den publika sajten.
@@ -834,7 +849,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Juridik</h2>
-            <span className={styles.chip}>settings.legal</span>
+            <span className={styles.chip}>Företagsuppgifter</span>
           </div>
           <TenantLegalCard
             tenantId={tenant.id}
@@ -848,7 +863,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Card className={isActive || isProvisioning ? undefined : styles.danger}>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Status &amp; riskzon</h2>
-            <span className={styles.chip}>tenants.status</span>
+            <span className={styles.chip}>Kundstatus</span>
           </div>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>
@@ -862,14 +877,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             </div>
             <div style={{ fontSize: 13, color: 'var(--c-ink-3)', marginTop: 3 }}>
               {isActive
-                ? 'Pausa → publik storefront blockeras direkt (RLS + cache-bust). Data rörs aldrig.'
+                ? 'Pausa → den publika sidan stängs direkt. Allt innehåll och all historik sparas.'
                 : isProvisioning
                   ? launchReady
                     ? 'Publiceringskontrollen är grön. Kunden kan nu göras publik.'
                     : 'Publik storefront är blockerad tills punkterna nedan är klara.'
                   : isDeleted
-                    ? 'Mjukt borttagen (status=deleted). Data är orörd; går att återaktivera vid behov.'
-                    : 'Publik storefront är blockerad. Readiness kontrolleras igen före återaktivering.'}
+                    ? 'Borttagen från användning. All data finns kvar och kunden kan återaktiveras.'
+                    : 'Den publika sidan är stängd. Kraven kontrolleras igen före återaktivering.'}
             </div>
           </div>
           {!isActive && launchBlockers.length > 0 ? (
@@ -885,9 +900,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             canActivate={launchReady}
           />
           <p className={styles.dangerText} style={{ marginTop: 16 }}>
-            Ta bort = mjuk borttagning: publik sajt + admin blockeras, men alla rader &amp; historik
-            sparas (build-once-never-delete — hård radering är permanent spärrad). Vill du bara dölja
-            tillfälligt? Pausa ovan i stället.
+            Ta bort stänger den publika sidan och kundens admin, men allt innehåll och all historik
+            sparas. Vill du bara stänga tillfälligt? Pausa ovan i stället.
           </p>
           <TenantDangerCard tenantId={tenant.id} tenantName={tenant.name} />
         </Card>
@@ -895,7 +909,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Card pad={0}>
           <div className={styles.sectionHead} style={{ padding: '16px 20px', marginBottom: 0 }}>
             <h2 className={styles.h2}>Audit-logg</h2>
-            <span className={styles.chip}>audit_log</span>
+            <span className={styles.chip}>Historik</span>
           </div>
           {audit.length === 0 ? (
             <p className={styles.empty}>Inga loggade händelser ännu för den här kunden.</p>

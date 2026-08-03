@@ -8,8 +8,8 @@ import type { TopnavArea, TopnavQuickAction } from './Topnav'
  *  <Topnav>-komponent, samma CSS. Skillnaden är rollen: superadmin styr plattformen,
  *  kund-admin styr EN verksamhet (goal-65, låst beslut codex/00 §1).
  *
- *  De fasta huvudvalen är fyra + Inställningar. Aktiva moduler läggs in emellan som
- *  egna poster (Zivar 2026-07-14) — en verksamhet utan moduler ser exakt fem val,
+ *  De fasta huvudvalen är fem + Inställningar. Aktiva moduler läggs in emellan som
+ *  egna poster (Zivar 2026-07-14) — en verksamhet utan moduler ser exakt sex val,
  *  vilket ÄR Wavy-enkelheten. Modulnycklarna och deras hrefs/labels kommer ur
  *  nav-items.ts, som förblir enda sanningen för både sidomeny, ⌘K och detta nav. */
 
@@ -79,6 +79,13 @@ export function adminAreas(
     // Bokningsytan ÄR kalendern (goal-66 byter innehållet på routen, inte routen).
     { id: 'kalender', href: '/admin/bokningar', label: 'Kalender', prefixes: ['/admin/bokningar'] },
     { id: 'kunder', href: '/admin/kunder', label: 'Kunder', prefixes: ['/admin/kunder'] },
+    {
+      id: 'kontakt',
+      href: '/admin/kontakt',
+      label: 'Meddelanden',
+      prefixes: ['/admin/kontakt'],
+      ...lockUnless(canUseAdminArea('kontakt', roleLevel, grantedAreas)),
+    },
     ...moduleAreas(activeModuleKeys, roleLevel, grantedAreas),
     {
       id: 'sida',

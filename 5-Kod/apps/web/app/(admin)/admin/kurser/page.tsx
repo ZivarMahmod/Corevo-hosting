@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminState } from '@/lib/admin/modules'
 import { listTenantEvents, listEventRegistrations } from '@/lib/admin/events/data'
 import { KursAdmin } from '@/components/admin/KursAdmin'
 import { Callout, PageHead } from '@/components/portal/ui'
+import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kurser & event · Adminpanel' }
@@ -34,7 +35,9 @@ export default async function KurserPage() {
 
   return (
     <section className="portal-section">
-      <KursAdmin events={events} registrations={registrations} tenantName={tenant.name} />
+      <ModuleWriteBoundary readOnly={false}>
+        <KursAdmin events={events} registrations={registrations} tenantName={tenant.name} />
+      </ModuleWriteBoundary>
     </section>
   )
 }

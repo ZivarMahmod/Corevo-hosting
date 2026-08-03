@@ -28,4 +28,17 @@ describe('BookingWizard status contract', () => {
     expect(wizard).toContain('Boka en tid till')
     expect(wizard).not.toMatch(/<button[^>]+onClick=\{resetWizard\}[\s\S]{0,120}Boka en till tid/)
   })
+
+  it('carries the server-issued capability into checkout and confirmation links', () => {
+    const action = read('app/boka/actions.ts')
+    const wizard = read('components/booking/BookingWizard.tsx')
+
+    expect(action).toContain('confirmationToken: string')
+    expect(action).toContain('const confirmationToken = await buildCancelToken(row.booking_id)')
+    expect(action).toContain('verifyCancelToken(bookingId, confirmationToken)')
+    expect(action).toContain('t=${encodeURIComponent(confirmationToken)}&betald=1')
+    expect(wizard).toContain('startBookingCheckout(res.bookingId, res.confirmationToken)')
+    expect(wizard).toContain('?t=${encodeURIComponent(res.confirmationToken)}')
+    expect(wizard).toContain('bookingId && bookingToken && bookingPresentation.canAddToCalendar')
+  })
 })

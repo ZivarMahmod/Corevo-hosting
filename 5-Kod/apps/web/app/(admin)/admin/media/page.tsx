@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig, moduleAdminState } from '@/lib/admin/modules'
 import { listMediaAssets, getStorageUsage } from '@/lib/admin/media/data'
 import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { PageHead, Callout } from '@/components/portal/ui'
+import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Bildbibliotek · Adminpanel' }
@@ -44,7 +45,9 @@ export default async function MediaPage() {
 
   return (
     <section className="portal-section">
-      <MediaLibrary assets={assets} usage={usage} tenantName={tenant.name} />
+      <ModuleWriteBoundary readOnly={false}>
+        <MediaLibrary assets={assets} usage={usage} tenantName={tenant.name} />
+      </ModuleWriteBoundary>
     </section>
   )
 }

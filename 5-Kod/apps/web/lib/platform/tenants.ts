@@ -18,6 +18,13 @@ import { tenantStorefrontHost } from '@/lib/storefront-url'
 export type TenantRow = Tables<'tenants'>
 export type TenantSettingsRow = Tables<'tenant_settings'>
 
+function assertPlatformRead(
+  label: string,
+  result: { error: { message: string } | null },
+): void {
+  if (result.error) throw new Error(`${label}: ${result.error.message}`)
+}
+
 export type TenantListItem = {
   id: string
   slug: string
@@ -181,11 +188,13 @@ function markColorFor(slug: string, primary: string | null): string {
 /** Card-grid feed: every non-deleted tenant + its batched stats + derived chips. */
 export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   const { supabase } = await platformCtx()
-  const { data } = await supabase
+  const tenantsRes = await supabase
     .from('tenants')
     .select('id, slug, name, status, plan, city, created_at, tenant_settings(billing_model, settings, branding)')
     .neq('status', 'deleted')
     .order('created_at', { ascending: false })
+  assertPlatformRead('listTenantsWithStats tenants', tenantsRes)
+  const { data } = tenantsRes
   type Row = TenantRow & {
     tenant_settings:
       | { billing_model: string; settings: unknown; branding: unknown }
@@ -203,6 +212,9 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
     supabase.from('users').select('email, full_name, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin').order('created_at'),
     supabase.rpc('platform_booking_stats'),
   ])
+  assertPlatformRead('listTenantsWithStats staff', staffRes)
+  assertPlatformRead('listTenantsWithStats owners', ownersRes)
+  assertPlatformRead('listTenantsWithStats booking stats', bookingsRes)
 
   const bk = new Map<string, { total: number; completed: number; last: string | null }>()
   for (const s of bookingsRes.data ?? []) {

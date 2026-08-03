@@ -67,7 +67,7 @@ export function CheckoutForm({
     return (
       <div>
         <p className={s.emptyText}>Din varukorg är tom.</p>
-        <Link href="/" className={s.alertLink}>
+        <Link href="/shop" className={s.alertLink}>
           ← Tillbaka till butiken
         </Link>
       </div>

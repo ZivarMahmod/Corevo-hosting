@@ -4,18 +4,19 @@ import * as adminNavigation from './admin-navigation'
 import { activeTopnavArea } from './Topnav'
 
 /** goal-65: kund-adminens toppnav. Reglerna som testas är låsta beslut, inte smak:
- *  en verksamhet utan moduler ser exakt fem val (codex/00 §"Målets toppnavigation"),
+ *  en verksamhet utan moduler ser sex fasta val,
  *  bara AKTIVERADE moduler får synas (nav-items.ts modulgating), och aktivmarkeringen
  *  måste skilja /admin från /admin/kunder. */
 
 const label = (areas: ReturnType<typeof adminAreas>) => areas.map((a) => a.label)
 
 describe('adminAreas', () => {
-  it('visar exakt de fem huvudvalen för en verksamhet utan moduler', () => {
+  it('visar de sex huvudvalen inklusive Meddelanden utan moduler', () => {
     expect(label(adminAreas([]))).toEqual([
       'Översikt',
       'Kalender',
       'Kunder',
+      'Meddelanden',
       'Redigera sidan',
       'Inställningar',
     ])
@@ -26,6 +27,7 @@ describe('adminAreas', () => {
       'Översikt',
       'Kalender',
       'Kunder',
+      'Meddelanden',
       'Webshop',
       'Blogg',
       'Redigera sidan',
@@ -49,7 +51,7 @@ describe('adminAreas', () => {
     const locked = areas.filter((a) => a.locked).map((a) => a.label)
     expect(open).toEqual(['Översikt', 'Kalender', 'Kunder'])
     // Aktiverade moduler + ägarytor syns men är låsta — de försvinner inte längre.
-    expect(locked).toEqual(['Webshop', 'Blogg', 'Redigera sidan', 'Inställningar'])
+    expect(locked).toEqual(['Meddelanden', 'Webshop', 'Blogg', 'Redigera sidan', 'Inställningar'])
   })
 })
 
@@ -61,6 +63,7 @@ describe('aktivt område', () => {
     expect(activeId('/admin')).toBe('oversikt')
     expect(activeId('/admin/kunder')).toBe('kunder')
     expect(activeId('/admin/bokningar')).toBe('kalender')
+    expect(activeId('/admin/kontakt')).toBe('kontakt')
   })
 
   it('håller Inställningar aktiv på sina undersidor', () => {
@@ -96,6 +99,7 @@ describe('mobil admin-navigation', () => {
 
     expect(mobile.tabs.map((area) => area.id)).toEqual(['oversikt', 'kalender', 'kunder'])
     expect(mobile.more.map((area) => area.label)).toEqual([
+      'Meddelanden',
       'Webshop',
       'Blogg',
       'Redigera sidan',

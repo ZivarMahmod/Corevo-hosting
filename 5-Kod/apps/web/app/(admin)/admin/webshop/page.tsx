@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig, moduleAdminState } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders, listShippingOptions } from '@/lib/admin/shop/data'
 import { shopRailsStatus } from '@/lib/storefront/shop/checkout-options'
 import { parsePaymentMethods } from '@/lib/storefront/shop/types'
@@ -9,6 +9,7 @@ import { listMediaAssets } from '@/lib/admin/media/data'
 import { ShopAdmin } from '@/components/admin/ShopAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
 import { commerceReleaseGate } from '@/lib/release/commerce'
+import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Webshop · Adminpanel' }
@@ -62,20 +63,23 @@ export default async function WebshopPage() {
   const fulfilment = typeof config.fulfilment === 'string' ? config.fulfilment : 'ship'
   // Betalsätten bor i samma config-jsonb som fulfilment (payment_methods: string[]).
   const paymentMethods = parsePaymentMethods(config.payment_methods)
+  const readOnly = false
 
   return (
     <section className="portal-section">
-      <ShopAdmin
-        products={products}
-        orders={orders}
-        fulfilment={fulfilment}
-        tenantName={tenant.name}
-        assets={assets}
-        shippingOptions={shippingOptions}
-        paymentMethods={paymentMethods}
-        stripeReady={rails.stripeReady}
-        paypalReady={rails.paypalReady}
-      />
+      <ModuleWriteBoundary readOnly={readOnly}>
+        <ShopAdmin
+          products={products}
+          orders={orders}
+          fulfilment={fulfilment}
+          tenantName={tenant.name}
+          assets={assets}
+          shippingOptions={shippingOptions}
+          paymentMethods={paymentMethods}
+          stripeReady={rails.stripeReady}
+          paypalReady={rails.paypalReady}
+        />
+      </ModuleWriteBoundary>
     </section>
   )
 }

@@ -120,7 +120,7 @@ export function ShopAdmin({
       </PageHead>
 
       <Callout tone="gold" icon="link">
-        Aktiva produkter visas i din webshop. Ändringar slår igenom utan kod eller deploy.
+        Aktiva produkter visas i webshopen när modulen är live.
       </Callout>
 
       {/* ── Produkter ── */}

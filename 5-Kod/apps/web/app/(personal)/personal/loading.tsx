@@ -1,10 +1,9 @@
 import styles from '@/components/personal/personal.module.css'
 
-/** Skeleton shown while today's view loads (server fetch). Mirrors the retrofit:
- *  a PageHead, the forest "Nästa kund" hero, then the day-list cards. */
+/** Neutral calendar skeleton while the selected day loads. */
 export default function Loading() {
   return (
-    <section className="portal-section" aria-busy="true" aria-label="Laddar dagens vy" style={{ maxWidth: 720 }}>
+    <section className="portal-section" aria-busy="true" aria-label="Laddar kalendern" style={{ maxWidth: 720 }}>
       <div className={`${styles.skeleton} ${styles.skelHeading}`} />
       <div
         className={styles.skeleton}

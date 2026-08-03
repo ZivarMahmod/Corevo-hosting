@@ -47,6 +47,17 @@ function makeListClient(opts: {
   return { client: { from }, selects }
 }
 
+function queryResult(result: { data: unknown; error: { message: string } | null }) {
+  const chain: Record<string, unknown> = {
+    select: () => chain,
+    eq: () => chain,
+    neq: () => chain,
+    order: () => chain,
+    then: (resolve: (value: typeof result) => unknown) => Promise.resolve(result).then(resolve),
+  }
+  return chain
+}
+
 // #18 — the "Nivå" chip is derived only from REAL, actually-set signals; the dead
 // custom_override.css Nivå-3 branch and the layout.nav_variant/hero_variant reads
 // are gone. Level 2 = a named theme preset OR an uploaded logo/font; else Level 1.
@@ -191,5 +202,33 @@ describe('listTenantsWithStats aggregate feed', () => {
       bookingsCount: 7,
       lastActivityAt: '2026-07-18T10:00:00.000Z',
     })
+  })
+
+  it('throws instead of rendering an empty customer list when tenants fail', async () => {
+    const client = {
+      from: () => queryResult({ data: null, error: { message: 'tenants offline' } }),
+      rpc: vi.fn(),
+    }
+    platformCtxMock.mockResolvedValue({ supabase: client })
+
+    await expect(listTenantsWithStats()).rejects.toThrow(
+      'listTenantsWithStats tenants: tenants offline',
+    )
+    expect(client.rpc).not.toHaveBeenCalled()
+  })
+
+  it('throws instead of rendering false zero stats when the aggregate fails', async () => {
+    const client = {
+      from: (table: string) => queryResult({
+        data: table === 'tenants' ? [] : [],
+        error: null,
+      }),
+      rpc: vi.fn(async () => ({ data: null, error: { message: 'stats offline' } })),
+    }
+    platformCtxMock.mockResolvedValue({ supabase: client })
+
+    await expect(listTenantsWithStats()).rejects.toThrow(
+      'listTenantsWithStats booking stats: stats offline',
+    )
   })
 })

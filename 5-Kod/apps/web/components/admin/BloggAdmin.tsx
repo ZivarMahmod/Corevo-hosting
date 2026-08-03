@@ -115,7 +115,7 @@ export function BloggAdmin({
       <PageHead
         eyebrow={tenantName}
         title="Blogg"
-        lede="Skapa och hantera blogginlägg för ditt företag. Ändringar slår igenom utan kod eller deploy."
+        lede="Skapa, publicera och arkivera blogginlägg för ditt företag."
       >
         <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
           Nytt inlägg
@@ -134,13 +134,16 @@ export function BloggAdmin({
           }}
         >
           <Icon name="info" size={13} style={{ color: 'var(--c-gold-600)' }} />
-          Layout: <strong style={{ color: 'var(--c-ink-2)' }}>{layoutVariant}</strong>
+          Blogginläggen visas som{' '}
+          <strong style={{ color: 'var(--c-ink-2)' }}>
+            {layoutVariant === 'grid' ? 'rutnät' : layoutVariant}
+          </strong>
         </p>
       )}
 
       <Callout tone="gold" icon="link">
-        Publicerade inlägg syns på sajongens blogg-sida. Utkast är bara synliga här — gäster ser
-        dem inte. Ändringar slår igenom utan kod eller deploy.
+        Publicerade inlägg syns på företagets bloggsida. Utkast är bara synliga här — besökare
+        ser dem inte.
       </Callout>
 
       <Card pad={0} style={{ marginTop: 16 }}>

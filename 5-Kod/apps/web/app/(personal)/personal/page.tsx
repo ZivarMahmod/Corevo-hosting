@@ -43,7 +43,11 @@ export default async function PersonalPage({
         listLocations(user.tenantId),
       ])
     : [
-        mine.map((member) => ({ id: member.id, displayName: member.title?.trim() || user.name || 'Jag' })),
+        mine.map((member) => ({
+          id: member.id,
+          displayName: member.title?.trim() || user.name || 'Jag',
+          location_id: member.locationId,
+        })),
         [],
       ]
   const allowedIds = new Set(team.map((member) => member.id))
@@ -53,7 +57,9 @@ export default async function PersonalPage({
   const selected = team.find((member) => member.id === selectedStaffId)
   const selectedLocationId = selected && 'location_id' in selected ? selected.location_id : primary.locationId
   const selectedTimeZone =
-    locations.find((location) => location.id === selectedLocationId)?.timezone ?? primary.timeZone
+    mine.find((member) => member.id === selectedStaffId)?.timeZone ??
+    locations.find((location) => location.id === selectedLocationId)?.timezone ??
+    primary.timeZone
 
   const today = todayInTz(selectedTimeZone)
   const day = /^\d{4}-\d{2}-\d{2}$/.test(params.dag ?? '') ? params.dag! : today

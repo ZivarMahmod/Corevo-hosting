@@ -10,17 +10,52 @@ import styles from './personal-pwa.module.css'
 
 export type PersonalStaffOption = { id: string; label: string; mine: boolean }
 
-const START_HOUR = 8
-const END_HOUR = 19
+const DEFAULT_START_HOUR = 8
+const DEFAULT_END_HOUR = 19
 const HOUR_PX = 54
 
-function minuteOfDay(iso: string, timeZone: string): number {
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Ej bekräftad',
+  confirmed: 'Bekräftad',
+  completed: 'Genomförd',
+  cancelled: 'Avbokad',
+  no_show: 'Uteblev',
+}
+
+function minuteInCalendarDay(iso: string, day: string, timeZone: string): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone,
   }).formatToParts(new Date(iso))
+  const year = Number(parts.find((part) => part.type === 'year')?.value ?? 0)
+  const month = Number(parts.find((part) => part.type === 'month')?.value ?? 1)
+  const date = Number(parts.find((part) => part.type === 'day')?.value ?? 1)
   const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? 0)
   const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? 0)
-  return hour * 60 + minute
+  const target = Date.parse(`${day}T00:00:00Z`)
+  const local = Date.UTC(year, month - 1, date)
+  return Math.round((local - target) / 86_400_000) * 1440 + hour * 60 + minute
+}
+
+function bookingMinutes(booking: StaffScheduleEntry, day: string) {
+  return {
+    start: Math.max(0, minuteInCalendarDay(booking.startTs, day, booking.timeZone)),
+    end: Math.min(1440, minuteInCalendarDay(booking.endTs, day, booking.timeZone)),
+  }
+}
+
+export function calendarHourRange(bookings: StaffScheduleEntry[], day: string): { startHour: number; endHour: number } {
+  let earliest = DEFAULT_START_HOUR * 60
+  let latest = DEFAULT_END_HOUR * 60
+  for (const booking of bookings) {
+    const { start, end } = bookingMinutes(booking, day)
+    earliest = Math.min(earliest, start)
+    latest = Math.max(latest, end)
+  }
+  return {
+    startHour: Math.max(0, Math.floor(earliest / 60)),
+    endHour: Math.min(24, Math.ceil(latest / 60)),
+  }
 }
 
 export function PersonalCalendarPwa({
@@ -51,7 +86,8 @@ export function PersonalCalendarPwa({
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const selected = useMemo(() => bookings.find((booking) => booking.id === selectedId) ?? null, [bookings, selectedId])
   const selectedBookingId = selected?.id
-  const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index)
+  const { startHour, endHour } = calendarHourRange(bookings, day)
+  const hours = Array.from({ length: endHour - startHour + 1 }, (_, index) => startHour + index)
 
   useEffect(() => {
     if (!selectedBookingId) return
@@ -94,7 +130,7 @@ export function PersonalCalendarPwa({
   return (
     <section className={styles.calendarScreen} data-accept="personal-calendar">
       <header className={styles.calendarHeader}>
-        <div><h1>{heading}</h1><p>{ownCalendar ? 'MINA BOKNINGAR' : 'BOKNINGAR'} · {bookings.length} IDAG</p></div>
+        <div><h1>{heading}</h1><p>{ownCalendar ? 'MINA BOKNINGAR' : 'BOKNINGAR'} · {bookings.length} {todayHref ? 'DEN HÄR DAGEN' : 'IDAG'}</p></div>
         <div className={styles.dayControls}>
           <Link href={`/personal?dag=${previousDay}&personal=${selectedStaffId}`} aria-label="Föregående dag">‹</Link>
           <Link href={`/personal?dag=${nextDay}&personal=${selectedStaffId}`} aria-label="Nästa dag">›</Link>
@@ -118,15 +154,14 @@ export function PersonalCalendarPwa({
       ) : null}
 
       <div className={styles.timelineScroll}>
-        <div className={styles.timeline} style={{ height: (END_HOUR - START_HOUR) * HOUR_PX }}>
+        <div className={styles.timeline} style={{ height: (endHour - startHour) * HOUR_PX }}>
           <div className={styles.times}>
-            {hours.map((hour) => <span key={hour} style={{ top: (hour - START_HOUR) * HOUR_PX - 7 }}>{String(hour).padStart(2, '0')}:00</span>)}
+            {hours.map((hour) => <span key={hour} style={{ top: (hour - startHour) * HOUR_PX - 7 }}>{String(hour).padStart(2, '0')}:00</span>)}
           </div>
           <div className={styles.grid}>
             {bookings.map((booking) => {
-              const start = minuteOfDay(booking.startTs, booking.timeZone)
-              const end = minuteOfDay(booking.endTs, booking.timeZone)
-              const top = Math.max(0, ((start - START_HOUR * 60) / 60) * HOUR_PX)
+              const { start, end } = bookingMinutes(booking, day)
+              const top = Math.max(0, ((start - startHour * 60) / 60) * HOUR_PX)
               const height = Math.max(34, ((end - start) / 60) * HOUR_PX)
               return (
                 <button
@@ -154,18 +189,18 @@ export function PersonalCalendarPwa({
           <button className={styles.sheetBackdrop} type="button" aria-label="Stäng" onClick={() => setSelectedId(null)} />
           <section ref={sheetRef} className={styles.sheet} role="dialog" aria-modal="true" aria-label="Bokning" tabIndex={-1}>
             <div className={styles.sheetHandle} />
-            <div className={styles.sheetMeta}><span><i />{ownCalendar ? 'din bokning' : 'bokning'} · {day}</span><button type="button" onClick={() => setSelectedId(null)}>✕</button></div>
+            <div className={styles.sheetMeta}><span><i />{ownCalendar ? 'din bokning' : 'bokning'} · {day}</span><button type="button" aria-label="Stäng bokning" onClick={() => setSelectedId(null)}>✕</button></div>
             <div className={styles.sheetTitle}><strong>{fmtTime(selected.startTs, selected.timeZone)}</strong><span>{selected.serviceName ?? 'Bokning'}</span></div>
             <div className={styles.sheetCustomer}>
               {selected.customerId ? <ClientCard customerId={selected.customerId} locationId={selected.locationId} label={selected.customerLabel} bookingNote={selected.customerNote} /> : selected.customerLabel}
             </div>
-            {(selected.status === 'pending' || selected.status === 'confirmed') ? (
+            {ownCalendar && (selected.status === 'pending' || selected.status === 'confirmed') ? (
               <BookingStatusActions
                 bookingId={selected.id}
                 timeZone={selected.timeZone}
                 endTs={selected.endTs}
               />
-            ) : <p className={styles.sheetState}>Status: {selected.status}</p>}
+            ) : <p className={styles.sheetState}>Status: {STATUS_LABELS[selected.status] ?? 'Okänd status'}</p>}
           </section>
         </div>
       ) : null}

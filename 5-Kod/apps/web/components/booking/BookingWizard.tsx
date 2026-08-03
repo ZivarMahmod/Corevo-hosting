@@ -264,6 +264,7 @@ export function BookingWizard({
   const [clock, setClock] = useState(() => Date.now())
   // Bekräftelse-steget (in-page): satt när bokningen lyckats utan online-betalning.
   const [bookingId, setBookingId] = useState<string | null>(null)
+  const [bookingToken, setBookingToken] = useState<string | null>(null)
   const [bookingStatus, setBookingStatus] = useState<'pending' | 'confirmed' | null>(null)
   const bookingPresentation = bookingStatusPresentation(bookingStatus)
   // Step-3 specific load/error so it never gets confused with the empty state.
@@ -482,7 +483,7 @@ export function BookingWizard({
     // Bokningen är redan durabel; ett betalningsfel degraderar till betala på plats.
     if (res.requiresPayment) {
       try {
-        const pay = await startBookingCheckout(res.bookingId)
+        const pay = await startBookingCheckout(res.bookingId, res.confirmationToken)
         if (pay.ok) {
           window.location.href = pay.url
           return
@@ -493,10 +494,18 @@ export function BookingWizard({
     }
     if (onClose) {
       setBookingId(res.bookingId)
+      setBookingToken(res.confirmationToken || null)
       setBookingStatus(res.bookingStatus)
       setStep(5)
     } else {
-      router.push(`/boka/bekraftelse/${res.bookingId}`)
+      if (res.confirmationToken) {
+        router.push(`/boka/bekraftelse/${res.bookingId}?t=${encodeURIComponent(res.confirmationToken)}`)
+      } else {
+        setBookingId(res.bookingId)
+        setBookingToken(null)
+        setBookingStatus(res.bookingStatus)
+        setStep(5)
+      }
     }
   }
 
@@ -657,6 +666,7 @@ export function BookingWizard({
     setSlotsError(null)
     setSlotTakenNotice(null)
     setBookingId(null)
+    setBookingToken(null)
     setBookingStatus(null)
     setVerification(null)
     setPin('')
@@ -1692,9 +1702,12 @@ export function BookingWizard({
             </div>
 
             <div className="fc-ticket-actions">
-              {bookingId && bookingPresentation.canAddToCalendar ? (
+              {bookingId && bookingToken && bookingPresentation.canAddToCalendar ? (
                 // Befintlig .ics-väg: kvittosidan bygger kalenderfilen server-side.
-                <Link href={`/boka/bekraftelse/${bookingId}`} className="fc-btn-ink">
+                <Link
+                  href={`/boka/bekraftelse/${bookingId}?t=${encodeURIComponent(bookingToken)}`}
+                  className="fc-btn-ink"
+                >
                   Lägg till i kalender
                 </Link>
               ) : null}

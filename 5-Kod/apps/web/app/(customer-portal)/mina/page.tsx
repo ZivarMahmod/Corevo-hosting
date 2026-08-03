@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { InstallPromptCard } from '@/components/customer-portal/InstallPromptCard'
 import { PortalShell } from '@/components/customer-portal/PortalShell'
@@ -25,6 +26,17 @@ export default async function CustomerPortalHomePage() {
   const session = await getPortalSessionSnapshot()
   if (session.outcome === 'expired' && session.recoveryTenantSlug) {
     redirect(`/aterhamta/${session.recoveryTenantSlug}?session=expired`)
+  }
+  if (session.outcome === 'expired') {
+    return (
+      <PortalShell variant="recovery">
+        <section className="cp-recovery-screen" data-screen="session-missing">
+          <h1>Kom åt dina bokningar igen</h1>
+          <p>Öppna den personliga länken i din bokningsbekräftelse. Därifrån kan du begära en ny kod.</p>
+          <Link className="cp-btn cp-btn-primary" href="/hjalp">Få hjälp</Link>
+        </section>
+      </PortalShell>
+    )
   }
   if (session.outcome !== 'ok') {
     return <PortalShell active="bookings"><PortalErrorState variant="server" /></PortalShell>

@@ -9,6 +9,13 @@ import { monthlyFeeCents } from './billing'
 
 const PLATFORM_TZ = 'Europe/Stockholm'
 
+function assertPlatformRead(
+  label: string,
+  result: { error: { message: string } | null },
+): void {
+  if (result.error) throw new Error(`${label}: ${result.error.message}`)
+}
+
 export type PlatformMetrics = {
   tenantsTotal: number
   tenantsActive: number
@@ -25,6 +32,10 @@ export async function platformMetrics(): Promise<PlatformMetrics> {
     supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'suspended'),
     supabase.from('bookings').select('*', { count: 'exact', head: true }),
   ])
+  assertPlatformRead('platformMetrics tenants total', total)
+  assertPlatformRead('platformMetrics active tenants', active)
+  assertPlatformRead('platformMetrics suspended tenants', suspended)
+  assertPlatformRead('platformMetrics bookings', bookings)
   return {
     tenantsTotal: total.count ?? 0,
     tenantsActive: active.count ?? 0,
@@ -81,6 +92,10 @@ export async function platformOverview(now: Date = new Date()): Promise<Platform
       .lt('start_ts', toUtc),
     billingUnderlag(year, month),
   ])
+  assertPlatformRead('platformOverview tenants total', total)
+  assertPlatformRead('platformOverview active tenants', active)
+  assertPlatformRead('platformOverview suspended tenants', suspended)
+  assertPlatformRead('platformOverview monthly bookings', monthBookings)
 
   return {
     tenantsTotal: total.count ?? 0,
@@ -120,11 +135,13 @@ export async function bookingTrend(
   const { fromUtc } = monthRangeUtc(startY, startM)
   const { toUtc } = monthRangeUtc(year, month) // exclusive end = next month start
 
-  const { data } = await supabase
+  const result = await supabase
     .from('bookings')
     .select('start_ts')
     .gte('start_ts', fromUtc)
     .lt('start_ts', toUtc)
+  assertPlatformRead('bookingTrend bookings', result)
+  const { data } = result
 
   // Pre-seed the month buckets oldest→newest so the series is dense even with gaps.
   const buckets: BookingTrendPoint[] = []
@@ -230,6 +247,8 @@ export async function billingUnderlag(year: number, month: number): Promise<Bill
       .gte('start_ts', fromUtc)
       .lt('start_ts', toUtc),
   ])
+  assertPlatformRead('billingUnderlag tenants', tenantsRes)
+  assertPlatformRead('billingUnderlag bookings', bookingsRes)
 
   const completedByTenant = new Map<string, number>()
   for (const b of (bookingsRes.data ?? []) as { tenant_id: string }[]) {

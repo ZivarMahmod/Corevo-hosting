@@ -5,6 +5,9 @@ import { getAdminTenant } from '@/lib/admin/tenant'
 import { dashboardData, listLocations, staffDay, type AdminBooking } from '@/lib/admin/data'
 import { getAdminModuleStates, isBookingActivated } from '@/lib/admin/modules'
 import { resolvePlats } from '@/lib/admin/plats'
+import { requiredLocationId } from '@/lib/admin/location-scope'
+import { getAdminLocationPreferences } from '@/lib/admin/location-context'
+import { DEFAULT_MEMBER_PERMISSIONS, getMemberPermissions } from '@/lib/admin/member-permissions'
 import { todayInTz, dayRangeUtc, weekRangeUtc } from '@/lib/admin/dates'
 import { formatPrice, formatTime } from '@/lib/admin/format'
 import {
@@ -59,15 +62,45 @@ export default async function AdminPage({
   // Veckodagen i tenantens tidszon (0=sön … 6=lör).
   const weekday = new Date(`${today}T12:00:00Z`).getUTCDay()
 
-  const locations = (await listLocations(tenant.id)).filter((location) => location.active)
-  const locationFilter =
-    locations.length > 1
-      ? await resolvePlats(
-          sp.plats,
-          locations.map((location) => location.id),
+  const [allLocations, locationPreferences, memberPermissions] = await Promise.all([
+    listLocations(tenant.id),
+    getAdminLocationPreferences(user.id),
+    user.roleLevel === 3 && user.tenantId && user.staffId
+      ? getMemberPermissions({ tenantId: user.tenantId, staffId: user.staffId }).catch(
+          () => DEFAULT_MEMBER_PERMISSIONS,
         )
-      : ''
+      : Promise.resolve(null),
+  ])
+  const activeLocations = allLocations.filter((location) => location.active)
+  const allowedLocationIds = activeLocations.map((location) => location.id)
+  const scopedLocationId =
+    locationPreferences.accessScope === 'locations'
+      ? requiredLocationId(undefined, allowedLocationIds, locationPreferences.primaryLocationId)
+      : null
+  if (locationPreferences.accessScope === 'locations' && !scopedLocationId) {
+    return (
+      <section className="portal-section">
+        <h1>Översikt</h1>
+        <p className="prose">Välj en tillåten primär plats innan översikten kan öppnas.</p>
+      </section>
+    )
+  }
+  const locations =
+    locationPreferences.accessScope === 'locations'
+      ? activeLocations.filter((location) => location.id === scopedLocationId)
+      : activeLocations
+  const locationFilter =
+    locationPreferences.accessScope === 'locations'
+      ? scopedLocationId!
+      : locations.length > 1
+        ? await resolvePlats(
+            sp.plats,
+            locations.map((location) => location.id),
+          )
+        : ''
   const selectedLocation = locations.find((location) => location.id === locationFilter)
+  const canManageBookings =
+    user.roleLevel >= 6 || memberPermissions?.operationalRole === 'manager'
 
   const [data, roster, moduleStates] = await Promise.all([
     dashboardData(tenant.id, dayRange, prevRange, {
@@ -183,9 +216,11 @@ export default async function AdminPage({
           </div>
         </div>
         <div className={styles.headActions}>
-          <Button href="/admin/bokningar?ny=1" variant="subtle">
-            + Ny bokning
-          </Button>
+          {canManageBookings && (
+            <Button href="/admin/bokningar?ny=1" variant="subtle">
+              + Ny bokning
+            </Button>
+          )}
           <Button href="/admin/bokningar" variant="primary" icon="calendar">
             Öppna kalendern
           </Button>
@@ -258,14 +293,16 @@ export default async function AdminPage({
                   {data.todayCount === 0
                     ? 'Nya bokningar dyker upp här automatiskt.'
                     : `Alla dagens ${data.todayCount} tider är avklarade.`}
-                  <div className={styles.heroActions}>
-                    <Button href="/admin/bokningar?ny=1" variant="primary" size="sm">
-                      + Ny bokning
-                    </Button>
-                    <Button href="/admin/bokningar?blockera=1" variant="subtle" size="sm">
-                      Blockera tid
-                    </Button>
-                  </div>
+                  {canManageBookings && (
+                    <div className={styles.heroActions}>
+                      <Button href="/admin/bokningar?ny=1" variant="primary" size="sm">
+                        + Ny bokning
+                      </Button>
+                      <Button href="/admin/bokningar?blockera=1" variant="subtle" size="sm">
+                        Blockera tid
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -539,11 +576,13 @@ export default async function AdminPage({
                         <div className={styles.attnDetail}>
                           {nameOf(b)} avbokade · {durationOf(b)} min hos {b.staffTitle} frigjord
                         </div>
-                        <div className={styles.attnActions}>
-                          <Button href="/admin/bokningar?ny=1" variant="subtle" size="sm">
-                            Fyll luckan
-                          </Button>
-                        </div>
+                        {canManageBookings && (
+                          <div className={styles.attnActions}>
+                            <Button href="/admin/bokningar?ny=1" variant="subtle" size="sm">
+                              Fyll luckan
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
