@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { safeInternalRedirectPath } from './internal-redirect'
 
@@ -50,14 +49,18 @@ describe('safeInternalRedirectPath', () => {
   })
 
   it('gates the redirect both before and after login with the shared helper', () => {
-    const loginPage = readFileSync(resolve(process.cwd(), 'app/(auth)/login/page.tsx'), 'utf8')
-    const actions = readFileSync(resolve(process.cwd(), 'app/(auth)/actions.ts'), 'utf8')
+    const loginPage = readFileSync(new URL('../../app/(auth)/login/page.tsx', import.meta.url), 'utf8')
+    const actions = readFileSync(new URL('../../app/(auth)/actions.ts', import.meta.url), 'utf8')
 
     expect(loginPage).toContain(
       "import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'",
     )
     expect(loginPage).toContain('const next = safeInternalRedirectPath(sp.next)')
+    expect(loginPage).toContain(
+      'if (user && (await canRedirectExistingSession(user)))',
+    )
     expect(loginPage).toContain('redirect(next ?? portalHomeFor(user))')
+    expect(loginPage).toContain('loginAccessForHost({')
     expect(loginPage).toContain("<LoginForm next={next ?? ''} />")
     expect(loginPage).not.toContain("sp.next && sp.next.startsWith('/')")
 
