@@ -236,6 +236,13 @@ set local role authenticated;
 do $$
 declare v_lock bigint;
 begin
+  perform *
+  from public.preview_admin_time_off_impacts(
+    '13000000-0000-0000-0000-000000000011',
+    '13000000-0000-0000-0000-000000000041',
+    now(),
+    now() + interval '1 hour'
+  );
   select s.lock_version into v_lock
   from public.save_site_draft(
     '13000000-0000-0000-0000-000000000001',

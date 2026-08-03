@@ -178,12 +178,12 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_tenant uuid := (select private.tenant_id());
+  v_tenant uuid;
 begin
   if (select auth.uid()) is null then
     raise exception 'authentication_required' using errcode = '42501';
   end if;
-  perform private.require_location_admin_read(p_location);
+  v_tenant := private.require_location_admin_read(p_location);
   if p_start is null or p_end is null or p_end <= p_start
      or p_end - p_start > interval '370 days' then
     raise exception 'invalid_time_off_interval' using errcode = '22023';
@@ -249,7 +249,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_tenant uuid := (select private.tenant_id());
+  v_tenant uuid;
   v_location uuid;
   v_staff uuid;
   v_start timestamptz;
@@ -258,15 +258,19 @@ begin
   if (select auth.uid()) is null then
     raise exception 'authentication_required' using errcode = '42501';
   end if;
-  select t.location_id, t.staff_id, t.start_ts, t.end_ts
-    into v_location, v_staff, v_start, v_end
+  select t.tenant_id, t.location_id, t.staff_id, t.start_ts, t.end_ts
+    into v_tenant, v_location, v_staff, v_start, v_end
     from public.time_off t
-   where t.id = p_time_off and t.tenant_id = v_tenant;
+   where t.id = p_time_off;
   if not found then
     raise exception 'time_off_not_found' using errcode = 'P0002';
   end if;
   if v_location is null then
     raise exception 'legacy_time_off_owner_only' using errcode = '42501';
+  end if;
+  if v_tenant is distinct from (select private.tenant_id())
+     and not (select private.can_access_tenant(v_tenant)) then
+    raise exception 'time_off_not_found' using errcode = 'P0002';
   end if;
   perform private.require_location_admin_read(v_location);
 
