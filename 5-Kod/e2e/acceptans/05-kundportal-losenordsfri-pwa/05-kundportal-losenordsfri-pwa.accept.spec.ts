@@ -39,18 +39,20 @@ test.describe('05 Kundportal och PWA — source contract @readonly @contract', (
   })
 
   test('05-C03 manifest och installation är neutrala och cachar ingen portaldata', () => {
-    const manifest = read('apps/web/app/api/customer-portal/manifest/route.ts')
+    const manifest = JSON.parse(read('apps/web/public/pwa/customer-portal.webmanifest'))
     const install = read('apps/web/components/customer-portal/InstallPromptCard.tsx')
     const portalLayout = read('apps/web/app/(customer-portal)/layout.tsx')
 
-    expect(manifest).toContain("name: 'Mina bokningar · Corevo'")
-    expect(manifest).toContain("short_name: 'Mina bokningar'")
-    expect(manifest).toContain("start_url: '/mina/'")
-    expect(manifest).toContain("scope: '/mina/'")
-    expect(manifest).not.toMatch(/customerName|tenantName|bookingId/)
+    expect(manifest).toMatchObject({
+      name: 'Mina bokningar · Corevo',
+      short_name: 'Mina bokningar',
+      start_url: '/mina/',
+      scope: '/mina/',
+    })
+    expect(JSON.stringify(manifest)).not.toMatch(/customerName|tenantName|bookingId/)
     expect(install).toContain('beforeinstallprompt')
     expect(install).toContain('dismissed_twice')
-    expect(portalLayout).toContain('/api/customer-portal/manifest')
+    expect(portalLayout).toContain('/pwa/customer-portal.webmanifest')
     expect(portalLayout).not.toMatch(/serviceWorker|kund-sw\.js/)
   })
 
