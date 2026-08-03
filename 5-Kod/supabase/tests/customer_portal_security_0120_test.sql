@@ -593,7 +593,8 @@ begin
   -- A correctly digested expired session exposes only the tenant slug needed
   -- for recovery. A wrong digest exposes no slug and neither path returns PII.
   update private.customer_portal_sessions ps
-  set idle_expires_at = statement_timestamp() - interval '1 second'
+  set created_at = statement_timestamp() - interval '2 seconds',
+      idle_expires_at = statement_timestamp() - interval '1 second'
   where ps.public_id = v_session;
   select * into v_result
   from public.customer_portal_session_snapshot(v_session, v_session_digest);
