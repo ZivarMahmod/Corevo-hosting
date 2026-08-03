@@ -115,7 +115,7 @@ begin
     '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '9 hours',
-    'Känslig hårbotten', 'Test Kund', 'kund-0093@example.test', '0701234567',
+    'Känslig hårbotten', 'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011',
     '93000000-0000-0000-0000-000000000041', false
   ) r;
@@ -130,7 +130,7 @@ begin
      where c.id = v_customer
        and c.tenant_id = '93000000-0000-0000-0000-000000000001'
        and c.email = 'kund-0093@example.test'
-       and c.phone = '0701234567'
+       and c.phone is null
   ) then raise exception 'customer_contact_not_resolved'; end if;
 end $$;
 
@@ -141,7 +141,7 @@ do $$ begin
     '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '9 hours 30 minutes',
-    null, 'Test Kund', 'kund-0093@example.test', '0701234567',
+    null, 'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011',
     '93000000-0000-0000-0000-000000000042', false
   );
@@ -159,7 +159,7 @@ do $$ begin
     '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '9 hours 45 minutes',
-    null, 'Test Kund', 'kund-0093@example.test', '0701234567',
+    null, 'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011',
     '93000000-0000-0000-0000-000000000043', false
   );
@@ -176,7 +176,7 @@ do $$ begin
     'public-0093', '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '10 hours',
-    null, 'Test Kund', 'kund-0093@example.test', '0701234567',
+    null, 'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011', null, false
   );
   raise exception 'min_notice_bypassed';
@@ -190,7 +190,7 @@ do $$ begin
     'public-0093', '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '10 hours',
-    null, 'Test Kund', 'kund-0093@example.test', '0701234567',
+    null, 'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011', null, false
   );
   raise exception 'max_advance_bypassed';
@@ -206,7 +206,7 @@ do $$ begin
     'public-0093', '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '8 hours',
-    null, 'Test Kund', 'kund-0093@example.test', '0701234567',
+    null, 'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011', null, false
   );
   raise exception 'outside_schedule_succeeded';
@@ -228,7 +228,7 @@ do $$ begin
     'public-0093', '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '10 hours',
-    null, 'Test Kund', 'kund-0093@example.test', '0701234567',
+    null, 'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011', null, false
   );
   raise exception 'time_off_bypassed';
@@ -240,7 +240,7 @@ select * from public.create_storefront_booking_with_release(
   'public-0093', '93000000-0000-0000-0000-000000000021',
   '93000000-0000-0000-0000-000000000031',
   current_setting('corevo.test_0093_day')::timestamptz + interval '11 hours',
-  null, 'Test Kund', 'kund-0093@example.test', '0701234567',
+  null, 'Test Kund', 'kund-0093@example.test', null,
   '93000000-0000-0000-0000-000000000011',
   '93000000-0000-0000-0000-000000000044', false
 );
@@ -249,7 +249,7 @@ do $$ begin
     'public-0093', '93000000-0000-0000-0000-000000000021',
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '11 hours',
-    null, 'Annan Kund', 'annan-0093@example.test', '0709999999',
+    null, 'Annan Kund', 'annan-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011', null, false
   );
   raise exception 'collision_bypassed';
@@ -264,7 +264,7 @@ do $$ begin
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '12 hours',
     'Gäst: Test <test@example.test> 0701234567',
-    'Test Kund', 'kund-0093@example.test', '0701234567',
+    'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011', null, false
   );
   raise exception 'legacy_contact_note_succeeded';
@@ -277,7 +277,7 @@ do $$ declare v_booking uuid; begin
     '93000000-0000-0000-0000-000000000031',
     current_setting('corevo.test_0093_day')::timestamptz + interval '12 hours 30 minutes',
     'Gäst: min syster följer med',
-    'Test Kund', 'kund-0093@example.test', '0701234567',
+    'Test Kund', 'kund-0093@example.test', null,
     '93000000-0000-0000-0000-000000000011',
     '93000000-0000-0000-0000-000000000045', false
   ) r;
