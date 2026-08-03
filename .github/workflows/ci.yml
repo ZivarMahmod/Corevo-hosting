@@ -181,7 +181,9 @@ jobs:
         run: |
           set -o pipefail
           pnpm --filter @corevo/web exec wrangler deploy --dry-run \
-            --outdir "$RUNNER_TEMP/worker-bundle" 2>&1 | tee "$RUNNER_TEMP/wrangler-dry-run.txt"
+            --outdir "$RUNNER_TEMP/worker-bundle" \
+            --metafile "$RUNNER_TEMP/worker-bundle-meta.json" \
+            2>&1 | tee "$RUNNER_TEMP/wrangler-dry-run.txt"
           node scripts/check-worker-bundle.mjs \
             --input "$RUNNER_TEMP/wrangler-dry-run.txt" \
             --max-gzip-bytes 3145728
@@ -189,7 +191,9 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: worker-bundle-measurement
-          path: ${{ runner.temp }}/wrangler-dry-run.txt
+          path: |
+            ${{ runner.temp }}/wrangler-dry-run.txt
+            ${{ runner.temp }}/worker-bundle-meta.json
           retention-days: 30
 
   e2e:
