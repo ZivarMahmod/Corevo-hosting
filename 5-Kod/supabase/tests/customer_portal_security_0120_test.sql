@@ -105,6 +105,7 @@ declare
   v_service_b uuid := gen_random_uuid();
   v_booking_a uuid := gen_random_uuid();
   v_booking_b uuid := gen_random_uuid();
+  v_history_booking uuid;
   v_link uuid;
   v_session uuid := gen_random_uuid();
   v_result record;
@@ -470,8 +471,9 @@ begin
       gen_random_uuid(), v_tenant_a, v_location_a, v_staff_a, v_service_a, v_customer_a,
       statement_timestamp() + pg_catalog.make_interval(days => v_i),
       statement_timestamp() + pg_catalog.make_interval(days => v_i) + interval '30 minutes',
-      'completed', 10000
-    );
+      'confirmed', 10000
+    ) returning id into v_history_booking;
+    update public.bookings set status = 'completed' where id = v_history_booking;
   end loop;
 
   select public.customer_portal_list_bookings(
