@@ -426,19 +426,28 @@
 }
 
 @media (max-width: 767px) {
-  .shell { min-height: calc(100dvh - 52px - env(safe-area-inset-top)); overflow: visible; }
+  .shell { width: 100%; min-width: 0; }
+  .embedded {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
   .toolbar {
+    width: 100%;
+    min-width: 0;
     min-height: auto;
     padding: 9px 12px;
     flex-wrap: wrap;
     gap: 8px;
+    box-sizing: border-box;
   }
   .identity { min-width: 0; width: 100%; }
-  .tabs { order: 3; width: 100%; height: 44px; }
+  .tabs { order: 3; width: 100%; max-width: 100%; height: 44px; }
   .tabs button { min-height: 44px; padding-inline: 13px; }
   .tabs .activeTab { margin-block: 3px; }
   .tabs .activeTab::after { bottom: -3px; }
-  .toolbarActions { margin-left: auto; }
+  .toolbarActions { width: 100%; margin: 0; }
   .toolbarActions .deviceButtons,
   .toolbarActions > a,
   .toolbarActions > .secondary,
@@ -487,7 +496,16 @@
   }
   .mobileSwitch button[aria-pressed='true'] { background: var(--editor-card-2); color: var(--editor-text); }
   .workspace { min-height: 60dvh; display: block; }
-  .panel { padding: 12px 12px 142px; border-right: 0; }
+  .embedded .workspace { min-height: 0; overflow: visible; }
+  .panel,
+  .embedded .panel {
+    width: 100%;
+    padding: 12px 12px 142px;
+    border-right: 0;
+    box-sizing: border-box;
+  }
+  .embedded .panel { overflow: visible; }
+  .card { max-width: 100%; box-sizing: border-box; }
   .preview { height: calc(100dvh - 220px); min-height: 520px; padding-bottom: 142px; box-sizing: border-box; }
   .previewDevice,
   .mobileDevice { width: 100%; border: 0; }
@@ -498,7 +516,7 @@
     right: 12px;
     bottom: calc(82px + env(safe-area-inset-bottom));
     left: 12px;
-    z-index: 40;
+    z-index: var(--z-bo-drawer, 90);
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
