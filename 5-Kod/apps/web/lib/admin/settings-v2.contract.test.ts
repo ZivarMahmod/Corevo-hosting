@@ -133,8 +133,8 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
       expect(page).not.toContain('Alla inställningar')
     }
 
-    const nextConfig = readWeb('next.config.ts')
-    expect(nextConfig).toContain("source: '/admin/installningar/foretag', destination: '/admin/installningar/paminnelser', permanent: false")
+    const legacyCompany = readWeb('app/(admin)/admin/installningar/foretag/page.tsx')
+    expect(legacyCompany).toContain("redirect('/admin/installningar/paminnelser')")
 
     const bookingFlow = readWeb('app/(admin)/admin/installningar/bokningsflode/page.tsx')
     expect(bookingFlow).toContain('href="/admin/sida?flik=bokning"')

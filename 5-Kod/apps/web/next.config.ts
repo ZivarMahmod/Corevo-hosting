@@ -95,10 +95,6 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: false },
   async redirects() {
     return [
-      { source: '/admin/bokningar/vy', destination: '/admin/bokningar?vy=dag', permanent: false },
-      { source: '/admin/installningar/foretag', destination: '/admin/installningar/paminnelser', permanent: false },
-      { source: '/admin/sida/redigera', destination: '/admin/sida', permanent: false },
-      { source: '/admin/varumarke', destination: '/admin/sida', permanent: false },
       {
         source: `${PLATFORM_LEGACY_CUSTOMERS_PREFIX}/:path*`,
         destination: `${PLATFORM_CUSTOMERS_PREFIX}/:path*`,
