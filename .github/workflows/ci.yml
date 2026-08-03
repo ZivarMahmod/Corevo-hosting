@@ -194,6 +194,7 @@ jobs:
           path: |
             ${{ runner.temp }}/wrangler-dry-run.txt
             ${{ runner.temp }}/worker-bundle-meta.json
+            5-Kod/apps/web/.open-next/server-functions/default/apps/web/handler.mjs.meta.json
           retention-days: 30
 
   e2e:
