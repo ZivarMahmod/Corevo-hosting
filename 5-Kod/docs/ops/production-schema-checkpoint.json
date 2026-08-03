@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "0119",
-  "observedHistoryLatest": "0119",
+  "requiredLatest": "20260803011000",
+  "observedHistoryLatest": "20260803011000",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-07-21T17:27:16Z",
+  "verifiedAt": "2026-08-03T04:05:37Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:747df86d6bea021be61094557137e1817901ed84d3909b06e36c267a053fdde2",
-  "verificationEvidence": "docs/ops/database-migration-drift.md#pin-claim-hotfix-0119-2026-07-21",
+  "migrationFingerprint": "sha256:f5a1df3dd2115f2fd5427ba49edaddf80cb47abdb978f119a8a5c0c217c71c01",
+  "verificationEvidence": "Supabase production migration history verified through 20260803011000 on 2026-08-03",
   "reason": null
 }
