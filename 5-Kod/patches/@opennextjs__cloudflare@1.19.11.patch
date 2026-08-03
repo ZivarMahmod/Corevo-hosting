@@ -1,0 +1,15 @@
+diff --git a/dist/cli/build/patches/plugins/load-manifest.js b/dist/cli/build/patches/plugins/load-manifest.js
+index b0616a9a1a2729c3bc1cf03dd88edde8afa09d08..e95c853db3879e7fb812aeb31541242c0491f581 100644
+--- a/dist/cli/build/patches/plugins/load-manifest.js
++++ b/dist/cli/build/patches/plugins/load-manifest.js
+@@ -87,8 +87,8 @@ async function getEvalManifestRule(buildOpts) {
+     // Shared map of short hash prefix -> full SHA1 hash, used for collision resolution.
+     const prefixMap = new Map();
+     for (const path of manifestPaths) {
+-        if (path.endsWith("page_client-reference-manifest.js")) {
+-            // `page_client-reference-manifest.js` files could contain large repeated values.
++        if (path.endsWith("_client-reference-manifest.js")) {
++            // Page and route manifests can both contain large repeated values.
+             // Factor out large values into separate variables to reduce the overall size of the generated code.
+             let manifest = await readFile(path, "utf-8");
+             for (const key of [

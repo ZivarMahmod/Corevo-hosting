@@ -11,3 +11,6 @@ onlyBuiltDependencies:
 
 ignoredBuiltDependencies:
   - electron-winstaller
+
+patchedDependencies:
+  '@opennextjs/cloudflare@1.19.11': patches/@opennextjs__cloudflare@1.19.11.patch
