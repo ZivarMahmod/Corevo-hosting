@@ -2,9 +2,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { GET } from '@/app/api/pwa/admin-manifest/route'
 
 const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(WEB_ROOT, 'public', 'pwa', 'admin.webmanifest'), 'utf8'),
+)
 
 function pngSize(file: string): { width: number; height: number } {
   const bytes = fs.readFileSync(path.join(WEB_ROOT, 'public', file.replace(/^\//, '')))
@@ -12,29 +14,27 @@ function pngSize(file: string): { width: number; height: number } {
 }
 
 describe('admin-PWA', () => {
-  it('har en stabil appidentitet och startar i kalendern', async () => {
-    const response = GET()
-    const manifest = (await response.json()) as {
+  it('har en stabil appidentitet och startar i kalendern', () => {
+    const typedManifest = manifest as {
       id?: string
       start_url?: string
       scope?: string
       display?: string
     }
 
-    expect(response.headers.get('content-type')).toContain('application/manifest+json')
-    expect(manifest.id).toBe('/admin')
-    expect(manifest.start_url).toBe('/admin/bokningar?vy=dag')
-    expect(manifest.scope).toBe('/')
-    expect(manifest.display).toBe('standalone')
+    expect(typedManifest.id).toBe('/admin')
+    expect(typedManifest.start_url).toBe('/admin/bokningar?vy=dag')
+    expect(typedManifest.scope).toBe('/')
+    expect(typedManifest.display).toBe('standalone')
   })
 
-  it('annonserar verkliga PNG-ikoner med rätt mått', async () => {
-    const manifest = (await GET().json()) as {
+  it('annonserar verkliga PNG-ikoner med rätt mått', () => {
+    const typedManifest = manifest as {
       icons: { src: string; sizes: string; type: string }[]
     }
 
     for (const size of [192, 512]) {
-      const icon = manifest.icons.find((candidate) => candidate.sizes === `${size}x${size}`)
+      const icon = typedManifest.icons.find((candidate) => candidate.sizes === `${size}x${size}`)
       expect(icon?.type).toBe('image/png')
       expect(icon && pngSize(icon.src)).toEqual({ width: size, height: size })
     }

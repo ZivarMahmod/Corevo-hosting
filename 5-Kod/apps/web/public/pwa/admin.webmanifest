@@ -1,0 +1,23 @@
+{
+  "name": "Corevo Admin",
+  "short_name": "Corevo",
+  "description": "Din kalender, dina kunder och din sida - direkt på hemskärmen.",
+  "id": "/admin",
+  "start_url": "/admin/bokningar?vy=dag",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f6f2",
+  "theme_color": "#26261f",
+  "icons": [
+    { "src": "/pwa/admin-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa/admin-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa/admin-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/pwa/admin-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Dagens kalender", "short_name": "Kalender", "url": "/admin/bokningar?vy=dag" },
+    { "name": "Översikt", "short_name": "Översikt", "url": "/admin" },
+    { "name": "Kunder", "short_name": "Kunder", "url": "/admin/kunder" }
+  ]
+}

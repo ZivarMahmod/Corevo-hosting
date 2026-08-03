@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 // "som en enkel kalender de snabbt kan öppna på telefonen"). Manifestet länkas
 // bara här — aldrig globalt, annars blir storefronts installerbara som appen.
 export const metadata: Metadata = {
-  manifest: '/api/pwa/personal-manifest',
+  manifest: '/pwa/personal.webmanifest',
   appleWebApp: { capable: true, title: 'Corevo Personal', statusBarStyle: 'default' },
   // iPhone läser inte manifest-ikoner — hemskärmen kräver apple-touch-icon (PNG).
   icons: { apple: '/pwa/personal-icon-180.png' },

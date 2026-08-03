@@ -9,7 +9,7 @@ export const fetchCache = 'force-no-store'
 // Manifestet länkas bara från den host-isolerade kundportalen. Ingen service
 // worker registreras här: privata bokningar och profiluppgifter ska inte cacheas.
 export const metadata: Metadata = {
-  manifest: '/api/customer-portal/manifest',
+  manifest: '/pwa/customer-portal.webmanifest',
   appleWebApp: {
     capable: true,
     title: 'Mina bokningar · Corevo',

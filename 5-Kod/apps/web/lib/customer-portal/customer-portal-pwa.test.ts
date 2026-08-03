@@ -2,9 +2,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { GET } from '@/app/api/customer-portal/manifest/route'
 
 const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(WEB_ROOT, 'public', 'pwa', 'customer-portal.webmanifest'), 'utf8'),
+)
 
 function pngSize(file: string): { width: number; height: number } {
   const bytes = fs.readFileSync(path.join(WEB_ROOT, 'public', file.replace(/^\//, '')))
@@ -12,9 +14,8 @@ function pngSize(file: string): { width: number; height: number } {
 }
 
 describe('customer portal PWA', () => {
-  it('is neutral, portal-scoped, installable and never reuses the legacy customer worker', async () => {
-    const response = GET()
-    const manifest = await response.json() as {
+  it('is neutral, portal-scoped, installable and never reuses the legacy customer worker', () => {
+    const typedManifest = manifest as {
       name: string
       short_name: string
       id: string
@@ -26,8 +27,7 @@ describe('customer portal PWA', () => {
       icons: { src: string; sizes: string; type: string; purpose?: string }[]
     }
 
-    expect(response.headers.get('content-type')).toContain('application/manifest+json')
-    expect(manifest).toMatchObject({
+    expect(typedManifest).toMatchObject({
       name: 'Mina bokningar · Corevo',
       short_name: 'Mina bokningar',
       id: '/mina',
@@ -37,10 +37,10 @@ describe('customer portal PWA', () => {
       theme_color: '#191a17',
       background_color: '#191a17',
     })
-    expect(JSON.stringify(manifest))
+    expect(JSON.stringify(typedManifest))
       .not.toMatch(/freshcut|tenantName|customerName|token|bookingId|\?/)
 
-    expect(manifest.icons).toEqual([
+    expect(typedManifest.icons).toEqual([
       {
         src: '/pwa/corevo-icon-192.png',
         sizes: '192x192',
@@ -66,7 +66,7 @@ describe('customer portal PWA', () => {
         purpose: 'monochrome',
       },
     ])
-    for (const icon of manifest.icons) {
+    for (const icon of typedManifest.icons) {
       const size = Number.parseInt(icon.sizes, 10)
       expect(pngSize(icon.src)).toEqual({ width: size, height: size })
     }
@@ -75,7 +75,7 @@ describe('customer portal PWA', () => {
       path.join(WEB_ROOT, 'app', '(customer-portal)', 'layout.tsx'),
       'utf8',
     )
-    expect(layout).toContain("manifest: '/api/customer-portal/manifest'")
+    expect(layout).toContain("manifest: '/pwa/customer-portal.webmanifest'")
     expect(layout).toContain("apple: '/pwa/corevo-apple-touch-icon-180.png'")
     expect(pngSize('/pwa/corevo-apple-touch-icon-180.png')).toEqual({ width: 180, height: 180 })
     expect(layout).not.toMatch(/kund-sw|serviceWorker|navigator\.serviceWorker/)

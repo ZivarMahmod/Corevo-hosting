@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 // Plan 015: kund-PWA:n — manifestet gör /konto installerbart ("Lägg till på
 // hemskärmen"); service workern registreras av PushOptIn först vid opt-in.
-export const metadata: Metadata = { manifest: '/api/pwa/kund-manifest' }
+export const metadata: Metadata = { manifest: '/pwa/kund.webmanifest' }
 
 function WrongCustomerHost() {
   return (

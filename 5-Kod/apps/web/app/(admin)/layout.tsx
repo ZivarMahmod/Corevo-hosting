@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 // Manifestet länkas BARA här, aldrig globalt (annars blir varje storefront
 // installerbar som adminappen). Samma mönster som personal-portalen.
 export const metadata: Metadata = {
-  manifest: '/api/pwa/admin-manifest',
+  manifest: '/pwa/admin.webmanifest',
   appleWebApp: { capable: true, title: 'Corevo', statusBarStyle: 'default' },
   // iPhone/iPad läser inte manifest-ikoner — hemskärmen kräver apple-touch-icon (PNG).
   icons: { apple: '/pwa/admin-icon-180.png' },

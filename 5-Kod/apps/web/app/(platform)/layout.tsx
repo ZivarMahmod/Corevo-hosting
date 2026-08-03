@@ -6,7 +6,7 @@ import { RealtimeBookingsLazy } from '@/components/realtime/RealtimeBookingsLazy
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  manifest: '/api/pwa/platform-manifest',
+  manifest: '/pwa/platform.webmanifest',
   appleWebApp: { capable: true, title: 'Corevo Platform', statusBarStyle: 'black-translucent' },
   icons: { apple: '/pwa/admin-icon-180.png' },
 }
