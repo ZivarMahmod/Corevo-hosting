@@ -34,10 +34,6 @@ async function applyBrand(
   }
 }
 
-// Guest-note parsers live in ./parse (pure, unit-tested); re-exported here so
-// payment-webhook callers keep their stable import path.
-export { parseGuestEmail, parseGuestName } from './parse'
-
 async function safeSend(
   kind: string,
   to: string | null | undefined,

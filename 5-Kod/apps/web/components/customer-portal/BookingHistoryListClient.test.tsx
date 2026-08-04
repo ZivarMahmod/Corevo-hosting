@@ -8,7 +8,7 @@ import { BookingHistoryListClient } from './BookingHistoryListClient'
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null,
   verticalLabel: 'Frisörsalong', phone: null, address: null, mapUrl: null,
-  bookingOrigin: 'https://freshcut.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
+  bookingOrigin: 'https://freshcut.boka.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
   defaultCountry: 'SE', currency: 'SEK', cancellationCutoffHours: 24, customerName: 'Alex',
   lastSeenAt: '2026-07-22T12:00:00.000Z', absoluteExpiresAt: '2027-07-22T12:00:00.000Z',
 }
@@ -130,7 +130,7 @@ describe('BookingHistoryListClient', () => {
   })
 
   it('shows Boka igen only for completed/cancelled rows with a bound URL and never nests anchors', async () => {
-    const publicRebookUrl = 'https://freshcut.corevo.se/boka'
+    const publicRebookUrl = 'https://freshcut.boka.corevo.se/boka'
     const items = [
       booking(first.id, 'Genomförd', { publicRebookUrl }),
       booking(second.id, 'Avbokad', {

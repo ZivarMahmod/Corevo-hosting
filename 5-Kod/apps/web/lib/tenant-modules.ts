@@ -33,30 +33,6 @@ export function isModuleLive(states: TenantModuleStates, key: ModuleKey): boolea
   return moduleState(states, key) === 'live'
 }
 
-export function isModulePublicReadable(
-  states: TenantModuleStates,
-  key: ModuleKey,
-): boolean {
-  return isModuleLive(states, key)
-}
-
-export function isModuleAdminWritable(
-  states: TenantModuleStates,
-  key: ModuleKey,
-): boolean {
-  return isModuleLive(states, key)
-}
-
-/** Friendly app mirror of the DB-owned lifecycle; the DB guard remains authoritative. */
-export function canTransitionModuleState(
-  from: ModuleState,
-  to: ModuleState,
-  platformOperator: boolean,
-): boolean {
-  if (from === to) return true
-  return platformOperator
-}
-
 /**
  * Load a tenant's module states by tenant id. Cached per-tenant and tagged with the
  * SAME `tenant:<slug>` tag getTenantBySlug uses, so a platform module-toggle that

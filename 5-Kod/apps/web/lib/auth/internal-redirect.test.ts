@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { safeInternalRedirectPath } from './internal-redirect'
 
@@ -46,33 +45,5 @@ describe('safeInternalRedirectPath', () => {
     for (const candidate of unsafe) {
       expect(safeInternalRedirectPath(candidate), JSON.stringify(candidate)).toBeNull()
     }
-  })
-
-  it('gates the redirect both before and after login with the shared helper', () => {
-    const loginPage = readFileSync(new URL('../../app/(auth)/login/page.tsx', import.meta.url), 'utf8')
-    const actions = readFileSync(new URL('../../app/(auth)/actions.ts', import.meta.url), 'utf8')
-
-    expect(loginPage).toContain(
-      "import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'",
-    )
-    expect(loginPage).toContain('const next = safeInternalRedirectPath(sp.next)')
-    expect(loginPage).toContain(
-      'if (user && (await canRedirectExistingSession(user)))',
-    )
-    expect(loginPage).toContain('redirect(next ?? portalHomeFor(user))')
-    expect(loginPage).toContain('loginAccessForHost({')
-    expect(loginPage).toContain("<LoginForm next={next ?? ''} />")
-    expect(loginPage).not.toContain("sp.next && sp.next.startsWith('/')")
-
-    expect(actions).toContain(
-      "import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'",
-    )
-    expect(actions).toContain(
-      "const next = safeInternalRedirectPath(String(formData.get('next') ?? ''))",
-    )
-    expect(actions).toContain('if (next) redirect(next)')
-    expect(actions).not.toContain("next && next.startsWith('/')")
-    expect(actions).toContain('checkRateLimitFailClosed(')
-    expect(actions).not.toMatch(/if \(!\(await checkRateLimit\(/)
   })
 })

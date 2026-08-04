@@ -24,13 +24,6 @@
 
 /* ── delade primitiv ─────────────────────────────────────────────────────── */
 
-/* max-width:1240px; margin:0 auto; padding:0 32px */
-.siWrap {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
-
 /* eyebrow: 11px / 0.28em / versal / elviolett */
 .siEyebrow {
   margin: 0 0 8px;
@@ -78,35 +71,6 @@
   color: var(--tenant-primary-fg, var(--color-bg));
 }
 
-/* Filens "Boka →" — bara elviolett mikroversal, ingen platta */
-.siInk {
-  display: inline-block;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--tenant-primary-ink, var(--color-primary));
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-.siInk:hover {
-  color: var(--color-fg);
-}
-
-.siSrOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .siEmpty {
   margin: 0;
   font-size: 15px;
@@ -114,15 +78,6 @@
   color: var(--color-fg-2);
 }
 
-.siNotice {
-  margin: 0 0 24px;
-  border: 1px solid var(--color-line);
-  background: var(--color-accent-soft);
-  padding: 14px 18px;
-  font-weight: 600;
-  font-size: 13.5px;
-  color: var(--color-fg);
-}
 
 /* ── MASTHEAD ────────────────────────────────────────────────────────────── */
 
@@ -550,11 +505,6 @@
   color: var(--color-fg);
 }
 
-.siPage {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 52px 32px 0;
-}
 .siPageNarrow {
   max-width: 900px;
   margin: 0 auto;
@@ -1016,13 +966,11 @@
   .siSection,
   .siSectionWide,
   .siJournal,
-  .siPage,
   .siPageNarrow,
   .siPageOm,
   .siPageKontakt,
   .siShop,
-  .siBlogg,
-  .siWrap {
+  .siBlogg {
     padding-left: 20px;
     padding-right: 20px;
   }
@@ -1034,7 +982,6 @@
   /* tap-targets */
   .siSolid,
   .siUnderline,
-  .siInk,
   .siNavCta,
   .siPriceRow,
   .siSigBook {

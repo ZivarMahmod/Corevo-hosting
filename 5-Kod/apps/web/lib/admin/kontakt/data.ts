@@ -1,6 +1,16 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { ContactMessage } from '@/components/platform/ContactInboxCard'
+
+export type ContactMessage = {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  subject: string | null
+  message: string
+  status: 'new' | 'read' | 'archived'
+  created_at: string
+}
 
 // Kontakt-inkorgens LÄSVÄG (goal-64). Speglar lib/admin/offert/data.ts.
 //

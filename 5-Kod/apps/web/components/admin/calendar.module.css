@@ -107,8 +107,6 @@
   gap: 8px;
 }
 
-.iconBtn,
-.todayBtn,
 .viewBtn {
   min-height: 44px; /* touchmål — samma som toppnavens kontroller */
   border-radius: 8px;
@@ -119,29 +117,12 @@
   color: var(--c-ink-2);
 }
 
-.iconBtn {
-  width: 44px;
-  display: grid;
-  place-items: center;
-}
 
-.todayBtn {
-  padding: 0 14px;
-  font-size: 13px;
-  font-weight: 600;
-}
 
-.iconBtn:hover,
-.todayBtn:hover {
-  border-color: var(--c-line-strong);
-  color: var(--c-ink);
-}
 
 /* Tangentbordsfokus måste SYNAS på varje kontroll i verktygsraden — hela kalendern
    ska gå att köra utan mus (Wavys tydligaste svaghet: fokus avstängt, bokningar
    onåbara med tangentbord). */
-.iconBtn:focus-visible,
-.todayBtn:focus-visible,
 .viewBtn:focus-visible {
   outline: 2px solid var(--c-forest);
   outline-offset: -1px;
@@ -347,66 +328,6 @@
 .resSelect:focus-visible {
   outline: 2px solid var(--c-gold);
   outline-offset: 2px;
-}
-
-/* ── Resurschips (litet team) ───────────────────────────────────────────────── */
-.resChips {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.resChips::-webkit-scrollbar {
-  display: none;
-}
-
-.resChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  flex: none;
-  min-height: 36px;
-  padding: 0 13px;
-  border: 1px solid var(--c-line);
-  border-radius: 999px;
-  background: var(--c-paper);
-  color: var(--c-ink-3);
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.resChip:hover {
-  border-color: var(--c-line-strong);
-  color: var(--c-ink);
-}
-.resChip:focus-visible {
-  outline: 2px solid var(--c-forest);
-  outline-offset: 2px;
-}
-
-/* Aktivt filter: fylld ton + full text. Prickens färg bär vem; texten bär det också. */
-.resChipOn {
-  border-color: var(--c-line-strong);
-  background: var(--c-paper-3);
-  color: var(--c-ink);
-  font-weight: 600;
-}
-
-.resChipDot {
-  width: 9px;
-  height: 9px;
-  flex: none;
-  border-radius: 999px;
-}
-
-/* Touch: chip-raden behåller 44px höjd som resten av verktygsraden. */
-@media (min-width: 761px) and (max-width: 1024px) {
-  .resChip {
-    min-height: 44px;
-  }
 }
 
 /* ── Sök ────────────────────────────────────────────────────────────────────── */
@@ -1837,11 +1758,6 @@
     display: none;
   }
 
-  .resChips {
-    max-width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
 
   .periodLabel {
     font-size: 17px;
@@ -1954,9 +1870,6 @@
     grid-auto-rows: minmax(58px, 1fr);
   }
 
-  .monthCount {
-    font-size: 10.5px;
-  }
 
   .mobileCalendarDock {
     position: relative;
@@ -2025,30 +1938,8 @@
     transition: opacity 140ms ease;
   }
 
-  .mobileStep {
-    display: flex;
-    flex: none;
-    overflow: hidden;
-    border: 1px solid var(--c-line-strong);
-    border-radius: 9px;
-    background: var(--c-paper);
-  }
 
-  .mobileStep button {
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    border: 0;
-    background: transparent;
-    color: var(--c-ink-2);
-    cursor: pointer;
-  }
 
-  .mobileStep button + button {
-    border-left: 1px solid var(--c-line);
-  }
 
   .mobileDayStepButton {
     width: 44px;
@@ -2281,7 +2172,6 @@
 
   .mobileDateToggle:focus-visible,
   .mobileTodayBtn:focus-visible,
-  .mobileStep button:focus-visible,
   .mobileDayStepButton:focus-visible,
   .mobileViewSwitch button:focus-visible,
   .mobileBlockAction:focus-visible,
@@ -2315,8 +2205,6 @@
     --col-min: 132px;
   }
 
-  .iconBtn,
-  .todayBtn,
   .viewBtn {
     min-height: 44px; /* fingret, inte muspekaren, styr här */
   }
@@ -2341,10 +2229,6 @@
     padding: 6px 10px;
   }
 
-  .iconBtn,
-  .todayBtn {
-    min-height: 38px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2362,10 +2246,6 @@
   }
   .blockGhostRollback {
     transition: none;
-  }
-  .confirmBackdrop,
-  .confirmCard {
-    animation: none;
   }
 }
 
@@ -2447,9 +2327,6 @@
     font-size: 10px;
   }
 
-  .mobileTodayActive {
-    box-shadow: inset 0 0 0 1px var(--c-forest);
-  }
 
   .mobileViewSwitch {
     min-width: 0;
@@ -2529,9 +2406,6 @@
     font-size: 8px;
   }
 
-  .mobileStep {
-    display: none;
-  }
 
   .mobileDayStepButton {
     display: none;

@@ -46,10 +46,6 @@ export function isActive(state: ReturnType<typeof moduleState>): boolean {
   return state === 'live'
 }
 
-// Module-key lists live in a plain (server-safe) module so the look preview ROUTE (a
-// server component) can import them; re-exported here for existing client importers.
-export { BUILT_MAIN, ROADMAP_MAIN, KONTO_KEYS, ALL_PREVIEW_MODULES }
-
 /** The module keys ACTIVE for this cfg — what flows into the render-bron look preview
  *  (goal-36: "välj modul → vävs in i den valda mallen, syns i previewen"). The studio
  *  threads these to the look iframe; the route rebuilds a cfg from them. */

@@ -98,21 +98,6 @@
   color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
 }
 
-/* Paused: ärlig vy, inte 404. Färg är inte ensam bärare — den har kant och text. */
-.paused {
-  margin: 20px 0 0;
-  padding: 12px 14px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: var(--color-fg, #232520);
-  background: color-mix(in srgb, var(--color-accent, #c8a24a) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-accent, #c8a24a) 30%, transparent);
-  border-left-width: 4px;
-  border-radius: var(--sf-radius, var(--radius, 4px));
-}
-
 .buy {
   margin-top: 12px;
 }

@@ -1,6 +1,4 @@
-// Server helper: build the WizardService[] the embedded BookingWizard expects,
-// identical to app/boka/page.tsx (services + staff + staff_services join), so the
-// in-page drawer behaves exactly like the /boka route.
+// Server helper for every BookingWizard surface.
 //
 // The (public) layout now runs this on EVERY public page (it renders the booking
 // provider), so the staff/links query is wrapped in unstable_cache (per tenant,
@@ -9,6 +7,7 @@ import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getServices } from '@/lib/tenant-data'
 import {
+  readBookingMode,
   readPickerMode,
   readStaffAvatarMode,
   type PickerMode,
@@ -137,7 +136,11 @@ export async function getWizardLocations(
  *  läge. Rå-läses ur tenant_settings.settings via SAMMA seam som readBookingVariant
  *  (readPickerMode/readStaffAvatarMode äger parse + default + tolerans), cachat per
  *  tenant precis som services/locations ovan. Osatt/okänt → calendar / initialer. */
-export type BookingPrefs = { pickerMode: PickerMode; staffAvatarMode: StaffAvatarMode }
+export type BookingPrefs = {
+  mode: ReturnType<typeof readBookingMode>
+  pickerMode: PickerMode
+  staffAvatarMode: StaffAvatarMode
+}
 
 export async function getBookingPrefs(tenantId: string, slug: string): Promise<BookingPrefs> {
   return unstable_cache(
@@ -149,6 +152,7 @@ export async function getBookingPrefs(tenantId: string, slug: string): Promise<B
         .eq('tenant_id', tenantId)
         .maybeSingle()
       return {
+        mode: readBookingMode(data?.settings),
         pickerMode: readPickerMode(data?.settings),
         staffAvatarMode: readStaffAvatarMode(data?.settings),
       }

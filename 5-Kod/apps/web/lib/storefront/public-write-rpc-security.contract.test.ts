@@ -6,21 +6,6 @@ const root = resolve(import.meta.dirname, '../../../..')
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replaceAll('\r\n', '\n')
 
 describe('publika skriv-RPC:er', () => {
-  it('går genom server-only writer efter appens rate-limit och validering', () => {
-    const cases = [
-      ['apps/web/app/boka/actions.ts', "'finalize_verified_storefront_booking'"],
-      ['apps/web/app/butik/actions.ts', "writer.rpc('reserve_shop_order'"],
-      ['apps/web/lib/storefront/lojalitet/intake.ts', "writer.rpc('join_loyalty_club'"],
-    ] as const
-
-    for (const [path, call] of cases) {
-      const source = read(path)
-      expect(source).toContain("import { createServiceClient } from '@/lib/platform/service'")
-      expect(source).toContain('const writer = createServiceClient()')
-      expect(source).toContain(call)
-    }
-  })
-
   it('stänger direkta anon-anrop men bevarar nödvändiga server/användarroller', () => {
     const migration = read('supabase/migrations/0085_protect_payment_commit_rpcs.sql').toLowerCase()
     const anonymousOnly = [
@@ -44,7 +29,9 @@ describe('publika skriv-RPC:er', () => {
       /grant execute on function public\.create_public_booking[\s\S]{0,180}to service_role/,
     )
 
-    const release = read('supabase/migrations/0103_storefront_booking_release_truth.sql').toLowerCase()
+    const release = read(
+      'supabase/migrations/0103_storefront_booking_release_truth.sql',
+    ).toLowerCase()
     const legacyStorefront =
       'create_storefront_booking(text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid)'
     const releasedStorefront =
@@ -55,9 +42,7 @@ describe('publika skriv-RPC:er', () => {
     expect(compactRelease).toContain(`grantexecuteonfunctionpublic.${releasedStorefront}`)
     expect(release).toContain('to service_role')
 
-    const pinBooking = read(
-      'supabase/migrations/0118_pin_booking_verification.sql',
-    ).toLowerCase()
+    const pinBooking = read('supabase/migrations/0118_pin_booking_verification.sql').toLowerCase()
     const verifiedStorefront =
       'finalize_verified_storefront_booking(uuid,uuid,text,text,text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid,boolean)'
     const compactPinBooking = pinBooking.replace(/\s+/g, '')

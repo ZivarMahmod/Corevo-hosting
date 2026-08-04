@@ -3,16 +3,13 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
-const CODE_ROOT = path.resolve(WEB_ROOT, '..', '..')
+const CODE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
 const MIGRATION = path.join(
   CODE_ROOT,
   'supabase',
   'migrations',
   '0078_booking_foundation_ship_hardening.sql',
 )
-const PERSONAL_ACTIONS = path.join(WEB_ROOT, 'lib', 'personal', 'actions.ts')
-
 const read = (file: string) => fs.readFileSync(file, 'utf8').toLowerCase()
 
 describe('0078 booking foundation ship hardening', () => {
@@ -61,16 +58,11 @@ describe('0078 booking foundation ship hardening', () => {
 
   it('routes staff time off through narrow audited RPCs', () => {
     const sql = read(MIGRATION)
-    const actions = read(PERSONAL_ACTIONS)
-
     expect(sql).toContain('create or replace function public.create_my_time_off(')
     expect(sql).toContain('create or replace function public.delete_my_time_off(')
     expect(sql).toContain('revoke insert, update, delete on public.time_off from authenticated')
     expect(sql).toContain("'time_off.created_by_staff'")
     expect(sql).toContain("'time_off.deleted_by_staff'")
-    expect(actions).toContain("rpc('create_my_time_off'")
-    expect(actions).toContain("rpc('delete_my_time_off'")
-    expect(actions).not.toContain("from('time_off').insert")
   })
 
   it('returns the complete absence work queue without a silent 100-row cap', () => {

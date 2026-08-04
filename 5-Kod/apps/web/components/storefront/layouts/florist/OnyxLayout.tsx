@@ -22,7 +22,7 @@ import styles from './onyx.module.css'
  *
  * Filen har varken galleri-band, presentkortsrad eller team-sektion på hemmet — och då
  * har inte mallen det heller. Att lägga till en sektion "för att grannmallen har en" ÄR
- * att improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * att improvisera bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * MODUL-GATINGEN är plattformens och HELIG: drop-rutnätet ritas bara när shopen har
  * teasers, journal-raderna bara när bloggen har inlägg, "SE DROPPET" pekar på /shop bara
@@ -32,7 +32,7 @@ import styles from './onyx.module.css'
  * AVVIKELSEN ÄR ÅTGÄRDAD (goal-64): filens tredje väg "Kretsen" (lojalitet) hade ingen
  * route i Corevo, så kortet renderades som TEXT UTAN LÄNK — hellre olänkat än en 404.
  * Klubben har nu en riktig sida (/klubb), och kortet länkar dit NÄR modulen går att nå.
- * Lojalitet av/draft → ingen länk, precis som förr: modul-gaten är helig, en länk till en
+ * Lojalitet av → ingen länk, precis som förr: modul-gaten är helig, en länk till en
  * stängd modul är 404-fällan.
  *
  * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
@@ -124,7 +124,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                       aria-label={`${p.name} — visa produkten`}
                     >
-                      <span className={styles.onSrOnly}>{p.imageAlt ?? p.name}</span>
+                      <span className="sr-only">{p.imageAlt ?? p.name}</span>
                     </Link>
                   </div>
                   <div className={styles.onCardRow}>

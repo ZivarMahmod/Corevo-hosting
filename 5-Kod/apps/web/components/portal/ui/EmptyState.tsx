@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Card } from './Card'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
+import type { IconName } from '@/lib/ui-icons'
 
 /** Normerat tomt läge för admin-modulernas listor (goal-55 steg 1).
  *  Utan ikon = Shop/Blogg-mönstret (eyebrow-rubrik + brödtext i ett Card);

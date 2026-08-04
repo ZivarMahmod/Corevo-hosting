@@ -5,11 +5,6 @@ import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getSettingsRow, listServices, listStaff, listLocations, staffDay } from '@/lib/admin/data'
 import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
-import {
-  bookingModeFromState,
-  BOOKING_MODE_COPY,
-  type BookingMode,
-} from '@/lib/admin/booking-mode'
 import { settingsCategories, type SettingsCategoryId } from '@/lib/admin/settings-map'
 import { createClient } from '@/lib/supabase/server'
 import { todayInTz } from '@/lib/admin/dates'
@@ -30,11 +25,6 @@ const VALID_CATEGORIES = new Set<SettingsCategoryId>([
   'tjanster', 'personal', 'scheman', 'platser', 'bokningsregler', 'bokningsflode',
   'betalning', 'paminnelser', 'integrationer', 'roller', 'konto', 'sekretess',
 ])
-
-const BOOKING_MODE_TONE: Record<BookingMode, SettingsV2Status['tone']> = {
-  pa: 'success',
-  av: 'neutral',
-}
 
 export default async function SettingsPage({
   searchParams,
@@ -79,9 +69,7 @@ export default async function SettingsPage({
   const activeStaff = staff.filter((member) => member.active).length
   const activeAccounts = staff.filter((member) => member.active && member.profile_id).length
   const withHoursToday = today.filter((member) => member.start && member.end).length
-  const bookingMode = bookingModeFromState(
-    'booking' in moduleStates ? moduleAdminState(moduleStates, 'booking') : undefined,
-  )
+  const bookingLive = moduleAdminState(moduleStates, 'booking') === 'live'
   const chargesOn = tenantResult.data?.stripe_charges_enabled === true
   const bookingPaymentReleased = commerceReleaseGate(tenant.id).bookingPayment
   const paymentStatus = paymentSettingsStatus(
@@ -104,8 +92,8 @@ export default async function SettingsPage({
       ? { label: `${locations.length} ${locations.length === 1 ? 'plats' : 'platser'}`, tone: 'neutral' }
       : { label: 'Ingen plats', tone: 'warning' },
     bokningsregler: {
-      label: BOOKING_MODE_COPY[bookingMode].label,
-      tone: BOOKING_MODE_TONE[bookingMode],
+      label: bookingLive ? 'På' : 'Av',
+      tone: bookingLive ? 'success' : 'neutral',
     },
     bokningsflode: published
       ? { label: 'Publicerat', tone: 'success' }

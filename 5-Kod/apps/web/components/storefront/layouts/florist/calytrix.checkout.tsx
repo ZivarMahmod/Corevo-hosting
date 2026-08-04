@@ -59,7 +59,7 @@ export function CalytrixCheckout({
     totals,
     currency,
     placeOrder,
-  } = useCheckout({ shippingOptions, paymentMethods })
+  } = useCheckout({ fulfilment, shippingOptions, paymentMethods })
 
   const [formError, setFormError] = useState<string | null>(null)
   const [fields, setFields] = useState({ name: '', email: '', phone: '', address: '', note: '' })
@@ -86,20 +86,12 @@ export function CalytrixCheckout({
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
-    const name = fields.name.trim()
-    const email = fields.email.trim()
-    const phone = fields.phone.trim()
-    if (!name || !email || !phone) return setFormError('Fyll i namn, e-post och telefon.')
-    if (!/.+@.+\..+/.test(email)) return setFormError('Kontrollera e-postadressen.')
-    if (needsAddress && !fields.address.trim()) return setFormError('Fyll i leveransadress.')
-    if (!acceptTerms) return setFormError('Godkänn köpvillkoren för att slutföra köpet.')
-
     const err = await placeOrder({
-      name,
-      email,
-      phone,
-      shipAddress: needsAddress ? fields.address.trim() : undefined,
-      note: fields.note.trim() || undefined,
+      name: fields.name,
+      email: fields.email,
+      phone: fields.phone,
+      shipAddress: needsAddress ? fields.address : undefined,
+      note: fields.note,
       acceptTerms,
     })
     if (err) setFormError(err)

@@ -1,26 +1,5 @@
-/* ===========================================================================
-   Booking world — global classes. Split out of globals.css (FAS 0) so the
-   booking + back-office agents can work in parallel without colliding. These
-   stay GLOBAL (plain className strings, no CSS modules, no renames); imported
-   in app/layout.tsx (the root layout — the only place Next App Router allows
-   extra global CSS), right after globals.css.
-
-   REDESIGN (design-paketet "Frisörbokningsformulär redesign", kanon:
-   4-Dokument-Underlag/01-acceptans/…/design_handoff_bokningsflode/):
-   "FreshCut / Barbershop-editorial" — varm paper-canvas, espresso-ink, en
-   burnt-rust-accent, Caslon-serif för frågorna, Franklin för UI och Plex Mono
-   för prislist-meta. ALLA färger re-uttrycks ovanpå kontrakts-tokens
-   (--color-accent/-fg/-bg/-surface) så varje salongs tema styr paletten;
-   FreshCut-hexen ur README-tabellen ligger kvar som sista fallback.
-   Radius: VEKTOR-REGELN (goal-62) — MALLEN äger formen. Radien läses ur
-   `var(--sf-radius, 0)`, precis som köp-rälsen (varukorg/kassa/product/kurser)
-   redan gör, i stället för en hårdkodad 0. Fallbacken 0 gör att en mall som inte
-   sätter --sf-radius (flora + freshcut, levande kunder) renderar EXAKT som förr;
-   en mall som sätter den får bokningen i SIN form i stället för en kantig
-   token-ö. Undantag som bokningen själv äger (aldrig mallens): avatar-discs 50%,
-   bottom-sheet-toppkanter 20px, stämpeln 2px.
-   Borders: 1.5px line-2 interaktivt / 1px line strukturellt.
-   =========================================================================== */
+/* Booking world. Global because app/layout.tsx is the shared Next CSS boundary.
+   Tenant tokens own colors and --sf-radius owns template geometry. */
 
 /* ---- boka route chrome (unchanged) ---- */
 .boka-header { border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent); }
@@ -517,8 +496,7 @@
    wizardens stabila klasser (.wizard-*, .fc-*) — ingen annan mall träffas
    (varje selektor bär [data-theme='calytrix']). Tonen = PACKBORDET
    (calytrix-cart.module.css): plommon & vinrött, rak geometri (radie 0),
-   varan/valet LYFTER på skuggor. Zivars element (uiverse-komponentbibliotek.md),
-   anatomin lånad — aldrig koden:
+   varan/valet LYFTER på skuggor. Anatomin är mallägd:
      · rad 10917 .pill-radio-container → valmarkeringen är en vinröd platta
        som GLIDER in på valt kort (transform, aldrig layout-egenskaper)
      · rad 5779  .pushable → "Bekräfta bokning" trycks ner FYSISKT (kant-

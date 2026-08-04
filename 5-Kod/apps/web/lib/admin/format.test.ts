@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   ALLOWED_FROM,
   BOOKING_STATUSES,
-  cancellationTrace,
   relativeVisitSv,
   isInactiveSince,
   restoreBlockedByRefund,
@@ -72,29 +71,6 @@ describe('restoreBlockedByRefund (refund-vakten)', () => {
 
   it('gäller BARA avbokade — en completed med refund blockeras inte av den här vakten', () => {
     expect(restoreBlockedByRefund('completed', 'refunded')).toBe(false)
-  })
-})
-
-describe('cancellationTrace (ångraloggens spår)', () => {
-  const NOW = new Date('2026-07-14T12:00:00.000Z')
-
-  it('stämplar när+vem vid avbokning', () => {
-    expect(cancellationTrace('confirmed', 'cancelled', NOW)).toEqual({
-      cancelled_at: NOW.toISOString(),
-      cancelled_by: 'business',
-    })
-  })
-
-  it('NOLLAR spåret vid återställning — annars spökar bokningen kvar i ångraloggen', () => {
-    expect(cancellationTrace('cancelled', 'confirmed', NOW)).toEqual({
-      cancelled_at: null,
-      cancelled_by: null,
-    })
-  })
-
-  it('rör inte spåret för övergångar som inte passerar cancelled', () => {
-    expect(cancellationTrace('pending', 'confirmed', NOW)).toEqual({})
-    expect(cancellationTrace('confirmed', 'completed', NOW)).toEqual({})
   })
 })
 

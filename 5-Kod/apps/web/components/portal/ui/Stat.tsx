@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Card } from './Card'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
+import type { IconName } from '@/lib/ui-icons'
 
 /**
  * Back-office KPI card — big Playfair number in forest, eyebrow label, optional

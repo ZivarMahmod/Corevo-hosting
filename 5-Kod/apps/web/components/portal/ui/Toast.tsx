@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
+import type { IconName } from '@/lib/ui-icons'
 
 export type ToastTone = 'success' | 'warning' | 'info' | 'gold'
 

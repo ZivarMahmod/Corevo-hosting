@@ -3,11 +3,9 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 
 const mocks = vi.hoisted(() => ({ logout: vi.fn(), replace: vi.fn() }))
-vi.mock('@/app/(customer-portal)/mina/actions', () => ({ logoutPortalAction: mocks.logout }))
+vi.mock('@/lib/customer-portal/server-actions', () => ({ logoutPortalAction: mocks.logout }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.replace }) }))
 
 import {
@@ -128,12 +126,6 @@ describe('current-device logout boundary', () => {
   })
 
   it('forces a server recheck when a private portal page returns from BFCache', () => {
-    const source = readFileSync(resolve(
-      process.cwd(), 'components/customer-portal/PortalSessionBoundary.tsx',
-    ), 'utf8')
-    expect(source).toContain("addEventListener('pageshow'")
-    expect(source).toContain('(event as PageTransitionEvent).persisted')
-    expect(source).toContain('window.location.reload()')
     const reload = vi.fn()
     const target = new EventTarget()
     const remove = installPortalPageShowGuard(reload, target)

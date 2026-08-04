@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/lib/platform/actions', () => ({
+vi.mock('@/lib/platform/actions/services', () => ({
   createTenantService: async () => ({}),
   updateTenantService: async () => ({}),
   deleteTenantService: async () => ({}),

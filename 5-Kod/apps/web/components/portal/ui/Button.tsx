@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { CSSProperties, ReactNode, Ref } from 'react'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
+import type { IconName } from '@/lib/ui-icons'
 
 export type ButtonVariant = 'primary' | 'gold' | 'ghost' | 'subtle'
 export type ButtonSize = 'sm' | 'md' | 'lg'

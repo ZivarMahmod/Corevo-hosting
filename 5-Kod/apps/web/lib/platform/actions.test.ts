@@ -52,6 +52,7 @@ const siteRevisionCtxMock = vi.fn()
 vi.mock('./guard', () => ({
   platformCtx: () => platformCtxMock(),
   platformAdminCtx: () => platformCtxMock(),
+  sidaCtx: () => platformCtxMock(),
   siteRevisionCtx: (input: unknown) => siteRevisionCtxMock(input),
 }))
 
@@ -84,16 +85,11 @@ vi.mock('@/lib/cloudflare/custom-hostnames', () => ({
   getCustomHostnameByName: (...a: unknown[]) => cfGet(...(a as [])),
   deleteCustomHostname: (...a: unknown[]) => cfDelete(...(a as [])),
 }))
-// Top-level imports in actions.ts that pull server-only/cloudflare deps — never
+// Top-level imports in the action modules that pull server-only/cloudflare deps — never
 // exercised by createTenant without a logo File, but must import cleanly.
 vi.mock('@/lib/admin/tenant', () => ({
   revalidateTenant: vi.fn(),
   revalidateTenantById: vi.fn(),
-}))
-vi.mock('@/lib/r2/upload', () => ({
-  uploadImage: vi.fn(async () => ({ ok: false })),
-  uploadErrorMessage: () => '',
-  pruneRemovedImages: vi.fn(async () => {}),
 }))
 const managedMediaMocks = vi.hoisted(() => ({
   uploadManagedImage: vi.fn(),
@@ -105,19 +101,12 @@ vi.mock('@/lib/media/lifecycle', () => ({
   managedUploadErrorMessage: () => '',
 }))
 
-import {
-  createTenant,
-  createPlatformCustomer,
-  sendPasswordReset,
-  addCustomDomain,
-  verifyCustomDomain,
-  removeCustomDomain,
-  setTenantStatus,
-  setServiceStaff,
-  uploadServiceImage,
-  updateBookingSettings,
-} from './actions'
-import { resolveOwnerRole } from './owner-role'
+import { setTenantCustomerPortalMode, updateBookingSettings } from './actions/data'
+import { addCustomDomain, removeCustomDomain, verifyCustomDomain } from './actions/domains'
+import { createPlatformCustomer, sendPasswordReset } from './actions/people'
+import { setServiceStaff, uploadServiceImage } from './actions/services'
+import { setTenantStatus } from './actions/status'
+import { createTenant } from './actions/tenants'
 
 // A fake service client whose invite + metadata calls succeed, so createTenant walks
 // the users-insert path (where full_name + role_id live).
@@ -155,27 +144,6 @@ function fd(entries: Record<string, string>): FormData {
 
 beforeEach(() => {
   vi.clearAllMocks()
-})
-
-// ── #11 — the role seam (pure, byte-identical default) ───────────────────────────
-describe('resolveOwnerRole (#11 owner-role seam)', () => {
-  it('defaults to salon_admin/6 for empty / null (byte-identical to the old hardcode)', () => {
-    expect(resolveOwnerRole(null)).toEqual({ name: 'salon_admin', level: 6 })
-    expect(resolveOwnerRole('')).toEqual({ name: 'salon_admin', level: 6 })
-    expect(resolveOwnerRole('   ')).toEqual({ name: 'salon_admin', level: 6 })
-  })
-  it('resolves a known role to its mapped level', () => {
-    expect(resolveOwnerRole('salon_admin')).toEqual({ name: 'salon_admin', level: 6 })
-  })
-  it('an unknown value falls back to salon_admin (no foot-gun, no regression)', () => {
-    expect(resolveOwnerRole('staff')).toEqual({ name: 'salon_admin', level: 6 })
-    expect(resolveOwnerRole('super_admin')).toEqual({ name: 'salon_admin', level: 6 })
-  })
-  it('prototype-chain keys fall back too (Object.hasOwn, not `in` — no garbage level)', () => {
-    for (const k of ['constructor', '__proto__', 'toString', 'valueOf', 'hasOwnProperty']) {
-      expect(resolveOwnerRole(k)).toEqual({ name: 'salon_admin', level: 6 })
-    }
-  })
 })
 
 describe('setServiceStaff', () => {
@@ -294,6 +262,7 @@ describe('createTenant writes the goal-20 columns', () => {
       locale: 'sv-SE',
       currency: 'SEK',
       default_timezone: 'Europe/Stockholm',
+      settings: { customer_portal: { mode: 'off' } },
     })
     expect(captured.locations?.[0]).toMatchObject({ timezone: 'Europe/Stockholm' })
   })
@@ -368,15 +337,9 @@ describe('createTenant writes the goal-20 columns', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/kunder', 'layout')
   })
 
-  it('creates the role from the resolved seam — default salon_admin/6 (#11)', async () => {
+  it('creates the tenant owner as salon_admin/6', async () => {
     const captured = seedCtx()
     await createTenant({}, tenantFd({ name: 'Klippoteket', slug: 'klippoteket' }))
-    expect(captured.roles?.[0]).toEqual({ tenant_id: 't1', name: 'salon_admin', level: 6 })
-  })
-
-  it('passing owner_role=salon_admin (the form hidden input) is byte-identical (#11)', async () => {
-    const captured = seedCtx()
-    await createTenant({}, tenantFd({ name: 'K', slug: 'kx', owner_role: 'salon_admin' }))
     expect(captured.roles?.[0]).toEqual({ tenant_id: 't1', name: 'salon_admin', level: 6 })
   })
 
@@ -486,6 +449,50 @@ describe('updateBookingSettings', () => {
 
     expect(result.error).toBe('Något gick fel. Försök igen.')
     expect(captured['tenant_settings.upsert']).toBeUndefined()
+  })
+})
+
+describe('setTenantCustomerPortalMode', () => {
+  it('delegates the explicit mode to the atomic DB owner', async () => {
+    const auth = makeSupabase({ tenants: { data: { slug: 'freshcut' }, error: null } })
+    const service = makeSupabase({
+      'rpc.set_customer_portal_mode': { data: [{ mode: 'passwordless_tenant' }], error: null },
+    })
+    platformCtxMock.mockResolvedValue({
+      user: { id: 'operator-1' },
+      supabase: auth.client,
+      tenantId: 'tenant-1',
+    })
+    createServiceClientMock.mockReturnValue(service.client)
+
+    const result = await setTenantCustomerPortalMode({}, fd({
+      tenantId: 'tenant-1',
+      customer_portal_mode: 'passwordless_tenant',
+    }))
+
+    expect(result.error).toBeUndefined()
+    expect(service.captured['rpc.set_customer_portal_mode']?.[0]).toEqual({
+      p_tenant: 'tenant-1',
+      p_mode: 'passwordless_tenant',
+    })
+    expect(auth.captured['tenant_settings.upsert']).toBeUndefined()
+  })
+
+  it('rejects the unreleased global mode before service-role access', async () => {
+    const auth = makeSupabase()
+    platformCtxMock.mockResolvedValue({
+      user: { id: 'operator-1' },
+      supabase: auth.client,
+      tenantId: 'tenant-1',
+    })
+
+    const result = await setTenantCustomerPortalMode({}, fd({
+      tenantId: 'tenant-1',
+      customer_portal_mode: 'global_account',
+    }))
+
+    expect(result.error).toBe('Ogiltigt kundportalläge.')
+    expect(createServiceClientMock).not.toHaveBeenCalled()
   })
 })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useMemo, useRef, useState, useTransition } from 'react'
-import { getAvailableSlots, type SlotOption } from '@/app/boka/actions'
+import { getAvailableSlots, type SlotOption } from '@/lib/booking/availability-actions'
 import { rebookBooking, type BookingActionState } from '@/lib/kund/actions'
 import styles from './kund.module.css'
 

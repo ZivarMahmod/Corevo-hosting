@@ -11,11 +11,10 @@ import {
   normalizeBookingExternalUrl,
   type BookingProviderKind,
 } from '../booking-external-url'
-import { resolveOwnerRole } from '../owner-role'
 import { parseModuleSelections, writeTenantVerticalAndModules } from '../tenant-modules-write'
 import { parseServiceInputs } from '../onboarding-studio/services'
 import type { StorefrontTheme } from '@/lib/tenant-data'
-import { isSelectableTheme } from '@/lib/platform/theme-palettes'
+import { isSelectableCatalogTheme } from '@/lib/platform/theme-catalog'
 import { retireManagedImages, uploadManagedImage } from '@/lib/media/lifecycle'
 import { tenantStorefrontHost } from '@/lib/storefront-url'
 import type { Json } from '@corevo/db'
@@ -38,12 +37,11 @@ export async function isSlugTaken(slug: string): Promise<boolean> {
 }
 
 // Storefront theme (the five named layouts). Picking a theme writes settings.theme,
-// which the public layout reads → [data-theme] on the storefront root. The old A/B
-// nav + 1/2 hero system is RETIRED (components/brand/variants.ts); `theme` is now the
-// single look-axis, so each onboarded salon gets a DISTINCT storefront, never a clone.
+// which the public layout reads → [data-theme] on the storefront root. `theme` is
+// the single look-axis.
 function pickTheme(raw: FormDataEntryValue | null): StorefrontTheme | null {
   const v = String(raw ?? '').trim().toLowerCase()
-  return isSelectableTheme(v)
+  return isSelectableCatalogTheme(v)
     ? (v as StorefrontTheme)
     : null
 }
@@ -83,8 +81,6 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   const ownerEmail = String(fd.get('owner_email') ?? '').trim().toLowerCase()
   // Salongens stad (#14): real public column. Empty → leave null (never write '').
   const city = String(fd.get('city') ?? '').trim().slice(0, 120) || null
-  // Owner role (#11): resolved through the seam (default salon_admin, byte-identical).
-  const ownerRole = resolveOwnerRole(fd.get('owner_role'))
   // Billing is NOT collected in the onboarding wizard (design drops it → edited later
   // in tenant-detail / Fakturering). Defaults keep the tenant_settings row valid.
   const billingModel = 'per_booking'
@@ -197,6 +193,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   if (heroLede) copy.heroLede = heroLede
   const settings = {
     theme,
+    customer_portal: { mode: 'off' },
     booking: {
       variant: bookingVariant,
       provider: bookingProvider,
@@ -247,11 +244,10 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     return { error: GENERIC }
   }
 
-  // 4) tenant-scoped owner role. Resolved via the seam (#11): default salon_admin
-  //    level 6 — owner; matches the seed. goal-21 widens OWNER_ROLE_LEVELS.
+  // Every tenant gets the one current owner role.
   const { data: role, error: rErr } = await supabase
     .from('roles')
-    .insert({ tenant_id: tenantId, name: ownerRole.name, level: ownerRole.level })
+    .insert({ tenant_id: tenantId, name: 'salon_admin', level: 6 })
     .select('id')
     .single()
   if (rErr || !role) {
@@ -313,7 +309,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
 
   // 5) invite the required owner (salon_admin) via magic-link. A missing service
   //    role fails closed below. Owner name rides along as auth user_metadata.full_name
-  //    (public.users has no name column — frozen schema).
+  //    (public.users has no name column).
   let inviteNote = ''
   // Orphan-salong guard (CHECKLISTA W0 #2): if the required owner cannot be
   // created+linked, roll the whole tenant back so no half-provisioned tenant lingers.
@@ -377,7 +373,6 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
             action: 'tenant.invite',
             tenantId,
             actorId: user.id,
-            meta: { email: ownerEmail },
           })
           inviteNote = ` Inbjudan skickad till ${ownerEmail}.`
         }

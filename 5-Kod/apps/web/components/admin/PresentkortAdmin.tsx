@@ -1,15 +1,15 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { GiftCardEntryRow, GiftCardRow } from '@/lib/admin/presentkort/types'
 import {
-  formatGiftAmount,
   giftCardVoidable,
   giftEntryLabel,
   giftStatusTone,
   giftStatusLabel,
 } from '@/lib/admin/presentkort/types'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 import {
   issueGiftCard,
   redeemGiftCard,
@@ -23,60 +23,27 @@ import {
   Card,
   Callout,
   Drawer,
+  Field,
+  inputStyle,
   PageHead,
   Table,
   useToast,
 } from '@/components/portal/ui'
-
-// ── Shared input style (mirrors ShopAdmin) ──────────────────────────────────
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
-
-// useActionState wants a (prevState, formData) reducer, but the server actions are
-// single-arg administrative writes (issueGiftCard/voidGiftCard take only FormData).
-// These thin adapters bridge the two without changing the action exports.
-const issueAction = (_prev: ActionState, fd: FormData) => issueGiftCard(fd)
-const voidAction = (_prev: ActionState, fd: FormData) => voidGiftCard(fd)
-const redeemAction = (_prev: ActionState, fd: FormData) => redeemGiftCard(fd)
 
 // ── Root component ──────────────────────────────────────────────────────────
 export function PresentkortAdmin({
   cards,
   entries,
   currency,
-  fulfilment,
   tenantName,
 }: {
   cards: GiftCardRow[]
   entries: GiftCardEntryRow[]
   currency: string
-  fulfilment: string
   tenantName: string
 }) {
   const [creating, setCreating] = useState(false)
   const [redeeming, setRedeeming] = useState(false)
-  // fulfilment is part of the module config contract (mirrors ShopAdmin's prop set);
-  // gift cards are digital so it isn't surfaced in the UI, but it's kept on the
-  // signature so the page→component contract matches the shop pattern.
-  void fulfilment
-
   return (
     <div>
       <PageHead eyebrow={tenantName} title="Presentkort">
@@ -121,10 +88,10 @@ export function PresentkortAdmin({
                   {card.maskedCode}
                 </span>,
                 <span key="belopp" className="num" style={{ fontWeight: 600 }}>
-                  {formatGiftAmount(card.initialAmountCents, card.currency || currency)}
+                  {formatShopPrice(card.initialAmountCents, card.currency || currency)}
                 </span>,
                 <span key="saldo" className="num">
-                  {formatGiftAmount(card.balanceCents, card.currency || currency)}
+                  {formatShopPrice(card.balanceCents, card.currency || currency)}
                 </span>,
                 <Badge key="status" tone={giftStatusTone(card.status)}>
                   {giftStatusLabel(card.status)}
@@ -177,7 +144,7 @@ function VoidCell({ card }: { card: GiftCardRow }) {
   // bekräftelse-gest i hela adminen, ingen webbläsar-dialog på ett ställe).
   const [armed, setArmed] = useState(false)
   const [requestId, setRequestId] = useState('')
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(voidAction, {})
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(voidGiftCard, {})
 
   useEffect(() => setRequestId(crypto.randomUUID()), [])
   useEffect(() => {
@@ -241,7 +208,7 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
   const router = useRouter()
   const [requestId, setRequestId] = useState('')
   const [state, formAction, pending] = useActionState<GiftCardActionState, FormData>(
-    issueAction,
+    issueGiftCard,
     {},
   )
 
@@ -358,7 +325,7 @@ function RedeemDrawer({ currency, onClose }: { currency: string; onClose: () => 
   const { notify } = useToast()
   const router = useRouter()
   const [requestId, setRequestId] = useState('')
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(redeemAction, {})
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(redeemGiftCard, {})
 
   useEffect(() => setRequestId(crypto.randomUUID()), [])
   useEffect(() => {
@@ -455,10 +422,10 @@ function GiftCardHistory({
               <span key="type">{giftEntryLabel(entry.entryType)}</span>,
               <Badge key="amount" tone={entry.amountCents < 0 ? 'warning' : 'success'}>
                 {entry.amountCents > 0 ? '+' : ''}
-                {formatGiftAmount(entry.amountCents, entry.currency || currency)}
+                {formatShopPrice(entry.amountCents, entry.currency || currency)}
               </Badge>,
               <span key="balance" className="num">
-                {formatGiftAmount(entry.balanceAfterCents, entry.currency || currency)}
+                {formatShopPrice(entry.balanceAfterCents, entry.currency || currency)}
               </span>,
               <span key="reason" style={{ color: 'var(--c-ink-2)' }}>
                 {entry.reason ?? '—'}

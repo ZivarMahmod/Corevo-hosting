@@ -205,7 +205,7 @@ begin
   insert into private.customer_portal_links (
     public_id, tenant_id, customer_id, purpose, token_digest, key_version, expires_at
   ) values (
-    v_link, v_tenant, v_customer, 'booking_access', repeat('6', 64), 1,
+    v_link, v_tenant, v_customer, 'contact_change', repeat('6', 64), 1,
     statement_timestamp() + interval '30 minutes'
   );
   insert into private.customer_portal_challenges (

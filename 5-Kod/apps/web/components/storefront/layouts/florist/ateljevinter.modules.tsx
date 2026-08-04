@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggLongDate } from '@/lib/storefront/blogg/types'
 import { EventSeatBuy } from '../../shop/EventSeatBuy'
 import { formatEventPrice, formatEventStart } from '@/lib/storefront/kurser/types'
 import {
@@ -36,34 +37,20 @@ import styles from './ateljevinter.module.css'
  * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
 /* ════════════════════════════════ SAMLINGEN ═══════════════════════════════ */
 
-export function AteljeVinterShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function AteljeVinterShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   return (
     <section className={styles.avShop} data-module="shop" data-fulfilment={config.fulfilment}>
       <p className={styles.avEyebrow}>{content.shopEyebrow ?? 'samling nr 14'}</p>
       <h1 className={styles.avPageTitle}>{content.shopTitle ?? 'samlingen'}</h1>
-
-      {paused ? (
-        <p role="status" className={styles.avNotice}>
-          samlingen är tillfälligt stängd för nya förvärv. vi öppnar igen snart.
-        </p>
-      ) : null}
 
       {products.length === 0 ? (
         <p className={styles.avEmpty}>samlingen är tom just nu.</p>
@@ -77,7 +64,7 @@ export function AteljeVinterShop({ data, paused, limit, moreHref, content }: The
                 aria-label={`${p.name} — visa verket`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.avSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <div className={styles.avShopHead}>
                 <p className={styles.avWorkName}>
@@ -87,7 +74,7 @@ export function AteljeVinterShop({ data, paused, limit, moreHref, content }: The
               </div>
               <div className={styles.avShopFoot}>
                 {p.description ? <p className={styles.avShopDesc}>{p.description}</p> : <span />}
-                {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} />}
+                <AddToCart product={p} fulfilment={config.fulfilment} />
               </div>
             </li>
           ))}
@@ -105,7 +92,12 @@ export function AteljeVinterShop({ data, paused, limit, moreHref, content }: The
 
 /* ═══════════════════════════════ ANTECKNINGAR ═════════════════════════════ */
 
-export function AteljeVinterBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBloggViewProps) {
+export function AteljeVinterBlogg({
+  posts: allPosts,
+  limit,
+  moreHref,
+  content,
+}: ThemeBloggViewProps) {
   const teaser = typeof limit === 'number'
   const posts = teaser ? allPosts.slice(0, limit) : allPosts
 
@@ -121,7 +113,7 @@ export function AteljeVinterBlogg({ posts: allPosts, limit, moreHref, content }:
       ) : (
         <ul className={styles.avPostList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggLongDate(p.publishedAt)
             return (
               <li key={p.id}>
                 <article>
@@ -248,10 +240,14 @@ export function AteljeVinterLojalitet({ config, plans, content }: ThemeLojalitet
         </div>
       </div>
 
-      <p className={styles.avClubNote}
+      <p
+        className={styles.avClubNote}
         data-corevo-editor-field="clubNote"
         data-corevo-editor-stable-field="clubNote"
-        hidden={!content.clubNote}>{content.clubNote ?? ''}</p>
+        hidden={!content.clubNote}
+      >
+        {content.clubNote ?? ''}
+      </p>
     </section>
   )
 }
@@ -269,28 +265,22 @@ export function AteljeVinterLojalitet({ config, plans, content }: ThemeLojalitet
  * Ledtexten bär filens röst men det RIKTIGA svarslöftet (config.responseDays): filen
  * skriver "inom tre dagar", men om kunden lovar en annan takt ska sidan säga sanningen.
  */
-export function AteljeVinterOffert({ config, paused }: ThemeOffertViewProps) {
+export function AteljeVinterOffert({ config }: ThemeOffertViewProps) {
   const days = `${config.responseDays} ${config.responseDays === 1 ? 'dag' : 'dagar'}`
   return (
     <section className={styles.avPageNarrow} data-module="offert" data-mode={config.mode}>
       <p className={styles.avEyebrow}>på uppdrag</p>
       <h1 className={styles.avPageTitle}>beställningsverk</h1>
       <p className={styles.avPageLede}>
-        bröllop, scenografi, ett rum som behöver ett verk. beskriv uppdraget — ateljén
-        återkommer med skiss och pris inom {days}.
+        bröllop, scenografi, ett rum som behöver ett verk. beskriv uppdraget — ateljén återkommer
+        med skiss och pris inom {days}.
       </p>
 
-      {paused ? (
-        <p role="status" className={styles.avNotice}>
-          vi tar tillfälligt inte emot nya uppdrag. hör av dig igen snart.
-        </p>
-      ) : (
-        <AteljeVinterOffertForm
-          mode={config.mode}
-          responseDays={config.responseDays}
-          subjects={config.subjects}
-        />
-      )}
+      <AteljeVinterOffertForm
+        mode={config.mode}
+        responseDays={config.responseDays}
+        subjects={config.subjects}
+      />
     </section>
   )
 }
@@ -304,7 +294,11 @@ export function AteljeVinterOffert({ config, paused }: ThemeOffertViewProps) {
  *
  * Inga belopp konfigurerade → ingen köpyta, bara ett ärligt besked. Pausad → stängt.
  */
-export function AteljeVinterPresentkort({ config, paused, tenantName }: ThemePresentkortViewProps) {
+export function AteljeVinterPresentkort({
+  config,
+  purchaseClosed,
+  tenantName,
+}: ThemePresentkortViewProps) {
   return (
     <section
       className={styles.avGiftPage}
@@ -314,15 +308,11 @@ export function AteljeVinterPresentkort({ config, paused, tenantName }: ThemePre
       <p className={styles.avEyebrow}>gåvobrev</p>
       <h1 className={styles.avPageTitle}>ge bort ett verk</h1>
       <p className={styles.avGiftLede}>
-        ett gåvobrev ur ateljén — mottagaren väljer själv sitt verk ur en kommande samling.
-        tryckt på obestruket papper, levererat i kuvert.
+        ett gåvobrev ur ateljén — mottagaren väljer själv sitt verk ur en kommande samling. tryckt
+        på obestruket papper, levererat i kuvert.
       </p>
 
-      {paused ? (
-        <p role="status" className={styles.avNotice}>
-          gåvobrev är pausade just nu.
-        </p>
-      ) : config.amountPresets.length > 0 ? (
+      {!purchaseClosed && config.amountPresets.length > 0 ? (
         <AteljeVinterGiftForm config={config} tenantName={tenantName} />
       ) : (
         <p className={styles.avEmpty}>gåvobrev bokas i ateljén — hör av dig så ordnar vi det.</p>
@@ -344,18 +334,23 @@ export function AteljeVinterPresentkort({ config, paused, tenantName }: ThemePre
  * Ledtexten säger SANNINGEN om vilket det är — "betalas i kassan" över en plats-avgift
  * vore precis den lilla lögn som får en sida att kännas billig.
  */
-export function AteljeVinterKurser({ events, config, paused }: ThemeKurserViewProps) {
+export function AteljeVinterKurser({ events, config, checkoutLive }: ThemeKurserViewProps) {
   const checkout = config.payment === 'checkout'
+  const registrationClosed = checkout && !checkoutLive
   return (
     <section className={styles.avKurser} data-module="kurser">
       <p className={styles.avEyebrow}>rum ii</p>
       <h1 className={styles.avPageTitle}>seminarier</h1>
       <p className={styles.avPageLede}>
         fyra deltagare per tillfälle. ett bord, ett tema, två timmar.{' '}
-        {checkout ? 'platsen läggs i korgen och betalas i kassan.' : 'avgiften betalas på plats.'}
+        {checkout
+          ? checkoutLive
+            ? 'platsen läggs i korgen och betalas i kassan.'
+            : 'onlineköp av kursplatser är inte öppet just nu.'
+          : 'avgiften betalas på plats.'}
       </p>
 
-      {paused ? (
+      {registrationClosed ? (
         <p role="status" className={styles.avNotice}>
           anmälan är stängd just nu — kommande tillfällen visas, men det går inte att anmäla sig.
         </p>
@@ -385,7 +380,7 @@ export function AteljeVinterKurser({ events, config, paused }: ThemeKurserViewPr
                   {full ? <span>fullbokat</span> : null}
                 </p>
 
-                {paused || full ? (
+                {registrationClosed || full ? (
                   full ? (
                     <p className={styles.avKursFull}>
                       fullbokat — vi lägger ut fler datum löpande.

@@ -57,7 +57,6 @@ type RevisionError = { code?: string; message?: string }
 
 function refreshEditors(tenantId: string): void {
   revalidatePath('/admin/sida')
-  revalidatePath('/admin/sida/redigera')
   revalidatePath(`/kunder/${tenantId}`)
 }
 

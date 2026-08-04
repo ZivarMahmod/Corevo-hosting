@@ -1,8 +1,42 @@
-import type { ResolvedThemeContent } from '@/components/storefront/theme-content'
-import type { SiteEditorCard, SiteEditorField, SiteEditorManifest, SiteEditorTab } from '@/components/platform/SidaStudioV2.manifest'
+import type { ResolvedThemeContent } from '@/lib/storefront/theme-content.types'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 import { themePalette } from '@/lib/platform/theme-palettes'
-import { THEME_EXTRA_HOME, themeCaps, type ExtraField } from '@/lib/platform/theme-capabilities'
+import { THEME_EXTRA_HOME, themeCaps } from '@/lib/platform/theme-capabilities'
+import type { ExtraField } from '@/lib/storefront/themes/types'
+
+export type SiteEditorField = {
+  key: string
+  label: string
+  defaultValue?: string
+  rows?: number
+  help?: string
+}
+
+export type SiteEditorCard = {
+  id: string
+  title: string
+  fields?: SiteEditorField[]
+  imageSlot?: 'logo_url' | 'hero_images' | 'gallery_images' | 'about_image' | 'closing_image'
+  imageDefaults?: string[]
+  imageLimit?: number
+  statsDefaults?: [string, string][]
+  info?: { text: string; href: string; label: string }
+}
+
+export type SiteEditorTab = {
+  id: string
+  label: string
+  sub: string
+  path: string
+  cards: SiteEditorCard[]
+  module?: string
+}
+
+export type SiteEditorManifest = {
+  tabs: SiteEditorTab[]
+  modules?: SiteEditorTab[]
+  swatches: Partial<Record<'color_primary' | 'color_accent' | 'color_bg' | 'color_fg', string[]>>
+}
 
 export type EditorManifestKind = 'kalla' | 'snitt' | 'generic'
 

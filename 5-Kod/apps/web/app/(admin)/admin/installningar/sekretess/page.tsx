@@ -43,7 +43,6 @@ export default async function PrivacySettingsPage() {
           address=""
           contactEmail=""
           contactPhone=""
-          customerAccountsEnabled={false}
           cookieBannerEnabled={values.cookie_banner_enabled !== false}
         />
         <Card style={{ marginTop: '1rem' }}>

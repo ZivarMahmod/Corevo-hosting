@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { OrderConfirmation } from '@/app/butik/bekraftelse/[id]/OrderConfirmation'
+import { OrderConfirmation } from '@/components/storefront/OrderConfirmation'
 import { currentTenant } from '@/lib/tenant-data'
 import { createClient } from '@/lib/supabase/server'
-import { themeOrderPrefix } from '@/components/storefront/layouts/florist/layouts'
+import { themeOrderPrefix } from '@/lib/storefront/themes/registry'
 import styles from '@/components/storefront/order-confirmation.module.css'
 
 export const dynamic = 'force-dynamic'

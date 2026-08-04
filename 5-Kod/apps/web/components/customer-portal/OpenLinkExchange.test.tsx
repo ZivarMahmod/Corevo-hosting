@@ -33,7 +33,10 @@ describe('OpenLinkExchange', () => {
     const fetchMock = vi.fn(async () => {
       expect(window.location.hash).toBe('')
       expect(window.location.search).toBe('')
-      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response(JSON.stringify({
+        ok: true,
+        destination: `/mina/bokningar/${id}`,
+      }), { status: 200 })
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -50,7 +53,7 @@ describe('OpenLinkExchange', () => {
       referrerPolicy: 'no-referrer',
       signal: expect.any(AbortSignal),
     })
-    expect(mocks.replace).toHaveBeenCalledWith('/mina')
+    expect(mocks.replace).toHaveBeenCalledWith(`/mina/bokningar/${id}`)
   })
 
   it('shows only neutral bootstrap/error copy and never POSTs malformed fragments', async () => {
@@ -64,5 +67,19 @@ describe('OpenLinkExchange', () => {
     expect(fetchMock).not.toHaveBeenCalled()
     expect(container.textContent).toContain('Länken kan inte användas')
     expect(container.textContent).not.toContain('bad')
+  })
+
+  it('rejects a server destination outside the portal', async () => {
+    window.history.replaceState({}, '', `/oppna/freshcut#v1.${id}.${secret}`)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      ok: true,
+      destination: 'https://evil.example',
+    }), { status: 200 })))
+
+    await act(async () => root.render(<OpenLinkExchange tenantSlug="freshcut" />))
+    await act(async () => Promise.resolve())
+
+    expect(mocks.replace).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Länken kan inte användas')
   })
 })

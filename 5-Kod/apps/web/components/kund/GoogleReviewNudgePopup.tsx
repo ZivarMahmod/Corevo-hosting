@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { trapTab } from '@/components/portal/ui/focus'
 import styles from './google-review-nudge.module.css'
 
 // Client popup for the booking-confirmation Google-review nudge. Ignorable:
@@ -62,20 +63,8 @@ export function GoogleReviewNudgePopup({
         }
         return
       }
-      if (e.key !== 'Tab') return
-      const controls = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), a[href]',
-      ) ?? [])]
-      if (controls.length === 0) return
-      const first = controls[0]!
-      const last = controls[controls.length - 1]!
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      const dialog = dialogRef.current
+      if (dialog) trapTab(e, dialog)
     }
     document.addEventListener('keydown', onKey)
     return () => {

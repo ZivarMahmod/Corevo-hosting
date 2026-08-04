@@ -26,7 +26,7 @@ function eventLifecycleError(error: { message?: string; code?: string; details?:
   if (message.includes('event_capacity_below_occupancy'))
     return 'Max platser kan inte vara lägre än redan bokade eller reserverade platser.'
   if (message.includes('event_module_read_only'))
-    return 'Kurser & event är pausad och kan inte ändras.'
+    return 'Modulen Kurser & event är avstängd och kan inte ändras.'
   if (message.includes('status_transition_invalid'))
     return 'Den statusövergången är inte tillåten.'
   return GENERIC

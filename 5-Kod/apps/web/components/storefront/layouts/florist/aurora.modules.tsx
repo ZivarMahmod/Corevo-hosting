@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggLongDate } from '@/lib/storefront/blogg/types'
 import type { GalleryItem } from '@/lib/storefront/galleri/types'
 import type {
   ThemeShopViewProps,
@@ -36,23 +37,15 @@ import styles from './aurora.module.css'
  * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
 /* ═════════════════════════════════ BUTIKEN ════════════════════════════════ */
 
-export function AuroraShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function AuroraShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   return (
     <section className={styles.auShop} data-module="shop" data-fulfilment={config.fulfilment}>
@@ -63,12 +56,6 @@ export function AuroraShop({ data, paused, limit, moreHref, content }: ThemeShop
           Lägg det du vill ha i korgen — vi binder allt samma dag som det levereras.
         </p>
       </div>
-
-      {paused ? (
-        <p role="status" className={styles.auNotice}>
-          Butiken är tillfälligt stängd för nya beställningar. Vi öppnar snart igen.
-        </p>
-      ) : null}
 
       {products.length === 0 ? (
         <p className={styles.auEmpty}>Butiken är tom just nu.</p>
@@ -82,7 +69,7 @@ export function AuroraShop({ data, paused, limit, moreHref, content }: ThemeShop
                 aria-label={`${p.name} — visa buketten`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.auSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <div className={styles.auProdRow}>
                 <p className={styles.auProdName}>
@@ -91,11 +78,9 @@ export function AuroraShop({ data, paused, limit, moreHref, content }: ThemeShop
                 <p className={styles.auProdPrice}>{formatProductPrice(p)}</p>
               </div>
               {p.description ? <p className={styles.auProdDesc}>{p.description}</p> : null}
-              {paused ? null : (
-                <div className={styles.auBuyFramed}>
-                  <AddToCart product={p} fulfilment={config.fulfilment} compact />
-                </div>
-              )}
+              <div className={styles.auBuyFramed}>
+                <AddToCart product={p} fulfilment={config.fulfilment} compact />
+              </div>
             </li>
           ))}
         </ul>
@@ -132,13 +117,10 @@ export function AuroraBlogg({ posts: allPosts, limit, moreHref, content }: Theme
       ) : (
         <ul className={styles.auPostList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggLongDate(p.publishedAt)
             return (
               <li key={p.id}>
-                <a
-                  href={p.slug ? `/blogg/${p.slug}` : '/blogg'}
-                  className={styles.auPostCardWide}
-                >
+                <a href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.auPostCardWide}>
                   <span
                     className={styles.auPostImg}
                     style={
@@ -228,10 +210,14 @@ export function AuroraGalleri({ items, content }: ThemeGalleriViewProps) {
         </div>
       )}
 
-      <p className={styles.auGalFoot}
+      <p
+        className={styles.auGalFoot}
         data-corevo-editor-field="galleryLede"
         data-corevo-editor-stable-field="galleryLede"
-        hidden={!content.galleryLede}>{content.galleryLede ?? ''}</p>
+        hidden={!content.galleryLede}
+      >
+        {content.galleryLede ?? ''}
+      </p>
     </section>
   )
 }

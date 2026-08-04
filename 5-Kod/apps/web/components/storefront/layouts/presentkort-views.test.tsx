@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { CartProvider } from '../shop/CartProvider'
-import { themeModuleViews } from './florist/layouts'
+import { themeModuleViews } from './runtime'
 import type { PresentkortConfig } from '@/lib/storefront/presentkort/types'
 import { SELECTABLE_THEMES } from '@/lib/platform/theme-palettes'
 
@@ -42,7 +42,6 @@ const config: PresentkortConfig = {
   headline: 'Presentkort',
   codePrefix: '1962-',
   deliveryModes: ['digital', 'in_store'],
-  paymentEnabled: true,
 }
 
 describe('handoffens 12 presentkortsvyer', () => {
@@ -62,14 +61,8 @@ describe('handoffens 12 presentkortsvyer', () => {
       <CartProvider>
         <View
           config={config}
-          paused={false}
-          tenantName={
-            key === 'lunaria'
-              ? 'Lunaria'
-              : key === 'solsalt'
-                ? 'Sol & Salt'
-                : 'Testkund'
-          }
+          purchaseClosed={false}
+          tenantName={key === 'lunaria' ? 'Lunaria' : key === 'solsalt' ? 'Sol & Salt' : 'Testkund'}
         />
       </CartProvider>,
     )

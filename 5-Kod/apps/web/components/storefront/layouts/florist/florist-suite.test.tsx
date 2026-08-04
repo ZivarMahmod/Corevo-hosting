@@ -11,12 +11,17 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }))
 
 import type { StorefrontTheme, Service, TenantLocation } from '@/lib/tenant-data'
 import { STOREFRONT_THEMES } from '@/lib/tenant-data'
-import { STOREFRONT_LAYOUTS, THEME_OWNS_MODULES } from '../index'
-import { resolveThemeContent, THEME_CONTENT } from '../../theme-content'
+import { STOREFRONT_LAYOUTS, THEME_OWNS_MODULES } from '../runtime'
+import { resolveThemeContent, THEME_CONTENT } from '@/lib/storefront/theme-content'
 import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
 import { THEME_CAPS } from '@/lib/platform/theme-capabilities'
-import { FLORIST_THEMES, FLORIST_THEME_CSS } from './registry'
+import { THEME_SUITES } from '@/lib/storefront/themes/registry'
+import { themeCssBlock } from '@/lib/storefront/themes/types'
+import { themeChrome } from '../runtime'
 import type { LayoutModuleTeasers } from '../types'
+
+const FLORIST_THEMES = THEME_SUITES.florist
+const FLORIST_THEME_CSS = FLORIST_THEMES.map(themeCssBlock).join('\n')
 
 const TENANT = { id: 't1', name: 'Blomsterhandeln', slug: 'blomster' }
 const LOCATION: TenantLocation = {
@@ -26,7 +31,13 @@ const LOCATION: TenantLocation = {
   hours: [{ day: 'Mån–Fre', time: '10–18' }],
 } as unknown as TenantLocation
 const SERVICES: Service[] = [
-  { id: 's1', name: 'Handbunden bukett', price_cents: 45000, duration_min: 30, description: 'Säsong' },
+  {
+    id: 's1',
+    name: 'Handbunden bukett',
+    price_cents: 45000,
+    duration_min: 30,
+    description: 'Säsong',
+  },
   { id: 's2', name: 'Brudbukett', price_cents: 190000, duration_min: 60, description: null },
 ] as unknown as Service[]
 
@@ -37,7 +48,13 @@ const ALL_LIVE: LayoutModuleTeasers = {
     { id: 'p2', name: 'Pioner', priceCents: 49900, currency: 'SEK', imageUrl: null },
   ] as unknown as LayoutModuleTeasers['shopTeasers'],
   bloggTeasers: [
-    { id: 'b1', title: 'Säsongens blommor', slug: 'sasong', excerpt: 'Vad som blommar nu', coverImageUrl: null },
+    {
+      id: 'b1',
+      title: 'Säsongens blommor',
+      slug: 'sasong',
+      excerpt: 'Vad som blommar nu',
+      coverImageUrl: null,
+    },
   ] as unknown as LayoutModuleTeasers['bloggTeasers'],
   presentkortReachable: true,
   shopReachable: true,
@@ -60,7 +77,11 @@ const ALL_OFF: LayoutModuleTeasers = {
   galleriReachable: false,
 }
 
-function render(key: string, modules: LayoutModuleTeasers | undefined, services: Service[] = SERVICES) {
+function render(
+  key: string,
+  modules: LayoutModuleTeasers | undefined,
+  services: Service[] = SERVICES,
+) {
   const theme = key as StorefrontTheme
   const Layout = STOREFRONT_LAYOUTS[theme]
   return renderToStaticMarkup(
@@ -87,9 +108,8 @@ function render(key: string, modules: LayoutModuleTeasers | undefined, services:
  * modul finns inte i den, så 404-fällan fångas fortfarande — nu på paketnivå.
  */
 function renderPackage(key: string, modules: LayoutModuleTeasers, services: Service[] = SERVICES) {
-  const theme = key as StorefrontTheme
   const def = FLORIST_THEMES.find((t) => t.key === key)
-  const Footer = def?.chrome?.Footer
+  const Footer = def ? themeChrome(def.key).Footer : undefined
   const links = [
     ...(modules.shopReachable ? [{ href: '/shop', label: 'Butik' }] : []),
     ...(modules.bloggTeasers.length > 0 ? [{ href: '/blogg', label: 'Blogg' }] : []),
@@ -165,7 +185,16 @@ describe.each(FLORIST_THEMES.map((t) => [t.key, t.name, t] as const))(
       const html = render(key, undefined)
       expect(html).toContain('</section>')
       const links = hrefs(html)
-      for (const path of ['/shop', '/offert', '/presentkort', '/klubb', '/stamkund', '/kurser', '/galleri', '/blogg']) {
+      for (const path of [
+        '/shop',
+        '/offert',
+        '/presentkort',
+        '/klubb',
+        '/stamkund',
+        '/kurser',
+        '/galleri',
+        '/blogg',
+      ]) {
         expect(links.filter((href) => href.startsWith(path))).toEqual([])
       }
     })
@@ -193,9 +222,19 @@ describe('florist-sviten som helhet', () => {
   it('Ateljé Vinter märker upp alla synliga hemtexter för sidredigeraren', () => {
     const html = render('ateljevinter', ALL_LIVE)
     for (const field of [
-      'heroEyebrow', 'heroTitle', 'heroLede', 'shopTitle', 'shopEyebrow',
-      'homeGalleryEyebrow', 'italic',
-      'pillar1Title', 'pillar1Body', 'pillar2Title', 'pillar2Body', 'pillar3Title', 'pillar3Body',
+      'heroEyebrow',
+      'heroTitle',
+      'heroLede',
+      'shopTitle',
+      'shopEyebrow',
+      'homeGalleryEyebrow',
+      'italic',
+      'pillar1Title',
+      'pillar1Body',
+      'pillar2Title',
+      'pillar2Body',
+      'pillar3Title',
+      'pillar3Body',
     ]) {
       expect(html, field).toContain(`data-corevo-editor-stable-field="${field}"`)
     }
@@ -214,7 +253,7 @@ describe('florist-sviten som helhet', () => {
     const original = THEME_CONTENT[key]
     expect(Reflect.set(THEME_CONTENT, key, original)).toBe(false)
     expect(Reflect.deleteProperty(THEME_CONTENT, key)).toBe(false)
-    expect(Reflect.defineProperty(THEME_CONTENT, key, { value: original })).toBe(false)
+    expect(Reflect.defineProperty(THEME_CONTENT, key, { value: { ...original } })).toBe(false)
     expect(THEME_CONTENT[key]).toBe(original)
   })
 

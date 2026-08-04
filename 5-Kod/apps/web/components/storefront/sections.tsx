@@ -3,15 +3,14 @@ import { currentTenant } from '@/lib/tenant-data'
 import { verifiedMapForAddress } from '@/lib/storefront/address-map'
 import { Reveal } from './Reveal'
 import { Parallax } from './Parallax'
-import type { ResolvedThemeContent } from './theme-content'
+import type { ResolvedThemeContent } from '@/lib/storefront/theme-content.types'
 import { unsplashSrcSet } from './img'
 import styles from './storefront.module.css'
 
 const EDITOR_DAYS = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const
 
 /* Editorial section building blocks (server components). Each leads with type or
-   a photo, keeps magazine rhythm + generous whitespace, and restyles per
-   template via the [data-template] scope in storefront.module.css.
+   a photo and keeps a consistent magazine rhythm with generous whitespace.
 
    Contact (email/phone), address and opening hours are REAL: contact comes from
    the salon's saved settings (settings.contact), address from locations.address,
@@ -70,53 +69,6 @@ export function AccentPhrase({ text }: { text: string }) {
   )
 }
 
-/** "Våra frisörer" — stylist spotlights (portrait + name + role).
- *  Photo-driven; the portrait lifts on hover. Team comes from the resolved theme
- *  content: the owner's uploaded team (settings.branding.team) when present,
- *  otherwise the strong per-theme default — so the section is always credible. */
-export function StylistSpotlights({
-  salonName,
-  content,
-}: {
-  salonName: string
-  content: ResolvedThemeContent
-}) {
-  return (
-    <section className="section">
-      <div className="section-inner">
-        <SectionHeader
-          eyebrow={content.teamEyebrow}
-          title={content.teamTitle}
-          lead={content.teamLead ?? `Teamet på ${salonName} brinner för hantverket och för att du ska känna dig hemma.`}
-        />
-        <ul className={styles.stylists}>
-          {content.team.map((s, i) => (
-            <Reveal as="li" key={`${s.name}-${i}`} delay={i * 80} className={styles.stylist}>
-              <div className={styles.stylistPhoto}>
-                {/* Foto valfritt — utan bild visas ett initial-monogram (aldrig en tom
-                    vit låda, aldrig en trasig img). */}
-                {s.img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={s.img} alt={s.name} loading="lazy" />
-                ) : (
-                  <span aria-hidden="true" className={styles.monogram}>
-                    {s.name
-                      .split(/\s+/)
-                      .slice(0, 2)
-                      .map((w) => w[0]?.toUpperCase() ?? '')
-                      .join('')}
-                  </span>
-                )}
-              </div>
-              <h3 className={styles.stylistName}>{s.name}</h3>
-              <p className={styles.stylistRole}>{s.role}</p>
-            </Reveal>
-          ))}
-        </ul>
-      </div>
-    </section>
-  )
-}
 
 /** "Om salongen" — split: interior photo one side, copy the other.
  *  Photo + body copy come from the resolved theme content: the owner's uploaded
@@ -184,7 +136,7 @@ export async function LocationHours({
   const hasContact = !!contact.email || !!contact.phone
   const hasSocial = !!social.instagram || !!social.facebook || !!social.tiktok
 
-  // Map: when saveTenantContact managed to geocode the address (settings.map) we
+  // Map: when site publication managed to geocode the address (settings.map) we
   // embed a real OSM map centred on it; otherwise fall back to the honest search
   // link (no fabricated default-bbox map).
   const mapHref = address

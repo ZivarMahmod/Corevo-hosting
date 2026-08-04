@@ -59,6 +59,37 @@ export type BloggPost = {
   tag: string | null
 }
 
+type BloggPostRow = {
+  id: string
+  title: string
+  slug: string | null
+  excerpt: string | null
+  body: string | null
+  cover_asset_id: string | null
+  published_at: string | null
+  tag: string | null
+  media_assets:
+    | { url: string | null; alt: string | null }
+    | { url: string | null; alt: string | null }[]
+    | null
+}
+
+export function mapBloggPost(row: BloggPostRow): BloggPost {
+  const asset = Array.isArray(row.media_assets) ? row.media_assets[0] : row.media_assets
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug ?? null,
+    excerpt: row.excerpt ?? null,
+    body: row.body ?? null,
+    coverAssetId: row.cover_asset_id ?? null,
+    publishedAt: row.published_at ?? null,
+    coverImageUrl: asset?.url ?? null,
+    coverImageAlt: asset?.alt ?? null,
+    tag: row.tag?.trim() || null,
+  }
+}
+
 /** Everything the BloggSection needs after the loader runs. */
 export type BloggData = {
   config: BloggConfig
@@ -68,6 +99,25 @@ export type BloggData = {
     total: number
     totalPages: number
   }
+}
+
+function formatBloggDate(iso: string | null, options: Intl.DateTimeFormatOptions): string | null {
+  if (!iso) return null
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString('sv-SE', options)
+}
+
+export function formatBloggLongDate(iso: string | null): string | null {
+  return formatBloggDate(iso, { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+export function formatBloggShortDate(iso: string | null): string | null {
+  return formatBloggDate(iso, { day: 'numeric', month: 'long' })
+}
+
+export function formatBloggMonthYear(iso: string | null): string | null {
+  const formatted = formatBloggDate(iso, { month: 'long', year: 'numeric' })
+  return formatted ? formatted.charAt(0).toUpperCase() + formatted.slice(1) : null
 }
 
 const DEFAULT_BLOGG_CONFIG: BloggConfig = {
@@ -87,8 +137,8 @@ function asPositiveInt(raw: unknown, fallback: number): number {
 
 /**
  * Defensively coerce the raw tenant_modules.config jsonb into a typed BloggConfig.
- * Robust to missing/partial config (a freshly activated draft has only the 0034
- * default; a malformed row degrades to DEFAULT_BLOGG_CONFIG).
+ * Robust to missing/partial config (a newly activated module may only have the
+ * migration default; a malformed row degrades to DEFAULT_BLOGG_CONFIG).
  */
 export function parseBloggConfig(raw: unknown): BloggConfig {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...DEFAULT_BLOGG_CONFIG }

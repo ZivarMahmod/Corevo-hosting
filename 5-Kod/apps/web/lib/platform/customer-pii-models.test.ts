@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 import type { CustomerListItem } from './people'
 import type { TenantCustomer } from './tenant-customers'
-import { maskPhone } from '@/components/portal/ui/pii'
 
 const platformCtxMock = vi.fn()
 vi.mock('./guard', () => ({ platformCtx: () => platformCtxMock() }))
@@ -29,12 +28,6 @@ function query(result: DbResult) {
 beforeEach(() => vi.clearAllMocks())
 
 describe('plattformens publika kundmodeller är PII-minimerade', () => {
-  it('helmaskerar korta telefonvärden i stället för att exponera hela strängen', () => {
-    expect(maskPhone('1')).toBe('••••')
-    expect(maskPhone('1234')).toBe('••••')
-    expect(maskPhone('12345')).toBe('1234 •• •• ••')
-  })
-
   it('strippar rå kontaktdata ur den tvärgående Insyn-listan före serialisering', async () => {
     const rawEmail = 'anna@example.se'
     const rawPhone = '070-123 45 67'

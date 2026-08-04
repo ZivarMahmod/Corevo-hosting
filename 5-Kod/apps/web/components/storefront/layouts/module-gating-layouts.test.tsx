@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }))
 
 import type { StorefrontTheme } from '@/lib/tenant-data'
-import { resolveThemeContent } from '../theme-content'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import { EditLayout } from './EditLayout'
 import { FloraLayout } from './FloraLayout'
 import { LeanderLayout } from './LeanderLayout'
@@ -35,7 +35,7 @@ const OFF: LayoutModuleTeasers = {
   galleriReachable: false,
 }
 
-const PAUSED_WITH_DATA: LayoutModuleTeasers = {
+const LIVE_WITH_DATA: LayoutModuleTeasers = {
   ...OFF,
   shopTeasers: [
     { id: 'product-1', name: 'Bukett', priceCents: 39900, currency: 'SEK', imageUrl: null },
@@ -81,8 +81,8 @@ describe.each(THEMES)('%s module reachability', (theme, Layout) => {
     }
   })
 
-  it('keeps paused module pages reachable when their required data exists', () => {
-    const links = hrefs(render(theme, Layout, PAUSED_WITH_DATA))
+  it('keeps live module pages reachable when their required data exists', () => {
+    const links = hrefs(render(theme, Layout, LIVE_WITH_DATA))
     expect(links.some((href) => href.startsWith('/shop'))).toBe(true)
     expect(links).toContain('/presentkort')
   })

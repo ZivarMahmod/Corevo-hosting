@@ -1,13 +1,6 @@
 import Link from 'next/link'
-import type { BloggPost } from '@/lib/storefront/blogg/types'
+import { formatBloggLongDate, type BloggPost } from '@/lib/storefront/blogg/types'
 import s from './blogg-post.module.css'
-
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return null
-  return date.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 export function BloggPostView({
   post,
@@ -16,7 +9,7 @@ export function BloggPostView({
   post: BloggPost
   backHref?: string
 }) {
-  const date = formatPostDate(post.publishedAt)
+  const date = formatBloggLongDate(post.publishedAt)
   const paragraphs = (post.body ?? '')
     .split(/\r?\n\r?\n/)
     .map((text) => text.trim())

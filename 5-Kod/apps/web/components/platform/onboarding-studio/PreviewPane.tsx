@@ -10,11 +10,12 @@
 // yet during onboarding, so the site is never live → `live` stays a fixed false (no fake
 // LIVE badge, lock icon kept). The conditional chrome stays faithful for when it goes live.
 
-import { Icon, type IconName } from '@/components/portal/ui/Icon'
+import { Icon } from '@/components/portal/ui/Icon'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { StorefrontPreview } from './StorefrontPreview'
 import { studioPlaceholderSlug } from './studio-placeholder'
 import { tenantStorefrontHost } from '@/lib/storefront-url'
+import type { IconName } from '@/lib/ui-icons'
 
 export type PreviewDevice = 'desktop' | 'mobile'
 

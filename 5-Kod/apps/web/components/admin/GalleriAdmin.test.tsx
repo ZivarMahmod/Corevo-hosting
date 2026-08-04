@@ -175,16 +175,6 @@ describe('GalleriAdmin', () => {
     expect(mocks.refresh).toHaveBeenCalledOnce()
   })
 
-  it('visar paused som verkligt skrivskyddat', async () => {
-    await act(async () => root.render(<GalleriAdmin {...props} readOnly />))
-
-    expect(container.textContent).toContain('Galleriet är pausat')
-    expect(button('Lägg till bild').disabled).toBe(true)
-    expect(button('Flytta ned').disabled).toBe(true)
-    expect(container.textContent).not.toContain('Redigera')
-    expect(container.textContent).not.toContain('Ta bort')
-  })
-
   it('visar reorder-felet och lämnar vyn orörd', async () => {
     mocks.reorder.mockResolvedValueOnce({ error: 'Ladda om och försök igen.' })
     await act(async () => root.render(<GalleriAdmin {...props} />))

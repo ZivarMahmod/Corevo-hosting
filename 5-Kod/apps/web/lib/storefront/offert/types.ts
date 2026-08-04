@@ -25,9 +25,7 @@ export const OFFERT_MODE_LABELS: Record<OffertMode, string> = {
   callback: 'Vi återkommer',
 }
 
-/** Parsed tenant_modules.config for the offert module. Defaults mirror 0033's
- *  default_config. `payment` is a PARKED hook — betal-rails are paused (beslut
- *  14.2); an offert is an underlag and never renders a pay step. */
+/** Parsed tenant_modules.config for the offert module. */
 export type OffertConfig = {
   mode: OffertMode
   /** Promised response time (days) for estimate_form / callback. */
@@ -36,8 +34,6 @@ export type OffertConfig = {
   /** Snabbval-ämnen ("Vad gäller det?"-chips) — config-styrda per kund/bransch
    *  (t.ex. florist: Bröllop/Begravning/Event). Tom lista = inga chips, fritext. */
   subjects: string[]
-  /** Betal-hook — PAUSAD. enabled is false until rails open; provider is null. */
-  payment: { provider: string | null; enabled: boolean }
 }
 
 /** Everything the OffertSection needs after the loader runs. */
@@ -50,7 +46,6 @@ const DEFAULT_OFFERT_CONFIG: OffertConfig = {
   responseDays: 2,
   currency: 'SEK',
   subjects: [],
-  payment: { provider: null, enabled: false },
 }
 
 function asMode(raw: unknown): OffertMode {
@@ -64,19 +59,12 @@ function asPositiveInt(raw: unknown, fallback: number): number {
 }
 
 /**
- * Defensively coerce the raw tenant_modules.config jsonb into a typed OffertConfig.
- * Robust to missing/partial config (a freshly activated draft has only the 0033
- * default; a malformed row degrades to DEFAULT_OFFERT_CONFIG). The payment hook is
- * always read as disabled unless an explicit `payment.enabled === true` appears —
- * and even then the storefront does not render a pay step (rails paused).
+ * Coerce raw tenant_modules.config jsonb into an OffertConfig. Missing or malformed
+ * values fall back to the current defaults.
  */
 export function parseOffertConfig(raw: unknown): OffertConfig {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...DEFAULT_OFFERT_CONFIG }
   const src = raw as Record<string, unknown>
-  const pay = (src.payment && typeof src.payment === 'object' ? src.payment : {}) as Record<
-    string,
-    unknown
-  >
   return {
     mode: asMode(src.mode),
     responseDays: asPositiveInt(src.response_days, DEFAULT_OFFERT_CONFIG.responseDays),
@@ -87,10 +75,6 @@ export function parseOffertConfig(raw: unknown): OffertConfig {
           .map((s) => s.trim().slice(0, 60))
           .slice(0, 8)
       : [],
-    payment: {
-      provider: typeof pay.provider === 'string' ? pay.provider : null,
-      enabled: pay.enabled === true,
-    },
   }
 }
 

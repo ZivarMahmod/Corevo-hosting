@@ -19,7 +19,29 @@ export type PartnerLicenseMonth = {
   closed: boolean
 }
 
-export function throwIfPartnerReadFailed(
+type PartnerLicenseRow = Pick<
+  Database['public']['Tables']['partner_license_months']['Row'],
+  'month' | 'unit_price_ore' | 'closed_at'
+>
+
+function aggregatePartnerLicenseMonths(rows: readonly PartnerLicenseRow[]): PartnerLicenseMonth[] {
+  const byMonth = new Map<string, PartnerLicenseMonth>()
+  for (const row of rows) {
+    const current = byMonth.get(row.month) ?? {
+      month: row.month,
+      customers: 0,
+      totalOre: 0,
+      closed: Boolean(row.closed_at),
+    }
+    current.customers += 1
+    current.totalOre += row.unit_price_ore
+    current.closed = current.closed && Boolean(row.closed_at)
+    byMonth.set(row.month, current)
+  }
+  return [...byMonth.values()]
+}
+
+function throwIfPartnerReadFailed(
   code: 'partner_detail_unavailable' | 'partner_billing_unavailable',
   results: Array<{ error: unknown }>,
 ): void {
@@ -70,20 +92,6 @@ export async function loadPartnerAdminDetail(partnerId: string): Promise<{
     smsResult,
   ])
 
-  const byMonth = new Map<string, PartnerLicenseMonth>()
-  for (const row of licensesResult.data ?? []) {
-    const current = byMonth.get(row.month) ?? {
-      month: row.month,
-      customers: 0,
-      totalOre: 0,
-      closed: Boolean(row.closed_at),
-    }
-    current.customers += 1
-    current.totalOre += row.unit_price_ore
-    current.closed = current.closed && Boolean(row.closed_at)
-    byMonth.set(row.month, current)
-  }
-
   return {
     summary: (summaryResult.data ?? []).find((row) => row.partner_id === partnerId) ?? null,
     tenants: (tenantsResult.data ?? []).map((row) => ({
@@ -93,7 +101,7 @@ export async function loadPartnerAdminDetail(partnerId: string): Promise<{
       status: row.status,
       partnerId: row.partner_id,
     })),
-    history: [...byMonth.values()],
+    history: aggregatePartnerLicenseMonths(licensesResult.data ?? []),
     smsSender: smsResult.data?.sender ?? null,
   }
 }
@@ -127,22 +135,9 @@ export async function loadOwnPartnerBilling(): Promise<{
     licensesResult,
     smsResult,
   ])
-  const byMonth = new Map<string, PartnerLicenseMonth>()
-  for (const row of licensesResult.data ?? []) {
-    const current = byMonth.get(row.month) ?? {
-      month: row.month,
-      customers: 0,
-      totalOre: 0,
-      closed: Boolean(row.closed_at),
-    }
-    current.customers += 1
-    current.totalOre += row.unit_price_ore
-    current.closed = current.closed && Boolean(row.closed_at)
-    byMonth.set(row.month, current)
-  }
   return {
     summary: summaryResult.data?.[0] ?? null,
-    history: [...byMonth.values()],
+    history: aggregatePartnerLicenseMonths(licensesResult.data ?? []),
     smsSender: smsResult.data?.sender ?? null,
   }
 }

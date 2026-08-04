@@ -8,9 +8,10 @@ import {
   setServiceStaff,
   uploadServiceImage,
   removeServiceImage,
-  type ActionState,
-} from '@/lib/platform/actions'
+} from '@/lib/platform/actions/services'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import { centsToKronorInput } from '@/lib/platform/billing'
+import { formatTenantMoney } from '@/lib/tenant-region'
 import { Icon } from '@/components/portal/ui'
 import styles from './platform.module.css'
 
@@ -39,7 +40,6 @@ type Service = {
 }
 type StaffOption = { id: string; title: string | null; active: boolean }
 
-const kr = new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 })
 const OTHER = 'Övrigt'
 
 export function ServicesCard({
@@ -181,11 +181,11 @@ function ServiceRow({ tenantId, service, staff }: { tenantId: string; service: S
         <span className={styles.svcPrice}>
           {hasSale ? (
             <>
-              <span className={styles.svcOld}>{kr.format(service.price_cents / 100)}</span>
-              <span className={styles.svcSale}>{kr.format(service.sale_price_cents! / 100)}</span>
+              <span className={styles.svcOld}>{formatTenantMoney(service.price_cents)}</span>
+              <span className={styles.svcSale}>{formatTenantMoney(service.sale_price_cents!)}</span>
             </>
           ) : (
-            kr.format(service.price_cents / 100)
+            formatTenantMoney(service.price_cents)
           )}
         </span>
         <Icon name="chevronDown" size={16} className={styles.svcChev} />

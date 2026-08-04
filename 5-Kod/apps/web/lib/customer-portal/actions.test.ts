@@ -93,6 +93,11 @@ describe('customer portal cancellation action DAL', () => {
     })).resolves.toEqual({ outcome: 'unavailable' })
     await expect(cancelPortalBooking({
       bookingPublicId: bookingId,
+      expectedCutoffHours: 8761,
+      idempotencyKey,
+    })).resolves.toEqual({ outcome: 'unavailable' })
+    await expect(cancelPortalBooking({
+      bookingPublicId: bookingId,
       expectedCutoffHours: 24,
       idempotencyKey: 'reused-free-text-key',
     })).resolves.toEqual({ outcome: 'unavailable' })

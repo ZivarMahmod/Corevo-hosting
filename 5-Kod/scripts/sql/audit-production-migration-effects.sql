@@ -499,3 +499,54 @@ with checks(version, check_name, passed, evidence) as (
 select version, check_name, passed, evidence
 from checks
 order by version;
+
+select
+  '20260804123000' as version,
+  'push transport retired' as check_name,
+  not exists (
+    select 1 from public.customer_notification_prefs where push_enabled
+  )
+  and not exists (
+    select 1 from public.push_subscriptions where revoked_at is null
+  )
+  and not exists (
+    select 1 from public.notifications_outbox
+    where chosen_channel = 'push' and status in ('routing', 'queued', 'attempting')
+  ) as passed,
+  'no active push preference, subscription, or claimable outbox row' as evidence;
+
+select
+  '20260804140000' as version,
+  'portal mode and booking links reconciled' as check_name,
+  not exists (
+    select 1 from private.customer_portal_links
+    where purpose = 'booking_access' and booking_id is null and revoked_at is null
+  )
+  and not exists (
+    select 1 from public.tenant_settings where settings ? 'customer_accounts_enabled'
+  ) as passed,
+  'no active unbound booking link or legacy account flag' as evidence;
+
+select
+  '20260804150000' as version,
+  'customer cancellation data reconciled' as check_name,
+  coalesce((
+    select convalidated
+    from pg_constraint
+    where conname = 'tenant_settings_cancellation_cutoff_hours_check'
+  ), false)
+  and not exists (
+    select 1
+    from public.bookings b
+    join public.payments p on p.tenant_id = b.tenant_id
+      and p.booking_id = b.id
+      and p.status = 'succeeded'
+    where b.status = 'cancelled'
+      and not exists (
+        select 1 from private.payment_refund_jobs j
+        where j.tenant_id = b.tenant_id
+          and j.booking_id = b.id
+          and j.payment_id = p.id
+      )
+  ) as passed,
+  'validated cutoff constraint and no cancelled paid booking without refund job' as evidence;

@@ -1,5 +1,9 @@
-import { COPY_OVERRIDE_KEYS } from '@/components/storefront/theme-content'
-import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
+import { COPY_OVERRIDE_KEYS } from '@/lib/storefront/theme-copy'
+import {
+  STOREFRONT_LAYOUTS,
+  themeModuleViews,
+  themePages,
+} from '@/components/storefront/layouts/runtime'
 import {
   THEME_CATALOG,
   THEME_CATALOG_MODULE_KEYS,
@@ -33,8 +37,8 @@ const catalog = THEME_CATALOG.map((entry) => {
       capabilityValues.length === 4 &&
       capabilityValues.every((value) => typeof value === 'boolean'),
     editorFields: (definition.extraHome ?? []).map((field) => field.name),
-    codePages: Object.keys(definition.pages ?? {}),
-    moduleViews: Object.keys(definition.moduleViews ?? {}),
+    codePages: Object.keys(themePages(entry.key)),
+    moduleViews: Object.keys(themeModuleViews(entry.key)),
   }
 })
 

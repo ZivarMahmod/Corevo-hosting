@@ -10,8 +10,7 @@
    on the /konto layout wrapper.
    ===================================================================== */
 
-/* Centered 760 column inside PortalShell's .portal-main (which is 1080).
-   The frozen shell owns the salon top-header; this is the body card stack. */
+/* Centered 760 column inside PortalShell's .portal-main (which is 1080). */
 .page {
   max-width: 760px;
   margin: 0 auto;
@@ -334,33 +333,6 @@
   border: 1px solid var(--color-line);
   color: var(--color-fg-2);
 }
-.pillCancelled {
-  background: var(--color-accent-soft);
-  color: var(--color-fg-2);
-}
-
-/* ── Cancelled (struck-through, dimmed) booking row ──────────────────── */
-.cancelledRow {
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: 16px;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  opacity: 0.7;
-}
-.cancelledRow + .cancelledRow,
-.booking + .cancelledRow {
-  margin-top: 12px;
-}
-.cancelledTime {
-  font-family: var(--font-display);
-  font-size: 22px;
-  color: var(--color-fg-2);
-  text-decoration: line-through;
-  font-variant-numeric: tabular-nums;
-}
 
 /* ── History rows ────────────────────────────────────────────────────── */
 .history {
@@ -520,8 +492,7 @@
   min-height: 1.2em;
 }
 
-/* Consent row — STATIC indicator of the real retention behaviour (no save path
-   exists; rendered non-interactive + flagged, never a dead saving toggle). */
+/* Retention information; there is no separate save control. */
 .consent {
   display: flex;
   align-items: center;
@@ -530,9 +501,6 @@
   background: var(--color-accent-soft);
   border-radius: 12px;
   gap: 16px;
-}
-.consentText {
-  padding-right: 16px;
 }
 .consentLabel {
   font-weight: 600;
@@ -544,30 +512,6 @@
   color: var(--color-fg-2);
   margin-top: 2px;
 }
-/* Visual toggle that is INTENTIONALLY inert (aria-disabled, no handler). The
-   knob position reflects the real, always-on behaviour for a logged-in account
-   (contact details are retained while the account exists). */
-.toggleStatic {
-  width: 46px;
-  height: 26px;
-  border-radius: 999px;
-  border: none;
-  background: var(--color-primary);
-  position: relative;
-  flex: none;
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.toggleStatic span {
-  position: absolute;
-  top: 3px;
-  left: 23px;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #fff;
-}
-
 /* ── Buttons (storefront pill + ghost) ───────────────────────────────── */
 .btn {
   background: var(--color-primary);

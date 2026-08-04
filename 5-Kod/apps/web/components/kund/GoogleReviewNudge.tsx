@@ -4,15 +4,12 @@ import { GoogleReviewNudgePopup } from './GoogleReviewNudgePopup'
 // ── Google-recensions-nudge POPUP (M4 §2.3 — Zivars beslut) ──────────────────
 // A dismissible popup shown on the booking CONFIRMATION step, DECOUPLED from
 // payment (it shows regardless of whether the booking was paid). It opens the
-// salon's linked Google review page. This is a SEPARATE surface from the existing
-// email nudge (lib/notifications/google-review.ts, fires on status=completed) —
-// both are kept; this one nudges at booking time per Zivar's decision.
+// salon's linked Google review page at booking confirmation.
 //
 // Mounted on app/boka/bekraftelse/[id] (the one allowed touch outside this revir).
 // To keep that touch to a single import + tag, this server component does its own
 // anon read of the review URL (tenant_settings is anon-readable for active tenants,
-// migration 0004:45) and renders NOTHING when the owner has not set a URL — exactly
-// the graceful no-op the email channel uses.
+// migration 0004:45) and renders NOTHING when the owner has not set a URL.
 //
 // Resolves the tenant by the SLUG returned by get_public_booking (the confirmation
 // page already has it), so no extra header/tenant plumbing is needed.

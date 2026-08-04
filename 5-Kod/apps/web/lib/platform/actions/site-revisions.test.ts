@@ -6,7 +6,6 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   revalidateTenantById: vi.fn(),
   audit: vi.fn(async () => {}),
-  uploadImage: vi.fn(),
   uploadManagedImage: vi.fn(),
   geocodeAddress: vi.fn(),
   from: vi.fn(),
@@ -17,10 +16,6 @@ vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 vi.mock('@/lib/admin/tenant', () => ({ revalidateTenantById: mocks.revalidateTenantById }))
 vi.mock('../audit', () => ({ logPlatformAction: mocks.audit }))
 vi.mock('./observe', () => ({ reportActionError: vi.fn(async () => {}) }))
-vi.mock('@/lib/r2/upload', () => ({
-  uploadImage: mocks.uploadImage,
-  uploadErrorMessage: () => 'Uppladdningen misslyckades.',
-}))
 vi.mock('@/lib/media/lifecycle', () => ({
   uploadManagedImage: mocks.uploadManagedImage,
   managedUploadErrorMessage: () => 'Uppladdningen misslyckades.',
@@ -51,7 +46,6 @@ beforeEach(() => {
     data: [{ revision_id: 'revision-1', lock_version: 2, snapshot }],
     error: null,
   })
-  mocks.uploadImage.mockResolvedValue({ ok: true, url: 'https://cdn.test/crop.webp', key: 'draft/crop.webp' })
   mocks.uploadManagedImage.mockResolvedValue({
     ok: true,
     assetId: 'asset-1',
@@ -268,7 +262,6 @@ describe('site revision server actions', () => {
       image,
       'sajtbyggare',
     )
-    expect(mocks.uploadImage).not.toHaveBeenCalled()
     expect(mocks.rpc).not.toHaveBeenCalled()
     expect(mocks.revalidateTenantById).not.toHaveBeenCalled()
   })

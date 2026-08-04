@@ -1,5 +1,10 @@
 import { buildTenantBookingPath } from '@/lib/booking/preselection'
 import { DEFAULT_RESERVED_SUBDOMAINS } from '@/lib/tenant'
+import {
+  legacyTenantStorefrontHost,
+  normalizeTenantStorefrontOrigin,
+  tenantStorefrontHost,
+} from '@/lib/storefront-url'
 
 const TENANT_SLUG_PATTERN = /^(?!-)[a-z0-9-]{1,63}(?<!-)$/
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -76,10 +81,11 @@ export function validatePortalBookingOrigin({
       url.origin !== bookingOrigin
     ) return null
 
-    const canonicalHost = `${tenantSlug}.corevo.se`
-    const legacyHost = `${tenantSlug}.boka.corevo.se`
+    const canonicalHost = tenantStorefrontHost(tenantSlug)
+    const legacyHost = legacyTenantStorefrontHost(tenantSlug)
+    if (!canonicalHost || !legacyHost) return null
     if (url.hostname === canonicalHost || url.hostname === legacyHost) {
-      return `https://${canonicalHost}`
+      return normalizeTenantStorefrontOrigin(tenantSlug, bookingOrigin)
     }
     return safeDnsHostname(url.hostname) ? bookingOrigin : null
   } catch {
@@ -109,10 +115,8 @@ export function buildPortalRebookUrl({
 
   try {
     const url = new URL(bookingUrl)
-    const legacyOrigin = `https://${tenantSlug}.boka.corevo.se`
-    const normalizedOrigin = url.origin === legacyOrigin
-      ? `https://${tenantSlug}.corevo.se`
-      : url.origin
+    const normalizedOrigin = normalizeTenantStorefrontOrigin(tenantSlug, url.origin)
+    if (!normalizedOrigin) return null
     if (
       url.protocol !== 'https:' ||
       url.username !== '' ||

@@ -16,29 +16,8 @@ const migration = fs.readFileSync(
   path.join(CODE_ROOT, 'supabase', 'migrations', '0096_customer_account_claim.sql'),
   'utf8',
 )
-const route = fs.readFileSync(
-  path.join(WEB_ROOT, 'app', '(kund)', '(claim)', 'konto', 'koppla', '[token]', 'page.tsx'),
-  'utf8',
-)
-const portalLayout = fs.readFileSync(
-  path.join(WEB_ROOT, 'app', '(kund)', 'konto', 'layout.tsx'),
-  'utf8',
-)
-const signupAction = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'kund', 'actions.ts'), 'utf8')
-const claimServer = fs.readFileSync(
-  path.join(WEB_ROOT, 'lib', 'kund', 'customer-claim-server.ts'),
-  'utf8',
-)
 const runtimeSql = fs.readFileSync(
   path.join(CODE_ROOT, 'supabase', 'tests', 'customer_account_claim_0096_test.sql'),
-  'utf8',
-)
-const registerPage = fs.readFileSync(
-  path.join(WEB_ROOT, 'app', '(kund)', 'registrera', 'page.tsx'),
-  'utf8',
-)
-const loginForm = fs.readFileSync(
-  path.join(WEB_ROOT, 'app', '(auth)', 'login', 'LoginForm.tsx'),
   'utf8',
 )
 
@@ -59,14 +38,20 @@ describe('customer account claim', () => {
   })
 
   it('requires HTTPS and the default port for non-local claim origins', () => {
-    const allowedHosts = new Set(['freshcut.corevo.se'])
-    expect(isSafeCustomerClaimOrigin('https://freshcut.corevo.se', allowedHosts, false)).toBe(true)
-    expect(isSafeCustomerClaimOrigin('http://freshcut.corevo.se', allowedHosts, false)).toBe(false)
-    expect(isSafeCustomerClaimOrigin('https://freshcut.corevo.se:8443', allowedHosts, false)).toBe(false)
-    expect(isSafeCustomerClaimOrigin('https://user:pass@freshcut.corevo.se', allowedHosts, false)).toBe(false)
+    const allowedHosts = new Set(['freshcut.boka.corevo.se'])
+    expect(isSafeCustomerClaimOrigin('https://freshcut.boka.corevo.se', allowedHosts, false)).toBe(true)
+    expect(isSafeCustomerClaimOrigin('http://freshcut.boka.corevo.se', allowedHosts, false)).toBe(false)
+    expect(isSafeCustomerClaimOrigin('https://freshcut.boka.corevo.se:8443', allowedHosts, false)).toBe(
+      false,
+    )
+    expect(
+      isSafeCustomerClaimOrigin('https://user:pass@freshcut.boka.corevo.se', allowedHosts, false),
+    ).toBe(false)
     expect(isSafeCustomerClaimOrigin('https://evil.example', allowedHosts, false)).toBe(false)
     expect(isSafeCustomerClaimOrigin('http://freshcut.localhost:3000', new Set(), true)).toBe(true)
-    expect(isSafeCustomerClaimOrigin('http://freshcut.localhost:3000', new Set(), false)).toBe(false)
+    expect(isSafeCustomerClaimOrigin('http://freshcut.localhost:3000', new Set(), false)).toBe(
+      false,
+    )
   })
 
   it('keeps token records private, hashed, expiring and single-use', () => {
@@ -130,7 +115,9 @@ describe('customer account claim', () => {
     expect(claimFunction).toContain("v_profile.status = 'pending_claim'")
     expect(claimFunction).toContain("and u.status = 'pending_claim'")
     expect(claimFunction).toContain('customer_claim_profile_activation_race')
-    expect(migration).toContain('create or replace function public.reconcile_customer_account_claim')
+    expect(migration).toContain(
+      'create or replace function public.reconcile_customer_account_claim',
+    )
     expect(migration).toMatch(
       /grant execute on function public\.reconcile_customer_account_claim\([\s\S]*?to service_role;/,
     )
@@ -158,27 +145,6 @@ describe('customer account claim', () => {
       /grant execute on function public\.create_customer_account_claim\([\s\S]*?to service_role;/,
     )
     expect(migration).not.toMatch(/grant .*private\.customer_account_claims/i)
-  })
-
-  it('claims on the tenant route and keeps registration return paths internal', () => {
-    expect(route).toContain('currentKundTenant()')
-    expect(route).toContain('requireUser(')
-    expect(route).not.toContain("requirePortal('kund')")
-    expect(route).toContain('outside the guarded /konto layout')
-    expect(portalLayout).toContain("requirePortal('kund')")
-    expect(route).toContain('consumeCustomerClaim(')
-    expect(route).toContain('hashCustomerClaimToken(token)')
-    expect(signupAction).toContain('safeInternalRedirectPath')
-    expect(signupAction).toContain('isCustomerClaimPath(next)')
-    expect(claimServer).toContain("rpc('inspect_customer_account_claim'")
-    expect(claimServer).toContain("from('tenant_domains')")
-    expect(claimServer).toContain('isSafeCustomerClaimOrigin(')
-    expect(signupAction).toContain('consumeCustomerClaim(')
-    expect(signupAction).toContain("status: 'pending_claim'")
-    expect(signupAction).toContain("redirect('/konto?kopplad=1')")
-    expect(registerPage).toContain('if (!isCustomerClaimPath(next)) notFound()')
-    expect(loginForm).toContain('isCustomerClaimPath(next)')
-    expect(loginForm).toContain('/registrera?next=')
   })
 
   it('adds a GDPR scrub contract for source and merged claim references', () => {

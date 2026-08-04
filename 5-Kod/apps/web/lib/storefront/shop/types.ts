@@ -1,7 +1,7 @@
 // Webshop-modul — SHARED types + pure helpers (multi-bransch spår 5).
 //
 // PURE, NO I/O, NO 'server-only'. This file is imported by BOTH the server loader
-// (load-shop.ts) AND the client CTA ('use client' ShopCta.tsx). It therefore must
+// (load-shop.ts) AND client cart controls. It therefore must
 // never import a 'server-only' module (e.g. the Supabase server client) — that
 // would crash `next build` the moment a client component pulls a type from here.
 // Only types + framework-agnostic helpers live here (same split as skin/types.ts).
@@ -25,6 +25,17 @@ export const SHOP_FULFILMENT_LABELS: Record<ShopFulfilment, string> = {
   order_in_then_pickup: 'Beställ hem till butik',
 }
 
+export const PUBLIC_ORDER_STATUS_LABELS: Record<string, string> = {
+  reserved: 'Reserverad',
+  awaiting_payment: 'Väntar på betalning',
+  pending: 'Mottagen',
+  confirmed: 'Bekräftad',
+  ready: 'Klar att hämta',
+  completed: 'Slutförd',
+  cancelled: 'Avbruten',
+  expired: 'Utgången',
+}
+
 /**
  * BETALSÄTTEN (goal-64). Alla 12 Claude Design-paket ritar samma fem val, och
  * hinttexterna står som `verbatim` i vartenda manifest — de ÄR designen, inte
@@ -42,7 +53,12 @@ export const SHOP_PAYMENT_METHODS = [
     hint: 'Faktura eller delbetalning — du väljer hos Klarna.',
     mark: 'Klarna.',
   },
-  { id: 'paypal', label: 'PayPal', hint: 'Du skickas till PayPal för att slutföra.', mark: 'PayPal' },
+  {
+    id: 'paypal',
+    label: 'PayPal',
+    hint: 'Du skickas till PayPal för att slutföra.',
+    mark: 'PayPal',
+  },
   { id: 'applepay', label: 'Apple Pay', hint: 'Bekräfta med Face ID.', mark: ' Pay' },
 ] as const
 
@@ -230,7 +246,9 @@ export type ShopData = {
  *   priset har GÅTT NER (compare > pris)  → 'down'  ▼
  *   lika eller inget jämförelsepris       → 'flat'  —
  */
-export function priceMovement(p: Pick<ShopProduct, 'priceCents' | 'compareAtPriceCents'>): 'up' | 'down' | 'flat' {
+export function priceMovement(
+  p: Pick<ShopProduct, 'priceCents' | 'compareAtPriceCents'>,
+): 'up' | 'down' | 'flat' {
   const cmp = p.compareAtPriceCents
   if (cmp == null) return 'flat'
   if (p.priceCents > cmp) return 'up'
@@ -357,7 +375,11 @@ export function cartItemCount(lines: CartLine[]): number {
 
 /** Add a line to the cart (pure). Merges into an existing line by variantId and
  *  caps the quantity at `maxQty` (available stock) when known. */
-export function mergeCartLine(lines: CartLine[], line: Omit<CartLine, 'quantity'>, qty: number): CartLine[] {
+export function mergeCartLine(
+  lines: CartLine[],
+  line: Omit<CartLine, 'quantity'>,
+  qty: number,
+): CartLine[] {
   const existing = lines.find((l) => l.variantId === line.variantId)
   if (!existing) return [...lines, { ...line, quantity: Math.max(1, qty) }]
   const cap = line.maxQty ?? Infinity
@@ -370,7 +392,9 @@ export function mergeCartLine(lines: CartLine[], line: Omit<CartLine, 'quantity'
 export function setCartQty(lines: CartLine[], variantId: string, qty: number): CartLine[] {
   return lines
     .map((l) =>
-      l.variantId === variantId ? { ...l, quantity: Math.max(0, Math.min(qty, l.maxQty ?? Infinity)) } : l,
+      l.variantId === variantId
+        ? { ...l, quantity: Math.max(0, Math.min(qty, l.maxQty ?? Infinity)) }
+        : l,
     )
     .filter((l) => l.quantity > 0)
 }
@@ -441,8 +465,8 @@ function asPositiveInt(raw: unknown, fallback: number): number {
 
 /**
  * Defensively coerce the raw tenant_modules.config jsonb into a typed ShopConfig.
- * Robust to missing/partial config (a freshly activated draft has only the 0031
- * default; a malformed row degrades to DEFAULT_SHOP_CONFIG). The payment hook is
+ * Robust to missing/partial config (a newly activated module may only have the
+ * migration default; a malformed row degrades to DEFAULT_SHOP_CONFIG). The payment hook is
  * always read as disabled unless an explicit `payment.enabled === true` appears —
  * and even then the storefront does not render a pay step (rails paused).
  */

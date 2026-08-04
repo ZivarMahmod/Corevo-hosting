@@ -5,6 +5,9 @@ const mocks = vi.hoisted(() => ({
   createCustomerClaimLink: vi.fn(),
   buildCancelToken: vi.fn(),
   buildManageUrl: vi.fn(),
+  portalDeliverySecret: vi.fn(),
+  portalLinkDigest: vi.fn(),
+  customerPortalOrigin: vi.fn(),
   getCancellationCutoffHours: vi.fn(),
   loadEmailBrand: vi.fn(),
 }))
@@ -16,6 +19,14 @@ vi.mock('@/lib/kund/customer-claim-server', () => ({
 vi.mock('@/lib/booking/cancel-token', () => ({
   buildCancelToken: mocks.buildCancelToken,
   buildManageUrl: mocks.buildManageUrl,
+}))
+vi.mock('@/lib/customer-portal/crypto', () => ({
+  CUSTOMER_PORTAL_KEY_VERSION: 1,
+  portalDeliverySecret: mocks.portalDeliverySecret,
+  portalLinkDigest: mocks.portalLinkDigest,
+}))
+vi.mock('@/lib/customer-portal/origin', () => ({
+  customerPortalOrigin: mocks.customerPortalOrigin,
 }))
 vi.mock('@/lib/kund/settings', () => ({
   getCancellationCutoffHours: mocks.getCancellationCutoffHours,
@@ -70,6 +81,7 @@ function service(
     locale: 'sv-SE',
     currency: 'SEK',
     default_timezone: 'Europe/Stockholm',
+    settings: { customer_portal: { mode: 'legacy_account' } },
   },
 ) {
   const booking = {
@@ -95,6 +107,16 @@ function service(
     },
   }
   return {
+    rpc: async (name: string) => {
+      if (name !== 'customer_portal_mint_link') return { data: null, error: { code: 'PGRST202' } }
+      return {
+        data: [{
+          link_public_id: '70000000-0000-4000-8000-000000000001',
+          expires_at: '2030-02-01T09:00:00.000Z',
+        }],
+        error: null,
+      }
+    },
     from(table: string) {
       if (table === 'tenant_domains') {
         const query = {
@@ -120,13 +142,16 @@ beforeEach(() => {
   mocks.createServiceClient.mockReturnValue(service())
   mocks.createCustomerClaimLink.mockResolvedValue({
     ok: true,
-    url: 'https://demo.corevo.se/konto/koppla/claim-secret',
+    url: 'https://demo.boka.corevo.se/konto/koppla/claim-secret',
     expiresAt: '2030-01-02T09:00:00.000Z',
   })
   mocks.buildCancelToken.mockResolvedValue('cancel-secret')
   mocks.buildManageUrl.mockReturnValue(
-    'https://demo.corevo.se/avboka/20000000-0000-4000-8000-000000000001?t=cancel-secret',
+    'https://demo.boka.corevo.se/avboka/20000000-0000-4000-8000-000000000001?t=cancel-secret',
   )
+  mocks.portalDeliverySecret.mockResolvedValue('P'.repeat(43))
+  mocks.portalLinkDigest.mockResolvedValue('a'.repeat(64))
+  mocks.customerPortalOrigin.mockReturnValue('https://mina.corevo.se')
   mocks.getCancellationCutoffHours.mockResolvedValue(24)
   mocks.loadEmailBrand.mockResolvedValue({
     from: 'Demo <hej@corevo.se>',
@@ -144,6 +169,7 @@ describe('prepareBookingDelivery', () => {
       locale: 'en-US',
       currency: 'SEK',
       default_timezone: 'Europe/Stockholm',
+      settings: { customer_portal: { mode: 'legacy_account' } },
     }))
 
     await expect(prepareBookingDelivery(row)).resolves.toEqual({
@@ -186,8 +212,13 @@ describe('prepareBookingDelivery', () => {
     expect(mocks.createCustomerClaimLink).toHaveBeenCalledWith({
       tenantId: row.tenant_id,
       customerId: row.customer_id,
-      origin: 'https://demo.corevo.se',
+      origin: 'https://demo.boka.corevo.se',
     })
+    expect(mocks.buildManageUrl).toHaveBeenCalledWith(
+      'https://demo.boka.corevo.se',
+      row.booking_id,
+      'cancel-secret',
+    )
     expect(JSON.stringify(row.payload)).not.toContain('claim-secret')
     expect(JSON.stringify(row.payload)).not.toContain('cancel-secret')
   })
@@ -208,6 +239,29 @@ describe('prepareBookingDelivery', () => {
       '/avboka/20000000-0000-4000-8000-000000000001?t=cancel-secret',
     )
     expect(prepared.body).not.toContain('/konto/koppla/')
+    expect(mocks.createCustomerClaimLink).not.toHaveBeenCalled()
+  })
+
+  it('uses one idempotent portal link for passwordless SMS retries', async () => {
+    mocks.createServiceClient.mockReturnValue(service('confirmed', {
+      country_code: 'SE',
+      locale: 'sv-SE',
+      currency: 'SEK',
+      default_timezone: 'Europe/Stockholm',
+      settings: { customer_portal: { mode: 'passwordless_tenant' } },
+    }))
+    const smsRow = { ...row, chosen_channel: 'sms' as const }
+
+    const first = await prepareBookingDelivery(smsRow)
+    const second = await prepareBookingDelivery(smsRow)
+
+    expect(first).toEqual(second)
+    expect(first).toMatchObject({ ok: true, channel: 'sms' })
+    if (!first.ok || first.channel !== 'sms') throw new Error('expected sms')
+    expect(first.body).toContain(
+      `Se och hantera bokningen: https://mina.corevo.se/oppna/demo#v1.70000000-0000-4000-8000-000000000001.${'P'.repeat(43)}`,
+    )
+    expect(mocks.buildCancelToken).not.toHaveBeenCalled()
     expect(mocks.createCustomerClaimLink).not.toHaveBeenCalled()
   })
 

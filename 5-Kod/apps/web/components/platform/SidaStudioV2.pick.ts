@@ -1,4 +1,4 @@
-import type { SiteEditorTab } from './SidaStudioV2.manifest'
+import type { SiteEditorTab } from '@/lib/platform/site-editor-manifest'
 
 export type EditorFieldTarget = {
   field: string

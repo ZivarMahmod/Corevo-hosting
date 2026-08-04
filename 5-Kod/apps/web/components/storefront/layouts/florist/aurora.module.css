@@ -98,18 +98,6 @@
   color: var(--tenant-primary-ink, var(--color-primary));
 }
 
-.auSrOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* ───────────────────────────────── sidhuvud ───────────────────────────────── */
 
 .auNav {
@@ -684,11 +672,6 @@
   max-width: 1100px;
 }
 
-.auPageNarrow {
-  composes: auPage;
-  max-width: 1000px;
-}
-
 .auPageHead {
   text-align: center;
   margin-bottom: 56px;
@@ -945,20 +928,6 @@
   color: var(--color-fg);
 }
 
-.auContactCardBody {
-  margin: 0 0 26px;
-  color: var(--color-fg-2);
-  font-size: 15.5px;
-  line-height: 1.8;
-}
-
-.auContactActions {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
 /* ───────────────────────────────── modul-vyer ─────────────────────────────── */
 
 .auShop {
@@ -982,17 +951,6 @@
   padding: 72px 28px 40px;
 }
 
-.auNotice {
-  margin: 0 auto 40px;
-  max-width: 700px;
-  background: var(--color-surface);
-  padding: 18px 24px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 16px;
-  color: var(--color-primary-d);
-}
 
 .auEmpty {
   margin: 0;
@@ -1079,7 +1037,6 @@
   .auAbout,
   .auPage,
   .auPageMid,
-  .auPageNarrow,
   .auShop,
   .auBlogg,
   .auFoot,

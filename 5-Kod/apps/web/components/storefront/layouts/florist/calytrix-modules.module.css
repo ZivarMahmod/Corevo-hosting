@@ -195,7 +195,9 @@
   color: var(--color-fg, #241019);
   background: var(--color-surface, #ffffff);
   text-decoration: none;
-  transition: color 0.18s ease, background 0.18s ease;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
 }
 
 /* Filen ritar ingen kant efter sista segmentet — lådans egen ram stänger raden. */
@@ -222,15 +224,6 @@
 }
 
 /* Pausad butik: katalogen är läsbar, köp-CTA:erna finns inte. */
-.cxNotice {
-  margin: 20px 0 0;
-  background: var(--color-accent-soft, #e8d9de);
-  border-left: 3px solid var(--color-primary, #7d1f46);
-  padding: 14px 18px;
-  color: var(--color-fg, #241019);
-  font-size: 14.5px;
-  font-weight: 600;
-}
 
 .cxEmpty {
   margin: 36px 0 0;

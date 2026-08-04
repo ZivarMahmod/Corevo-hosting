@@ -1,8 +1,8 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { revalidateTag } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
+import { currentRequestTenant } from '@/lib/tenant-data'
 import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import type { JoinClubState } from './types'
@@ -19,7 +19,7 @@ import type { JoinClubState } from './types'
 //   • tenanten kommer ur middleware-headern `x-corevo-tenant-slug` — ALDRIG från klienten.
 //     (Anon-RLS isolerar inte tenants; den server-resolvade identiteten är enda fencen.)
 //   • rate-limit per IP+tenant före skrivningen (LIMITS.loyalty).
-//   • modulen re-gatas SERVER-side: lojalitet måste vara `live`. draft/off/paused nekar.
+//   • modulen re-gatas server-side: lojalitet måste vara `live`.
 //   • sedan EN rad.
 //
 // SKILLNADEN mot offert-intaket, och varför: offerten skriver rakt in i offert_requests,
@@ -39,22 +39,6 @@ import type { JoinClubState } from './types'
 // "starta"-CTA går via offert-förfrågan tills betal-rälsen för abonnemang finns. En knapp
 // som låtsas ta betalt är värre än ingen knapp.
 
-/** Resolve the request's tenant from the middleware header (never the client). */
-async function getTenantContext(): Promise<{ id: string; slug: string } | null> {
-  const h = await headers()
-  const slug = h.get('x-corevo-tenant-slug')
-  if (!slug) return null
-  const supabase = createPublicClient()
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id, slug')
-    .eq('slug', slug)
-    .eq('status', 'active')
-    .maybeSingle()
-  if (!tenant) return null
-  return { id: tenant.id, slug: tenant.slug }
-}
-
 /**
  * Gå med i klubben (anonymt gästintag). Resolverar tenanten + modulens läge server-side,
  * rate-limitar skrivningen, validerar e-posten och skapar/uppdaterar EN medlemsrad.
@@ -68,7 +52,7 @@ export async function joinLoyaltyClub(
   formData: FormData,
 ): Promise<JoinClubState> {
   // a. Tenant ur middleware-headern (aldrig klienten).
-  const ctx = await getTenantContext()
+  const ctx = await currentRequestTenant()
   if (!ctx) return { phase: 'error', message: 'Okänt företag.' }
 
   // b. Rate-limit per IP+tenant (samma form som offert/bokning). Fails open vid DB-fel.
@@ -77,9 +61,7 @@ export async function joinLoyaltyClub(
     return { phase: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
   }
 
-  // c. Re-gate SERVER-side: lojalitet måste vara LIVE. En pausad/avstängd klubb tar inte
-  //    emot medlemmar, hur gammal eller tampererad sidan i webbläsaren än är. (RPC:n gatar
-  //    en gång till — det här är bara det snälla felmeddelandet.)
+  // c. Re-gate server-side; the RPC repeats this trust-boundary check.
   const supabase = createPublicClient()
   const { data: moduleRow } = await supabase
     .from('tenant_modules')

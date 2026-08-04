@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import type { WorkingHourRow } from './data'
 
 // Vecko-översikten på /admin/scheman visar HELA teamet på en gång — därför
-// tenant-vida läsningar här (till skillnad från listWorkingHours/-Slots i data.ts
-// som är per medarbetare). RLS (0002: tenant_id = private.tenant_id()) fencar
+// tenant-vida läsningar här (till skillnad från slot-läsningen i data.ts som är
+// per medarbetare). RLS (0002: tenant_id = private.tenant_id()) fencar
 // redan till adminens tenant; tenant_id skickas ändå — defence-in-depth + stabil
 // ordning, samma kontrakt som resten av admin-datalagret.
 
@@ -126,26 +126,6 @@ export async function listTimeOffOverlapping(
   return data ?? []
 }
 
-/** Pågående + kommande frånvaro (slutet ligger i framtiden) för frånvaro-admin-
- *  listan. Historiken utelämnas medvetet — ytan är ett planeringsverktyg, inte
- *  ett arkiv. */
-export async function listCurrentAndUpcomingTimeOff(
-  tenantId: string,
-  nowIso: string,
-  locationId?: string,
-): Promise<TimeOffAdminRow[]> {
-  const supabase = await createClient()
-  let query = supabase
-    .from('time_off')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .gte('end_ts', nowIso)
-    .order('start_ts', { ascending: true })
-  if (locationId) query = query.eq('location_id', locationId)
-  const { data, error } = await query
-  if (error) throw new Error(`listCurrentAndUpcomingTimeOff: ${error.message}`)
-  return data ?? []
-}
 
 /** Pågående + kommande frånvaro för en enda person. Personkortet får inte
  * platsfiltrera den här läsningen: äldre/globala rader med location_id=null och

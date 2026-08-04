@@ -19,7 +19,7 @@ import styles from './ateljevinter.module.css'
  * Filen har varken galleri-band, blogg-band eller presentkort-rad på hemmet — och då har
  * inte mallen det heller. Modulerna nås via nav, rummen och sidfoten, precis som i filen.
  * Att lägga till en sektion "för att de andra mallarna har en" ÄR att improvisera bort
- * mallen (CLAUDE.md § DESIGN-TROHET).
+ * mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * Modul-gatingen är plattformens och HELIG: verk-rutnätet ritas bara när shopen har
  * teasers, rum i/ii bara när modulen går att nå. SYNKRON komponent (ingen async, ingen
@@ -113,7 +113,7 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
                         style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                         aria-label={`${p.name} — visa verket`}
                       >
-                        <span className={styles.avSrOnly}>{p.imageAlt ?? p.name}</span>
+                        <span className="sr-only">{p.imageAlt ?? p.name}</span>
                       </Link>
                       <div className={styles.avWorkRow}>
                         <p className={styles.avWorkName}>{p.name}</p>

@@ -4,6 +4,14 @@ import { createCustomerClaimLink } from '@/lib/kund/customer-claim-server'
 import { isSafeCustomerClaimOrigin } from '@/lib/kund/customer-claim'
 import { buildCancelToken, buildManageUrl } from '@/lib/booking/cancel-token'
 import { getCancellationCutoffHours } from '@/lib/kund/settings'
+import {
+  CUSTOMER_PORTAL_KEY_VERSION,
+  portalDeliverySecret,
+  portalLinkDigest,
+} from '@/lib/customer-portal/crypto'
+import { buildPortalLinkFragment } from '@/lib/customer-portal/link'
+import { readCustomerPortalMode } from '@/lib/customer-portal/mode'
+import { customerPortalOrigin } from '@/lib/customer-portal/origin'
 import { loadEmailBrand } from './brand'
 import {
   bookingRequestReceivedEmail,
@@ -16,6 +24,11 @@ import {
 } from './templates'
 import type { ClaimedNotificationOutboxRow } from './outbox'
 import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
+import {
+  legacyTenantStorefrontHost,
+  normalizeTenantStorefrontOrigin,
+  tenantStorefrontHost,
+} from '@/lib/storefront-url'
 
 type PreparedEmail = {
   ok: true
@@ -27,18 +40,9 @@ type PreparedEmail = {
   replyTo?: string
 }
 type PreparedSms = { ok: true; channel: 'sms'; to: string; body: string; from: string }
-type PreparedPush = {
-  ok: true
-  channel: 'push'
-  customerId: string
-  title: string
-  body: string
-  url: string
-}
 export type PreparedBookingDelivery =
   | PreparedEmail
   | PreparedSms
-  | PreparedPush
   | {
       ok: false
       reason:
@@ -67,6 +71,7 @@ type BookingDeliveryRow = {
       locale: string
       currency: string
       default_timezone: string
+      settings: unknown
     } | null
   } | null
   customers: {
@@ -114,20 +119,56 @@ async function tenantOrigin(
     .select('domain')
     .eq('tenant_id', tenantId)
     .eq('verified', true)
-  const canonicalHost = `${slug}.corevo.se`
-  const legacyHost = `${slug}.boka.corevo.se`
+  const canonicalHost = tenantStorefrontHost(slug)
+  const legacyHost = legacyTenantStorefrontHost(slug)
+  if (!canonicalHost || !legacyHost) return null
   const allowed = new Set([
     canonicalHost,
     legacyHost,
     ...(domains ?? []).map((item) => item.domain.toLowerCase()),
   ])
   if (!isSafeCustomerClaimOrigin(raw, allowed, process.env.NODE_ENV !== 'production')) return null
-  const origin = new URL(raw)
-  return origin.hostname === legacyHost ? `https://${canonicalHost}` : origin.origin
+  return normalizeTenantStorefrontOrigin(slug, raw)
+}
+
+async function mintPasswordlessPortalUrl(
+  admin: NonNullable<ReturnType<typeof createServiceClient>>,
+  outbox: ClaimedNotificationOutboxRow,
+  tenantSlug: string,
+  customerId: string,
+): Promise<string | null> {
+  const origin = customerPortalOrigin()
+  if (!origin) return null
+
+  try {
+    const secret = await portalDeliverySecret(outbox.id)
+    const { data, error } = await admin.rpc('customer_portal_mint_link', {
+      p_tenant: outbox.tenant_id,
+      p_customer: customerId,
+      p_purpose: 'booking_access',
+      p_token_digest: await portalLinkDigest(secret),
+      p_key_version: CUSTOMER_PORTAL_KEY_VERSION,
+      // The forward DB owner derives the binding expiry from the booking. This
+      // bounded value keeps the call compatible while migrations cut over first.
+      p_expires_at: new Date(Date.now() + 29 * 24 * 60 * 60 * 1_000).toISOString(),
+      p_delivery_intent_id: outbox.id,
+    })
+    if (error || !Array.isArray(data) || data.length !== 1) return null
+    const linkPublicId = data[0]?.link_public_id
+    if (typeof linkPublicId !== 'string') return null
+    const fragment = buildPortalLinkFragment({
+      linkPublicId,
+      secret,
+      keyVersion: CUSTOMER_PORTAL_KEY_VERSION,
+    })
+    return `${origin}/oppna/${tenantSlug}${fragment}`
+  } catch {
+    return null
+  }
 }
 
 /**
- * Pure transport preparation boundary for the future explicit outbox adapter.
+ * Pure transport preparation boundary for the claimed outbox adapter.
  * Bearer links are minted here, after a row has been claimed, kept only in memory
  * and immediately handed to a provider adapter. This function itself sends nothing.
  */
@@ -146,7 +187,7 @@ export async function prepareBookingDelivery(
   if (!admin) return { ok: false, reason: 'link_unavailable' }
   const { data, error } = await admin
     .from('bookings')
-    .select('id, tenant_id, customer_id, status, start_ts, services(name), staff(title), locations(timezone), tenants(name,slug,tenant_settings(country_code,locale,currency,default_timezone)), customers(id,tenant_id,email,phone,auth_user_id)')
+    .select('id, tenant_id, customer_id, status, start_ts, services(name), staff(title), locations(timezone), tenants(name,slug,tenant_settings(country_code,locale,currency,default_timezone,settings)), customers(id,tenant_id,email,phone,auth_user_id)')
     .eq('id', outbox.booking_id)
     .eq('tenant_id', outbox.tenant_id)
     .maybeSingle()
@@ -171,6 +212,7 @@ export async function prepareBookingDelivery(
     || region.locale !== DEFAULT_TENANT_REGION.locale
     || region.currency !== DEFAULT_TENANT_REGION.currency
   ) return { ok: false, reason: 'payload_invalid' }
+  const portalMode = readCustomerPortalMode(region.settings)
 
   // Relationship/completion messages are marketing. Consent and the explicit
   // recommendation opt-in may be revoked after routing but before delivery, so
@@ -192,25 +234,31 @@ export async function prepareBookingDelivery(
 
   const rawOrigin = typeof payload.origin === 'string' ? payload.origin : null
   let origin: string | null = null
-  if (payload.include_manage_link === true || payload.include_account_claim === true) {
+  const wantsLegacyManage = payload.include_manage_link === true
+    && portalMode !== 'passwordless_tenant'
+  const wantsAccountClaim = outbox.chosen_channel === 'email'
+    && payload.include_account_claim === true
+    && portalMode === 'legacy_account'
+    && customer.auth_user_id === null
+  if (wantsLegacyManage || wantsAccountClaim) {
     if (!rawOrigin) return { ok: false, reason: 'payload_invalid' }
     origin = await tenantOrigin(admin, outbox.tenant_id, tenant.slug, rawOrigin)
     if (!origin) return { ok: false, reason: 'payload_invalid' }
   }
 
   let manageUrl: string | null = null
+  let portalUrl: string | null = null
   let accountClaimUrl: string | null = null
-  if (payload.include_manage_link === true && origin) {
+  if (wantsLegacyManage && origin) {
     const token = await buildCancelToken(booking.id)
     if (!token) return { ok: false, reason: 'link_unavailable' }
     manageUrl = buildManageUrl(origin, booking.id, token)
   }
-  if (
-    outbox.chosen_channel === 'email'
-    && payload.include_account_claim === true
-    && origin
-    && customer.auth_user_id === null
-  ) {
+  if (payload.include_manage_link === true && portalMode === 'passwordless_tenant') {
+    portalUrl = await mintPasswordlessPortalUrl(admin, outbox, tenant.slug, customer.id)
+    if (!portalUrl) return { ok: false, reason: 'link_unavailable' }
+  }
+  if (wantsAccountClaim && origin) {
     const claim = await createCustomerClaimLink({
       tenantId: outbox.tenant_id,
       customerId: customer.id,
@@ -232,19 +280,6 @@ export async function prepareBookingDelivery(
   }
   const when = formatWhen(booking.start_ts, timeZone, region.locale)
 
-  if (outbox.chosen_channel === 'push') {
-    const body = outbox.event_type === 'booking_request_received'
-      ? `Förfrågan mottagen: ${serviceName} ${when}. Inte bekräftad än.`
-      : `${serviceName} ${when}`
-    return {
-      ok: true,
-      channel: 'push',
-      customerId: customer.id,
-      title: tenantName,
-      body,
-      url: '/konto',
-    }
-  }
   if (outbox.chosen_channel === 'sms') {
     if (!customer.phone?.trim()) return { ok: false, reason: 'no_recipient' }
     const eventText = outbox.event_type === 'booking_cancelled'
@@ -258,16 +293,17 @@ export async function prepareBookingDelivery(
           : outbox.event_type === 'booking_completed'
             ? 'Tack för ditt besök.'
             : `Din tid för ${serviceName} är bokad ${when}.`
-    // Kundportalen är ännu inte den publika, lösenordsfria bokningshanteringen.
-    // SMS-gäster ska därför alltid landa direkt på bokningens signerade
-    // hanteringssida i stället för den inloggningskrävande konto-claimen.
-    const link = manageUrl
+    const link = portalUrl
+      ? ` Se och hantera bokningen: ${portalUrl}`
+      : manageUrl
+        ? ` ${manageUrl}`
+        : ''
     return {
       ok: true,
       channel: 'sms',
       to: customer.phone,
       from: tenantName,
-      body: `${tenantName}: ${eventText}${link ? ` ${link}` : ''}`,
+      body: `${tenantName}: ${eventText}${link}`,
     }
   }
   if (!customer.email?.trim()) return { ok: false, reason: 'no_recipient' }
@@ -284,6 +320,7 @@ export async function prepareBookingDelivery(
     locale: region.locale,
     staffTitle: booking.staff?.title ?? null,
     manageUrl,
+    portalUrl,
     accountClaimUrl,
     cancelCutoffHours: cutoff,
     accentColor: brand.accentColor,

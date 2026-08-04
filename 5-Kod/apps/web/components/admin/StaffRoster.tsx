@@ -9,12 +9,11 @@ import {
   updateStaff,
   toggleStaffActive,
   deleteStaff,
-  setStaffServices,
   linkCurrentUserToStaff,
   type ActionState,
 } from '@/lib/admin/actions'
 import { STAFF_PALETTE, staffColor } from '@/lib/admin/staff-colors'
-import { matchingBookableServices, type StaffReadiness } from '@/lib/admin/staff-readiness'
+import type { StaffCard } from '@/lib/admin/data'
 import {
   Badge,
   Button,
@@ -24,65 +23,10 @@ import {
   useToast,
 } from '@/components/portal/ui'
 
-/** One booking row in a staff member's "Verklig dag · idag" list. Shaped by the
- *  server page from getStaffScheduleWithNotes — real data, never PII. */
-export type StaffDayRow = {
-  id: string
-  startTs: string
-  status: string
-  serviceName: string | null
-  customerLabel: string
-}
-
-/** The set of tjänster the salon offers, for the per-staff service-coupling form
- *  inside the Drawer (setStaffServices). Mirrors ServiceRow's used fields. */
-export type ServiceOption = {
-  id: string
-  name: string
-  active: boolean
-  locationId: string | null
-  /** Tjänstens kanoniska längd. Personalkopplingen har ingen egen override. */
-  durationMin?: number
-}
-
 /** ACTIVE locations, for the Drawer's plats-select (updateStaff → staff.location_id).
  *  The select renders for several places and as a repair path when a legacy member
  *  has no place even though the tenant has one. */
 export type LocationOption = { id: string; name: string }
-
-/** Per-staff display bundle the server page hands down. `locationName` is resolved
- *  from the locations table (location_id → name); null when the staff row has no
- *  pinned location. `hasAccount` = staff.profile_id != null (eget konto). `today`
- *  is that staff member's real bookings for today (cancelled already excluded).
- *  `serviceNames` are the names of the services this member performs (staff_services
- *  → services.name) — these are the mock's specialty chips, bound to live data.
- *  `serviceIds` backs the Drawer's coupling checkboxes (which are pre-checked). */
-export type StaffCard = {
-  id: string
-  displayName: string
-  title: string | null
-  active: boolean
-  bookingCount: number
-  serviceCount: number
-  serviceIds: string[]
-  serviceNames: string[]
-  hasAccount: boolean
-  locationName: string | null
-  /** Raw staff.location_id — backs the Drawer's plats-select default. Optional so
-   *  callers without multi-plats wiring keep compiling; null = ingen plats satt. */
-  locationId?: string | null
-  readiness: StaffReadiness
-  /** Foto på publika sajten (staff.avatar_url, 0049) — null = initial-avatar här
-   *  och standard-silhuett på sidan. Optional så äldre callers kompilerar. */
-  avatarUrl?: string | null
-  /** Syns i publika team-sektionen (staff.show_on_site, 0049) — styr ENDAST
-   *  "Våra barberare" på sidan; bokningsbarheten är `active` som förut. */
-  showOnSite?: boolean
-  /** goal-67: vald kalenderfärg (staff.color, hex) — null = ingen vald, kalendern
-   *  härleder då en färg ur id:t. Optional så äldre callers kompilerar. */
-  color?: string | null
-  today: StaffDayRow[]
-}
 
 const initialOf = (name: string): string => name.trim()[0]?.toUpperCase() ?? '?'
 
@@ -100,7 +44,7 @@ const CHIP_CAP = 3
  * Clicking a card opens a shared Drawer that holds ALL the per-staff editing that
  * previously lived in the StaffManager list (now folded in here, never dropped):
  *   • rename (updateStaff)         • activate/deactivate (toggleStaffActive)
- *   • delete (deleteStaff)         • couple services (setStaffServices)
+ *   • delete (deleteStaff)
  *   • eget-konto magic-link invite (inviteStaff) for un-linked staff
  * plus the multi-location reminder and the staff member's real "Verklig dag · idag".
  *
@@ -651,99 +595,6 @@ export function PhotoSection({ member, onSaved }: { member: StaffCard; onSaved: 
   )
 }
 
-/** Tjänster-coupling (setStaffServices) — the real checkbox set, restyled. These
- *  are the card's chips; the set drives bookability (aktiv + ≥1 tjänst). */
-export function ServicesSection({
-  member,
-  services,
-  onSaved,
-}: {
-  member: StaffCard
-  services: ServiceOption[]
-  onSaved: () => void
-}) {
-  const { notify } = useToast()
-  const router = useRouter()
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(setStaffServices, {})
-  const availableServices = matchingBookableServices(member.locationId ?? null, services)
-
-  useEffect(() => {
-    if (state.success) {
-      notify('Tjänster kopplade', 'success')
-      router.refresh()
-      onSaved()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.success])
-
-  return (
-    <section>
-      <div className="eyebrow" style={{ marginBottom: 8 }}>
-        Tjänster
-      </div>
-      {availableServices.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0, lineHeight: 1.55 }}>
-          {!member.locationId ? (
-            'Välj plats innan du kopplar tjänster.'
-          ) : (
-            <>
-              Inga aktiva tjänster finns för den valda platsen —{' '}
-              <Link href="/admin/tjanster" style={{ color: 'var(--c-forest)', fontWeight: 600 }}>
-                hantera tjänster
-              </Link>
-              .
-            </>
-          )}
-        </p>
-      ) : (
-        <form action={formAction}>
-          <input type="hidden" name="staff_id" value={member.id} />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
-            {availableServices.map((svc) => (
-              <label
-                key={svc.id}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  fontSize: 13,
-                  color: 'var(--c-ink)',
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  name="service_id"
-                  value={svc.id}
-                  defaultChecked={member.serviceIds.includes(svc.id)}
-                  style={{ accentColor: 'var(--c-forest)' }}
-                />
-                <span>
-                  {svc.name}
-                  {svc.durationMin ? (
-                    <small style={{ marginLeft: 6, color: 'var(--c-ink-3)' }}>
-                      {svc.durationMin} min
-                    </small>
-                  ) : null}
-                </span>
-              </label>
-            ))}
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Button variant="subtle" type="submit" icon="check" size="sm" disabled={pending}>
-              {pending ? 'Sparar…' : 'Spara tjänster'}
-            </Button>
-          </div>
-          {state.error && (
-            <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
-              {state.error}
-            </p>
-          )}
-        </form>
-      )}
-    </section>
-  )
-}
 
 /** Plats-select (updateStaff → staff.location_id) — renders only when the tenant
  *  has >1 aktiv plats (see the Drawer's multi-location block). Posts ONLY id +

@@ -1,7 +1,7 @@
 // Onboarding-studio (goal-48) — static step-rail config for the three phases and
 // seven steps. FLAT_STEP_ORDER drives navigation; stepDone derives completion from
 // the real StudioCfg.
-import type { IconName } from '@/components/portal/ui/Icon'
+import type { IconName } from '@/lib/ui-icons'
 import type { StudioCfg } from './model'
 import { resolveModuleState } from './model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'

@@ -1,191 +1,98 @@
-# Databasmigrationer — driftgrind och säker avstämning
+# Databasmigrationer och releasecheckpoint
 
-## Bekräftat nuläge 2026-07-21
+`supabase/migrations/` är schemats enda historik. Både fyrsiffriga legacyversioner
+och tidsstämplade Supabase-versioner är permanenta identiteter. En applicerad fil
+får aldrig byta namn eller innehåll.
 
-- Supabase-projektet är `ACTIVE_HEALTHY`, PostgreSQL 17.6.1 och organisationen
-  ligger på Pro.
-- Produktionshistoriken är avstämd till 118 numeriska versioner `0001–0119`
-  (projektets historiska lucka `0013` finns varken lokalt eller remote), utan
-  datumversioner eller andra ogiltiga versionsnamn.
-- De 14 gamla datumversionerna som motsvarade `0069–0082` har bevisats motsvara
-  de lokala filerna och ersatts i historiken. Effekterna `0060–0091` verifierades
-  före repair; ingen av de gamla filerna kördes om mot kunddata.
-- Två verkliga legacy-luckor reparerades additivt: `0105` återställde
-  slot-hold-kontraktet som saknades trots registrerad `0014`, och `0107`
-  återställde global plattformsidentitet som saknades trots registrerad `0029`.
-- En datalös Supabase-previewbranch har efter full reset kört hela kedjan
-  `0001–0109`; historiken innehöll 108 numeriska versioner, inga ogiltiga
-  versionsnamn, och alla 28 SQL-runtime-/RLS-tester passerade. Den officiella
-  repair-sekvensen har dessutom repeterats där: efter avstämningen erbjöd
-  `db push --dry-run` exakt `0092–0106`; den senare driftluckan erbjöd exakt
-  `0107` och inget annat. Den senare Data API-avstämningen erbjöd därefter
-  exakt `0108` och sedan den avgränsade kompletteringen `0109`.
-- Produktionscheckpointen är verifierad till `0119`. Det tar bort just
-  migrationsdriftgrinden, inte de övriga lanseringsgrindarna.
+## Kanoniska ägare
 
-## PIN-claim hotfix 0119 2026-07-21
+- Migrationer: `supabase/migrations/`.
+- SQL-kontrakt: `supabase/tests/`.
+- Inventering, historikparitet och fingerprint:
+  `scripts/verify-database-release.mjs`.
+- Read-only schemaaudit: `scripts/sql/audit-production-migration-effects.sql`.
+- Produktionsbevis: `docs/ops/production-schema-checkpoint.json`.
+- Releasegrind: `.github/workflows/deploy.yml`.
 
-- Produktionsfelet reproducerades i `claim_notification_outbox_by_id`: PostgreSQL
-  avvisade `pg_catalog.coalesce(...)`, så PIN-raden stannade `queued` före Giada.
-- `0119_fix_pin_claim_builtin_expressions.sql` ersatte endast funktionen med
-  o-kvalificerade SQL-uttryck `coalesce`/`greatest`/`least`. Runtimekontrollen
-  körde funktionen, bekräftade service-role-only grants och noll ogiltiga
-  migrationsversioner. Historiken normaliserades till kanonversion `0119`.
-- Ett nytt Demo-prov gav `sent` i Supabase-outbox och Giadas API-journal samt
-  visade det sexsiffriga PIN-fältet. Provet avbröts före bokningsskapande.
-- Releaseinventeringen verifierades med fingeravtrycket
-  `sha256:747df86d6bea021be61094557137e1817901ed84d3909b06e36c267a053fdde2`.
-- Supabase Advisors gav inga nya findings knutna till den korrigerade funktionen.
+Produktionsmigrationer körs inte automatiskt av CI. Apply, repair och ändring av
+checkpoint/remote releasevariabel kräver uttryckligt operatörsgodkännande.
 
-## PIN-bokning 0118 2026-07-21
+## Lokal inventering
 
-- Pull requestens exakta SHA `6975ab9` passerade fresh Supabase, samtliga SQL/RLS-prov,
-  lint, typecheck, enhet/acceptans, produktionsbuild och Worker-budget i CI-run
-  `29834316557`.
-- `0118_pin_booking_verification.sql` applicerades i produktion genom Supabase MCP.
-  MCP:s enda tidsstämplade historikrad normaliserades med exakta radgrindar till
-  kanonversion `0118`; efterkontrollen visade 117 numeriska versioner, senaste
-  `0118` och noll ogiltiga versionsnamn.
-- `pin_booking_verification_0118_test.sql` passerade direkt mot produktion i en egen
-  `BEGIN/ROLLBACK`. Kontrollfrågan bekräftade privat challenge-tabell, befintlig RPC,
-  nekad execute för `anon`/`authenticated` och execute enbart för `service_role`.
-- Supabase Advisors gav inga nya `WARN`/`ERROR` kopplade till 0118. INFO om en privat
-  RLS-tabell utan policies är avsiktlig eftersom tabellen saknar Data API-grants;
-  nya FK-/unused-indexnotiser är informationsnivå före faktisk trafik.
-- Releaseinventeringen verifierades med fingeravtrycket
-  `sha256:c3d0c1f6507e1633d41ff1c4854aa8ef3a1b8297c24a780596e36907aaebe44c`.
-- Merge-SHA `e5b2db4` passerade main-CI `29835690511` och driftsattes genom
-  produktionsrun `29836132825`; schema-, secret-, domän- och externa smoke-grindar
-  passerade före och efter Worker-version `37cbbc09-57d0-4b14-9f7c-a4e80a4cae3f`.
+Kör från `5-Kod/`:
 
-## Superadmin v2-avstämning 2026-07-18 (`0110–0117`)
-
-- Migrationerna `0110–0117` provkördes först tillsammans med sina åtta SQL-runtimeprov
-  i en enda transaktion mot produktionsmotorn och rullades tillbaka utan fixturedata.
-- Samma åtta migrationer applicerades därefter i ordning. Supabase MCP:s tidsstämplade
-  historikrader normaliserades omedelbart, en i taget och med exakta radgrindar, till
-  repots kanonversioner `0110–0117`.
-- Efterkontroll: 116 historikrader, senaste `0117`, inga ogiltiga versionsnamn.
-- De åtta nya SQL/RLS-proven för `0110–0117` passerade mot det skarpa schemat;
-  proven använde egna `BEGIN/ROLLBACK` och ingen fixturedata lämnades kvar.
-- Hela katalogen med 36 SQL/RLS-prov körs mot en tom, reproducerbar CI-databas.
-  Äldre prov körs inte som produktionsbevis eftersom vissa bygger deterministisk
-  testdata som inte kan garanteras i en levande kö.
-- Releaseinventeringen verifierades med fingeravtrycket
-  `sha256:5f4bb035167da035bf871a2d300ce71945e06a6c11322227e9478c6c4815fddd`.
-- Supabase Advisors: 0 `ERROR` för security och performance. RLS-discoverability,
-  avsiktliga authenticated `SECURITY DEFINER`-RPC:er och policyoptimeringar ligger
-  kvar som varningar; funktionerna har uttryckliga DB-scopegrindar och runtimeprov.
-- Produktionscheckpointen är nu verifierad till `0117`.
-
-## Produktionsavstämning 2026-07-18
-
-- Operatör: Codex på uttryckligt godkännande av Zivar.
-- Förkontroll: projekt `ACTIVE_HEALTHY`; fysisk backup samma dag `COMPLETED`.
-- Efterkontroll: 108 historikrader, senaste `0109`, 0 ogiltiga versioner och tom
-  `db push --dry-run`.
-- Schemaaudit: samtliga kontroller `0014`, `0029`, `0060–0068` och `0083–0091`
-  passerade, inklusive RLS, grants och fyra aktiva pg_cron-jobb.
-- Runtime: alla 28 transaktionella/read-only SQL-/RLS-tester passerade direkt mot
-  produktion utan kvarlämnad fixturedata.
-- Supabase advisors: inga `ERROR` för security eller performance. Befintliga
-  security-`WARN` (bland annat funktions-search_path, GraphQL-discoverability och
-  Auth leaked-password protection) är inte tyst kvitterade; de ligger kvar som
-  separat härdningsarbete och ändrar inte migrationspariteten.
-
-Kör aldrig `migration repair --status applied` enbart för att ett enstaka objekt
-råkar finnas. Repair ändrar historik, inte schema, och kan annars dölja en halv
-migration.
-
-## Automatisk grind
-
-CI gör tre separata kontroller:
-
-1. unika migrationsnummer + förväntad senaste version,
-2. en SQL-runtimefil för varje lanseringsmigration 0092–0119,
-3. fresh Supabase från 0001 till senaste följt av `supabase test db` och lokal
-   historikparitet.
-
-Staging kör dessutom `supabase migration list --linked` efter `db push` och
-jämför den länkade historiken med repots hela migrationslista. Produktion kräver
-både `PROD_DB_MIGRATION=0119` och ett granskat `verified`-checkpoint. Checkpointen
-måste bära exakt `sha256:`-fingeravtryck som verifieringskommandot skriver ut samt
-en referens till det sparade read-only schema-/historikbeviset. En ensam GitHub-
-variabel eller en gammal checkpoint kan alltså inte låtsas att databasen är klar.
-
-## Säker avstämning — läs först, skriv sist
-
-Kör från `5-Kod/`. Kontrollera alltid aktuell CLI-syntax med `--help` före
-operationen; Supabase CLI ändras över tid.
-
-```text
-supabase --version
-supabase migration list --help
-supabase db diff --help
-supabase db push --help
-supabase migration repair --help
+```powershell
+node scripts/verify-database-release.mjs
+node --test scripts/verify-database-release.test.mjs
 ```
 
-### 1. Läs historiken och effekterna
+Kommandot ska ge exakt en version per fil och ett fingerprint över normaliserat
+migrationsinnehåll. Den aktuella senaste versionen ska tas från kommandot och
+workflowen, aldrig kopieras från en gammal runbook.
 
-```text
-supabase link --project-ref clylvowtowbtotrahuad
-supabase migration list --linked
+## Read-only jämförelse med en länkad miljö
+
+1. Bekräfta projekt-referensen innan första kommandot. Gissa aldrig från ett gammalt
+   `supabase link`.
+2. Hämta historiken read-only till en temporär fil.
+3. Jämför hela remotehistoriken med repot.
+4. Kör schemaauditen read-only. En historikrad är inte bevis för att objektet finns.
+
+```powershell
+supabase migration list --linked | Out-File -Encoding utf8 <temp-migration-list>
+node scripts/verify-database-release.mjs --history-file <temp-migration-list> --history-side remote
 supabase db query --linked --file scripts/sql/audit-production-migration-effects.sql
 ```
 
-Spara utdata som releasebevis utanför Git. Alla kontroller ska vara `true` efter
-0109. Inga reparationskommandon i detta steg.
+Rapportera separat: lokal inventering, preview/staginghistorik, produktionshistorik
+och schemaform. `unknown` är inte godkänt och får inte omskrivas till grönt.
 
-### 2. Jämför faktisk schemaform mot migrationskedjan
+## Ny migration
 
-Docker krävs eftersom CLI bygger en lokal shadow database.
+1. Skapa en ny, unikt versionerad fil. Ändra aldrig en redan applicerad fil.
+2. Gör migrationen transaktionell och idempotent där kontraktet tillåter det.
+3. Lås `search_path`, grants och default execute för nya funktioner.
+4. Lägg ett beteende-/säkerhetstest i `supabase/tests/`.
+5. Kör fresh reset och hela SQL/RLS-sviten i en isolerad databas.
+6. Kör lokal inventering och uppdatera workflowens förväntade senaste version och
+   testlista i samma ändring.
+7. Verifiera staginghistorik och schema före produktionsbeslut.
 
-```text
-supabase db diff --linked --schema public,private
-supabase db push --linked --dry-run
-```
+## Produktionscheckpoint
 
-En tom schema-diff är nödvändig men inte tillräcklig: CLI-diff fångar inte all
-data, cron, storage eller publication-state. Previewbranchens fulla körning och
-den skrivskyddade SQL-auditen är därför obligatoriska kompletterande bevis.
+Efter en godkänd apply ska operatören read-only verifiera hela historiken och
+schemaauditen. Först därefter uppdateras checkpointen med:
 
-### 3. Reparera endast bevisat redan applicerade versioner
+- `status=verified`;
+- repoets faktiska senaste version;
+- observerad senaste remoteversion;
+- historik- och schemaresultat;
+- UTC-tid, operatör och evidensreferens;
+- exakt fingerprint från inventeringsskriptet.
 
-Detta steg slutfördes 2026-07-18 och ska inte upprepas. Det muterar
-produktionshistoriken och kräver uttryckligt operatörsgodkännande.
-Detta är ett releaseoperatörssteg som Codex utför; Zivar ska inte kopiera SQL
-eller handlägga historiktabellen. Den branchverifierade ordningen är:
+Checkpoint, repo och releasevariabel måste beskriva samma version. Workflown ska
+falla stängt vid minsta avvikelse.
 
-```text
-supabase migration repair 20260715211041 20260715225616 20260716003337 20260716003345 20260716003353 20260716003754 20260716005955 20260716112947 20260716113016 20260716122914 20260716122916 20260716225744 20260717080939 20260717081133 --status reverted --linked
-supabase migration repair 0060 0061 0062 0063 0064 0065 0066 0067 0068 0069 0070 0071 0072 0073 0074 0075 0076 0077 0078 0079 0080 0081 0082 0083 0084 0085 0086 0087 0088 0089 0090 0091 --status applied --linked
-supabase migration list --linked
-supabase db push --linked --dry-run
-```
+## Release av 20260804-migrationerna
 
-Om en migration bara är delvis applicerad ska den **inte** markeras applied.
-Skriv en ny, idempotent korrigeringsmigration eller återställ avvikelsen efter
-separat granskning.
+Före en godkänd staging- eller produktionsapply: ta en PITR-/backupcheckpoint och
+kör schemaauditen read-only. Efter apply ska de tre sista raderna i
+`audit-production-migration-effects.sql` vara gröna: ingen aktiv push-kanal eller
+push-prenumeration, inga aktiva obundna bokningslänkar eller gamla
+`customer_accounts_enabled`-flaggor, samt validerad avbokningsconstraint utan
+betalda avbokningar som saknar refund-jobb.
 
-### 4. Applicera återstående migrationer genom normal väg
+Det finns ingen säker down-migration för dessa datatransformationer. En avvikelse
+stoppas och rättas med en ny framåtriktad migration efter read-only inventering.
 
-När 0060–0091 är korrekt avstämda ska dry-run endast lista verkligt ej applicerade
-versioner. Applicering sker i ordning, med backup/restore-grinden klar, och aldrig
-från denna dokumentationskontroll. Efteråt:
+## Drift eller delvis applicerad migration
 
-```text
-supabase migration list --linked
-node scripts/verify-database-release.mjs --expected-latest 0119 --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119 --history-file <migration-list.txt> --history-side remote
-```
-
-Uppdatera därefter checkpoint-filen till `verified`, sätt både
-`historyAligned=true` och `schemaAligned=true`, exakt verifierare och UTC-tid,
-kopiera kommandots utskrivna `sha256:` till `migrationFingerprint` och sätt
-`verificationEvidence` till CI-/ärende-/artefaktreferensen där rå historiklista
-och schemadiff sparats. Sätt sedan GitHub Environment-variabeln
-`PROD_DB_MIGRATION=0119`. Ändringarna granskas i samma release. Kopiera aldrig
-fingeravtrycket från en äldre commit.
-
-Källor: [Supabase migration list/repair](https://supabase.com/docs/reference/cli/supabase-migration-list),
-[Supabase db diff/push](https://supabase.com/docs/reference/cli/supabase-db-diff).
+- Stoppa release. Markera inte en delvis applicerad migration som klar.
+- Samla read-only historik och schemaevidens innan någon mutation.
+- Använd `migration repair` endast för en bevisad historikavvikelse med separat
+  godkännande; kommandot reparerar historik, inte schema.
+- Reparera schema med en ny framåtriktad migration.
+- Ta backup/PITR-checkpoint före riskfylld apply och följ
+  [backup-/restore-runbooken](backup-restore.md).
+- Kopiera aldrig repair-kommandon, fingerprint eller versionsnummer från ett äldre
+  incidentdokument.

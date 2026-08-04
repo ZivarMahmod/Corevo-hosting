@@ -14,8 +14,8 @@ import styles from './installningar.module.css'
  * (parked in AUDIT-FIX-PLAN) — we build no brus here.
  *
  * What REMAINS is only what is genuinely true and live:
- *  • Audit-guard mot radering — the build-once-never-delete invariant is actually
- *    enforced (setTenantStatus soft-deletes, never .delete()). Shown as a labelled
+ *  • Audit-guard mot radering — tenantstatus mjukraderas för att bevara relationer
+ *    och audit. Shown as a labelled
  *    fact, not as a flippable control.
  *  • Fakturering-modell — "Manuell (flöde 2)" is the platform's real billing posture
  *    (FLÖDE 2: Corevo invoices each salong manually off the Fakturering view, no
@@ -65,7 +65,7 @@ export function SecuritySettings({
         <h2 className={`h2 ${styles.cardHead}`}>Säkerhet</h2>
         <Invariant
           title="Audit-guard mot radering"
-          desc="Skyddade rader kan aldrig raderas, bara suspenderas. Skyddat i koden — build-once-never-delete."
+          desc="Tenantrader suspenderas eller mjukraderas så relationer och audit-historik bevaras."
         />
         <div className={styles.linkRow}>
           <div>

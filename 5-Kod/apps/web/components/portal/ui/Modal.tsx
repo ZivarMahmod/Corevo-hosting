@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
+import { trapTab } from './focus'
 import styles from './modal.module.css'
 
 /**
@@ -82,24 +83,7 @@ export function Modal({
         close()
         return
       }
-      // Fokusfälla: Tab får inte vandra ut ur dialogen och landa i kalendern bakom.
-      if (e.key !== 'Tab' || !cardRef.current) return
-      const focusable = cardRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      if (focusable.length === 0) return
-      const first = focusable[0]!
-      const last = focusable[focusable.length - 1]!
-      if (!cardRef.current.contains(document.activeElement)) {
-        e.preventDefault()
-        ;(e.shiftKey ? last : first).focus()
-      } else if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      if (cardRef.current) trapTab(e, cardRef.current)
     }
     document.addEventListener('keydown', onKey)
 
@@ -123,10 +107,7 @@ export function Modal({
     const syncVisualViewport = () => {
       if (!viewport || !overlayRef.current) return
       overlayRef.current.style.setProperty('--modal-visual-height', `${viewport.height}px`)
-      overlayRef.current.style.setProperty(
-        '--modal-visual-offset-top',
-        `${viewport.offsetTop}px`,
-      )
+      overlayRef.current.style.setProperty('--modal-visual-offset-top', `${viewport.offsetTop}px`)
     }
     syncVisualViewport()
     if (viewport) {

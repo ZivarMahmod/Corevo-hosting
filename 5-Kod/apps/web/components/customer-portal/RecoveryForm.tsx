@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { startRecoveryAction } from '@/app/(customer-portal)/(open)/aterhamta/[tenantSlug]/actions'
+import { startRecoveryAction } from '@/lib/customer-portal/recovery-actions'
+import { FormError } from './FormError'
 
 type RecoveryStartResult =
   | { state: 'accepted'; retryAfterSeconds: number }
@@ -10,15 +11,6 @@ type RecoveryStartResult =
   | { state: 'cooldown' | 'max_attempts'; retryAfterSeconds: number }
 
 type RecoveryStartAction = (tenantSlug: string, lookup: string) => Promise<RecoveryStartResult>
-
-function FormError({ id, children }: { id?: string; children: ReactNode }) {
-  return (
-    <p className="cp-form-error" id={id} role="alert">
-      <svg className="cp-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></svg>
-      <span>{children}</span>
-    </p>
-  )
-}
 
 function validLookup(value: string): boolean {
   const normalized = value.trim()

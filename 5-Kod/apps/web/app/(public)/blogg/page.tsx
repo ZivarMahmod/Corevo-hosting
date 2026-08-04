@@ -5,9 +5,9 @@ import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { BloggSection } from '@/components/storefront/BloggSection'
 import { pageMetadata } from '@/components/storefront/seo'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import { BloggPagination } from '@/components/storefront/blogg/BloggPagination'
 import { parseBloggPage } from '@/lib/storefront/blogg/types'
 
@@ -36,7 +36,7 @@ export default async function BloggPage({
   // VEKTOR-REGELN (goal-59): modulen äger funktionen (gate + data), mallen formen.
   const View = themeModuleViews(settings.theme).blogg
   if (View) {
-    const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+    const copy = await getTenantCopy(bundle)
     const content = resolveThemeContent(settings.theme, settings.branding, copy)
     return (
       <>
@@ -52,7 +52,6 @@ export default async function BloggPage({
     <BloggSection
       tenantId={tenant.id}
       slug={tenant.slug}
-      paused={false}
       pageHero
       page={page}
       data={data}

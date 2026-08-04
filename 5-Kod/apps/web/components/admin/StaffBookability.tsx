@@ -4,17 +4,9 @@ import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toggleStaffActive, setStaffServices, type ActionState } from '@/lib/admin/actions'
+import type { StaffServiceOption } from '@/lib/admin/data'
 import { matchingBookableServices, staffReadiness } from '@/lib/admin/staff-readiness'
 import { Badge, Button, Card, useToast } from '@/components/portal/ui'
-
-export type BookabilityService = {
-  id: string
-  name: string
-  active: boolean
-  locationId: string | null
-  /** Global tjänstelängd; staff_services har avsiktligt ingen egen längd. */
-  durationMin?: number
-}
 
 /**
  * "Kan bokas?"-kortet på Schema-sidan (Zivar 2026-07-11: bokningsbarheten kändes
@@ -38,7 +30,7 @@ export function StaffBookability({
   staffName: string
   active: boolean
   serviceIds: string[]
-  services: BookabilityService[]
+  services: StaffServiceOption[]
   workingDays: number
   locationId: string | null
   openingHoursConfirmed: boolean

@@ -1,4 +1,4 @@
-import type { IconName } from '@/components/portal/ui/Icon'
+import type { IconName } from '@/lib/ui-icons'
 
 /** Neutral contract shared by tenant and platform settings navigation. */
 export type SettingsNavigationCategory = {

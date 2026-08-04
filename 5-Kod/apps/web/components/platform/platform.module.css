@@ -41,18 +41,6 @@
   background: var(--c-warning, #a37d3c);
   flex: none;
 }
-/* Multiline feedback (e.g. a generated recovery link the operator copies). */
-.feedbackPre {
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-size: 0.82rem;
-  background: color-mix(in srgb, var(--c-ink) 4%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  border-radius: var(--radius-sm, 0.375rem);
-  padding: 0.6rem 0.7rem;
-  margin: 0.5rem 0 0;
-}
-
 /* ── forms ── */
 .form {
   display: flex;
@@ -265,10 +253,6 @@
   white-space: nowrap;
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
-.badgeActive {
-  background: color-mix(in srgb, var(--c-success, #4e7a5e) 20%, transparent);
-  color: color-mix(in srgb, var(--c-success, #4e7a5e) 80%, #000);
-}
 .badgeSuspended {
   background: color-mix(in srgb, var(--c-danger, #9e5a57) 16%, transparent);
   color: color-mix(in srgb, var(--c-danger, #9e5a57) 80%, #000);
@@ -281,14 +265,6 @@
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   overflow-wrap: anywhere;
-}
-.logoPreview {
-  max-height: 56px;
-  max-width: 180px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  background: color-mix(in srgb, currentColor 4%, transparent);
-  padding: 4px;
 }
 
 /* ── onboarding checklist (steg 1–6) ── */
@@ -360,15 +336,6 @@
   letter-spacing: 0.02em;
   margin: 0 0 0.35rem;
 }
-.lockedField {
-  opacity: 0.55;
-}
-.cardGrid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  margin: 1rem 0;
-}
 .card {
   border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
@@ -388,16 +355,6 @@
 }
 
 /* ── grouped form sections (onboarding create form) ── */
-.group {
-  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  border-radius: var(--radius-lg, 0.625rem);
-  padding: 1rem 1.1rem 1.15rem;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  background: color-mix(in srgb, var(--c-ink) 2%, transparent);
-}
 .groupTitle {
   font-family: var(--font-display, inherit);
   font-weight: 700;
@@ -690,18 +647,6 @@
   align-items: center;
   gap: 0.6rem;
   margin: 1.25rem 0;
-}
-.emptyTitle {
-  font-family: var(--font-display, inherit);
-  font-weight: 700;
-  font-size: 1.15rem;
-  margin: 0;
-}
-.emptyText {
-  margin: 0;
-  font-size: 0.9rem;
-  opacity: 0.75;
-  max-width: 28rem;
 }
 
 /* ── Touch targets (Våg 4): platform controls are also operated on tablets. */

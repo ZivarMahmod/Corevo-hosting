@@ -29,12 +29,11 @@ import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { PageHead } from '@/components/portal/ui'
 import { CalendarBoardLazy } from '@/components/admin/CalendarBoardLazy'
 import type {
-  CalendarBlock,
   CalendarDayData,
   CalendarDayNeighbors,
-  CalendarStaff,
   CalendarView,
 } from '@/components/admin/CalendarBoard'
+import type { CalendarBlock, CalendarStaff } from '@/components/admin/calendar-types'
 import type { BookingRow } from '@/components/admin/BookingDrawer'
 
 export const dynamic = 'force-dynamic'

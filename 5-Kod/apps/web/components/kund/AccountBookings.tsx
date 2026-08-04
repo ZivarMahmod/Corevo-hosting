@@ -13,12 +13,9 @@ import styles from './account.module.css'
  * tråd (status→cancelled, slot freed, refund, admin/personal reflect it).
  *
  * The mock's per-booking "Meddela något inför besöket" input has NO customer-
- * writable note action in the consume-only lib (bookings.note is only set at
+ * writable note action (bookings.note is only set at
  * creation via the RPC's p_note), so it is intentionally omitted — never a dead
  * input that silently drops the message.
- *
- * Cancelled bookings render as a dimmed, struck-through row (kept, not removed —
- * mirrors Customer.jsx + the admin "avbokad = struken, ej borttagen" rule).
  */
 
 function timeParts(iso: string, timeZone: string): { day: string; time: string } {
@@ -69,22 +66,6 @@ function UpcomingCard({ b }: { b: KundBooking }) {
   )
 }
 
-function CancelledRow({ b }: { b: KundBooking }) {
-  const { day, time } = timeParts(b.startTs, b.timeZone)
-  return (
-    <div className={styles.cancelledRow}>
-      <div className={styles.cancelledTime}>{time}</div>
-      <div className={styles.bookingMain}>
-        <div className={styles.bookingService}>{b.serviceName ?? 'Tjänst'}</div>
-        <div className={styles.bookingMeta}>
-          {day}
-          {b.staffTitle ? ` · ${b.staffTitle}` : ''}
-        </div>
-      </div>
-      <span className={`${styles.pill} ${styles.pillCancelled}`}>Avbokad</span>
-    </div>
-  )
-}
 
 export function AccountBookings({ upcoming }: { upcoming: KundBooking[] }) {
   const active = upcoming.filter((b) => ACTIVE.has(b.status))
@@ -107,18 +88,5 @@ export function AccountBookings({ upcoming }: { upcoming: KundBooking[] }) {
         active.map((b) => <UpcomingCard key={b.id} b={b} />)
       )}
     </section>
-  )
-}
-
-/** Cancelled bookings split out so the page can render them after the active
- *  cards (matches Customer.jsx ordering). Hidden entirely when there are none. */
-export function CancelledBookings({ cancelled }: { cancelled: KundBooking[] }) {
-  if (cancelled.length === 0) return null
-  return (
-    <div>
-      {cancelled.map((b) => (
-        <CancelledRow key={b.id} b={b} />
-      ))}
-    </div>
   )
 }

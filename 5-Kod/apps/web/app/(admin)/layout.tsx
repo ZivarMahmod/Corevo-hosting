@@ -34,8 +34,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // och varje muterande action gör om samma kontroll (RLS är tenant-scopad, INTE
   // rollmedveten — se lib/admin/actions.ts).
   const user = await requireMinLevel(ADMIN_PORTAL_FLOOR)
-  // Nav now lives in the back-office sidebar (PortalShell → PortalSidebar,
-  // role="admin"). The old in-content <AdminNav> is removed to avoid double nav.
+  // PortalShell owns admin navigation. The route layout only enforces auth and
+  // avoids a second in-content navigation.
   return (
     <PortalShell user={user} title="Adminpanel" world="backoffice" portal="admin">
       {/* Live-refresh bookings views on any write to this tenant's bookings.

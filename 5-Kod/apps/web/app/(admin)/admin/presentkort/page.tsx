@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig, moduleAdminState } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listGiftCardEntries, listGiftCards } from '@/lib/admin/presentkort/data'
 import { PresentkortAdmin } from '@/components/admin/PresentkortAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
 import { commerceReleaseGate } from '@/lib/release/commerce'
-import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Presentkort · Adminpanel' }
@@ -55,19 +54,15 @@ export default async function PresentkortPage() {
 
   const config = moduleAdminConfig(states, 'presentkort')
   const currency = typeof config.currency === 'string' ? config.currency : 'SEK'
-  const fulfilment = typeof config.fulfilment === 'string' ? config.fulfilment : 'digital'
 
   return (
     <section className="portal-section">
-      <ModuleWriteBoundary readOnly={false}>
-        <PresentkortAdmin
-          cards={cards}
-          entries={entries}
-          currency={currency}
-          fulfilment={fulfilment}
-          tenantName={tenant.name}
-        />
-      </ModuleWriteBoundary>
+      <PresentkortAdmin
+        cards={cards}
+        entries={entries}
+        currency={currency}
+        tenantName={tenant.name}
+      />
     </section>
   )
 }

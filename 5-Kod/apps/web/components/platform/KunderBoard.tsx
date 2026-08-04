@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Badge, Icon, useToast, type BadgeTone } from '@/components/portal/ui'
-import { setTenantStatus } from '@/lib/platform/actions'
+import { setTenantStatus } from '@/lib/platform/actions/status'
 import type { TenantDisplayStatus } from '@/lib/platform/tenants'
 import styles from './kunder-v2.module.css'
 

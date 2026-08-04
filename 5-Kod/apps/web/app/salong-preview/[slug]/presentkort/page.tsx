@@ -1,29 +1,23 @@
 import type { Metadata } from 'next'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { PresentkortSection } from '@/components/storefront/PresentkortSection'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import { loadPresentkortData } from '@/lib/storefront/presentkort/load-presentkort'
 import { commerceReleaseGate } from '@/lib/release/commerce'
-import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
+import { StorefrontShell } from '@/components/storefront/StorefrontShell'
+import { loadPreviewPage, PreviewModuleOff, type PreviewPageProps } from '../preview-shell'
 
 // goal-64 (regression, preview-parity): presentkortets preview-tvilling anropade den
 // delade sektionen direkt — samma dispatch-gap som offerten. Nu SAMMA themeModuleViews-
 // dispatch som app/(public)/presentkort/page.tsx, mot PREVIEW-temat.
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Förhandsvisning · Presentkort', robots: { index: false } }
+export const metadata: Metadata = {
+  title: 'Förhandsvisning · Presentkort',
+  robots: { index: false },
+}
 
-export default async function PreviewPresentkortPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string; copy?: string }>
-}) {
-  const { slug } = await params
-  const { theme: themeParam, copy: copyParam } = await searchParams
-  const bundle = await loadPreviewBundle(slug)
-  const theme = resolvePreviewTheme(bundle, themeParam)
-  const copyMode = resolvePreviewCopyMode(copyParam)
+export default async function PreviewPresentkortPage(props: PreviewPageProps) {
+  const { bundle, theme, copyMode } = await loadPreviewPage(props)
   const { tenant } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
@@ -33,14 +27,14 @@ export default async function PreviewPresentkortPage({
   const data = View && !off ? await loadPresentkortData(tenant.id, tenant.slug) : null
 
   return (
-    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
+    <StorefrontShell bundle={bundle} surface="preview" theme={theme} copyMode={copyMode}>
       {off ? (
         <PreviewModuleOff moduleLabel="Presentkort" />
       ) : View && data ? (
-        <View config={data.config} paused={!checkoutLive} tenantName={tenant.name} />
+        <View config={data.config} purchaseClosed={!checkoutLive} tenantName={tenant.name} />
       ) : (
-        <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={false} checkoutLive={checkoutLive} />
+        <PresentkortSection tenantId={tenant.id} slug={tenant.slug} checkoutLive={checkoutLive} />
       )}
-    </PreviewShell>
+    </StorefrontShell>
   )
 }

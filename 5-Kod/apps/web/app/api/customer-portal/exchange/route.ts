@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/platform/service'
-import { CUSTOMER_PORTAL_KEY_VERSION, portalLinkDigest } from '@/lib/customer-portal/crypto'
+import {
+  CUSTOMER_PORTAL_KEY_VERSION,
+  portalLinkDigest,
+  portalSessionDigest,
+} from '@/lib/customer-portal/crypto'
 import { PORTAL_SECRET_PATTERN, PORTAL_UUID_PATTERN } from '@/lib/customer-portal/link'
 import { isAllowedPortalPostOrigin } from '@/lib/customer-portal/origin'
 import {
   PORTAL_SESSION_COOKIE,
   createPortalSessionCredential,
   portalSessionCookieOptions,
+  parsePortalSessionCookie,
 } from '@/lib/customer-portal/session'
 
 const MAX_BODY_BYTES = 4096
@@ -18,6 +23,8 @@ type ExchangeArguments = {
   p_new_session_public_id: string
   p_new_session_digest: string
   p_key_version: number
+  p_existing_session_public_id: string | null
+  p_existing_session_digest: string | null
 }
 
 type ExchangeRpcClient = {
@@ -34,9 +41,15 @@ type ExchangeBody = {
   keyVersion: 1
 }
 
-function response(ok: boolean, status: number): NextResponse<{ ok: boolean }> {
+type ExchangeResponse = { ok: false } | { ok: true; destination: string }
+
+function response(
+  ok: boolean,
+  status: number,
+  destination?: string,
+): NextResponse<ExchangeResponse> {
   return NextResponse.json(
-    { ok },
+    ok && destination ? { ok: true, destination } : { ok: false },
     {
       status,
       headers: {
@@ -46,6 +59,15 @@ function response(ok: boolean, status: number): NextResponse<{ ok: boolean }> {
       },
     },
   )
+}
+
+function requestCookie(request: Request, name: string): string | null {
+  for (const part of (request.headers.get('cookie') ?? '').split(';')) {
+    const separator = part.indexOf('=')
+    if (separator < 1 || part.slice(0, separator).trim() !== name) continue
+    return part.slice(separator + 1).trim() || null
+  }
+  return null
 }
 
 async function readLimitedBody(request: Request): Promise<string | null> {
@@ -117,7 +139,7 @@ function parseBody(raw: string): ExchangeBody | null {
   }
 }
 
-export async function POST(request: Request): Promise<NextResponse<{ ok: boolean }>> {
+export async function POST(request: Request): Promise<NextResponse<ExchangeResponse>> {
   if (!isAllowedPortalPostOrigin(request)) return response(false, 403)
 
   const url = new URL(request.url)
@@ -134,6 +156,9 @@ export async function POST(request: Request): Promise<NextResponse<{ ok: boolean
   try {
     const tokenDigest = await portalLinkDigest(body.secret)
     const session = await createPortalSessionCredential()
+    const existingSession = parsePortalSessionCookie(
+      requestCookie(request, PORTAL_SESSION_COOKIE),
+    )
     const service = createServiceClient() as ExchangeRpcClient | null
     if (!service) return response(false, 503)
 
@@ -143,22 +168,38 @@ export async function POST(request: Request): Promise<NextResponse<{ ok: boolean
       p_new_session_public_id: session.sessionPublicId,
       p_new_session_digest: session.secretDigest,
       p_key_version: session.keyVersion,
+      p_existing_session_public_id: existingSession?.sessionPublicId ?? null,
+      p_existing_session_digest: existingSession
+        ? await portalSessionDigest(existingSession.secret)
+        : null,
     })
 
     if (error) return response(false, 503)
     if (!Array.isArray(data) || data.length !== 1) return response(false, 400)
 
     const row = data[0] as Record<string, unknown>
+    const returnedSessionId = row.session_public_id
+    const reusedExistingSession = existingSession !== null
+      && returnedSessionId === existingSession.sessionPublicId
+    const bookingId = row.booking_id
     if (
       row.outcome !== 'ok' ||
-      row.session_public_id !== session.sessionPublicId ||
-      row.tenant_slug !== body.tenantSlug
+      (returnedSessionId !== session.sessionPublicId && !reusedExistingSession) ||
+      row.tenant_slug !== body.tenantSlug ||
+      (bookingId !== null && (
+        typeof bookingId !== 'string' || !PORTAL_UUID_PATTERN.test(bookingId)
+      ))
     ) {
       return response(false, 400)
     }
 
-    const result = response(true, 200)
-    result.cookies.set(PORTAL_SESSION_COOKIE, session.cookieValue, portalSessionCookieOptions)
+    const destination = typeof bookingId === 'string'
+      ? `/mina/bokningar/${bookingId.toLowerCase()}`
+      : '/mina'
+    const result = response(true, 200, destination)
+    if (!reusedExistingSession) {
+      result.cookies.set(PORTAL_SESSION_COOKIE, session.cookieValue, portalSessionCookieOptions)
+    }
     return result
   } catch {
     return response(false, 503)

@@ -14,10 +14,14 @@ import {
   Button,
   Table,
   Icon,
-  type IconName,
 } from '@/components/portal/ui'
 import styles from './oversikt.module.css'
 import { requirePlatformOperator } from '@/lib/auth/session'
+import type { IconName } from '@/lib/ui-icons'
+import {
+  PLATFORM_AUDIT_TONE_COLORS,
+  platformAuditActionLabel,
+} from '@/lib/platform/audit-labels'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Översikt' }
@@ -38,37 +42,12 @@ function slugDot(slug: string): string {
   return DOT_PALETTE[h % DOT_PALETTE.length] ?? DOT_PALETTE[0]
 }
 
-const AUDIT_TONE_COLOR: Record<AuditTone, string> = {
-  info: 'var(--c-info)',
-  success: 'var(--c-success)',
-  warning: 'var(--c-warning)',
-  danger: 'var(--c-danger)',
-  neutral: 'var(--c-ink-3)',
-}
 const AUDIT_ICON: Record<AuditTone, IconName> = {
   info: 'info',
   success: 'checkCircle',
   warning: 'pause',
   danger: 'alert',
   neutral: 'repeat',
-}
-
-// Humanize a dotted audit action key into a calm one-liner for the activity feed.
-const ACTION_LABEL: Record<string, string> = {
-  'tenant.create': 'Kund skapad',
-  'tenant.suspend': 'Kund pausad',
-  'tenant.activate': 'Kund aktiverad',
-  'tenant.delete': 'Kund borttagen',
-  'tenant.branding': 'Varumärke uppdaterat',
-  'tenant.billing': 'Prismodell ändrad',
-  'tenant.invite': 'Ägare inbjuden',
-  'tenant.update': 'Kunddata uppdaterad',
-  'tenant.password_reset': 'Lösenordsreset skickad',
-  'tenant.staff_create': 'Personal tillagd',
-  'platform.help_mode_open': 'Hjälp-läge öppnat',
-}
-function actionLabel(action: string): string {
-  return ACTION_LABEL[action] ?? action
 }
 
 // "idag 09:14" / "8 maj 2026" — same calm, local formatting the rest of the
@@ -277,12 +256,12 @@ export default async function PlatformOverviewPage() {
                   <div key={a.id} className={styles.auditRow}>
                     <span
                       className={styles.auditIcon}
-                      style={{ color: AUDIT_TONE_COLOR[a.tone] }}
+                      style={{ color: PLATFORM_AUDIT_TONE_COLORS[a.tone] }}
                     >
                       <Icon name={AUDIT_ICON[a.tone]} size={15} />
                     </span>
                     <div className={styles.auditBody}>
-                      <div className={styles.auditAction}>{actionLabel(a.action)}</div>
+                      <div className={styles.auditAction}>{platformAuditActionLabel(a.action)}</div>
                       <div className={styles.auditTarget}>
                         {a.tenant}
                         {a.actor === 'Zivar' ? ' · Zivar' : ''}

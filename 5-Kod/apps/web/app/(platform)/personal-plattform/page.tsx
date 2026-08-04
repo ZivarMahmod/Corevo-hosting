@@ -13,10 +13,7 @@ export const metadata: Metadata = { title: 'Plattform · Personal' }
  * EVERY salon's staff (RLS bypass via listStaffAllTenants — the read OMITS the
  * tenant_id filter; a normal salon_admin running it only ever sees its own).
  *
- * Self-gates with requirePlatformAdmin() even though the (platform) layout does —
- * the task mandates per-page gating, and this route also needs the orchestrator to
- * add /personal-plattform to PROTECTED_PREFIXES + BACKOFFICE_PREFIXES (both frozen;
- * flagged in the manifest). Data is fetched unfiltered here and filtered in the
+ * Self-gates in addition to the (platform) layout. Data is fetched unfiltered here and filtered in the
  * client island (search + status pills) — mirrors BookingsClient, and the volume
  * is tiny (only seeded salons have staff; sparse is honest, not a bug).
  *

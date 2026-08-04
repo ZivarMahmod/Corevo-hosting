@@ -53,18 +53,6 @@ async function getBucket(): Promise<R2BucketLike | null> {
 }
 
 /**
- * Upload `file` under `keyPrefix` and return its public URL. Never throws —
- * callers (branding save) inspect `ok`/`reason` and degrade gracefully so a
- * colors-only save still works when R2 isn't available locally.
- */
-export async function uploadImage(file: File, keyPrefix: string): Promise<UploadResult> {
-  const ext = EXT[file.type]
-  if (!ext) return { ok: false, reason: 'bad_type' }
-  const key = `${keyPrefix.replace(/^\/+|\/+$/g, '')}/${crypto.randomUUID()}.${ext}`
-  return uploadImageAtKey(file, key)
-}
-
-/**
  * Upload to the exact object key already reserved by Postgres. This is the
  * lifecycle-safe primitive: callers reserve quota/key first, then perform R2 I/O.
  */
@@ -105,7 +93,7 @@ export async function uploadImageAtKey(file: File, key: string): Promise<UploadR
 
 /**
  * Derive an R2 object key from a stored public URL — the strict inverse of the
- * `${publicBase()}/${key}` that uploadImage produces. Returns null for a blank,
+ * `${publicBase()}/${key}` that uploadImageAtKey produces. Returns null for a blank,
  * relative, or FOREIGN URL (one not under the current R2_PUBLIC_BASE_URL): we only
  * ever delete objects we own, and a base mismatch (e.g. a future media.corevo.se
  * migration) safely skips rather than mis-deriving a wrong key.
@@ -117,29 +105,6 @@ export function keyFromPublicUrl(url: string | null | undefined): string | null 
   const prefix = `${base}/`
   if (!u.startsWith(prefix)) return null
   return u.slice(prefix.length) || null
-}
-
-/**
- * PURE: the R2 keys referenced in `oldUrls` that are no longer referenced in
- * `newUrls`. Kept URLs and foreign/non-bucket URLs are excluded; the result is
- * de-duplicated. No I/O — trivially unit-testable.
- */
-export function removedImageKeys(
-  oldUrls: Array<string | null | undefined>,
-  newUrls: Array<string | null | undefined>,
-): string[] {
-  const keep = new Set(newUrls.filter((u): u is string => !!u))
-  const keys: string[] = []
-  const seen = new Set<string>()
-  for (const u of oldUrls) {
-    if (!u || keep.has(u)) continue
-    const key = keyFromPublicUrl(u)
-    if (key && !seen.has(key)) {
-      seen.add(key)
-      keys.push(key)
-    }
-  }
-  return keys
 }
 
 /**
@@ -163,28 +128,10 @@ export async function deleteR2Keys(keys: string[]): Promise<boolean> {
   return succeeded
 }
 
-/** Best-effort wrapper used by pre-lifecycle replace/remove call sites. */
-async function deleteKeys(keys: string[]): Promise<void> {
-  await deleteR2Keys(keys)
-}
-
 /** Best-effort delete of a single stored image by its public URL. */
 export async function deleteByPublicUrl(url: string | null | undefined): Promise<void> {
   const key = keyFromPublicUrl(url)
-  if (key) await deleteKeys([key])
-}
-
-/**
- * Delete every bucket object referenced in `oldUrls` but no longer in `newUrls`
- * (FX-14 replace-don't-accumulate). Best-effort: never throws, so cleanup can
- * never block a save that already succeeded. Call AFTER the DB upsert, scoped to
- * the slots the action actually owns (e.g. logo-only for branding saves).
- */
-export async function pruneRemovedImages(
-  oldUrls: Array<string | null | undefined>,
-  newUrls: Array<string | null | undefined>,
-): Promise<void> {
-  await deleteKeys(removedImageKeys(oldUrls, newUrls))
+  if (key) await deleteR2Keys([key])
 }
 
 /** Human-readable Swedish message for a non-ok upload reason. */

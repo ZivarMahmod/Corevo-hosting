@@ -43,7 +43,7 @@ function statusLabel(status: string): string {
 }
 
 function modeLabel(mode: string): string {
-  return OFFERT_MODE_LABELS[mode] ?? mode
+  return (OFFERT_MODE_LABELS as Record<string, string>)[mode] ?? mode
 }
 
 // ── Date formatter ───────────────────────────────────────────────────────────
@@ -57,13 +57,7 @@ function formatDate(iso: string): string {
 }
 
 // ── Detail Drawer ────────────────────────────────────────────────────────────
-function DetailDrawer({
-  request,
-  onClose,
-}: {
-  request: OffertRequestRow
-  onClose: () => void
-}) {
+function DetailDrawer({ request, onClose }: { request: OffertRequestRow; onClose: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
@@ -95,13 +89,13 @@ function DetailDrawer({
     <Drawer
       title={request.customer_name ?? 'Okänd kund'}
       sub={modeLabel(request.mode)}
-      accent={
-        <Badge tone={statusTone(request.status)}>{statusLabel(request.status)}</Badge>
-      }
+      accent={<Badge tone={statusTone(request.status)}>{statusLabel(request.status)}</Badge>}
       onClose={onClose}
       ariaLabel={`Förfrågan från ${request.customer_name ?? 'okänd kund'}`}
       footer={
-        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div
+          style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <DeleteForm request={request} onDeleted={onClose} />
           <div style={{ flex: 1 }} />
           <Button variant="ghost" type="button" onClick={onClose}>
@@ -184,17 +178,12 @@ function DetailDrawer({
       <form action={formAction} id={formId} style={{ display: 'grid', gap: 14 }}>
         <TenantField />
         <input type="hidden" name="id" value={request.id} />
-        <input
-          type="hidden"
-          name="lifecycleVersion"
-          value={request.lifecycle_version}
-        />
+        <input type="hidden" name="lifecycleVersion" value={request.lifecycle_version} />
 
         <Field label="Status">
           {/* "Offererad" sätts först efter verifierad outboxleverans. */}
           <select name="status" defaultValue={request.status} style={inputStyle}>
-            {OFFERT_STATUSES
-              .filter((s) => offertTransitionAllowed(request.status, s))
+            {OFFERT_STATUSES.filter((s) => offertTransitionAllowed(request.status, s))
               .filter((s) => s !== 'quoted' || request.status === 'quoted')
               .map((s) => (
                 <option key={s} value={s}>
@@ -249,13 +238,7 @@ function DetailDrawer({
  * En offert som blivit en affär visar ingen knapp alls — och server-actionen
  * nekar ändå (offertDeletable läses där ur DB:n, inte ur formuläret).
  */
-function DeleteForm({
-  request,
-  onDeleted,
-}: {
-  request: OffertRequestRow
-  onDeleted: () => void
-}) {
+function DeleteForm({ request, onDeleted }: { request: OffertRequestRow; onDeleted: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const [armed, setArmed] = useState(false)
@@ -283,22 +266,16 @@ function DeleteForm({
 
   // En accepterad/betald eller pågående leverans raderas inte ur historiken.
   if (
-    !offertDeletable(request.status, request.payment_status)
-    || (
-      request.reply_outbox_id !== null
-      && request.reply_delivery_state === 'pending'
-    )
-  ) return null
+    !offertDeletable(request.status, request.payment_status) ||
+    (request.reply_outbox_id !== null && request.reply_delivery_state === 'pending')
+  )
+    return null
 
   return (
     <form action={formAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
       <TenantField />
       <input type="hidden" name="id" value={request.id} />
-      <input
-        type="hidden"
-        name="lifecycleVersion"
-        value={request.lifecycle_version}
-      />
+      <input type="hidden" name="lifecycleVersion" value={request.lifecycle_version} />
       {armed ? (
         <>
           <Button
@@ -327,9 +304,7 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
   const { notify } = useToast()
   const router = useRouter()
   const [draft, setDraft] = useState(
-    request.reply_delivery_state === 'failed'
-      ? request.reply_pending_message ?? ''
-      : '',
+    request.reply_delivery_state === 'failed' ? (request.reply_pending_message ?? '') : '',
   )
   const [state, formAction, pending] = useActionState<ReplyActionState, FormData>(
     sendOffertReply,
@@ -354,16 +329,15 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
 
   const noEmail = !request.customer_email
   const persistedVersion = state.lifecycleVersion ?? request.lifecycle_version
-  const hasDelivery = request.reply_outbox_id !== null
-    || (
-      request.reply_delivery_state === 'failed'
-      && request.reply_pending_message !== null
-    )
-  const deliveryLabel = request.reply_delivery_state === 'sent'
-    ? 'Skickat'
-    : request.reply_delivery_state === 'failed'
-      ? 'Kunde inte skickas'
-      : 'Skickar'
+  const hasDelivery =
+    request.reply_outbox_id !== null ||
+    (request.reply_delivery_state === 'failed' && request.reply_pending_message !== null)
+  const deliveryLabel =
+    request.reply_delivery_state === 'sent'
+      ? 'Skickat'
+      : request.reply_delivery_state === 'failed'
+        ? 'Kunde inte skickas'
+        : 'Skickar'
 
   return (
     <div style={{ marginTop: 20, borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
@@ -401,11 +375,7 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
         <form action={formAction} style={{ display: 'grid', gap: 10, marginTop: 10 }}>
           <TenantField />
           <input type="hidden" name="id" value={request.id} />
-          <input
-            type="hidden"
-            name="lifecycleVersion"
-            value={persistedVersion}
-          />
+          <input type="hidden" name="lifecycleVersion" value={persistedVersion} />
           <textarea
             name="reply"
             rows={4}
@@ -445,104 +415,98 @@ export function OffertInbox({
 
   return (
     <TenantScope tenantId={tenantId}>
-    <div>
-      <PageHead
-        eyebrow={tenantName}
-        title="Offerter"
-        lede="Kundens inkomna offertförfrågningar — status, anteckning, prisuppskattning och svar."
-      />
-
-      {requests.length === 0 ? (
-        <EmptyState
-          icon="message"
-          title="Inga förfrågningar än."
-          text="De dyker upp här när kunder skickar in via din publika sida."
+      <div>
+        <PageHead
+          eyebrow={tenantName}
+          title="Offerter"
+          lede="Kundens inkomna offertförfrågningar — status, anteckning, prisuppskattning och svar."
         />
-      ) : (
-      <Card pad={0}>
-          <Table
-            cols={['Kund', 'Typ', 'Meddelande', 'Status', 'Datum', '']}
-            rows={requests.map((r) => [
-              /* Kund */
-              <div key="kund">
-                <b style={{ fontWeight: 600 }}>{r.customer_name ?? '—'}</b>
-                {r.customer_email && (
-                  <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>
-                    {r.customer_email}
-                  </div>
-                )}
-                {r.customer_phone && !r.customer_email && (
-                  <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>
-                    {r.customer_phone}
-                  </div>
-                )}
-              </div>,
 
-              /* Typ */
-              <span key="typ" style={{ fontSize: 13, color: 'var(--c-ink-2)' }}>
-                {modeLabel(r.mode)}
-              </span>,
-
-              /* Meddelande preview */
-              <span
-                key="msg"
-                style={{
-                  fontSize: 13,
-                  color: 'var(--c-ink-2)',
-                  maxWidth: 260,
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-                title={r.message ?? undefined}
-              >
-                {r.subject
-                  ? r.subject
-                  : r.message
-                    ? r.message.slice(0, 80) + (r.message.length > 80 ? '…' : '')
-                    : '—'}
-              </span>,
-
-              /* Status */
-              <div key="status" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge>
-                {r.estimate_cents != null && (
-                  <span
-                    style={{ fontSize: 12, color: 'var(--c-gold-600)', fontWeight: 600 }}
-                  >
-                    {formatCents(r.estimate_cents, r.currency)}
-                  </span>
-                )}
-              </div>,
-
-              /* Datum */
-              <span
-                key="datum"
-                style={{ fontSize: 13, color: 'var(--c-ink-3)', whiteSpace: 'nowrap' }}
-              >
-                {formatDate(r.created_at)}
-              </span>,
-
-              /* Redigera */
-              <RowEditButton
-                key="edit"
-                onClick={() => setSelected(r)}
-                ariaLabel={`Öppna förfrågan från ${r.customer_name ?? 'okänd kund'}`}
-              />,
-            ])}
+        {requests.length === 0 ? (
+          <EmptyState
+            icon="message"
+            title="Inga förfrågningar än."
+            text="De dyker upp här när kunder skickar in via din publika sida."
           />
-      </Card>
-      )}
+        ) : (
+          <Card pad={0}>
+            <Table
+              cols={['Kund', 'Typ', 'Meddelande', 'Status', 'Datum', '']}
+              rows={requests.map((r) => [
+                /* Kund */
+                <div key="kund">
+                  <b style={{ fontWeight: 600 }}>{r.customer_name ?? '—'}</b>
+                  {r.customer_email && (
+                    <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>
+                      {r.customer_email}
+                    </div>
+                  )}
+                  {r.customer_phone && !r.customer_email && (
+                    <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>
+                      {r.customer_phone}
+                    </div>
+                  )}
+                </div>,
 
-      {selected && (
-        <DetailDrawer
-          key={selected.id}
-          request={selected}
-          onClose={() => setSelected(null)}
-        />
-      )}
-    </div>
+                /* Typ */
+                <span key="typ" style={{ fontSize: 13, color: 'var(--c-ink-2)' }}>
+                  {modeLabel(r.mode)}
+                </span>,
+
+                /* Meddelande preview */
+                <span
+                  key="msg"
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--c-ink-2)',
+                    maxWidth: 260,
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={r.message ?? undefined}
+                >
+                  {r.subject
+                    ? r.subject
+                    : r.message
+                      ? r.message.slice(0, 80) + (r.message.length > 80 ? '…' : '')
+                      : '—'}
+                </span>,
+
+                /* Status */
+                <div key="status" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge>
+                  {r.estimate_cents != null && (
+                    <span style={{ fontSize: 12, color: 'var(--c-gold-600)', fontWeight: 600 }}>
+                      {formatCents(r.estimate_cents, r.currency)}
+                    </span>
+                  )}
+                </div>,
+
+                /* Datum */
+                <span
+                  key="datum"
+                  style={{ fontSize: 13, color: 'var(--c-ink-3)', whiteSpace: 'nowrap' }}
+                >
+                  {formatDate(r.created_at)}
+                </span>,
+
+                /* Redigera */
+                <RowEditButton
+                  key="edit"
+                  onClick={() => setSelected(r)}
+                  ariaLabel={`Öppna förfrågan från ${r.customer_name ?? 'okänd kund'}`}
+                />,
+              ])}
+            />
+          </Card>
+        )}
+
+        {selected && (
+          <DetailDrawer key={selected.id} request={selected} onClose={() => setSelected(null)} />
+        )}
+      </div>
     </TenantScope>
   )
 }

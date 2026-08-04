@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './lunaria.module.css'
 
@@ -19,7 +20,7 @@ import styles from './lunaria.module.css'
  *   (6) KRÖNIKAN      — tre blogg-teasers under en tunn silverdelare
  *
  * Filen har varken galleri-band eller presentkortsrad på hemmet — då har inte mallen det
- * heller (CLAUDE.md § DESIGN-TROHET: lägga till en sektion "för att grannen har en" ÄR att
+ * heller (se AGENTS.md:s UI-acceptansregel: lägga till en sektion "för att grannen har en" är att
  * improvisera bort mallen).
  *
  * Modul-gatingen är plattformens och HELIG: urvalet ritas bara när shopen har teasers,
@@ -36,7 +37,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
   const shopReachable = modules?.shopReachable ?? false
   // goal-64: klubben (III Cirkeln) pekade på /klubb — en route som INTE FANNS. Varje
   // besökare som klickade landade i en 404. Sidan finns nu, och länken är modul-gatad:
-  // lojalitet av/draft → kortet står kvar men olänkat (filens form utan 404-fällan).
+  // Lojalitet av → kortet står kvar men olänkat (filens form utan 404-fällan).
   const klubbReachable = modules?.lojalitetReachable ?? false
   const kurserReachable = modules?.kurserReachable ?? false
 
@@ -82,10 +83,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
                   <h1 className={styles.lnHeroTitle}>{content.heroTitle}</h1>
                   <p className={styles.lnHeroLede}>{content.heroLede}</p>
                   <div className={styles.lnHeroCtas}>
-                    <Link
-                      href={shopReachable ? '/shop' : '/tjanster'}
-                      className={styles.lnSolid}
-                    >
+                    <Link href={shopReachable ? '/shop' : '/tjanster'} className={styles.lnSolid}>
                       Kliv in i butiken
                     </Link>
                     {bookingReachable ? (
@@ -131,13 +129,11 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
                           style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                           aria-label={`${p.name} — visa verket`}
                         >
-                          <span className={styles.lnSrOnly}>{p.imageAlt ?? p.name}</span>
+                          <span className="sr-only">{p.imageAlt ?? p.name}</span>
                         </Link>
                         <div className={styles.lnCardBody}>
                           <h3 className={styles.lnCardName}>{p.name}</h3>
-                          <p className={styles.lnCardPrice}>
-                            {formatProductPrice(p)}
-                          </p>
+                          <p className={styles.lnCardPrice}>{formatProductPrice(p)}</p>
                           {/* Köp-rälsen bor i butiken: teaser-korten har ingen ShopConfig
                               (fulfilment) och får därför aldrig en egen korg-knapp — de
                               leder in på produktsidan där <AddToCart> är den riktiga. */}
@@ -215,10 +211,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
                       />
                       {b.publishedAt ? (
                         <p className={styles.lnJournalDate}>
-                          {new Date(b.publishedAt).toLocaleDateString('sv-SE', {
-                            day: 'numeric',
-                            month: 'long',
-                          })}
+                          {formatBloggShortDate(b.publishedAt)}
                         </p>
                       ) : null}
                       <h3 className={styles.lnJournalTitle}>{b.title}</h3>

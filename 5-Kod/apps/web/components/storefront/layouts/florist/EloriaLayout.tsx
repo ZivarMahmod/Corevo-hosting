@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatBloggMonthYear } from '@/lib/storefront/blogg/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './eloria.module.css'
 
@@ -20,7 +21,7 @@ import styles from './eloria.module.css'
  *
  * Filen har varken galleri-band, presentkortsrad eller stat-band på hemmet — och då har
  * inte mallen det heller. Att lägga till en sektion "för att syskonen har en" ÄR att
- * improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * improvisera bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * Modul-gatingen är plattformens och HELIG: katalog-brickan och katalog-bandet ritas bara
  * när shopen går att nå, bröllops-plattan bara när offerten gör det, journal-bandet bara
@@ -153,7 +154,7 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
                       className={styles.elHomeCatalogImg}
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                     >
-                      <span className={styles.elSrOnly}>{p.imageAlt ?? p.name}</span>
+                      <span className="sr-only">{p.imageAlt ?? p.name}</span>
                     </span>
                     <span className={styles.elHomeCatalogName}>{p.name}</span>
                     <span className={styles.elHair} />
@@ -188,7 +189,7 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
                     href={p.slug ? `/blogg/${p.slug}` : '/blogg'}
                     className={styles.elJournalRow}
                   >
-                    <span className={styles.elJournalDate}>{formatPostDate(p.publishedAt)}</span>
+                    <span className={styles.elJournalDate}>{formatBloggMonthYear(p.publishedAt)}</span>
                     <span className={styles.elJournalTitle}>{p.title}</span>
                     <span className={styles.elJournalMore}>Läs →</span>
                   </Link>
@@ -200,13 +201,4 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
       ) : null}
     </div>
   )
-}
-
-/** Filens datum-form är månad + år ("Juni 2026") — inte ett fullt datum. */
-function formatPostDate(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const s = d.toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }

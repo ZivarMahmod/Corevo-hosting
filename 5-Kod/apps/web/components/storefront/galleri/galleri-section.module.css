@@ -70,16 +70,6 @@
   color: color-mix(in srgb, var(--color-fg, #232520) 62%, transparent);
 }
 
-.notice {
-  margin: 18px 0 0;
-  padding: var(--sf-notice-pad, 12px 14px);
-  border: 1px solid var(--sf-notice-border, color-mix(in srgb, var(--color-fg, #232520) 16%, transparent));
-  border-radius: var(--sf-radius, 4px);
-  background: var(--sf-notice-bg, color-mix(in srgb, var(--color-fg, #232520) 4%, transparent));
-  font-size: 14px;
-  color: var(--color-fg-2, #5a5c55);
-}
-
 .empty {
   margin: 24px 0 0;
   font-size: 15px;

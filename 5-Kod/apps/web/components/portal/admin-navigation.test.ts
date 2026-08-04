@@ -42,7 +42,6 @@ describe('adminAreas', () => {
   it('säger aldrig "Superadmin" eller läcker plattformsytor', () => {
     const hrefs = adminAreas(undefined).map((a) => a.href)
     expect(hrefs.every((href) => href.startsWith('/admin'))).toBe(true)
-    expect(hrefs).not.toContain('/salonger')
   })
 
   it('visar personal de tre arbetsytorna öppna och resten LÅSTA (2026-07-18)', () => {
@@ -126,9 +125,11 @@ describe('behörighetsfiltrerade admin-genvägar', () => {
     grantedAreas?: readonly string[]
     canManageBookings: boolean
   }) => Array<{ href: string; label: string; icon: string }>
-  const quickActions = (adminNavigation as unknown as {
-    adminQuickActions?: QuickActionFactory
-  }).adminQuickActions
+  const quickActions = (
+    adminNavigation as unknown as {
+      adminQuickActions?: QuickActionFactory
+    }
+  ).adminQuickActions
 
   it('behåller Kunder som basåtkomst för vanlig personal', () => {
     expect(quickActions).toBeTypeOf('function')

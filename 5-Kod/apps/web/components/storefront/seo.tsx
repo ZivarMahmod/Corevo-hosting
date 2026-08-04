@@ -15,7 +15,7 @@ import { createPublicClient } from '@/lib/supabase/public'
  *    layout. Name/url/telephone/image emit always; address + opening hours emit
  *    only when REAL; no `geo` (we don't geocode → coordinates would be fabricated).
  *
- * Plain values only — frozen remote-image config means no next/image; the image
+ * Plain values only — remote sources are not configured for next/image; the image
  * URL here is just a string in JSON-LD, not an <img>.
  */
 

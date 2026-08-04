@@ -62,11 +62,6 @@ export function isModuleActivated(states: AdminModuleStates, key: string): boole
   return moduleAdminState(states, key) === 'live'
 }
 
-/** Booking follows the same binary rule as every other module. */
-export function isBookingActivated(states: AdminModuleStates): boolean {
-  return isModuleActivated(states, 'booking')
-}
-
 /** Read one module's config jsonb (read-only display). Empty object if absent. */
 export function moduleAdminConfig(states: AdminModuleStates, key: string): Record<string, unknown> {
   return states[key]?.config ?? {}

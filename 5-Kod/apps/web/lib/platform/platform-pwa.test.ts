@@ -35,14 +35,4 @@ describe('platform-PWA', () => {
     }
   })
 
-  it('länkas från plattformslayouten med iOS- och viewportmetadata', () => {
-    const layout = fs.readFileSync(path.join(WEB_ROOT, 'app', '(platform)', 'layout.tsx'), 'utf8')
-    expect(layout).toContain("manifest: '/pwa/platform.webmanifest'")
-    expect(layout).toContain("title: 'Corevo Platform'")
-    expect(layout).toContain("icons: { apple: '/pwa/admin-icon-180.png' }")
-    expect(layout).toContain("themeColor: '#121210'")
-    expect(layout).toContain("viewportFit: 'cover'")
-    expect(layout).not.toContain('userScalable: false')
-    expect(layout).not.toContain('maximumScale: 1')
-  })
 })

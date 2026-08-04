@@ -160,11 +160,6 @@
   color: var(--color-primary-ink, var(--color-primary));
 }
 
-.notice {
-  margin: 16px 0 0;
-  color: var(--color-fg-2);
-}
-
 .srOnly {
   position: absolute;
   width: 1px;

@@ -8,6 +8,7 @@ import {
 } from '@/lib/storefront/shop/types'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggLongDate } from '@/lib/storefront/blogg/types'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
@@ -15,40 +16,6 @@ import type {
   ThemeLojalitetViewProps,
 } from './types'
 import styles from './calytrix-modules.module.css'
-
-/**
- * CALYTRIX — MODUL-VYER (goal-64, vektor-regeln + exakt kopia ur .dc.html).
- *
- * Modulen äger FUNKTIONEN: datan är laddad, livscykeln gatad (paused → katalogen läsbar,
- * noll köpknappar), köp-rälsen är fortfarande <AddToCart>. FORMEN är mallens:
- *
- *   BUTIKEN (filens `showButik`) — "Butiken" i 56px serif med produkträkningen baseline-
- *   ställd bredvid, sedan fyra kolumner produktkort: 4:5-foto, badge i hörnet, namn +
- *   plommonpris på samma rad, beskrivning, och "LÄGG I KORG" som inramad versalknapp
- *   längst ner. Inga rundade hörn, ingen skugga förrän man rör kortet.
- *
- *   BLOGGEN (filens `showBlogg`) — tre vita kantade kort: 16:10-bild, versal tagg-rad i
- *   plommon, 23px serif-rubrik, utdrag. Ingen läs-mer-länk: hela kortet ÄR länken.
- *
- * goal-64 (migration 0057) — DET SOM SAKNADES ÄR NU VERKLIGT:
- *   • KATEGORI-CHIPSEN (filens `cats`/`filters`) byggdes inte tidigare, för shop_products bar
- *     ingen kategori. Nu gör den det. Chipsen är <Link>-taggar mot `/shop?kategori=…` och
- *     filtreringen sker server-side — de fungerar utan JS och kan indexeras. Kunden har INGA
- *     kategorier → data.categories är tom → raden renderas inte alls (aldrig en påhittad chip).
- *   • BADGEN ("Bästsäljare", "Säsong" …) var mockdata utan fält. Nu är den shop_products.badge.
- *     Slutsåld VINNER ändå över badgen: att varan inte går att köpa är viktigare för besökaren
- *     än att den är populär, och två märken i samma hörn ritar designen inte.
- *
- * SYNKRONA server-komponenter (ingen async, ingen 'use client').
- */
-
-/** Svenskt datum ("4 juli 2026"). Pure; null när datum saknas → raden utelämnas. */
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 /** Slutsåld = ALLA varianter har available === 0 (samma sanning som AddToCart:s egen
  *  gren — etiketten är bara skyltningen av samma data, aldrig en egen lagerlogik). */
@@ -58,13 +25,12 @@ function isSoldOut(p: ShopProduct): boolean {
 
 /* ═══════════════════════════════ BUTIKEN ════════════════════════════════ */
 
-export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function CalytrixShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: all } = data
   const products = typeof limit === 'number' ? all.slice(0, limit) : all
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && all.length === 0 && !paused) return null
+  if (teaser && all.length === 0) return null
 
   const cards = products.map((p, i) => {
     const soldOut = isSoldOut(p)
@@ -102,12 +68,9 @@ export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeSh
                 <p className={styles.cxCardPrice}>{formatProductPrice(p)}</p>
               </div>
               {p.description ? <p className={styles.cxCardDesc}>{p.description}</p> : null}
-              {/* Pausad butik → INGEN köp-CTA. Stängt är stängt. */}
-              {paused ? null : (
-                <div className={styles.cxCardBuy}>
-                  <AddToCart product={p} fulfilment={config.fulfilment} compact />
-                </div>
-              )}
+              <div className={styles.cxCardBuy}>
+                <AddToCart product={p} fulfilment={config.fulfilment} compact />
+              </div>
             </div>
           </article>
         </Reveal>
@@ -123,9 +86,7 @@ export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeSh
         <div className={styles.cxSecHead}>
           <div>
             <p className={styles.cxSecEyebrow}>{content.shopEyebrow ?? 'Mest sålda'}</p>
-            <h2 className={styles.cxSecTitle}>
-              {content.shopTitle ?? 'Beställ det alla vill ha'}
-            </h2>
+            <h2 className={styles.cxSecTitle}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
           </div>
           {moreHref ? (
             <Link href={moreHref} className={styles.cxSecLink}>
@@ -133,11 +94,6 @@ export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeSh
             </Link>
           ) : null}
         </div>
-        {paused ? (
-          <p role="status" className={styles.cxNotice}>
-            Butiken är tillfälligt stängd för nya beställningar. Vi öppnar igen snart.
-          </p>
-        ) : null}
         {products.length > 0 ? <ul className={styles.cxGrid4}>{cards}</ul> : null}
       </section>
     )
@@ -177,13 +133,6 @@ export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeSh
         </div>
       ) : null}
 
-      {paused ? (
-        <p role="status" className={styles.cxNotice}>
-          Butiken är tillfälligt stängd för nya beställningar. Du kan se hela sortimentet,
-          men det går inte att beställa just nu. Vi öppnar igen snart.
-        </p>
-      ) : null}
-
       {products.length === 0 ? (
         // Ärlig tomhet: en okänd/tom kategori säger så, den påstår inte att butiken är tom.
         <p className={styles.cxEmpty}>
@@ -207,7 +156,7 @@ export function CalytrixBlogg({ posts: all, limit, moreHref, content }: ThemeBlo
   if (teaser && all.length === 0) return null
 
   const cards = posts.map((p, i) => {
-    const date = formatPostDate(p.publishedAt)
+    const date = formatBloggLongDate(p.publishedAt)
     const body = (
       <>
         <span
@@ -220,9 +169,7 @@ export function CalytrixBlogg({ posts: all, limit, moreHref, content }: ThemeBlo
           {/* Filens metarad är "{{ b.tag }} · {{ b.date }}" — taggen är blog_posts.tag (0057).
               Saknas taggen står bara datumet där; saknas båda renderas ingen rad alls. */}
           {p.tag || date ? (
-            <span className={styles.cxPostMeta}>
-              {[p.tag, date].filter(Boolean).join(' · ')}
-            </span>
+            <span className={styles.cxPostMeta}>{[p.tag, date].filter(Boolean).join(' · ')}</span>
           ) : null}
           <h2 className={styles.cxPostTitle}>{p.title}</h2>
           {p.excerpt ? <span className={styles.cxPostExcerpt}>{p.excerpt}</span> : null}

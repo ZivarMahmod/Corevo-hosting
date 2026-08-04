@@ -27,7 +27,7 @@ import ln from './linnea.module.css'
  * data). Mallens knapp-/fält-/etikett-varsen bor i tokens.css under [data-theme="linnea"],
  * så de även når nav, sidfot och undersidorna (som inte laddar den här modulen).
  */
-export function LinneaLayout({ tenant, content, services, modules }: StorefrontLayoutProps) {
+export function LinneaLayout({ content, services, modules }: StorefrontLayoutProps) {
   const bookingReachable = modules?.bookingReachable ?? false
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)

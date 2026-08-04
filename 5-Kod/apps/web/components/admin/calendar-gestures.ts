@@ -5,14 +5,6 @@ export const TOUCH_DRAG_SLOP_PX = 10
 export const EDGE_AUTO_SCROLL_ZONE_PX = 56
 export const EDGE_AUTO_SCROLL_MAX_PX_PER_SECOND = 600
 
-export type TouchDragIntent = 'pressing' | 'scroll' | 'lifted'
-
-export function touchDragIntent(elapsedMs: number, distancePx: number): TouchDragIntent {
-  if (distancePx > TOUCH_DRAG_SLOP_PX) return 'scroll'
-  if (elapsedMs >= TOUCH_DRAG_HOLD_MS) return 'lifted'
-  return 'pressing'
-}
-
 /** Ghostens övre vänstra hörn. Greppunkten bevaras så kortet aldrig hoppar till
  * fingercentrum när långtrycket övergår från pressing till lifted. */
 export function dragGhostPosition(

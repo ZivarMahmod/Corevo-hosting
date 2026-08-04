@@ -15,6 +15,13 @@ export function parseSettingsScope(value: unknown): SettingsScope | null {
     : null
 }
 
+export function parseCancellationCutoffHours(value: unknown): number | null {
+  const raw = String(value ?? '').trim()
+  if (raw === '') return 24
+  const hours = Number(raw)
+  return Number.isSafeInteger(hours) && hours >= 0 && hours <= 8760 ? hours : null
+}
+
 type NotificationSettings = {
   confirmation: boolean
   reminder: boolean
@@ -24,7 +31,6 @@ type NotificationSettings = {
 export type ScopedSettingsInput = {
   cancellationHours?: number
   contact?: { email: string | null; phone: string | null }
-  customerAccountsEnabled?: boolean
   notifications?: NotificationSettings
   googleReviewUrl?: string | null
   cookieBannerEnabled?: boolean
@@ -40,9 +46,6 @@ export function mergeScopedSettings(
   if (scope === 'all' || scope === 'booking') {
     if (input.cancellationHours !== undefined) {
       next.cancellation_cutoff_hours = input.cancellationHours
-    }
-    if (input.customerAccountsEnabled !== undefined) {
-      next.customer_accounts_enabled = input.customerAccountsEnabled
     }
   }
 

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { PresentkortSection } from '@/components/storefront/PresentkortSection'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import { loadPresentkortData } from '@/lib/storefront/presentkort/load-presentkort'
 import { pageMetadata } from '@/components/storefront/seo'
 import { commerceReleaseGate } from '@/lib/release/commerce'
@@ -31,8 +31,8 @@ export default async function PresentkortPage() {
   if (View) {
     const data = await loadPresentkortData(tenant.id, tenant.slug)
     if (!data) notFound()
-    return <View config={data.config} paused={!checkoutLive} tenantName={tenant.name} />
+    return <View config={data.config} purchaseClosed={!checkoutLive} tenantName={tenant.name} />
   }
 
-  return <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={false} checkoutLive={checkoutLive} />
+  return <PresentkortSection tenantId={tenant.id} slug={tenant.slug} checkoutLive={checkoutLive} />
 }

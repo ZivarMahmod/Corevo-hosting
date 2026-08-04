@@ -1,7 +1,9 @@
 'use client'
 
 import { useActionState } from 'react'
-import { setContactMessageStatus, type ActionState } from '@/lib/platform/actions'
+import { setContactMessageStatus } from '@/lib/platform/actions/contact'
+import type { ActionState } from '@/lib/platform/actions/shared'
+import type { ContactMessage } from '@/lib/admin/kontakt/data'
 import { Icon } from '@/components/portal/ui'
 import styles from './platform.module.css'
 
@@ -15,17 +17,6 @@ import styles from './platform.module.css'
  * ligger hopfällda längst ner. Render-on-present — tom inkorg ritar en tom-text, aldrig
  * en påhittad rad.
  */
-
-export type ContactMessage = {
-  id: string
-  name: string
-  email: string | null
-  phone: string | null
-  subject: string | null
-  message: string
-  status: 'new' | 'read' | 'archived'
-  created_at: string
-}
 
 const dt = new Intl.DateTimeFormat('sv-SE', {
   day: 'numeric',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ServiceRow } from '@/lib/admin/data'
 import {
@@ -17,7 +17,9 @@ import {
   Callout,
   Card,
   Drawer,
+  Field,
   Icon,
+  inputStyle,
   PageHead,
   PillToggle,
   Table,
@@ -74,7 +76,7 @@ export function ServicesManager({
       </Callout>
 
       {/* Kolumn-ratio i CSS (inte inline) så .bo-2col:s ≤920px-kollaps till 1fr vinner
-          på mobil — inline-style skulle annars slå media-queryn (RolesMatrix-fällan). */}
+          på mobil — inline-style skulle annars slå media-queryn. */}
       <style>{`
         .services-2col { grid-template-columns: 1.7fr 1fr; }
         .services-2col > * { min-width: 0; }
@@ -386,29 +388,6 @@ function StorefrontSiteMap({
       </div>
     </Card>
   )
-}
-
-/** Shared field markup for the create + edit drawers — eyebrow label over each
- *  input, mock control radius/borders. Keeps inline-edit parity: namn, kategori,
- *  varaktighet, pris are ALL editable here (RC: don't lose inline edit). */
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
-
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
 }
 
 function CreateDrawer({ onClose }: { onClose: () => void }) {

@@ -8,7 +8,7 @@ insert into public.tenants (id, slug, name) values
 insert into public.tenant_settings (tenant_id, settings, branding) values
   (
     '80000000-0000-0000-0000-000000000001',
-    '{"copy":{"heroTitle":"Before"},"theme":"kalla","social":{"instagram":"stale"},"booking":{"keepBooking":"booking"},"customer_accounts_enabled":true,"keep":"settings"}',
+    '{"copy":{"heroTitle":"Before"},"theme":"kalla","social":{"instagram":"stale"},"booking":{"keepBooking":"booking"},"customer_portal":{"mode":"legacy_account"},"keep":"settings"}',
     '{"color_primary":"#000000","color_bg":"#ffffff","team":[{"name":"Legacy","role":"Owner","img":""}],"keep_brand":"branding"}'
   ),
   ('80000000-0000-0000-0000-000000000002', '{"theme":"kalla"}', '{}');
@@ -303,7 +303,7 @@ begin
      or v_settings ->> 'theme' <> 'kalla'
      or v_settings #>> '{contact,email}' <> 'after@example.test'
      or v_settings ->> 'keep' <> 'settings'
-     or v_settings ->> 'customer_accounts_enabled' <> 'true'
+     or v_settings #>> '{customer_portal,mode}' <> 'legacy_account'
      or v_settings #>> '{booking,variant}' <> 'compact'
      or v_settings #>> '{booking,pickerMode}' <> 'strip'
      or v_settings #>> '{booking,staffAvatars}' <> 'foto'

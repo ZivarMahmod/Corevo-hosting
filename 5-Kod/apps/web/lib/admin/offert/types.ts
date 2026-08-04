@@ -94,12 +94,6 @@ export const OFFERT_STATUS_LABELS: Record<OffertStatus, string> = {
   closed: 'Stängd',
 }
 
-export const OFFERT_MODE_LABELS: Record<string, string> = {
-  request_quote: 'Begär offert',
-  estimate_form: 'Prisuppskattning',
-  callback: 'Vi återkommer',
-}
-
 /** öre → "1 234 kr" (sv-SE, no decimals). */
 export function formatCents(cents: number, currency: string): string {
   return new Intl.NumberFormat('sv-SE', {
@@ -108,3 +102,4 @@ export function formatCents(cents: number, currency: string): string {
     maximumFractionDigits: 0,
   }).format(cents / 100)
 }
+export { OFFERT_MODE_LABELS } from '@/lib/storefront/offert/types'

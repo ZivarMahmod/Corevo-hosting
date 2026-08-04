@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import { setTenantStatus, type ActionState } from '@/lib/platform/actions'
+import { setTenantStatus } from '@/lib/platform/actions/status'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import styles from './platform.module.css'
 
 const ARM_TIMEOUT_MS = 10_000

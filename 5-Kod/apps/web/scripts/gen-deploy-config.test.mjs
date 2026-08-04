@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { buildRoutes, fetchActiveSlugs, validateDomains, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
+import {
+  buildRoutes,
+  fetchActiveSlugs,
+  validateDomains,
+  REQUIRED_FIXED_HOSTS,
+} from './gen-deploy-config.mjs'
 import { RESERVED } from './domain-routes.mjs'
 
 // The fixed infra routes as they appear in wrangler.jsonc (the generator's base).
@@ -44,8 +49,10 @@ describe('buildRoutes', () => {
   })
 
   it('THROWS (fail-closed) if a required fixed host is missing from the base', () => {
-    const broken = BASE.filter((r) => r.pattern !== 'superbooking.corevo.se')
-    expect(() => buildRoutes(broken, ['test-barber'])).toThrow(/superbooking\.corevo\.se/)
+    for (const required of ['superbooking.corevo.se', 'minbooking.corevo.se']) {
+      const broken = BASE.filter((r) => r.pattern !== required)
+      expect(() => buildRoutes(broken, ['test-barber'])).toThrow(new RegExp(required.replaceAll('.', '\\.')))
+    }
   })
 })
 
@@ -57,28 +64,44 @@ describe('fetchActiveSlugs', () => {
   })
 
   it('returns slugs from a 200 response', async () => {
-    const slugs = await fetchActiveSlugs('https://x', 'anon', fakeFetch(200, [{ slug: 'a' }, { slug: 'b' }]))
+    const slugs = await fetchActiveSlugs(
+      'https://x',
+      'anon',
+      fakeFetch(200, [{ slug: 'a' }, { slug: 'b' }]),
+    )
     expect(slugs).toEqual(['a', 'b'])
   })
 
   it('THROWS on a non-OK response (fail-closed, never silently drops domains)', async () => {
-    await expect(fetchActiveSlugs('https://x', 'anon', fakeFetch(500, {}))).rejects.toThrow(/HTTP 500/)
-  })
-
-  it('THROWS on a non-array body', async () => {
-    await expect(fetchActiveSlugs('https://x', 'anon', fakeFetch(200, { error: 'x' }))).rejects.toThrow(
-      /non-array/,
+    await expect(fetchActiveSlugs('https://x', 'anon', fakeFetch(500, {}))).rejects.toThrow(
+      /HTTP 500/,
     )
   })
 
+  it('THROWS on a non-array body', async () => {
+    await expect(
+      fetchActiveSlugs('https://x', 'anon', fakeFetch(200, { error: 'x' })),
+    ).rejects.toThrow(/non-array/)
+  })
+
   it('filters out null/empty slugs', async () => {
-    const slugs = await fetchActiveSlugs('https://x', 'anon', fakeFetch(200, [{ slug: 'a' }, { slug: null }, {}]))
+    const slugs = await fetchActiveSlugs(
+      'https://x',
+      'anon',
+      fakeFetch(200, [{ slug: 'a' }, { slug: null }, {}]),
+    )
     expect(slugs).toEqual(['a'])
   })
 })
 
 describe('validateDomains', () => {
-  const FILE = ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se', 'test-barber.corevo.se']
+  const FILE = [
+    'booking.corevo.se',
+    'superbooking.corevo.se',
+    'minbooking.corevo.se',
+    'mina.corevo.se',
+    'test-barber.corevo.se',
+  ]
 
   it('passes when committed ⊇ live; active tenants ride the canonical wildcard', () => {
     const out = validateDomains({
@@ -108,10 +131,15 @@ describe('validateDomains', () => {
     expect(out.missingLive).toEqual(['orphan.corevo.se'])
   })
 
-  it('ignores the 3 fixed hosts and reserved labels', () => {
+  it('ignores fixed hosts and reserved labels', () => {
     const out = validateDomains({
       committedPatterns: FILE,
-      liveDomains: ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se'],
+      liveDomains: [
+        'booking.corevo.se',
+        'superbooking.corevo.se',
+        'minbooking.corevo.se',
+        'mina.corevo.se',
+      ],
       activeSlugs: ['booking', 'admin', 'boka', 'mina'], // reserved → never required
     })
     expect(out.missingLive).toEqual([])
@@ -125,7 +153,11 @@ describe('validateDomains', () => {
     const anonFetch = (_url, _init) =>
       Promise.resolve({ ok: true, status: 200, json: async () => [{ slug: 'test-barber' }] }) // paused 'klippstudio' hidden
     const serviceRoleFetch = (_url, _init) =>
-      Promise.resolve({ ok: true, status: 200, json: async () => [{ slug: 'test-barber' }, { slug: 'klippstudio' }] })
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => [{ slug: 'test-barber' }, { slug: 'klippstudio' }],
+      })
 
     const anonSlugs = await fetchActiveSlugs('https://x', 'anon', anonFetch)
     const srSlugs = await fetchActiveSlugs('https://x', 'sr', serviceRoleFetch)

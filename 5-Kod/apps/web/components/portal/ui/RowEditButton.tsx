@@ -1,5 +1,6 @@
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
 import s from './portal-ui.module.css'
+import type { IconName } from '@/lib/ui-icons'
 
 /** Transparent ikon-knapp för tabellernas sista kolumn (KursAdmin-mönstret,
  *  goal-55 steg 1). Alltid med aria-label — ikonen ensam bär ingen text.

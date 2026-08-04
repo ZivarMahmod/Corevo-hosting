@@ -1,7 +1,8 @@
 import Stripe from 'stripe'
 import { getStripe, getWebhookSecret } from '@/lib/stripe/client'
 import { createServiceClient } from '@/lib/platform/service'
-import { sendPaymentReceipt, parseGuestEmail } from '@/lib/notifications/booking'
+import { sendPaymentReceipt } from '@/lib/notifications/booking'
+import { parseGuestEmail } from '@/lib/notifications/parse'
 import { dispatchPaymentRefundJobById } from '@/lib/payments/refund-outbox'
 import {
   completeShopPaymentEvent,
@@ -10,6 +11,7 @@ import {
 } from '@/lib/payments/settle'
 import { captureException } from '@/lib/observability'
 import { after } from 'next/server'
+import { parseTenantLegal } from '@/lib/tenant-region'
 
 // Stripe Connect webhook (G09 step 4).
 //
@@ -277,11 +279,9 @@ export async function POST(req: Request): Promise<Response> {
                     .select('settings')
                     .eq('tenant_id', tenantId)
                     .maybeSingle()
-                  const legal = (ts?.settings as { legal?: { org_nr?: unknown; vat_rate?: unknown } } | null)
-                    ?.legal
-                  orgNr = typeof legal?.org_nr === 'string' && legal.org_nr.trim() ? legal.org_nr.trim() : null
-                  const vr = legal?.vat_rate
-                  vatRate = typeof vr === 'number' && vr >= 0 && vr <= 100 ? vr : null
+                  const legal = parseTenantLegal(ts?.settings)
+                  orgNr = legal.orgNr
+                  vatRate = legal.vatRate
                 } catch {
                   /* kvitto utan juridikrader är bättre än inget kvitto */
                 }

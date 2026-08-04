@@ -1,82 +1,76 @@
-# E2E tests (Playwright) — G11
+# E2E med Playwright
 
-Critical-flow end-to-end tests. Config: `../playwright.config.ts`.
+Playwright-sviten finns i `e2e/` och konfigureras av `playwright.config.ts`.
+Tester märkta `@mutating` får endast köras mot den guardade, disponibla
+preview/stagingdatabasen. Peka aldrig E2E mot produktion eller kunddata.
 
-## Tags
+## Kommandon
 
-- **`@readonly`** — pure reads (tenant + branding + service resolution). Safe to
-  run anywhere, including locally against the canonical cloud DB.
-- **`@mutating`** — writes rows (bookings, time-off, services, tenants). **Run
-  ONLY against a seeded, disposable STAGING Supabase**, never prod data.
+Kör från `5-Kod/`:
 
-## Run locally
-
-```bash
-# from 5-Kod/
-pnpm test:e2e:readonly     # only @readonly — starts `next dev`, probes /login
-pnpm test:e2e:ui           # Playwright UI mode
-```
-
-The harness enters every tenant via the `?tenant=<slug>` dev override (middleware
-persists it in a cookie — see `apps/web/lib/tenant.ts` + `middleware.ts`), so no
-subdomain/DNS is needed. `next dev` reads `apps/web/.env.local`.
-
-> Do **not** run `pnpm test:e2e` (full suite) against the canonical cloud DB — the
-> `@mutating` specs would write into real tenant data.
-
-## Run the full suite (CI / staging)
-
-Point at a built+started app backed by a seeded staging Supabase:
-
-```bash
-E2E_WEBSERVER_CMD="pnpm --filter @corevo/web start" \
-NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
-SUPABASE_SERVICE_ROLE_KEY=... \
+```powershell
+pnpm test:e2e:readonly
 pnpm test:e2e
+pnpm test:e2e:ui
 ```
 
-In CI this is the `e2e` job in `.github/workflows/ci.yml`, gated on the repo
-variable `E2E_ENABLED=true`.
+`test:e2e:readonly` betyder att specen inte avsiktligt muterar data. Det gör inte en
+godtycklig målmiljö säker. Kontrollera alltid host, Supabase-projekt och
+testidentiteter före körning.
 
-## Seed identities
+## Isolerad databasfixtur
 
-From `supabase/seed.sql` (exist only on a seeded DB):
+`apps/web/scripts/e2e-db.mjs` vägrar skriva om den länkade Supabase-referensen inte
+matchar både `E2E_SUPABASE_PROJECT_REF` och den separata allowlisten
+`E2E_ALLOWED_SUPABASE_PROJECT_REF`, eller om den matchar
+`PRODUCTION_SUPABASE_PROJECT_REF`. Fixturen använder syntetiska identiteter och ett
+engångslösenord som anroparen måste sätta i `E2E_PASSWORD`; lösenordet får inte
+sparas i en beständig fil eller Git och skriptet skriver aldrig ut det. Den
+temporära SQL-filen raderas i `finally`, även när CLI-körningen faller.
 
-| Role | Email | Password |
-|------|-------|----------|
-| salon_admin | `e2e-admin@frisor1.test` | `E2E_PASSWORD` från seed-kommandot |
-| staff | `e2e-staff@frisor1.test` | `E2E_PASSWORD` från seed-kommandot |
-| platform_admin | `platform@corevo.se` | `Demo!1234` |
-
-Tenants: `frisor1` (Frisör Ett), `frisor2` (Salong Två).
-
-## Staging seed gap
-
-`cancel-rebook.spec.ts` needs a **`kund`-role account that owns an active booking**
-inside the cancellation window. The base `seed.sql` has no customer booking, so the
-staging seed must add one (a kund user + a future pending/confirmed booking). Until
-then that spec **skips** gracefully instead of failing.
-
-`customer-relationship.spec.ts` är det deterministiska U6-beviset men körs bara
-när staging-fixturen innehåller en claimad gästkund med två genomförda besök,
-favoritpersonal och ett internt klientkort. Sätt följande variabler till exakt de
-värden som seeden skapade:
-
-```text
-E2E_RELATIONSHIP_CUSTOMER_EMAIL
-E2E_RELATIONSHIP_CUSTOMER_LABEL
-E2E_RELATIONSHIP_SERVICE
-E2E_RELATIONSHIP_STAFF
-E2E_RELATIONSHIP_PREFERENCE
-E2E_RELATIONSHIP_INTERNAL_NOTE
+```powershell
+node apps/web/scripts/e2e-db.mjs teardown
+node apps/web/scripts/e2e-db.mjs verify
+node apps/web/scripts/e2e-db.mjs seed
+pnpm test:e2e
+node apps/web/scripts/e2e-db.mjs teardown
+node apps/web/scripts/e2e-db.mjs verify
 ```
 
-Utan dessa skippar specen tydligt. Kör den inte mot produktion: den är skrivskyddad,
-men den kräver en särskild testidentitet och privata testanteckningar som inte ska
-läggas på en riktig kund. SQL-kontraktet i
-`supabase/tests/customer_relationship_0101_test.sql` bevisar samma datakedja på en
-fresh, transaktionell databas och rullar tillbaka allt.
+Generera och exportera `E2E_PASSWORD` innan seed-steget och använd samma värde i
+Playwright-processen. Kör `teardown` och `verify` även när testsuiten faller.
+`verify` ska vara grönt innan körningen får rapporteras ren.
 
-The Stripe-test-card path (`requiresPayment=true` → Checkout → Connect webhook →
-`confirmed`) is verified via the manual checklist in
-`docs/ops/deploy-runbook.md` §6 (needs a connected account + `stripe listen`).
+Fixturidentiteterna ägs av `supabase/seeds/e2e-seed.sql` och
+`e2e/helpers.ts`. Lägg inte konton eller lösenord i denna README.
+Seeden innehåller ett syntetiskt kundkonto med två genomförda besök,
+favoritpersonal, ett personalinternt klientkort och en aktiv framtida bokning.
+Saknas någon av de raderna ska motsvarande spec falla; sviten skippar inte en
+trasig eller ofullständig seed.
+
+## Mål och server
+
+- Utan `E2E_BASE_URL` startar Playwright webbappen lokalt.
+- `E2E_PORT` byter lokal port om standardporten `3000` redan används.
+- Med `E2E_BASE_URL` används den uttryckliga körande miljön och ingen lokal server
+  startas.
+- `E2E_BOOKING_HOST` anger backofficehost när standardvärdet inte passar målet.
+- Lokalt använder storefronttester tenantens riktiga host
+  `frisor1.localhost:<E2E_PORT>`.
+- Ett explicit fjärrmål kräver `E2E_TENANT_HOST`; helpern gissar aldrig en
+  storefronthost från `E2E_BASE_URL`.
+
+CI:s fulla suite är villkorad i `.github/workflows/ci.yml` och förutsätter en
+isolerad, seedad stagingmiljö. Ett grönt lokalt test bevisar inte CI, staging eller
+produktion.
+
+## Klassning
+
+- `@readonly`: inga avsiktliga writes; kör ändå bara mot godkänd testmiljö.
+- `@mutating`: bokningar, schema, tjänster eller tenantdata kan ändras; kräver
+  disponibel seed och efterföljande teardown/verify.
+- `e2e/acceptans/`: mekaniska acceptanspaket med egna probes/baselines; kör endast
+  enligt respektive pakets kontrakt.
+
+Vid fel ska trace, screenshot och rapport behandlas som potentiell kunddata. Dela
+eller committa dem inte utan granskning.

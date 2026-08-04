@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { saveBilling, type ActionState } from '@/lib/platform/actions'
+import { saveBilling } from '@/lib/platform/actions/billing'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import {
   BILLING_MODELS,
   BILLING_MODEL_LABELS,

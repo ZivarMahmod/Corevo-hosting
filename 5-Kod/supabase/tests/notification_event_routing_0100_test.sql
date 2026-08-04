@@ -156,6 +156,47 @@ update public.customer_notification_prefs
  where customer_id = 'a0000000-0000-4000-8000-000000000041'
    and tenant_id = 'a0000000-0000-4000-8000-000000000001';
 
+-- Push is prepared but physically unavailable in v1. It cannot be selected
+-- until a real consumer ships, and the scheduled generic worker claims email only.
+do $$ begin
+  update public.customer_notification_prefs
+     set push_enabled = true
+   where customer_id = 'a0000000-0000-4000-8000-000000000041';
+  raise exception 'push_enabled_without_transport';
+exception when check_violation then null; end $$;
+
+insert into public.notifications_outbox (
+  tenant_id, event_type, event_key, category, chosen_channel, payload, status
+) values
+  ('a0000000-0000-4000-8000-000000000001', 'test_email', 'claim:email:0134',
+   'transactional', 'email', '{}'::jsonb, 'queued'),
+  ('a0000000-0000-4000-8000-000000000001', 'test_sms', 'claim:sms:0134',
+   'transactional', 'sms', '{}'::jsonb, 'queued');
+
+do $$
+declare
+  v_count integer;
+  v_non_email integer;
+begin
+  with claimed as materialized (
+    select * from public.claim_notification_outbox(
+      'a0000000-0000-4000-8000-000000000061', now(), 120, 200
+    )
+  )
+  select count(*), count(*) filter (where chosen_channel <> 'email')
+    into v_count, v_non_email
+    from claimed;
+  if v_count = 0 or v_non_email <> 0 then
+    raise exception 'generic_claim_not_email_only_%_%', v_count, v_non_email;
+  end if;
+  if not exists (
+    select 1 from public.notifications_outbox
+     where event_key = 'claim:sms:0134' and status = 'queued'
+  ) then
+    raise exception 'generic_claim_consumed_sms';
+  end if;
+end $$;
+
 -- Actor chose none: durable terminal skip, never a queued/sent claim.
 do $$
 declare v_status text; v_reason text;

@@ -11,7 +11,6 @@ export const CUSTOMER_PORTAL_ROUTE_PATTERNS = [
   /^\/mina\/profil$/,
   /^\/mina\/sakerhet$/,
   /^\/mina\/installera$/,
-  /^\/mina\/integritet$/,
 ] as const
 
 const STATIC_PATHS = new Set([

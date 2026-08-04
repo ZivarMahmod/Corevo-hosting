@@ -4,8 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
 import { STOREFRONT_THEMES, type Service, type StorefrontTheme } from '@/lib/tenant-data'
-import { resolveThemeContent } from '../theme-content'
-import { STOREFRONT_LAYOUTS } from './index'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { STOREFRONT_LAYOUTS, themeModuleViews } from './runtime'
 import type { LayoutModuleTeasers } from './types'
 
 const SERVICE = {
@@ -71,11 +71,11 @@ function moduleHrefs(html: string) {
 }
 
 describe.each(STOREFRONT_THEMES)('%s production layout module matrix', (theme) => {
-  it.each(['off', 'draft'] as const)('emits no module routes when state is %s', () => {
+  it('emits no module routes when modules are off', () => {
     expect(moduleHrefs(render(theme, OFF))).toEqual([])
   })
 
-  it.each(['paused', 'live'] as const)('renders safely when reachable modules are %s', () => {
+  it('renders safely when modules are live', () => {
     expect(render(theme, REACHABLE).length).toBeGreaterThan(100)
   })
 
@@ -86,4 +86,9 @@ describe.each(STOREFRONT_THEMES)('%s production layout module matrix', (theme) =
 
 it('covers every registered production layout exactly once', () => {
   expect(Object.keys(STOREFRONT_LAYOUTS).sort()).toEqual([...STOREFRONT_THEMES].sort())
+})
+
+it('uses the shared checkout when a theme has no complete checkout view', () => {
+  expect(themeModuleViews('ateljevinter').checkout).toBeUndefined()
+  expect(themeModuleViews('calytrix').checkout).toBeTypeOf('function')
 })

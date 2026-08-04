@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
-import { resolveThemeContent } from '../../theme-content'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import { AuroraTjanster } from './aurora.pages'
 import type { ThemePageProps } from './types'
 

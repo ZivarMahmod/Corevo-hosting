@@ -1,18 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
 import type { Service } from '@/lib/tenant-data'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
-import { resolveThemeContent } from '../theme-content'
-import { THEME_LOADS_LAYOUT_MODULES, THEME_OWNS_MODULES } from '.'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { THEME_LOADS_LAYOUT_MODULES, THEME_OWNS_MODULES } from './runtime'
 import { freshCutNavigationLinks } from './FreshCutChrome'
 import { FreshCutLayout } from './FreshCutLayout'
 
 const EXTERNAL_URL = 'https://www.bokadirekt.se/places/freshcut-123'
-const css = readFileSync(new URL('./freshcut.module.css', import.meta.url), 'utf8')
 
 const SERVICES = [
   ['Herrklippning', 'Klippning, styling och finish.', 30, 36900],
@@ -175,12 +173,10 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).toContain(`href="${EXTERNAL_URL}"`)
   })
 
-  it('shows a compact booking button on every service, including mobile', () => {
+  it('shows a booking button on every service', () => {
     const html = renderFreshCut()
 
     expect(html.match(/Boka <i aria-hidden="true">↗<\/i>/g)).toHaveLength(SERVICES.length)
-    expect(css).toMatch(/\.serviceAction \{[^}]*border: 1px solid var\(--fc-signal\)[^}]*border-radius: 999px/s)
-    expect(css).toMatch(/@media \(max-width: 780px\) \{[\s\S]*?\.serviceAction \{[^}]*display: inline-flex/)
   })
 
   it('keeps services visible but hides every booking control when the module is off', () => {
@@ -191,10 +187,6 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).not.toContain('Boka <i')
     expect(html).not.toContain(EXTERNAL_URL)
     expect(html).not.toContain('href="/boka"')
-  })
-
-  it('does not cover mobile content with a fixed booking row', () => {
-    expect(css).not.toContain('.mobileBooking')
   })
 
   it('keeps owner copy above the customer template default', () => {

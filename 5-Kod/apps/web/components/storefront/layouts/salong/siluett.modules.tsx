@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice, shopCategoryChips } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggLongDate } from '@/lib/storefront/blogg/types'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
@@ -31,23 +32,15 @@ import styles from './siluett.module.css'
  * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
 /* ═══════════════════════════════════ BUTIKEN ══════════════════════════════ */
 
-export function SiluettShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function SiluettShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   // Filens ord för det ofiltrerade urvalet är "Allt". Chipsen visas bara på butikssidan —
   // hemmets teaser har ingen filterrad i filen.
@@ -78,13 +71,6 @@ export function SiluettShop({ data, paused, limit, moreHref, content }: ThemeSho
         </div>
       ) : null}
 
-      {/* Pausad butik: katalogen är läsbar, köp-CTA:erna stängda. Modulens regel, inte mallens. */}
-      {paused ? (
-        <p role="status" className={styles.siNotice}>
-          Butiken är tillfälligt stängd för beställningar. Vi öppnar igen snart.
-        </p>
-      ) : null}
-
       {products.length === 0 ? (
         <p className={styles.siEmpty}>
           {data.activeCategory
@@ -101,7 +87,7 @@ export function SiluettShop({ data, paused, limit, moreHref, content }: ThemeSho
                 aria-label={`${p.name} — visa produkten`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.siSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <div className={styles.siShopBody}>
                 <div className={styles.siShopHead}>
@@ -112,11 +98,9 @@ export function SiluettShop({ data, paused, limit, moreHref, content }: ThemeSho
                   <span className={styles.siShopPrice}>{formatProductPrice(p)}</span>
                 </div>
                 {p.description ? <p className={styles.siShopDesc}>{p.description}</p> : null}
-                {paused ? null : (
-                  <div className={styles.siShopBuy}>
-                    <AddToCart product={p} fulfilment={config.fulfilment} />
-                  </div>
-                )}
+                <div className={styles.siShopBuy}>
+                  <AddToCart product={p} fulfilment={config.fulfilment} />
+                </div>
               </div>
             </li>
           ))}
@@ -149,7 +133,7 @@ export function SiluettBlogg({ posts: allPosts, limit, moreHref, content }: Them
       ) : (
         <ul className={styles.siPostList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggLongDate(p.publishedAt)
             return (
               <li key={p.id}>
                 <a href={p.slug ? `/blogg/${p.slug}` : undefined} className={styles.siPostRow}>
@@ -157,7 +141,9 @@ export function SiluettBlogg({ posts: allPosts, limit, moreHref, content }: Them
                     {/* Filens metarad: "{{ b.tag }} · {{ b.date }}". Taggen = blog_posts.tag (0057);
                         saknas den står bara datumet, saknas båda renderas ingen rad. */}
                     {p.tag || date ? (
-                      <p className={styles.siPostMeta}>{[p.tag, date].filter(Boolean).join(' · ')}</p>
+                      <p className={styles.siPostMeta}>
+                        {[p.tag, date].filter(Boolean).join(' · ')}
+                      </p>
                     ) : null}
                     <h2 className={styles.siPostTitle}>{p.title}</h2>
                     {p.excerpt ? <p className={styles.siPostExcerpt}>{p.excerpt}</p> : null}
@@ -310,10 +296,14 @@ export function SiluettLojalitet({ config, plans, content, tenantName }: ThemeLo
             <p className={styles.siCardEyebrow}>{title}</p>
           </div>
           <p className={styles.siCardName}>{tenantName}</p>
-          <p className={styles.siCardSub}
+          <p
+            className={styles.siCardSub}
             data-corevo-editor-field="clubNote"
             data-corevo-editor-stable-field="clubNote"
-            hidden={!content.clubNote}>{content.clubNote ?? ''}</p>
+            hidden={!content.clubNote}
+          >
+            {content.clubNote ?? ''}
+          </p>
         </div>
 
         <div>
@@ -325,7 +315,11 @@ export function SiluettLojalitet({ config, plans, content, tenantName }: ThemeLo
           ))}
 
           {plans.map((p) => (
-            <div key={p.id} className={styles.siPerkRow} data-featured={p.featured ? 'true' : undefined}>
+            <div
+              key={p.id}
+              className={styles.siPerkRow}
+              data-featured={p.featured ? 'true' : undefined}
+            >
               <span className={styles.siPerkNo}>{formatPlanPrice(p.priceCents)}</span>
               <p>
                 <strong>{p.name}</strong> — {loyaltyIntervalLabel(p.interval)}

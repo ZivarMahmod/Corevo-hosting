@@ -1,20 +1,18 @@
 /* ===========================================================================
    STOREFRONT — editorial, photo-driven salon site (M2 elevation).
    CSS module → class names are hashed; nothing leaks into globals or other
-   modules. We LAYER next to the FROZEN global base classes (.hero, .section,
-   .service-card, .nav, .footer …) and reference the design-token CSS variables:
+   modules. Shared base utilities provide layout primitives; this module owns
+   the storefront-specific rules and references the design-token variables:
      • --color-primary/-bg/-fg  → tenant-overridable (nivå 1)
      • --color-accent → gold is the DEFAULT, but on the storefront it MAY be
        tenant-overridden via injectTenantTokens (branding.color_accent). It stays
-       frozen only in back-office (admin/personal/platform), which never injects
+       shared only in back-office (admin/personal/platform), which never injects
        tenant tokens, so --color-accent keeps its default there.
-     • --font-display, radii, shadows, motion → FROZEN Corevo product tokens.
-       NEVER redefined here.
-   Template personality (A/B/C) is driven by OUR OWN scoped vars (--tpl-*),
-   set on [data-template] — never by touching the frozen --radius etc.
+     • --font-display, radii, shadows, motion → shared Corevo product tokens.
+   Shared storefront geometry uses the scoped --tpl-* variables below.
    =========================================================================== */
 
-/* ── per-template design vars (our own — frozen tokens untouched) ──────────── */
+/* ── shared design vars ─────────────────────────────────────────────────── */
 /* --nav-h = height of the FIXED top cluster (utility strip + nav). Generous on
    purpose: over-estimating only adds whitespace on non-hero pages (safe);
    under-estimating would hide content under the nav. The home hero cancels it
@@ -27,35 +25,6 @@
   --tpl-section-pad: 5rem;
   --nav-h: 116px;
 }
-/* Per-template vars. Scoped with the local .tplRoot class (which sits on the
-   SAME element as data-template — see app/(public)/layout.tsx) so the selector is
-   "pure" (CSS Modules rejects any rule without a local class — both the :global()
-   function and the :global{} block fail here). Vars cascade to the whole subtree. */
-.tplRoot[data-template='A'] {
-  --tpl-radius: 22px;
-  --tpl-radius-lg: 32px;
-  --tpl-case: none;
-  --tpl-tracking: 0.01em;
-  --tpl-section-pad: 5.5rem;
-  --nav-h: 150px;
-}
-.tplRoot[data-template='B'] {
-  --tpl-radius: 0px;
-  --tpl-radius-lg: 0px;
-  --tpl-case: uppercase;
-  --tpl-tracking: 0.14em;
-  --tpl-section-pad: 4.5rem;
-  --nav-h: 112px;
-}
-.tplRoot[data-template='C'] {
-  --tpl-radius: 10px;
-  --tpl-radius-lg: 14px;
-  --tpl-case: none;
-  --tpl-tracking: 0.04em;
-  --tpl-section-pad: 5rem;
-  --nav-h: 112px;
-}
-
 /* Reserve space for the fixed top cluster on every public page. The home hero
    cancels this exactly (see .heroSection) so the photo stays full-bleed. */
 .shellMain {
@@ -76,10 +45,6 @@
   font-weight: 600;
   opacity: 0.92;
 }
-:global([data-template='B']) .utilityBar {
-  background: var(--color-primary);
-}
-
 /* ── Scroll reveal (fade-up) ──────────────────────────────────────────────── */
 .reveal {
   opacity: 0;
@@ -251,16 +216,6 @@
   padding: 0.85rem 2rem;
 }
 
-/* Template B hero — uppercase letterspaced giant display, square CTA. */
-:global([data-template='B']) .heroTitle {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
-}
-:global([data-template='B']) .heroCta {
-  border-radius: 0;
-}
-
 /* Hero carousel controls */
 .heroControls {
   position: absolute;
@@ -367,7 +322,6 @@
 /* Fokusringen ska rita runt den SYNLIGA cirkeln, inte runt den osynliga 24×44-boxen. */
 .heroPause:focus-visible { outline: none; }
 .heroPause:focus-visible::before { outline: 2px solid #fff; outline-offset: 2px; }
-:global([data-template='B']) .heroPause::before { border-radius: 0; }
 .heroArrow {
   width: 2.6rem;
   height: 2.6rem;
@@ -386,7 +340,6 @@
   transition: background var(--dur-base) var(--ease-out);
 }
 .heroArrow:hover { background: rgba(0, 0, 0, 0.45); }
-:global([data-template='B']) .heroArrow { border-radius: 0; }
 
 /* ===========================================================================
    Shared section heads + leads
@@ -421,11 +374,6 @@
   opacity: 0.8;
   max-width: 40rem;
 }
-:global([data-template='B']) .secTitle {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
 /* ===========================================================================
    4. Tjänster — numbered editorial menu (01–05)
    =========================================================================== */
@@ -588,58 +536,6 @@
   color: var(--color-primary-ink, var(--color-primary));
 }
 
-/* ===========================================================================
-   6. Våra frisörer — stylist spotlights
-   =========================================================================== */
-.stylists {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  /* EN rad (Zivar 2026-07-10: "inte under varandra utan i rad") — korten delar
-     bredden och krymper lagom; max-width hindrar 1–2 medlemmar från att bli
-     jätteporträtt. ponytail: vid ~7+ medlemmar bryter min-width raden ändå. */
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-}
-.stylist {
-  text-align: left;
-  flex: 1 1 0;
-  min-width: 150px;
-  max-width: 270px;
-}
-.stylistPhoto {
-  border-radius: var(--tpl-radius-lg);
-  overflow: hidden;
-  aspect-ratio: 3 / 4;
-  margin-bottom: 1.1rem;
-  box-shadow: var(--shadow-card);
-}
-.stylistPhoto img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.5s var(--ease-out);
-}
-.stylist:hover .stylistPhoto img { transform: scale(1.05); }
-.stylistName {
-  margin: 0 0 0.2rem;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--color-fg);
-}
-.stylistRole {
-  margin: 0 0 0.6rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-weight: 700;
-  /* WCAG AA: small gold role label on cream fails contrast → forest primary (9.96:1). */
-  color: var(--color-primary-ink, var(--color-primary));
-}
-.stylistBio { margin: 0; opacity: 0.78; line-height: 1.6; font-size: 0.98rem; }
 
 /* ===========================================================================
    7. Galleri
@@ -795,12 +691,6 @@
   .aboutGrid { grid-template-columns: 1fr; }
   .aboutPhoto { order: -1; }
 }
-/* Template C — flip the split so it reads structurally different. */
-:global([data-template='C']) .aboutPhoto { order: 2; }
-@media (max-width: 760px) {
-  :global([data-template='C']) .aboutPhoto { order: -1; }
-}
-
 /* ===========================================================================
    9. Plats & öppettider — real address + derived hours + contact (no map embed)
    =========================================================================== */
@@ -1506,23 +1396,6 @@
   margin: 0;
 }
 
-/* Monogram när en teammedlem saknar foto: aldrig en tom vit låda, aldrig en trasig img.
- * Fyller HELA .stylistPhoto (som äger 3/4-ration → noll layouthopp).
- * Kontrast: --color-primary på en 9%-tint av sig själv över bg = 8.9:1 (räknad mot
- * default forest #5e7361 på cream). */
-.monogram {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 3.2rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-primary-ink, var(--color-primary));
-  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-bg));
-}
 
 /* Sociala länkar på en rad. Ärver .locContactLink för färg + tillstånd.
    goal-61: den här raden är FLEX — alltså är länkarna inuti flex-items och blockifierade,

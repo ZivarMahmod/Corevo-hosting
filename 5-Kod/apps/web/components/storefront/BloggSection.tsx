@@ -1,44 +1,15 @@
-// Blogg storefront SECTION (multi-bransch spår 5, §15 skelett vs skin).
-//
-// SERVER component. The SECTION reads module data (published posts + resolved
-// config via loadBloggData); the TEMPLATE/skin gives the look. Per §15: "funktioner
-// bor i MODULEN, inte i mallen" — this section IS the blogg module's storefront
-// surface, injected at the module's default_section_position ('main', per 0034). It
-// styles itself with the storefront design tokens (var(--color-*) / var(--font-*)),
-// the SAME token-driven approach as ShopSection / OffertSection — no new palette, so
-// it blends into whichever skin the tenant runs.
-//
-// GATING (caller contract): render this ONLY when the tenant's blogg module is
-// LIVE. The call site (storefront page) resolves tenant_modules.state via
-// getTenantModuleStates() + isModuleLive(states,'blogg') and renders <BloggSection>
-// only then — EXACTLY the booking + shop + offert gate shape. draft/off never reach
-// here; a PAUSED blogg renders the section read-only (an archive notice over the
-// posts) — same contract as the booking paused banner / paused shop / paused offert.
-//
-// PRESENTATION VARIANTS (config-first, beslut 14.5): the section behaves per the
-// resolved variant via the pure helpers in lib/storefront/blogg/types.ts:
-//   list     → stapel av inlägg (rubrik + ingress).
-//   grid     → kort i rutnät (samma rytm som shop-katalogen).
-//   featured → första inlägget stort + resten som lista.
-// No `if (bransch)` anywhere — only the variant drives the difference.
-//
-// NO PAYMENT (unlike shop/offert): a blog publishes content and never touches money,
-// so there is no CTA, no pay step, no order — nothing money-bearing in this surface.
+// Callers render this section only for a live blogg module.
 
 import { SectionHeader, SubpageHero } from './sections'
 import s from './blogg-section.module.css'
-import { bloggLayoutLabel, type BloggData, type BloggPost } from '@/lib/storefront/blogg/types'
+import {
+  bloggLayoutLabel,
+  formatBloggLongDate,
+  type BloggData,
+  type BloggPost,
+} from '@/lib/storefront/blogg/types'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
 import { BloggPagination } from './blogg/BloggPagination'
-
-/** Format an ISO timestamp as a Swedish post date ("3 juni 2026"). Pure, locale-
- *  aware; returns null when there is no date so the caller can omit the line. */
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 /** Wrap a post rendering in a link to its detail page (/blogg/[slug]). Posts without
  *  a slug (legacy rows) render UNLINKED — a /blogg/null href would be a 404-trap —
@@ -66,7 +37,7 @@ function PostLink({
  *  the shop product card — de delar --sf-card-*-tokens, så en mall stämmer bägge i ett
  *  block. */
 function PostCard({ post }: { post: BloggPost }) {
-  const date = formatPostDate(post.publishedAt)
+  const date = formatBloggLongDate(post.publishedAt)
   return (
     <li className={s.card}>
       <PostLink post={post} className={s.cardLink}>
@@ -94,7 +65,7 @@ function PostCard({ post }: { post: BloggPost }) {
 /** A single post rendered as a stacked row (used by the list layout + the featured
  *  tail). Lighter than a card — rubrik + ingress, optional thumbnail. */
 function PostRow({ post }: { post: BloggPost }) {
-  const date = formatPostDate(post.publishedAt)
+  const date = formatBloggLongDate(post.publishedAt)
   return (
     <li className={s.row}>
       <PostLink
@@ -125,7 +96,7 @@ function PostRow({ post }: { post: BloggPost }) {
 /** The featured layout's lead: the first post rendered large (cover + rubrik +
  *  ingress), with the remaining posts stacked underneath as rows. */
 function FeaturedLead({ post }: { post: BloggPost }) {
-  const date = formatPostDate(post.publishedAt)
+  const date = formatBloggLongDate(post.publishedAt)
   return (
     <article className={s.featured}>
       <PostLink post={post} className={s.featuredLink}>
@@ -150,13 +121,10 @@ function FeaturedLead({ post }: { post: BloggPost }) {
   )
 }
 
-/** Resolve + render the blogg section for one tenant. Returns null when there is
- *  nothing to show (no blogg module row) so the caller can compose unconditionally.
- *  `paused` renders the posts read-only with an archive notice. */
+/** Resolve + render the blogg section for one live tenant module. */
 export async function BloggSection({
   tenantId,
   slug,
-  paused = false,
   limit,
   moreHref,
   pageHero = false,
@@ -165,8 +133,6 @@ export async function BloggSection({
 }: {
   tenantId: string
   slug: string
-  /** true when tenant_modules.state='blogg' is 'paused' → posts visible, archive. */
-  paused?: boolean
   /** Teaser-läge (startsidan): visa max så här många inlägg. */
   limit?: number
   /** Länk till bloggens EGEN sida ("Läs hela bloggen →"). */
@@ -195,61 +161,55 @@ export async function BloggSection({
           lede="Nyheter, tips och inspiration från oss."
         />
       ) : null}
-    <section className="section" data-module="blogg" data-layout={config.layout}>
-      <div className="section-inner">
-        {!pageHero ? (
-          <SectionHeader
-            eyebrow={`— Blogg · ${bloggLayoutLabel(config.layout)}`}
-            title="Från bloggen"
-            lead="Nyheter, tips och inspiration från oss."
-          />
-        ) : null}
+      <section className="section" data-module="blogg" data-layout={config.layout}>
+        <div className="section-inner">
+          {!pageHero ? (
+            <SectionHeader
+              eyebrow={`— Blogg · ${bloggLayoutLabel(config.layout)}`}
+              title="Från bloggen"
+              lead="Nyheter, tips och inspiration från oss."
+            />
+          ) : null}
 
-        {paused ? (
-          <p role="status" className={s.notice}>
-            Bloggen är pausad just nu — äldre inlägg visas, men inga nya publiceras för tillfället.
-          </p>
-        ) : null}
+          {posts.length === 0 ? (
+            <p className={s.empty}>Inlägg visas snart.</p>
+          ) : config.layout === 'list' ? (
+            <ul className={s.list}>
+              {posts.map((p) => (
+                <PostRow key={p.id} post={p} />
+              ))}
+            </ul>
+          ) : config.layout === 'featured' ? (
+            <>
+              {posts[0] ? <FeaturedLead post={posts[0]} /> : null}
+              {posts.length > 1 ? (
+                <ul className={`${s.list} ${s.featuredTail}`}>
+                  {posts.slice(1).map((p) => (
+                    <PostRow key={p.id} post={p} />
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          ) : (
+            <ul className={s.grid}>
+              {posts.map((p) => (
+                <PostCard key={p.id} post={p} />
+              ))}
+            </ul>
+          )}
 
-        {posts.length === 0 ? (
-          <p className={s.empty}>Inlägg visas snart.</p>
-        ) : config.layout === 'list' ? (
-          <ul className={s.list}>
-            {posts.map((p) => (
-              <PostRow key={p.id} post={p} />
-            ))}
-          </ul>
-        ) : config.layout === 'featured' ? (
-          <>
-            {posts[0] ? <FeaturedLead post={posts[0]} /> : null}
-            {posts.length > 1 ? (
-              <ul className={`${s.list} ${s.featuredTail}`}>
-                {posts.slice(1).map((p) => (
-                  <PostRow key={p.id} post={p} />
-                ))}
-              </ul>
-            ) : null}
-          </>
-        ) : (
-          <ul className={s.grid}>
-            {posts.map((p) => (
-              <PostCard key={p.id} post={p} />
-            ))}
-          </ul>
-        )}
-
-        {moreHref && typeof limit === 'number' && allPosts.length > 0 ? (
-          <p className={s.moreWrap}>
-            <a href={moreHref} className={s.more}>
-              Läs hela bloggen →
-            </a>
-          </p>
-        ) : null}
-        {typeof limit !== 'number' ? (
-          <BloggPagination page={pagination.page} totalPages={pagination.totalPages} />
-        ) : null}
-      </div>
-    </section>
+          {moreHref && typeof limit === 'number' && allPosts.length > 0 ? (
+            <p className={s.moreWrap}>
+              <a href={moreHref} className={s.more}>
+                Läs hela bloggen →
+              </a>
+            </p>
+          ) : null}
+          {typeof limit !== 'number' ? (
+            <BloggPagination page={pagination.page} totalPages={pagination.totalPages} />
+          ) : null}
+        </div>
+      </section>
     </>
   )
 }

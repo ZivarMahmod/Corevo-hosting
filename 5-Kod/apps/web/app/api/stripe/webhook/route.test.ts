@@ -6,7 +6,6 @@ const mocks = vi.hoisted(() => ({
   constructEventAsync: vi.fn(),
   createServiceClient: vi.fn(),
   captureException: vi.fn(),
-  refundShopOrder: vi.fn(),
   settleShopOrderPaid: vi.fn(),
   settleShopPaymentEvent: vi.fn(),
   completeShopPaymentEvent: vi.fn(),
@@ -22,12 +21,9 @@ vi.mock('@/lib/stripe/client', () => ({
 vi.mock('@/lib/platform/service', () => ({ createServiceClient: mocks.createServiceClient }))
 vi.mock('@/lib/observability', () => ({ captureException: mocks.captureException }))
 vi.mock('@/lib/notifications/booking', () => ({
-  parseGuestEmail: vi.fn(() => null),
   sendPaymentReceipt: vi.fn(),
 }))
-vi.mock('@/lib/stripe/refund', () => ({
-  refundShopOrder: mocks.refundShopOrder,
-}))
+vi.mock('@/lib/notifications/parse', () => ({ parseGuestEmail: vi.fn(() => null) }))
 vi.mock('@/lib/payments/refund-outbox', () => ({
   dispatchPaymentRefundJobById: mocks.dispatchPaymentRefundJobById,
 }))

@@ -1,6 +1,9 @@
 # pnpm content-addressable store (local cache, never commit)
 .pnpm-store/
 
+# Turborepo cache is generated locally and must never be versioned.
+/.turbo/
+
 # Playwright MCP runtime output
 .playwright-mcp/
 
@@ -82,11 +85,13 @@ node_modules/
 4-Dokument-Underlag/03-template-katalog/*-fill-2.sql
 4-Dokument-Underlag/03-template-katalog/*-backfill.sql
 
-# Claude Cowork session-artefakter
-.claude/
-.superpowers/
-mappar i katalog-roten (numrerade 01–100
-# + namngivna) — licens-/storleksskäl. Ignorera bara KATALOGER; rot-filer (KATALOG.md,
+# Lokala Claude-inställningar. Prompt-/instruktions-MD ignoreras inte: de ska synas
+# i Git-status så parallella agentregler inte kan växa dolt.
+.claude/launch.json
+.claude/settings.local.json
+
+# Råa template-mappar i katalogroten (numrerade 01–100 + namngivna) hålls lokala
+# av licens-/storleksskäl. Ignorera bara kataloger; rot-filer (KATALOG.md,
 # KATALOG-RAPPORT.md, templates-staging.json, templates-import.sql, _*-script) versioneras.
 4-Dokument-Underlag/03-template-katalog/*/
 !4-Dokument-Underlag/03-template-katalog/01-kandidater/
@@ -96,10 +101,6 @@ mappar i katalog-roten (numrerade 01–100
 # uiverse-dumpen = lokal verktygslada (Zivars klipp), inte repo-innehall
 4-Dokument-Underlag/uiverse-komponentbibliotek.md
 
-# goal-61 verify-maskinens lokala matskript (dev-only, refereras fran memory)
-5-Kod/apps/web/_*.mjs
-5-Kod/apps/web/_sweep/
-5-Kod/apps/web/_geom-*.json
 5-Kod/docs/ops/INLOGGNINGAR.md
 
 # Isolerade Codex-arbetsytor — får aldrig versionshanteras som projektinnehåll.

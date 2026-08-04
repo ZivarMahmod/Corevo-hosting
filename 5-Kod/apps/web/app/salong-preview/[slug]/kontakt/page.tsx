@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { getServices } from '@/lib/tenant-data'
 import { LocationHours, ClosingCta } from '@/components/storefront/sections'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { themePages } from '@/components/storefront/layouts/florist/layouts'
-import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell } from '../preview-shell'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
+import { themePages } from '@/components/storefront/layouts/runtime'
+import { StorefrontShell } from '@/components/storefront/StorefrontShell'
+import { loadPreviewPage, type PreviewPageProps } from '../preview-shell'
 
 // Preview av /kontakt — samma innehåll som app/(public)/kontakt/page.tsx, i preview-
 // chromen. LocationHours själv-hämtar via currentTenant() — funkar i previewen tack
@@ -12,27 +13,17 @@ import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, Preview
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Förhandsvisning · Kontakt', robots: { index: false } }
 
-export default async function PreviewContactPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string; copy?: string }>
-}) {
-  const { slug } = await params
-  const { theme: themeParam, copy: copyParam } = await searchParams
-  const bundle = await loadPreviewBundle(slug)
-  const theme = resolvePreviewTheme(bundle, themeParam)
-  const copyMode = resolvePreviewCopyMode(copyParam)
+export default async function PreviewContactPage(props: PreviewPageProps) {
+  const { bundle, theme, copyMode } = await loadPreviewPage(props)
   const { tenant, settings, location } = bundle
 
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
+  const copy = await getTenantCopy(bundle, theme, copyMode)
   const content = resolveThemeContent(theme, settings.branding, copy)
   const Page = themePages(theme).kontakt
   const services = Page ? await getServices(tenant.id, tenant.slug) : []
 
   return (
-    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
+    <StorefrontShell bundle={bundle} surface="preview" theme={theme} copyMode={copyMode}>
       {Page ? (
         <Page
           tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
@@ -47,6 +38,6 @@ export default async function PreviewContactPage({
           <ClosingCta content={content} />
         </>
       )}
-    </PreviewShell>
+    </StorefrontShell>
   )
 }

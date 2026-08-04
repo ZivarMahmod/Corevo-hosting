@@ -3,19 +3,17 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant, getTenantById } from '@/lib/tenant-data'
-import { tenantStorefrontUrl } from '@/lib/storefront-url'
+import { tenantStorefrontHost, tenantStorefrontUrl } from '@/lib/storefront-url'
 import { createClient } from '@/lib/supabase/server'
 import { cleanTerminology, resolveTerm } from '@/lib/platform/verticals-shared'
 import { listTenantNavOptions } from '@/lib/platform/tenants'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
-import { PortalSidebar, type PortalRole } from './PortalSidebar'
-import { NAV, isGroup, paletteFromNav } from './nav-items'
-import { getAdminModuleStates, isModuleActivated, isBookingActivated } from '@/lib/admin/modules'
+import { NAV, isGroup, paletteFromNav, type PortalRole } from './nav-items'
+import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { listLocations } from '@/lib/admin/data'
 import { PLATS_COOKIE } from '@/lib/admin/plats'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
-import { PortalTopbar } from './PortalTopbar'
 import { Topnav } from './Topnav'
 import topnavStyles from './Topnav.module.css'
 import {
@@ -45,9 +43,7 @@ const ADMIN_ACCOUNT_LINKS = [
   },
 ] as const
 
-// ⌘K-palettens "Gå till"-lista härleds ur nav-items.ts (paletteFromNav) — SAMMA
-// NAV som PortalSidebar renderar, så palett och sidomeny kan inte drifta isär
-// (goal-55 steg 1; ersätter den handkopierade PALETTE/MODULE_PALETTE-dubbletten).
+// ⌘K-palettens "Gå till"-lista härleds ur nav-items.ts via paletteFromNav.
 
 /** Shared, tenant-themed chrome for every portal (kund/personal/admin/platform).
  *
@@ -143,9 +139,7 @@ export async function PortalShell({
       // Modul-nycklarna läses ur NAV (nav-items.ts) — samma poster som sidomenyn.
       // Every module requires an explicit live state.
       const moduleKeys = NAV.admin.items.flatMap((e) => (!isGroup(e) && e.module ? [e.module] : []))
-      activeModuleKeys = moduleKeys.filter((k) =>
-        k === 'booking' ? isBookingActivated(moduleStates) : isModuleActivated(moduleStates, k),
-      )
+      activeModuleKeys = moduleKeys.filter((k) => isModuleActivated(moduleStates, k))
     }
     // Roll-separationen: personal (nivå 3) ser bara sin arbetsdag i menyn OCH i
     // ⌘K-paletten. platform_admin passerar allt (räknas som toppnivå).
@@ -182,7 +176,7 @@ export async function PortalShell({
         ...tenantOptions.map(({ id, name, slug }) => ({
           href: `/kunder/${id}`,
           label: name,
-          sub: `${slug}.corevo.se`,
+          sub: tenantStorefrontHost(slug) ?? slug,
           icon: 'building' as const,
           kind: 'Kund',
         })),
@@ -348,9 +342,6 @@ export async function PortalShell({
             brandName={brand}
             brandSub={isPlatform ? (user.platformAdmin ? 'Superadmin' : 'Partnerportal') : 'via Corevo'}
             brandLabel={isPlatform ? `Corevo ${user.platformAdmin ? 'superadmin' : 'partnerportal'} – översikt` : `${brand} – översikt`}
-            primaryAction={
-              isPlatform ? { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' } : undefined
-            }
             // Genvägsraden (Zivar 2026-07-18): dashboardens GENVÄGAR-kort flyttat hit
             // som cirkulära ikonknappar — nåbara från varje adminyta, inte bara Översikt.
             // (Ersätter codex/00 §2-beslutet om att inte dubblera kalenderns skapaflöde.)
@@ -406,39 +397,6 @@ export async function PortalShell({
         </div>
       )
     }
-
-    return (
-      <div
-        className="tenant-root portal-shell"
-        data-world={world}
-        data-portal={portal}
-        data-tenant={bundle?.tenant.id}
-        style={injectTenantTokens(branding) as CSSProperties}
-      >
-        <PortalSidebar
-          role={portal}
-          brand={brand}
-          userLabel={userLabel}
-          userSub={userSub}
-          signOut={<SignOutButton compact />}
-          activeModuleKeys={activeModuleKeys}
-          roleLevel={navRoleLevel}
-          grantedAreas={grantedAreas}
-          hasStaffProfile={Boolean(user.staffId)}
-        />
-        <div className="portal-col">
-          <PortalTopbar
-            placeholder="Sök bokning, kund, tjänst…"
-            paletteItems={paletteItems}
-            contextLink={contextLink}
-            extra={locationSwitcher}
-          />
-          <main className="portal-main">
-            <ToastProvider>{children}</ToastProvider>
-          </main>
-        </div>
-      </div>
-    )
   }
 
   // Customer /konto — a STOREFRONT salon header (the salon's own product), NOT the

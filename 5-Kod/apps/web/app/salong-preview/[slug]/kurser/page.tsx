@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadUpcomingEvents, loadKurserConfig } from '@/lib/storefront/kurser/load-kurser'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import { KurserSection } from '@/components/storefront/kurser/KurserSection'
 import { commerceReleaseGate } from '@/lib/release/commerce'
-import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
+import { StorefrontShell } from '@/components/storefront/StorefrontShell'
+import { loadPreviewPage, PreviewModuleOff, type PreviewPageProps } from '../preview-shell'
 
 // goal-61 preview-parity, uppdaterad goal-64 (regression): kurssidan HAR numera
 // tema-dispatch (themeModuleViews(...).kurser) — men denna tvilling återanvände
@@ -17,18 +18,8 @@ import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, Preview
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Förhandsvisning · Kurser', robots: { index: false } }
 
-export default async function PreviewKurserPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string; copy?: string }>
-}) {
-  const { slug } = await params
-  const { theme: themeParam, copy: copyParam } = await searchParams
-  const bundle = await loadPreviewBundle(slug)
-  const theme = resolvePreviewTheme(bundle, themeParam)
-  const copyMode = resolvePreviewCopyMode(copyParam)
+export default async function PreviewKurserPage(props: PreviewPageProps) {
+  const { bundle, theme, copyMode } = await loadPreviewPage(props)
   const { tenant } = bundle
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
@@ -38,18 +29,26 @@ export default async function PreviewKurserPage({
   const View = themeModuleViews(theme).kurser
   const data =
     View && !off
-      ? await Promise.all([loadUpcomingEvents(tenant.id, tenant.slug), loadKurserConfig(tenant.id, tenant.slug)])
+      ? await Promise.all([
+          loadUpcomingEvents(tenant.id, tenant.slug),
+          loadKurserConfig(tenant.id, tenant.slug),
+        ])
       : null
 
   return (
-    <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>
+    <StorefrontShell bundle={bundle} surface="preview" theme={theme} copyMode={copyMode}>
       {off ? (
         <PreviewModuleOff moduleLabel="Kurser & event" />
       ) : View && data ? (
-        <View events={data[0]} config={data[1]} paused={data[1].payment === 'checkout' && !checkoutLive} />
+        <View events={data[0]} config={data[1]} checkoutLive={checkoutLive} />
       ) : (
-        <KurserSection tenantId={tenant.id} slug={tenant.slug} paused={false} checkoutLive={checkoutLive} pageHero />
+        <KurserSection
+          tenantId={tenant.id}
+          slug={tenant.slug}
+          checkoutLive={checkoutLive}
+          pageHero
+        />
       )}
-    </PreviewShell>
+    </StorefrontShell>
   )
 }

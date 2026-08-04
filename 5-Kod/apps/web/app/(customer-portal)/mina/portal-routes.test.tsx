@@ -44,11 +44,17 @@ import ProfilePage, {
   generateMetadata as generateProfileMetadata,
   revalidate as profileRevalidate,
 } from './profil/page'
+import PrivacyPage, {
+  dynamic as privacyDynamic,
+  fetchCache as privacyFetchCache,
+  generateMetadata as generatePrivacyMetadata,
+  revalidate as privacyRevalidate,
+} from './integritet/page'
 
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null,
   verticalLabel: 'Frisörsalong', phone: '+4613123456', address: 'Testgatan 1', mapUrl: null,
-  bookingOrigin: 'https://freshcut.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
+  bookingOrigin: 'https://freshcut.boka.corevo.se', timezone: 'Europe/Stockholm', locale: 'sv-SE',
   defaultCountry: 'SE', currency: 'SEK', cancellationCutoffHours: 24, customerName: 'Alex',
   lastSeenAt: '2026-07-22T12:00:00.000Z', absoluteExpiresAt: '2027-07-22T12:00:00.000Z',
 }
@@ -59,7 +65,7 @@ const booking = (overrides: Partial<PortalBookingProjection> = {}): PortalBookin
   status: 'confirmed', presentationStatus: 'confirmed', serviceName: 'Service från RPC',
   durationMinutes: 30, staffTitle: 'Sam', location: null, priceCents: 32900, currency: 'SEK',
   canCancel: true, cancelDeadline: '2026-08-22T12:30:00.000Z',
-  publicRebookUrl: 'https://freshcut.corevo.se/boka', ...overrides,
+  publicRebookUrl: 'https://freshcut.boka.corevo.se/boka', ...overrides,
 })
 
 const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
@@ -77,12 +83,13 @@ beforeEach(() => {
 
 describe('personal portal route cache contract', () => {
   it('forces every personal route to render dynamically without fetch caching', () => {
-    expect([homeDynamic, historyDynamic, detailDynamic, profileDynamic]).toEqual([
-      'force-dynamic', 'force-dynamic', 'force-dynamic', 'force-dynamic',
+    expect([homeDynamic, historyDynamic, detailDynamic, profileDynamic, privacyDynamic]).toEqual([
+      'force-dynamic', 'force-dynamic', 'force-dynamic', 'force-dynamic', 'force-dynamic',
     ])
-    expect([homeRevalidate, historyRevalidate, detailRevalidate, profileRevalidate]).toEqual([0, 0, 0, 0])
-    expect([homeFetchCache, historyFetchCache, detailFetchCache, profileFetchCache]).toEqual([
-      'force-no-store', 'force-no-store', 'force-no-store', 'force-no-store',
+    expect([homeRevalidate, historyRevalidate, detailRevalidate, profileRevalidate, privacyRevalidate])
+      .toEqual([0, 0, 0, 0, 0])
+    expect([homeFetchCache, historyFetchCache, detailFetchCache, profileFetchCache, privacyFetchCache]).toEqual([
+      'force-no-store', 'force-no-store', 'force-no-store', 'force-no-store', 'force-no-store',
     ])
   })
 
@@ -93,6 +100,33 @@ describe('personal portal route cache contract', () => {
     await expect(generateProfileMetadata()).resolves.toMatchObject({
       title: 'Profil – FreshCut', robots: { index: false, follow: false },
     })
+    await expect(generatePrivacyMetadata()).resolves.toMatchObject({
+      title: 'Integritet – FreshCut', robots: { index: false, follow: false },
+    })
+  })
+})
+
+describe('/mina/integritet', () => {
+  it('renders the canonical privacy copy with tenant identity only from the bound session', async () => {
+    const html = renderToStaticMarkup(await PrivacyPage())
+    expect(html).toContain('<h1>Integritet</h1>')
+    expect(html).toContain('dina bokningar hos FreshCut')
+    expect(html).toContain('De säljs aldrig vidare.')
+    expect(html).toContain('Du använder inget lösenord.')
+    expect(html).toContain('Kontakta FreshCut så hjälper de dig.')
+    const privacy = html.match(/<section class="cp-screen cp-privacy-screen">[\s\S]*?<\/section>/)?.[0]
+    expect(privacy).not.toMatch(/<button|cp-btn/i)
+    expect(html).not.toMatch(/tenantId|customerId|sessionPublicId|secretDigest|token/i)
+    expect(html).toContain('aria-current="page"')
+  })
+
+  it('redirects an expired bound session to recovery', async () => {
+    mocks.getPortalSessionSnapshot.mockResolvedValueOnce({
+      outcome: 'expired', recoveryTenantSlug: 'freshcut',
+    })
+    await expect(PrivacyPage()).rejects.toThrow(
+      'NEXT_REDIRECT:/aterhamta/freshcut?session=expired',
+    )
   })
 })
 
@@ -169,7 +203,7 @@ describe('/mina', () => {
     expect(mocks.listPortalBookings).toHaveBeenNthCalledWith(2, { scope: 'history', pageSize: 1 })
     expect(html).toContain('Du har inga bokningar hos FreshCut ännu.')
     expect(html).toContain('Boka ny tid')
-    expect(html).toContain('href="https://freshcut.corevo.se/boka"')
+    expect(html).toContain('href="https://freshcut.boka.corevo.se/boka"')
     expect(html).not.toContain('href="undefined"')
   })
 

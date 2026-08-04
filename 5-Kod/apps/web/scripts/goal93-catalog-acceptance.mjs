@@ -546,12 +546,12 @@ function validateViewports(viewports) {
 }
 
 function statesFor(moduleKey, fixtureStates) {
-  const states = fixtureStates?.[moduleKey] ?? ['full', 'off-empty', 'paused']
+  const states = fixtureStates?.[moduleKey] ?? ['full', 'off-empty']
   uniqueStrings(states, `fixture-state:${moduleKey}`)
-  for (const required of ['full', 'off-empty', 'paused']) {
+  for (const required of ['full', 'off-empty']) {
     if (!states.includes(required)) fail(`fixture-state:${moduleKey}:${required}`)
   }
-  if (states.some((state) => !['full', 'off-empty', 'paused'].includes(state))) {
+  if (states.some((state) => !['full', 'off-empty'].includes(state))) {
     fail(`fixture-state:${moduleKey}:unknown`)
   }
   return states

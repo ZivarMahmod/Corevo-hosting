@@ -24,6 +24,7 @@ begin
     'complete_payment_refund_job', 'review_payment_refund_job',
     'record_payment_refund_webhook', 'payment_refund_health',
     'prepare_booking_checkout_payment', 'booking_payment_event_matches',
+    'cancel_verified_customer_booking',
     'finalize_customer_booking_rebook', 'compensate_customer_booking_rebook',
     'confirm_shop_order_payment'
   ] loop
@@ -638,6 +639,222 @@ begin
   end if;
 end
 $refund_state_machine$;
+
+create or replace function private.test_cancel_outbox_failure()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if pg_catalog.current_setting('corevo.test_cancel_outbox_failure', true) = 'on' then
+    raise exception 'forced_cancel_outbox_failure' using errcode = '55000';
+  end if;
+  return new;
+end;
+$$;
+create trigger trg_test_cancel_outbox_failure
+before insert on public.notifications_outbox
+for each row execute function private.test_cancel_outbox_failure();
+
+do $cancellation_owner$
+declare
+  v_now timestamptz := statement_timestamp();
+  v_tenant uuid := gen_random_uuid();
+  v_customer uuid := gen_random_uuid();
+  v_profile uuid := gen_random_uuid();
+  v_location uuid := gen_random_uuid();
+  v_service uuid := gen_random_uuid();
+  v_staff_portal_exact uuid := gen_random_uuid();
+  v_staff_portal_after uuid := gen_random_uuid();
+  v_staff_service_exact uuid := gen_random_uuid();
+  v_staff_service_after uuid := gen_random_uuid();
+  v_staff_failure uuid := gen_random_uuid();
+  v_staff_gap uuid := gen_random_uuid();
+  v_staff_replay uuid := gen_random_uuid();
+  v_portal_exact uuid := gen_random_uuid();
+  v_portal_after uuid := gen_random_uuid();
+  v_service_exact uuid := gen_random_uuid();
+  v_service_after uuid := gen_random_uuid();
+  v_failure uuid := gen_random_uuid();
+  v_gap uuid := gen_random_uuid();
+  v_replay uuid := gen_random_uuid();
+  v_payment uuid := gen_random_uuid();
+  v_gap_payment uuid := gen_random_uuid();
+  v_replay_payment uuid := gen_random_uuid();
+  v_session uuid := gen_random_uuid();
+  v_result record;
+begin
+  insert into public.tenants (id, slug, name, status) values (
+    v_tenant, 'cancel-owner-' || substr(v_tenant::text, 1, 8), 'Cancel Owner', 'active'
+  );
+  insert into public.tenant_settings (tenant_id, branding, settings) values (
+    v_tenant, '{}'::jsonb,
+    '{"customer_portal":{"mode":"passwordless_tenant"},"cancellation_cutoff_hours":24}'::jsonb
+  );
+  insert into public.customers (
+    id, tenant_id, full_name, email, status
+  ) values (
+    v_customer, v_tenant, 'Cancellation Owner', 'cancel-owner@example.test', 'active'
+  );
+  insert into public.locations (id, tenant_id, name, timezone, is_primary) values (
+    v_location, v_tenant, 'Owner', 'Europe/Stockholm', true
+  );
+  insert into public.staff (id, tenant_id, location_id, title, active) values
+    (v_staff_portal_exact, v_tenant, v_location, 'Portal exact', true),
+    (v_staff_portal_after, v_tenant, v_location, 'Portal after', true),
+    (v_staff_service_exact, v_tenant, v_location, 'Service exact', true),
+    (v_staff_service_after, v_tenant, v_location, 'Service after', true),
+    (v_staff_failure, v_tenant, v_location, 'Failure', true),
+    (v_staff_gap, v_tenant, v_location, 'Legacy gap', true),
+    (v_staff_replay, v_tenant, v_location, 'Replay restore', true);
+  insert into public.services (
+    id, tenant_id, location_id, name, duration_min, price_cents, active
+  ) values (v_service, v_tenant, v_location, 'Owner', 30, 10000, true);
+  insert into public.bookings (
+    id, tenant_id, location_id, staff_id, service_id, customer_profile_id,
+    customer_id, start_ts, end_ts, status, price_cents
+  ) values
+    (v_portal_exact, v_tenant, v_location, v_staff_portal_exact, v_service, v_profile,
+      v_customer, v_now + interval '24 hours', v_now + interval '24 hours 30 minutes', 'confirmed', 10000),
+    (v_portal_after, v_tenant, v_location, v_staff_portal_after, v_service, v_profile,
+      v_customer, v_now + interval '24 hours 5 minutes', v_now + interval '24 hours 35 minutes', 'confirmed', 10000),
+    (v_service_exact, v_tenant, v_location, v_staff_service_exact, v_service, v_profile,
+      v_customer, v_now + interval '24 hours', v_now + interval '24 hours 30 minutes', 'confirmed', 10000),
+    (v_service_after, v_tenant, v_location, v_staff_service_after, v_service, v_profile,
+      v_customer, v_now + interval '24 hours 5 minutes', v_now + interval '24 hours 35 minutes', 'confirmed', 10000),
+    (v_failure, v_tenant, v_location, v_staff_failure, v_service, v_profile,
+      v_customer, v_now + interval '3 days', v_now + interval '3 days 30 minutes', 'confirmed', 10000),
+    (v_gap, v_tenant, v_location, v_staff_gap, v_service, v_profile,
+      v_customer, v_now + interval '4 days', v_now + interval '4 days 30 minutes', 'cancelled', 10000),
+    (v_replay, v_tenant, v_location, v_staff_replay, v_service, v_profile,
+      v_customer, v_now + interval '5 days', v_now + interval '5 days 30 minutes', 'confirmed', 10000);
+  insert into public.payments (
+    id, tenant_id, booking_id, amount_cents, currency, status,
+    stripe_payment_intent_id, stripe_connected_account_id
+  ) values
+    (v_payment, v_tenant, v_failure, 10000, 'sek', 'succeeded',
+      'pi_cancel_owner_failure', 'acct_cancel_owner_failure'),
+    (v_gap_payment, v_tenant, v_gap, 10000, 'sek', 'succeeded',
+      'pi_cancel_owner_gap', 'acct_cancel_owner_gap'),
+    (v_replay_payment, v_tenant, v_replay, 10000, 'sek', 'pending',
+      'pi_cancel_owner_replay', 'acct_cancel_owner_replay');
+  insert into private.customer_portal_sessions (
+    public_id, tenant_id, customer_id, secret_digest, key_version,
+    idle_expires_at, absolute_expires_at
+  ) values (
+    v_session, v_tenant, v_customer, repeat('o', 64), 1,
+    v_now + interval '1 day', v_now + interval '7 days'
+  );
+
+  select * into v_result from public.customer_portal_cancel_booking(
+    v_session, repeat('o', 64), v_portal_exact, 24, repeat('e', 32)
+  );
+  if v_result.outcome <> 'not_allowed'
+     or (select status from public.bookings where id = v_portal_exact) <> 'confirmed' then
+    raise exception 'portal_exact_cutoff_not_blocked';
+  end if;
+
+  select * into v_result from public.customer_portal_cancel_booking(
+    v_session, repeat('o', 64), v_portal_after, 24, repeat('a', 32)
+  );
+  if v_result.outcome <> 'cancelled'
+     or (select status from public.bookings where id = v_portal_after) <> 'cancelled' then
+    raise exception 'portal_after_cutoff_not_cancelled';
+  end if;
+
+  -- An idempotent response describes the original command; it must not cancel
+  -- a booking that an administrator validly restored after a pending payment.
+  select * into v_result from public.customer_portal_cancel_booking(
+    v_session, repeat('o', 64), v_replay, 24, repeat('r', 32)
+  );
+  if v_result.outcome <> 'cancelled'
+     or exists (select 1 from private.payment_refund_jobs where booking_id = v_replay) then
+    raise exception 'portal_pending_payment_cancel_invalid';
+  end if;
+  update public.bookings
+  set status = 'confirmed', cancelled_at = null, cancelled_by = null
+  where id = v_replay and tenant_id = v_tenant;
+  update public.payments
+  set status = 'succeeded'
+  where id = v_replay_payment and tenant_id = v_tenant;
+  select * into v_result from public.customer_portal_cancel_booking(
+    v_session, repeat('o', 64), v_replay, 24, repeat('r', 32)
+  );
+  if v_result.outcome <> 'cancelled'
+     or (select status from public.bookings where id = v_replay) <> 'confirmed'
+     or exists (select 1 from private.payment_refund_jobs where booking_id = v_replay) then
+    raise exception 'portal_restored_replay_invalid';
+  end if;
+
+  select * into v_result from public.cancel_verified_customer_booking(
+    v_tenant, v_service_exact, v_customer, v_profile
+  );
+  if v_result.outcome <> 'not_allowed'
+     or (select status from public.bookings where id = v_service_exact) <> 'confirmed' then
+    raise exception 'service_exact_cutoff_not_blocked';
+  end if;
+
+  select * into v_result from public.cancel_verified_customer_booking(
+    v_tenant, v_service_after, v_customer, v_profile
+  );
+  if v_result.outcome <> 'cancelled'
+     or (select status from public.bookings where id = v_service_after) <> 'cancelled' then
+    raise exception 'service_after_cutoff_not_cancelled';
+  end if;
+
+  begin
+    perform 1 from public.cancel_verified_customer_booking(
+      v_tenant, v_gap, v_customer, v_profile
+    );
+    raise exception 'cancelled_refund_gap_was_silently_accepted';
+  exception when sqlstate '55000' then
+    if sqlerrm <> 'cancelled_booking_refund_invariant_violation' then raise; end if;
+  end;
+
+  begin
+    update public.tenant_settings
+    set settings = pg_catalog.jsonb_set(settings, '{cancellation_cutoff_hours}', '1.5'::jsonb)
+    where tenant_id = v_tenant;
+    raise exception 'decimal_cancellation_cutoff_accepted';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.tenant_settings
+    set settings = pg_catalog.jsonb_set(settings, '{cancellation_cutoff_hours}', '8761'::jsonb)
+    where tenant_id = v_tenant;
+    raise exception 'oversized_cancellation_cutoff_accepted';
+  exception when check_violation then null;
+  end;
+
+  perform pg_catalog.set_config('corevo.test_cancel_outbox_failure', 'on', true);
+  begin
+    perform 1 from public.cancel_verified_customer_booking(
+      v_tenant, v_failure, v_customer, v_profile
+    );
+    raise exception 'cancel_outbox_failure_did_not_abort';
+  exception when sqlstate '55000' then
+    if sqlerrm <> 'forced_cancel_outbox_failure' then raise; end if;
+  end;
+  perform pg_catalog.set_config('corevo.test_cancel_outbox_failure', 'off', true);
+
+  if (select status from public.bookings where id = v_failure) <> 'confirmed'
+     or exists (
+       select 1 from public.booking_status_history
+       where booking_id = v_failure and to_status = 'cancelled'
+     )
+     or exists (
+       select 1 from public.notifications_outbox where booking_id = v_failure
+     )
+     or exists (
+       select 1 from private.payment_refund_jobs where booking_id = v_failure
+     ) then
+    raise exception 'cancel_outbox_failure_left_side_effects';
+  end if;
+end
+$cancellation_owner$;
+
+drop trigger trg_test_cancel_outbox_failure on public.notifications_outbox;
+drop function private.test_cancel_outbox_failure();
 
 alter table public.bookings enable trigger trg_booking_resource_fence;
 alter table public.staff enable trigger trg_staff_activation_readiness;

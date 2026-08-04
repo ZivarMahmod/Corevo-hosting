@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { sendEmail, buildFrom } from './email'
 import { resolveEmailBrand } from './brand'
 import { confirmationEmail } from './templates'
-import { THEME_CONTENT } from '@/components/storefront/theme-content'
 
 const baseMail = {
   serviceName: 'Klippning',
@@ -26,6 +25,7 @@ describe('sendEmail transport', () => {
     }
   })
   afterEach(() => {
+    vi.unstubAllGlobals()
     for (const k of RELAY_VARS) {
       if (saved[k] === undefined) delete process.env[k]
       else process.env[k] = saved[k]
@@ -50,6 +50,20 @@ describe('sendEmail transport', () => {
     process.env.EMAIL_RELAY_SECRET = 'shh'
     const res = await sendEmail({ to: 'not-an-email', subject: 'x', html: 'x' })
     expect(res).toEqual({ ok: false, error: 'invalid_recipient' })
+  })
+
+  it('bounds the relay request so scheduled delivery cannot hang', async () => {
+    process.env.EMAIL_RELAY_URL = 'https://relay.example/functions/v1/send-email'
+    process.env.EMAIL_RELAY_SECRET = 'shh'
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'mail-1' })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(sendEmail({ to: 'kund@example.com', subject: 'Hej', html: '<p>hej</p>' }))
+      .resolves.toEqual({ ok: true, id: 'mail-1' })
+    expect(fetchMock).toHaveBeenCalledWith(
+      process.env.EMAIL_RELAY_URL,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
   })
 })
 
@@ -114,10 +128,10 @@ describe('resolveEmailBrand (pure)', () => {
     expect(resolveEmailBrand({}).accentColor).toBeUndefined()
   })
 
-  it('uses the theme tagline as the slogan, defaulting to leander for unknown', () => {
-    expect(resolveEmailBrand({ theme: 'zigge' }).slogan).toBe(THEME_CONTENT.zigge.tagline)
-    expect(resolveEmailBrand({ theme: 'nope' }).slogan).toBe(THEME_CONTENT.leander.tagline)
-    expect(resolveEmailBrand({}).slogan).toBe(THEME_CONTENT.leander.tagline)
+  it('uses only the tenant-owned saved slogan', () => {
+    expect(resolveEmailBrand({ slogan: '  Min salong  ' }).slogan).toBe('Min salong')
+    expect(resolveEmailBrand({ slogan: '  ' }).slogan).toBeNull()
+    expect(resolveEmailBrand({}).slogan).toBeNull()
   })
 
   it('passes through logo_url, null when unset', () => {

@@ -1,5 +1,5 @@
 // fix-35 — sanctioned PRODUCTION deploy. Customer domains now live in COMMITTED
-// wrangler.jsonc (top-level routes[], alongside the 3 fixed back-office hosts), so a
+// wrangler.jsonc (top-level routes[], alongside the fixed infra hosts), so a
 // plain deploy of that file re-asserts EVERY domain and can never detach one — the
 // fragile DB-generated `-c wrangler.deploy.json` path is gone (it was the FX-14 hole:
 // a bare deploy or an RLS-hidden paused salon dropped a live domain).
@@ -7,7 +7,7 @@
 // Steps: (1) run the fail-closed VALIDATOR (gen-deploy-config.mjs) — proves the
 // committed file is a superset of what is LIVE + active, so the deploy can't silently
 // drop a domain that exists in Cloudflare but was forgotten in the file; (2) re-assert
-// the 3 fixed hosts against wrangler.jsonc; (3) DRY-RUN (wrangler validates + prints
+// the fixed hosts against wrangler.jsonc; (3) DRY-RUN (wrangler validates + prints
 // the route plan, no publish); (4) deploy for real from wrangler.jsonc.
 //
 // Assumes the OpenNext build already produced .open-next/ (run
@@ -20,7 +20,11 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
-import { readCustomDomainPatterns, readAllRoutePatterns, REQUIRED_FIXED_ROUTES } from './domain-routes.mjs'
+import {
+  readCustomDomainPatterns,
+  readAllRoutePatterns,
+  REQUIRED_FIXED_ROUTES,
+} from './domain-routes.mjs'
 import { publishGateReason } from './cf-domains.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -54,7 +58,9 @@ if (missing.length) {
   process.exit(1)
 }
 console.log(`\n✓ Invariant OK — fixed routes present: ${REQUIRED_FIXED_ROUTES.join(', ')}`)
-const customerCount = readCustomDomainPatterns(wranglerPath).filter((p) => !REQUIRED_FIXED_HOSTS.includes(p)).length
+const customerCount = readCustomDomainPatterns(wranglerPath).filter(
+  (p) => !REQUIRED_FIXED_HOSTS.includes(p),
+).length
 console.log(`✓ Committed customer custom-domains: ${customerCount}`)
 
 // 3. Dry-run from wrangler.jsonc (no -c): wrangler validates + prints the route plan.

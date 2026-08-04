@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
+import { inviteRedirectUrl } from './invite'
 import {
   reconcileAmbiguousStaffInvite,
   type StaffInviteReconcileResult,
@@ -35,8 +36,8 @@ export async function findExistingStaffInviteProfile(
   const authResult = await service.auth.admin.getUserById(data.id)
   const authUser = authResult.data?.user
   const bannedUntil = authUser?.banned_until ? Date.parse(authUser.banned_until) : Number.NaN
-  const banned = Boolean(authUser?.banned_until) &&
-    (!Number.isFinite(bannedUntil) || bannedUntil > Date.now())
+  const banned =
+    Boolean(authUser?.banned_until) && (!Number.isFinite(bannedUntil) || bannedUntil > Date.now())
   const deleted = Boolean(authUser?.deleted_at)
   return {
     ok: true,
@@ -87,6 +88,232 @@ export async function findStaffInviteBinding(
   }
 }
 
+export type StaffInviteProvisionResult =
+  | { ok: true; inviteSent: boolean; alreadyLinked: boolean }
+  | { ok: false; error: string }
+
+type StaffInviteIncidentReporter = (event: {
+  stage: string
+  tenantId: string
+  containmentOk?: boolean
+}) => Promise<void>
+
+function provisionFailure(result: StaffInviteReconcileResult): StaffInviteProvisionResult | null {
+  if (result.status === 'committed') return null
+  if (result.status === 'conflict_preserved') {
+    return {
+      ok: false,
+      error: 'Kontot är redan kopplat till en annan medarbetare och lämnades orört.',
+    }
+  }
+  if (result.status === 'manual_cleanup_required' && result.containmentOk) {
+    return {
+      ok: false,
+      error:
+        'manual_cleanup_required: Kontot spärrades men kunde inte städas automatiskt. Kontakta drift och kontrollera incidentloggen innan en ny inbjudan skickas.',
+    }
+  }
+  if (result.status === 'containment_failed') {
+    return {
+      ok: false,
+      error:
+        'containment_failed: Kontot kunde inte spärras fullständigt. Kontakta drift omedelbart och skicka ingen ny inbjudan.',
+    }
+  }
+  return {
+    ok: false,
+    error: 'Inbjudan kunde inte slutföras. Det provisoriska kontot städades; försök igen.',
+  }
+}
+
+export async function provisionStaffInvite(args: {
+  service: ServiceClient
+  accountClient: ServiceClient
+  tenantId: string
+  email: string
+  targetStaffId?: string
+  createStaff: (authId: string) => Promise<{ error: unknown }>
+  reportIncident: StaffInviteIncidentReporter
+}): Promise<StaffInviteProvisionResult> {
+  await args.accountClient
+    .from('roles')
+    .upsert(
+      { tenant_id: args.tenantId, name: 'staff', level: 3 },
+      { onConflict: 'tenant_id,name', ignoreDuplicates: true },
+    )
+  const { data: role, error: roleError } = await args.accountClient
+    .from('roles')
+    .select('id')
+    .eq('tenant_id', args.tenantId)
+    .eq('name', 'staff')
+    .maybeSingle()
+  if (roleError || !role) return { ok: false, error: 'Något gick fel. Försök igen.' }
+
+  const compensate = (authId: string) =>
+    compensateFailedStaffInvite(args.service, {
+      authId,
+      tenantId: args.tenantId,
+      roleId: role.id,
+      ...(args.targetStaffId ? { targetStaffId: args.targetStaffId } : {}),
+      reportIncident: async (event) => args.reportIncident(event),
+    })
+
+  let existing = await findExistingStaffInviteProfile(args.service, {
+    email: args.email,
+    tenantId: args.tenantId,
+    roleId: role.id,
+  })
+  if (!existing.ok) return { ok: false, error: 'Något gick fel. Försök igen.' }
+  if (existing.profile && !existing.profile.reusable) {
+    return {
+      ok: false,
+      error:
+        'manual_cleanup_required: Ett inaktivt konto finns redan för e-postadressen. Aktivera eller städa kontot innan ny inbjudan.',
+    }
+  }
+
+  if (args.targetStaffId) {
+    const target = await findStaffInviteBinding(args.service, {
+      tenantId: args.tenantId,
+      authId: existing.profile?.id ?? '',
+      targetStaffId: args.targetStaffId,
+    })
+    if (!target.ok || !target.staffId) return { ok: false, error: 'Medarbetaren saknas.' }
+    if (target.authBoundStaffId && target.authBoundStaffId !== args.targetStaffId) {
+      return { ok: false, error: 'Kontot är redan kopplat till en annan medarbetare.' }
+    }
+    if (target.profileId) {
+      if (existing.profile?.id === target.profileId) {
+        return { ok: true, inviteSent: false, alreadyLinked: true }
+      }
+      return { ok: false, error: 'Medarbetaren har redan ett annat inloggningskonto.' }
+    }
+  }
+
+  let authId = existing.profile?.id ?? ''
+  let inviteSent = false
+  if (!authId) {
+    const { data: invited, error: inviteError } = await args.service.auth.admin.inviteUserByEmail(
+      args.email,
+      {
+        redirectTo: inviteRedirectUrl('staff'),
+      },
+    )
+    if (inviteError || !invited.user) {
+      existing = await findExistingStaffInviteProfile(args.service, {
+        email: args.email,
+        tenantId: args.tenantId,
+        roleId: role.id,
+      })
+      if (!existing.ok || !existing.profile || !existing.profile.reusable) {
+        return { ok: false, error: 'Inbjudan misslyckades. Kontot kunde inte återfinnas säkert.' }
+      }
+      authId = existing.profile.id
+    } else {
+      authId = invited.user.id
+      inviteSent = true
+    }
+  }
+
+  if (!inviteSent) {
+    const binding = await findStaffInviteBinding(args.service, {
+      tenantId: args.tenantId,
+      authId,
+      ...(args.targetStaffId ? { targetStaffId: args.targetStaffId } : {}),
+    })
+    if (!binding.ok) {
+      return {
+        ok: false,
+        error: 'manual_cleanup_required: Kontots personalkoppling kunde inte verifieras.',
+      }
+    }
+    if (
+      args.targetStaffId &&
+      binding.authBoundStaffId &&
+      binding.authBoundStaffId !== args.targetStaffId
+    ) {
+      return { ok: false, error: 'Kontot är redan kopplat till en annan medarbetare.' }
+    }
+    if (binding.profileId === authId) {
+      return { ok: true, inviteSent: false, alreadyLinked: true }
+    }
+    if (args.targetStaffId && binding.profileId && binding.profileId !== authId) {
+      return { ok: false, error: 'Medarbetaren har redan ett annat inloggningskonto.' }
+    }
+  }
+
+  const { error: metadataError } = await args.service.auth.admin.updateUserById(authId, {
+    app_metadata: { tenant_id: args.tenantId, platform_admin: false },
+  })
+  if (metadataError) {
+    if (!inviteSent) {
+      await args.reportIncident({
+        stage: 'existing_staff_metadata_update_failed',
+        tenantId: args.tenantId,
+      })
+      return {
+        ok: false,
+        error:
+          'manual_cleanup_required: Det befintliga kontots företagskoppling kunde inte verifieras.',
+      }
+    }
+    return (
+      provisionFailure(await compensate(authId)) ?? {
+        ok: false,
+        error:
+          'manual_cleanup_required: Kontot kopplades men metadata behöver verifieras av drift.',
+      }
+    )
+  }
+
+  if (inviteSent) {
+    const { error: profileError } = await args.accountClient.from('users').insert({
+      id: authId,
+      tenant_id: args.tenantId,
+      email: args.email,
+      role_id: role.id,
+      status: 'active',
+    })
+    if (profileError) {
+      const failure = provisionFailure(await compensate(authId))
+      if (failure) return failure
+    }
+  }
+
+  const staffWrite = await args.createStaff(authId)
+  if (staffWrite.error) {
+    if (!inviteSent) {
+      const binding = await findStaffInviteBinding(args.service, {
+        tenantId: args.tenantId,
+        authId,
+        ...(args.targetStaffId ? { targetStaffId: args.targetStaffId } : {}),
+      })
+      if (!binding.ok) {
+        return {
+          ok: false,
+          error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.',
+        }
+      }
+      const committed = args.targetStaffId
+        ? binding.profileId === authId && binding.authBoundStaffId === args.targetStaffId
+        : binding.profileId === authId
+      if (!committed) {
+        return args.targetStaffId
+          ? {
+              ok: false,
+              error:
+                'Medarbetaren kopplades av en annan inbjudan. Det befintliga kontot lämnades orört.',
+            }
+          : { ok: false, error: 'Något gick fel. Försök igen.' }
+      }
+    } else {
+      const failure = provisionFailure(await compensate(authId))
+      if (failure) return failure
+    }
+  }
+  return { ok: true, inviteSent, alreadyLinked: false }
+}
+
 type IncidentReporter = (event: {
   stage: string
   tenantId: string
@@ -115,11 +342,7 @@ export async function compensateFailedStaffInvite(
     deps: {
       readState: async (ids) => {
         const [profileResult, binding] = await Promise.all([
-          service
-            .from('users')
-            .select('tenant_id, role_id')
-            .eq('id', ids.authId)
-            .maybeSingle(),
+          service.from('users').select('tenant_id, role_id').eq('id', ids.authId).maybeSingle(),
           findStaffInviteBinding(service, {
             tenantId: ids.tenantId,
             authId: ids.authId,

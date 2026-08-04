@@ -6,7 +6,7 @@ import { getMyWorkingHours, getMyTimeOff } from '@/lib/personal/schedule'
 import { fmtDateTime, WEEKDAYS_SV } from '@/lib/personal/format'
 import { getNotificationPreferences } from '@/lib/personal/notification-preferences'
 import { NotificationPreferences } from '@/components/personal/NotificationPreferences'
-import { DEFAULT_STAFF_NOUN } from '@/components/storefront/staff-noun'
+import { DEFAULT_STAFF_NOUN } from '@/lib/storefront/staff-noun'
 import styles from '@/components/personal/personal-pwa.module.css'
 
 export const dynamic = 'force-dynamic'

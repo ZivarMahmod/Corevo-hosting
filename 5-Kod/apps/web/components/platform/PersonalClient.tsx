@@ -14,7 +14,8 @@ import {
   useToast,
   type BadgeTone,
 } from '@/components/portal/ui'
-import { createTenantStaff, type ActionState } from '@/lib/platform/actions'
+import { createTenantStaff } from '@/lib/platform/actions/people'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import type { StaffListItem } from '@/lib/platform/people'
 import styles from './personal-platform.module.css'
 

@@ -5,9 +5,9 @@ import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { ShopSection } from '@/components/storefront/ShopSection'
 import { pageMetadata } from '@/components/storefront/seo'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
@@ -16,9 +16,7 @@ export function generateMetadata(): Promise<Metadata> {
   return pageMetadata('shop')
 }
 
-/** Webshoppens EGEN sida ("modulerna ska ha en riktig plats", Zivar 2026-07-11).
- *  Startsidan visar bara en teaser; hela sortimentet bor här. Gate: live/paused
- *  renderar (paused = stängd katalog), draft/off → 404. */
+/** Full catalog; the route exists only while shop is live. */
 export default async function ShopPage({
   searchParams,
 }: {
@@ -46,10 +44,10 @@ export default async function ShopPage({
   if (View) {
     const data = await loadShopData(tenant.id, tenant.slug, category)
     if (!data) notFound()
-    const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+    const copy = await getTenantCopy(bundle)
     const content = resolveThemeContent(settings.theme, settings.branding, copy)
-    return <View data={data} paused={false} content={content} tenantName={tenant.name} />
+    return <View data={data} content={content} tenantName={tenant.name} />
   }
 
-  return <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
+  return <ShopSection tenantId={tenant.id} slug={tenant.slug} pageHero />
 }

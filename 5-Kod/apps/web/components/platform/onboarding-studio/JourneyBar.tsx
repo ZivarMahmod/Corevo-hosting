@@ -6,8 +6,8 @@
 // role-switch. Pure presentational + client-safe: it owns NO state, derives nothing
 // from cfg — the parent (OnboardingStudio) computes which stages are reachable and
 // passes the navigate handler in. Shell chrome only; inline styles keyed to the
-// existing [data-world="backoffice"] tokens (no *.module.css — CreateTenantForm
-// convention). The design's right-hand "Spec-läge" toggle is intentionally OMITTED:
+// existing [data-world="backoffice"] tokens. The design's right-hand "Spec-läge"
+// toggle is intentionally OMITTED:
 // it toggles spec-annotations that W1 defers (no `spec` field exists in the studio
 // architecture), so rendering it would be a fake control (status-honesty §9). A
 // zero-width spacer keeps the verbatim 3-child space-between balance.

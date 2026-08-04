@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTransition, type ReactNode } from 'react'
 import { Icon } from '@/components/portal/ui'
+import type { BoardDay, BoardRow } from '@/lib/admin/schedule-board'
 
 /**
  * Vecko-översikt för HELA teamet — schemat är frisörens viktigaste yta, så läget
@@ -14,41 +15,6 @@ import { Icon } from '@/components/portal/ui'
  * bokmärkbar och servern räknar alla UTC-fönster i tenantens tz — komponenten
  * ritar bara det page.tsx redan härlett (inga egna Date-beräkningar här).
  */
-
-export type BoardDay = {
-  /** YYYY-MM-DD — kolumnens kalenderdag. */
-  date: string
-  /** Kort dagnamn ("Mån"). */
-  name: string
-  dayOfMonth: number
-  isToday: boolean
-}
-
-export type BoardInterval = {
-  /** "09–18" / "09:30–17:30" — mall-intervallet formatterat server-side. */
-  label: string
-  /** Platsnamn att visa som badge (endast multi-plats; null = ingen badge). */
-  tag: string | null
-  /** True när intervallet ligger på en ANNAN plats än den valda → dämpas. */
-  offSite: boolean
-}
-
-export type BoardCell = {
-  intervals: BoardInterval[]
-  /** Frånvaro-overlay när en time_off-rad överlappar dagen. */
-  timeOff: { reason: string | null } | null
-  /** Antal bokningar (pending/confirmed) den dagen. */
-  bookings: number
-}
-
-export type BoardRow = {
-  staffId: string
-  name: string
-  /** True för raden vars mall-redigerare är öppen nedanför (#mallar). */
-  isSelected: boolean
-  /** Exakt 7 celler, Mån→Sön. */
-  cells: BoardCell[]
-}
 
 export type BoardLocation = { id: string; name: string }
 

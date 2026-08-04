@@ -128,21 +128,16 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
 // one staff read + one owner read for the WHOLE platform, then aggregated in JS
 // (mirrors metrics.ts) — never an N×per-tenant query loop. Admin-scale volumes.
 
-export type CustomizationLevel = 1 | 2 | 3
+export type CustomizationLevel = 1 | 2
 
 /**
  * Derive the salon's storefront customization tier (the "Nivå" chip) from REAL,
  * actually-set signals — there is NO stored level column, so we never invent a
- * number and never read dead keys (#18):
+ * number:
  *   • Nivå 2 = the salon went past the raw colour-token floor with no-code richness:
  *     a named theme preset is set (settings.theme) OR an uploaded logo/font
  *     (branding.logo_url / font_body).
  *   • Nivå 1 = colour tokens only (or nothing) — the baseline no-code floor.
- * The old phantom Nivå-3 `custom_override.css` branch + the dead
- * `settings.layout.nav_variant/hero_variant` reads are REMOVED — that nav/hero
- * A/B system is retired (components/brand/variants.ts) and the scoped-CSS Nivå-3
- * seam is never set via this surface, so reading them only faked a tier. The return
- * type keeps `3` for callers' exhaustiveness; this derivation simply never returns it.
  */
 export function deriveCustomizationLevel(
   rawSettings: Record<string, unknown> | null | undefined,
@@ -431,7 +426,7 @@ export type TenantDetail = {
     minNoticeMin: number
     maxAdvanceDays: number
   } | null
-  /** Verifierad egen domän, primär först. null → slug.corevo.se. */
+  /** Verifierad egen domän, primär först. null → slug.boka.corevo.se. */
   primaryDomain: string | null
 }
 
@@ -605,7 +600,7 @@ export async function getTenantDetail(
   const adminRow = adminRes.data as { email: string | null; full_name: string | null; status: string } | null
 
   // Operative values for the §2.1B edit surface, parsed from the raw settings jsonb
-  // (the same raw-read seam M3 uses for booking.variant — NOT the frozen parseSettings).
+  // (the same raw-read seam M3 uses for booking.variant — not parseSettings).
   const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
   const reviewRaw = rawSettings.google_review_url
   const googleReviewUrl =

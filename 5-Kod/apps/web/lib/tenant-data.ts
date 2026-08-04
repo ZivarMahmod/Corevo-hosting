@@ -14,8 +14,8 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
 import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-variant'
-import { resolveStaffNoun } from '@/components/storefront/staff-noun'
-import { withBranschMedia } from '@/components/storefront/images'
+import { resolveStaffNoun } from '@/lib/storefront/staff-noun'
+import { withBranschMedia } from '@/lib/storefront/images'
 import {
   normalizeBookingExternalCtaUrls,
   normalizeBookingExternalUrl,
@@ -25,13 +25,21 @@ import {
 } from '@/lib/platform/booking-external-url'
 import {
   DEFAULT_TENANT_REGION,
+  parseTenantLegal,
+  type TenantLegal,
   type TenantRegion,
 } from '@/lib/tenant-region'
+import {
+  readCustomerPortalMode,
+  resolveCustomerPortalCapabilities,
+  type CustomerPortalMode,
+} from '@/lib/customer-portal/mode'
 
 export type Tenant = Pick<
   Tables<'tenants'>,
   'id' | 'slug' | 'name' | 'status' | 'city' | 'vertical_id' | 'created_at' | 'updated_at'
 >
+export type RequestTenant = Pick<Tenant, 'id' | 'slug' | 'name'>
 // Base row + the 0046 merch columns (optional — generated types don't know them yet).
 export type Service = Tables<'services'> & {
   sale_price_cents?: number | null
@@ -50,25 +58,19 @@ type TenantSettingsRow = Pick<
   | 'default_timezone'
 >
 
-export type LayoutConfig = { nav_variant?: string; hero_variant?: string }
-export type CustomOverride = { css?: string }
-
-/** Storefront visual theme (two-CSS-worlds system). Drives [data-theme] on the
+/** Storefront visual theme. Drives [data-theme] on the
  *  storefront root, which selects the theme's color/font base tokens in
- *  @corevo/ui/tokens.css. injectTenantTokens() then layers any per-tenant override
- *  inline on top. Default = leander. */
+ *  @corevo/ui/tokens.css. Default = leander. */
 export const STOREFRONT_THEMES = [
   'salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora', 'freshcut',
   // FLORIST-SVITEN (goal-64) — 9 mallar ur Claude Design-paketen (handoff/*.dc.html).
-  // Allt annat om dem (layout, palett, copy, caps, CSS) bor i
-  // components/storefront/layouts/florist/registry.ts. Nycklarna MÅSTE vara literaler
-  // här (StorefrontTheme härleds ur listan) → den enda platsen en mall syns utanför
-  // sitt registry.
+  // Persisted settings.theme måste valideras mot literaler här så StorefrontTheme är
+  // fail-closed. Definitionerna bor i lib/storefront/themes/registry.ts.
   'ateljevinter', 'aurora', 'blomstertorget', 'calytrix', 'eloria',
   'lunaria', 'onyx', 'sivsav', 'solsalt',
-  // SALONG-SVITEN (goal-64) — layouts/salong/registry.ts
+  // SALONG-SVITEN (goal-64).
   'kalla', 'siluett', 'snitt',
-  // EKONOMI-SVITEN (goal-63) — allt om dem bor i layouts/ekonomi/registry.ts.
+  // EKONOMI-SVITEN (goal-63).
   'zentum',
 ] as const
 export type StorefrontTheme = (typeof STOREFRONT_THEMES)[number]
@@ -88,13 +90,14 @@ export type TenantContact = { email: string | null; phone: string | null }
 
 export type TenantSettings = TenantRegion & {
   branding: TenantBranding
-  layout: LayoutConfig
   /** Storefront theme preset (validated; default leander) → [data-theme] on root. */
   theme: StorefrontTheme
-  /** non-null only when an actual css override string is present (nivå 3). */
-  customOverride: CustomOverride | null
+  /** Raw owner editorial copy from settings.copy; the storefront resolver validates fields. */
+  copy: unknown
   paymentMode: string
-  /** G12: storefront exposes customer login/signup/konto only when the owner opts in. */
+  /** Canonical customer-portal mode; null means missing/unknown and fails closed. */
+  portalMode: CustomerPortalMode | null
+  /** Derived legacy visibility. Never activates passwordless or unknown modes. */
   customerAccountsEnabled: boolean
   /** Salon contact (admin SettingsForm → settings.contact). Null fields = unset. */
   contact: TenantContact
@@ -117,11 +120,11 @@ export type TenantSettings = TenantRegion & {
   openingHours: OpeningHour[] | null
   /** Juridikfält (settings.legal, plan 003): org-nr + moms-sats för villkor/kvitto.
    *  null tills ägaren fyllt i — konsumenter renderar villkorligt. */
-  legal: { orgNr: string | null; vatRate: number | null }
+  legal: TenantLegal
   /** Sociala medier-länkar (settings.social) — null per fält tills ägaren fyllt i. */
   social: { instagram: string | null; facebook: string | null; tiktok: string | null }
-  /** Geokodad position för primäradressen (settings.map, skrivs best-effort av
-   *  saveTenantContact via Nominatim) — driver kart-embedden på Kontakt-sidan. */
+  /** Geokodad position för primäradressen (settings.map, skrivs best-effort när
+   *  sidutkastet publiceras) — driver kart-embedden på Kontakt-sidan. */
   map: { lat: number; lon: number; q: string | null } | null
 }
 
@@ -161,9 +164,6 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     team: Array.isArray(rawBranding.team) ? rawBranding.team : [],
     stats: Array.isArray(rawBranding.stats) ? rawBranding.stats : [],
   })
-  const layout = (raw.layout ?? {}) as LayoutConfig
-  const override = (raw.custom_override ?? null) as CustomOverride | null
-  const hasCss = !!override && typeof override.css === 'string' && override.css.trim().length > 0
   // Contact lives in the settings JSON (`contact: { email, phone }`, written by
   // the admin SettingsForm). Normalise blanks → null so the storefront can omit
   // the field gracefully instead of rendering an empty value.
@@ -182,15 +182,13 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     currency: row?.currency ?? DEFAULT_TENANT_REGION.currency,
     defaultTimeZone: row?.default_timezone ?? DEFAULT_TENANT_REGION.defaultTimeZone,
     branding,
-    layout,
     // Lives in the settings JSON (`theme: "leander"`); validated against the known
     // preset set so an unknown/typo value safely falls back to the default.
     theme,
-    customOverride: hasCss ? override : null,
+    copy: raw.copy ?? null,
     paymentMode: row?.payment_mode ?? 'on_site',
-    // Lives in the settings JSON (no dedicated column — same seam as
-    // cancellation_cutoff_hours). Default OFF: guest booking only.
-    customerAccountsEnabled: raw.customer_accounts_enabled === true,
+    portalMode: readCustomerPortalMode(raw),
+    customerAccountsEnabled: resolveCustomerPortalCapabilities(raw).legacyAccount,
     contact: { email: cleanStr(contactRaw.email), phone: cleanStr(contactRaw.phone) },
     // EU cookie consent: default ON; owner can hide via settings.cookie_banner_enabled=false.
     cookieBannerEnabled: raw.cookie_banner_enabled !== false,
@@ -209,17 +207,7 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
       tiktok: cleanStr((raw.social as Record<string, unknown> | undefined)?.tiktok),
     },
     map: parseMap(raw.map),
-    // Juridikfält (plan 003): settings.legal = { org_nr, vat_rate }. Samma
-    // jsonb-nyckel-seam som contact/social — ingen schemaändring. null = ej satt →
-    // konsumenterna (villkorssidan, kvittot) utelämnar raden, aldrig "org.nr: null".
-    legal: {
-      orgNr: cleanStr((raw.legal as Record<string, unknown> | undefined)?.org_nr),
-      vatRate: (() => {
-        const v = (raw.legal as Record<string, unknown> | undefined)?.vat_rate
-        const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
-        return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null
-      })(),
-    },
+    legal: parseTenantLegal(raw),
   }
 }
 
@@ -423,6 +411,19 @@ export async function getTenantBySlug(slug: string): Promise<TenantBundle | null
   )
   return load()
 }
+
+/** Active tenant identity resolved only from the middleware-owned request header. */
+export const currentRequestTenant = cache(async (): Promise<RequestTenant | null> => {
+  const slug = (await headers()).get('x-corevo-tenant-slug')
+  if (!slug) return null
+  const { data } = await createPublicClient()
+    .from('tenants')
+    .select('id, slug, name')
+    .eq('slug', slug)
+    .eq('status', 'active')
+    .maybeSingle()
+  return data
+})
 
 /** Active services for a tenant, cheapest first. Always scoped by tenant_id. */
 export async function getServices(tenantId: string, slug: string): Promise<Service[]> {

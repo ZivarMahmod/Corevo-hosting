@@ -1,8 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    ticket.css — biljett/stub-systemet för bekräftelse-rutten + avboka-sidan.
-   Kanon: 4-Dokument-Underlag/01-acceptans/Frisörbokningsformulär redesign/
-          design_handoff_bokningsflode/README.md (§Design tokens, §Screens/views
-          → Confirmation + Avboka, §Theming) + FreshCut bokning.dc.html.
+   Visuell acceptans verifieras mot det aktuella bokningspaketet.
 
    Ägs av bekräftelse/avboka-sidorna — rör INTE booking-global.css härifrån.
    Färgerna uttrycks på kontrakts-tokens (--color-accent/-fg/-bg/-surface) så

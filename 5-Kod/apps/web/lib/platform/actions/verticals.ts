@@ -12,8 +12,8 @@
 import { revalidatePath } from 'next/cache'
 import { platformAdminCtx } from '../guard'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
-import { isSelectableTheme } from '@/lib/platform/theme-palettes'
-import { COPY_OVERRIDE_KEYS } from '@/components/storefront/theme-content'
+import { isSelectableCatalogTheme } from '@/lib/platform/theme-catalog'
+import { COPY_OVERRIDE_KEYS } from '@/lib/storefront/theme-copy'
 import { type ActionState, GENERIC } from './shared'
 
 // Nycklarna kundbilden redigerar. business = rapport 06:s förslag ("Salongsadmin"
@@ -89,7 +89,7 @@ export async function saveVerticalDefaults(_p: ActionState, fd: FormData): Promi
     if ((MODULE_STATES as readonly string[]).includes(v)) defaultModules[m.key] = v as ModuleState
   }
   const rawTemplate = String(fd.get('default_template') ?? '').trim()
-  const defaultTemplate = isSelectableTheme(rawTemplate) ? rawTemplate : null
+  const defaultTemplate = isSelectableCatalogTheme(rawTemplate) ? rawTemplate : null
 
   const { error } = await supabase
     .from('verticals')

@@ -3,6 +3,12 @@ import type { Json } from '@corevo/db'
 import { createServiceClient } from '@/lib/platform/service'
 import { logger } from '@/lib/observability'
 import { isSafeCustomerClaimOrigin } from '@/lib/kund/customer-claim'
+import {
+  legacyTenantStorefrontHost,
+  normalizeTenantStorefrontOrigin,
+  tenantStorefrontHost,
+  tenantStorefrontUrl,
+} from '@/lib/storefront-url'
 
 export type BookingNotificationEventType =
   | 'booking_request_received'
@@ -34,14 +40,14 @@ export type BookingNotificationEvent = {
   skipReason?: BookingNotificationSkipReason
   /** U9's transaction-created status=routing row. */
   outboxId?: string | null
-  /** Tokens are minted only inside a future delivery adapter and never persisted. */
+  /** Tokens are minted by the delivery adapter and never persisted. */
   includeManageLink?: boolean
   includeAccountClaim?: boolean
   origin?: string | null
 }
 
 export type BookingNotificationQueueResult =
-  | { state: 'queued'; channel: 'push' | 'email' | 'sms'; inserted: boolean }
+  | { state: 'queued'; channel: 'email' | 'sms'; inserted: boolean }
   | { state: 'skipped'; reason: string; inserted: boolean }
   | { state: 'error'; reason: 'service_role_unavailable' | 'enqueue_failed' | 'invalid_result' }
 
@@ -99,8 +105,8 @@ export function bookingEventKey(event: BookingNotificationEvent): string {
   return `booking:${event.bookingId}:${policy.suffix}`
 }
 
-function isChannel(value: unknown): value is 'push' | 'email' | 'sms' {
-  return value === 'push' || value === 'email' || value === 'sms'
+function isChannel(value: unknown): value is 'email' | 'sms' {
+  return value === 'email' || value === 'sms'
 }
 
 async function canonicalTenantOrigin(
@@ -115,8 +121,9 @@ async function canonicalTenantOrigin(
     ])
   if (tenantError || domainsError || !tenant?.slug) throw new Error('tenant_origin_unavailable')
 
-  const canonicalHost = `${tenant.slug}.corevo.se`
-  const legacyHost = `${tenant.slug}.boka.corevo.se`
+  const canonicalHost = tenantStorefrontHost(tenant.slug)
+  const legacyHost = legacyTenantStorefrontHost(tenant.slug)
+  if (!canonicalHost || !legacyHost) throw new Error('tenant_origin_unavailable')
   const verifiedDomains = (domains ?? [])
     .map(({ domain }) => domain.trim().toLowerCase())
     .filter(Boolean)
@@ -130,10 +137,13 @@ async function canonicalTenantOrigin(
     proposedOrigin
     && isSafeCustomerClaimOrigin(proposedOrigin, allowedHosts, process.env.NODE_ENV !== 'production')
   ) {
-    const origin = new URL(proposedOrigin)
-    return origin.hostname === legacyHost ? `https://${canonicalHost}` : origin.origin
+    const origin = normalizeTenantStorefrontOrigin(tenant.slug, proposedOrigin)
+    if (!origin) throw new Error('tenant_origin_unavailable')
+    return origin
   }
-  return `https://${verifiedDomains[0] ?? canonicalHost}`
+  const fallback = tenantStorefrontUrl(tenant.slug, verifiedDomains[0])
+  if (!fallback) throw new Error('tenant_origin_unavailable')
+  return fallback
 }
 
 /**

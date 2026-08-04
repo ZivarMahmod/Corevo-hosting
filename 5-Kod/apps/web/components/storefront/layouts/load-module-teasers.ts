@@ -1,11 +1,5 @@
-// S10 (goal-54 körning 6) — server-side laddning av modul-teasers för teman som
-// ÄGER sina moduler (salvia/leander/zigge): butik/blogg/presentkort vävs in i
-// temats eget formspråk inne i layouten istället för den generiska
-// StorefrontModuleSections-stapeln. Laddas i app/(public)/page.tsx och skickas
-// som `modules`-prop så layouterna förblir synkrona (onboarding-studions
-// klient-preview renderar samma komponenter — async-layouter kraschar den).
-// Gating följer målrouten: live/paused kan renderas, off/draft aldrig. Moduler som
-// kräver innehåll blir bara reachable när samma publika data faktiskt finns.
+// Server-side module teasers shared by production layouts and onboarding preview.
+// A route is reachable only when its module is live and required data exists.
 
 import { cache } from 'react'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
@@ -30,6 +24,16 @@ export const EMPTY_LAYOUT_MODULE_TEASERS: LayoutModuleTeasers = {
   lojalitetReachable: false,
   kurserReachable: false,
   galleriReachable: false,
+}
+
+/** Legacy external booking is reachable without a live Corevo booking module. */
+export function withLegacyExternalBooking(
+  modules: LayoutModuleTeasers,
+  legacyExternal: boolean,
+): LayoutModuleTeasers {
+  return legacyExternal && !modules.bookingReachable
+    ? { ...modules, bookingReachable: true }
+    : modules
 }
 
 async function safeLoad<T>(load: () => Promise<T>, fallback: T): Promise<T> {

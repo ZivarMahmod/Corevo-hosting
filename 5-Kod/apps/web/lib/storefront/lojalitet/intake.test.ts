@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // KLUBBENS INTAG — vad testerna faktiskt vaktar (goal-64):
-//   1. MODUL-GATEN: lojalitet inte 'live' → INGEN skrivning. draft/off/paused nekar alla.
+//   1. MODUL-GATEN: lojalitet måste vara live.
 //   2. TENANT-FENCEN: tenanten kommer ur middleware-headern, ALDRIG ur formuläret. Ett
 //      klientskickat tenant-fält får inte kunna styra vart raden hamnar.
 //   3. RATE-LIMIT: taket gäller FÖRE skrivningen (annars är limitern dekoration).
@@ -99,7 +99,7 @@ describe('joinLoyaltyClub — modul-gaten', () => {
     expect(rpcCalls[0]!.fn).toBe('join_loyalty_club')
   })
 
-  for (const bad of ['draft', 'off', 'paused']) {
+  for (const bad of ['off', 'unexpected']) {
     it(`nekar och skriver INGENTING när modulen är '${bad}'`, async () => {
       state.moduleState = bad
       const res = await joinLoyaltyClub(IDLE, fd({ email: 'a@b.se' }))

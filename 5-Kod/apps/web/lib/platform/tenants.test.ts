@@ -58,10 +58,8 @@ function queryResult(result: { data: unknown; error: { message: string } | null 
   return chain
 }
 
-// #18 — the "Nivå" chip is derived only from REAL, actually-set signals; the dead
-// custom_override.css Nivå-3 branch and the layout.nav_variant/hero_variant reads
-// are gone. Level 2 = a named theme preset OR an uploaded logo/font; else Level 1.
-describe('deriveCustomizationLevel (#18 real-signal derivation)', () => {
+// Level 2 = a named theme preset OR an uploaded logo/font; else Level 1.
+describe('deriveCustomizationLevel', () => {
   it('Nivå 1 — nothing set (the no-code colour-token floor)', () => {
     expect(deriveCustomizationLevel({}, {})).toBe(1)
     expect(deriveCustomizationLevel(null, null)).toBe(1)
@@ -81,14 +79,6 @@ describe('deriveCustomizationLevel (#18 real-signal derivation)', () => {
     expect(deriveCustomizationLevel({}, { font_body: 'Inter' })).toBe(2)
   })
 
-  it('dead keys are ignored — no phantom Nivå 3, no layout-variant bump', () => {
-    // The retired A/B nav/hero system + the never-set custom_override.css seam must
-    // NOT lift the tier (they used to fake Nivå 2/3).
-    expect(
-      deriveCustomizationLevel({ layout: { nav_variant: 'B', hero_variant: '2' } }, {}),
-    ).toBe(1)
-    expect(deriveCustomizationLevel({ custom_override: { css: '.x{}' } }, {})).toBe(1)
-  })
 })
 
 // goal-20 — listTenants returns the new columns (#14 city, #10 ownerName) with a read

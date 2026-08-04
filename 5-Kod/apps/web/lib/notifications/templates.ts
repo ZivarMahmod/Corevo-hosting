@@ -2,9 +2,7 @@ import 'server-only'
 import { accentForeground } from '@corevo/ui'
 import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 
-// Swedish transactional email templates — "biljett"-look (barbershop-editorial
-// redesign, kanon: 4-Dokument-Underlag/01-acceptans/Frisörbokningsformulär redesign/
-// design_handoff_bokningsflode — §"Confirmation e-mail" + EMAIL PREVIEW-blocket).
+// Swedish transactional email templates in the booking flow's ticket style.
 //
 // Email is NOT the app: clients strip <link>, ignore CSS variables and won't load
 // web fonts. So globals.css classes / var(--color-*) tokens DO NOT reach inboxes.
@@ -32,6 +30,8 @@ export type BookingEmailData = {
   staffTitle?: string | null
   /** Public self-service manage/cancel link (HMAC-token URL); omit/null = no link. */
   manageUrl?: string | null
+  /** Passwordless tenant portal link, distinct from the legacy cancel/account rails. */
+  portalUrl?: string | null
   /** Fresh guest-to-account claim URL, minted only in delivery memory. */
   accountClaimUrl?: string | null
   /** Hours-before-start the guest may still cancel; null/absent = no cutoff line. */
@@ -92,7 +92,10 @@ function fmt(startISO: string, timeZone: string, locale: string): string {
 }
 
 export function esc(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  )
 }
 
 export type EmailBrandFields = {
@@ -130,8 +133,7 @@ function brandHeader(tenantName: string, logoUrl?: string | null): string {
 }
 
 /**
- * Ticket-look email chrome. Exported (additive) so other notification senders
- * (e.g. google-review.ts) reuse the exact same shell instead of diverging.
+ * Ticket-look email chrome shared by transactional notification senders.
  *
  * Card max 520px on the warm page bg: 6px ink top-bar → wordmark/logo → mono accent
  * eyebrow → serif heading → body → footer (salon name + slogan/address) — and
@@ -266,7 +268,6 @@ function manageBlock(
 function accountClaimBlock(
   accountClaimUrl: string | null | undefined,
   accent: string,
-  accentFg: string,
 ): string {
   const url = accountClaimUrl?.trim()
   if (!url) return ''
@@ -277,15 +278,25 @@ function accountClaimBlock(
     </table>${note('Med ett kundkonto hittar du dina tider och slipper onödiga SMS.')}`
 }
 
+function portalBlock(portalUrl: string | null | undefined, accent: string, accentFg: string): string {
+  const url = portalUrl?.trim()
+  if (!url) return ''
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 0">
+      <tr><td style="background:${accent}">
+        <a href="${esc(url)}" style="display:inline-block;padding:13px 24px;font-family:${SANS};font-size:14px;font-weight:600;color:${accentFg};text-decoration:none">Se och hantera bokningen</a>
+      </td></tr>
+    </table>`
+}
+
 export function confirmationEmail(d: BookingEmailData): { subject: string; html: string } {
   // With a self-service manage link, show the avboka button (+ optional cutoff line)
   // instead of the generic "logga in"-note; gäster har inget konto att logga in på.
   const { accent, accentFg } = resolveAccent(d.accentColor)
+  const portal = portalBlock(d.portalUrl, accent, accentFg)
   const manage = manageBlock(d.manageUrl, d.cancelCutoffHours, accent, accentFg)
-  const accountClaim = accountClaimBlock(d.accountClaimUrl, accent, accentFg)
-  const tail = manage
-    ? manage
-    : note('Behöver du ändra eller avboka? Logga in på ditt konto så fixar du det på några sekunder.')
+  const accountClaim = accountClaimBlock(d.accountClaimUrl, accent)
+  const tail = portal || manage
+    || note('Behöver du ändra eller avboka? Logga in på ditt konto så fixar du det på några sekunder.')
   const first = d.firstName?.trim()
   return {
     subject: `Bokningsbekräftelse — ${d.tenantName}`,
@@ -304,14 +315,15 @@ export function confirmationEmail(d: BookingEmailData): { subject: string; html:
  * while owner approval or a released online-payment rail is still outstanding. */
 export function bookingRequestReceivedEmail(d: BookingEmailData): { subject: string; html: string } {
   const { accent, accentFg } = resolveAccent(d.accentColor)
+  const portal = portalBlock(d.portalUrl, accent, accentFg)
   const manage = manageBlock(d.manageUrl, d.cancelCutoffHours, accent, accentFg)
-  const accountClaim = accountClaimBlock(d.accountClaimUrl, accent, accentFg)
+  const accountClaim = accountClaimBlock(d.accountClaimUrl, accent)
   return {
     subject: `Bokningsförfrågan mottagen — ${d.tenantName}`,
     html: shell(
       'Vi har tagit emot din förfrågan',
       `${lead('Tiden är inte bekräftad än. Du får ett nytt besked när verksamheten har godkänt bokningen.')}${ticket(d)}
-       ${manage}${accountClaim}`,
+       ${portal || manage}${accountClaim}`,
       d.tenantName,
       'Inväntar bekräftelse',
       brandOf(d),
@@ -397,13 +409,14 @@ export function receiptEmail(
 // branded; the call site is wired by the orchestrator (see crossModuleGaps).
 export function rebookEmail(d: BookingEmailData): { subject: string; html: string } {
     const { accent, accentFg } = resolveAccent(d.accentColor)
+    const portal = portalBlock(d.portalUrl, accent, accentFg)
     const manage = manageBlock(d.manageUrl, d.cancelCutoffHours, accent, accentFg)
     return {
       subject: `Ny tid bekräftad — ${d.tenantName}`,
       html: shell(
         'Din nya tid är bokad',
         `${lead('Vi har flyttat din tid. Här är din uppdaterade bokning:')}${ticket(d, priceFooter(d, accent))}
-         ${manage || note('Den tidigare tiden är avbokad. Behöver du ändra igen? Logga in på ditt konto.')}`,
+         ${portal || manage || note('Den tidigare tiden är avbokad. Behöver du ändra igen? Logga in på ditt konto.')}`,
         d.tenantName,
       'Ombokning',
       brandOf(d),

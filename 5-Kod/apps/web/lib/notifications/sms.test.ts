@@ -16,9 +16,7 @@ vi.mock('@/lib/platform/service', () => ({
 import { parseSmsDeliveryMode } from './settings'
 import {
   deliverSmsOutbox,
-  parseGuestPhone,
   sanitizeSenderId,
-  sendSms,
   toE164,
 } from './sms'
 
@@ -63,7 +61,7 @@ describe('telefon- och avsändarnormalisering', () => {
   })
 })
 
-describe('sendSms fysisk leveransgrind', () => {
+describe('SMS-outboxens fysiska leveransgrind', () => {
   let saved: Record<string, string | undefined>
   const fetchMock = vi.fn()
 
@@ -106,12 +104,11 @@ describe('sendSms fysisk leveransgrind', () => {
     for (const mode of [undefined, '', 'unknown']) {
       if (mode === undefined) delete process.env.SMS_DELIVERY_MODE
       else process.env.SMS_DELIVERY_MODE = mode
-      await expect(sendSms({ to: '0701234567', body: 'Hej' })).resolves.toEqual({
-        ok: false,
-        skipped: true,
-        mode: 'off',
-        error: 'transport_off',
-      })
+      await expect(deliverSmsOutbox({
+        tenantId: 'tenant-a',
+        to: '0701234567',
+        body: 'Hej',
+      })).resolves.toEqual({ status: 'skipped', reason: 'transport_off' })
     }
 
     expect(fetchMock).not.toHaveBeenCalled()
@@ -128,20 +125,17 @@ describe('sendSms fysisk leveransgrind', () => {
       json: async () => ({ status: 'created', parts: 2, estimated_cost: 10_000 }),
     })
 
-    const result = await sendSms({
+    const result = await deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '070-123 45 67',
       body: 'Din tid är bokad',
       from: 'Fresh Cut!',
       tenantSmsEnabled: true,
-      allowProviderDryRun: true,
     })
 
     expect(result).toEqual({
-      ok: true,
-      mode: 'dry_run',
-      simulated: true,
+      status: 'simulated',
       parts: 2,
-      estimatedCost: 10_000,
       costOre: 100,
       costCurrency: 'SEK',
     })
@@ -166,35 +160,12 @@ describe('sendSms fysisk leveransgrind', () => {
     process.env.SMS_CANARY_RECIPIENTS = '+46701234567'
     fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: 'sent' }) })
 
-    await expect(sendSms({
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '0701234567',
       body: 'Hej',
       tenantSmsEnabled: true,
-      allowProviderDryRun: true,
-    })).resolves.toEqual({
-      ok: false,
-      mode: 'dry_run',
-      error: 'invalid_provider_response',
-    })
-  })
-
-  it('dry_run är lokalt skipped som default även med opt-in, canary och credentials', async () => {
-    process.env.SMS_DELIVERY_MODE = 'dry_run'
-    process.env.SMS_46ELKS_USERNAME = 'u'
-    process.env.SMS_46ELKS_PASSWORD = 'p'
-    process.env.SMS_CANARY_RECIPIENTS = '+46701234567'
-
-    await expect(sendSms({
-      to: '0701234567',
-      body: 'Hej',
-      tenantSmsEnabled: true,
-    })).resolves.toEqual({
-      ok: false,
-      skipped: true,
-      mode: 'dry_run',
-      error: 'dry_run_requires_explicit_canary',
-    })
-    expect(fetchMock).not.toHaveBeenCalled()
+    })).resolves.toEqual({ status: 'failed', reason: 'delivery_uncertain' })
   })
 
   it('explicit outbox-dry_run kräver både tenant-opt-in och exakt canary utan fetch', async () => {
@@ -203,27 +174,17 @@ describe('sendSms fysisk leveransgrind', () => {
     process.env.SMS_46ELKS_PASSWORD = 'p'
     process.env.SMS_CANARY_RECIPIENTS = '+46701234567'
 
-    await expect(sendSms({
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '0701234567',
       body: 'Hej',
-      allowProviderDryRun: true,
-    })).resolves.toEqual({
-      ok: false,
-      skipped: true,
-      mode: 'dry_run',
-      error: 'tenant_sms_disabled',
-    })
-    await expect(sendSms({
+    })).resolves.toEqual({ status: 'skipped', reason: 'channel_disabled' })
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '0708888888',
       body: 'Hej',
       tenantSmsEnabled: true,
-      allowProviderDryRun: true,
-    })).resolves.toEqual({
-      ok: false,
-      skipped: true,
-      mode: 'dry_run',
-      error: 'recipient_not_canary',
-    })
+    })).resolves.toEqual({ status: 'skipped', reason: 'channel_disabled' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -235,20 +196,19 @@ describe('sendSms fysisk leveransgrind', () => {
     process.env.SMS_46ELKS_CALLBACK_URL = 'https://booking.corevo.se/api/webhooks/46elks/delivery'
     process.env.SMS_46ELKS_CALLBACK_SECRET = 'callback-secret'
 
-    await expect(sendSms({ to: '0701234567', body: 'Hej' })).resolves.toEqual({
-      ok: false,
-      skipped: true,
-      mode: 'live',
-      error: 'tenant_sms_disabled',
-    })
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
+      to: '0701234567',
+      body: 'Hej',
+    })).resolves.toEqual({ status: 'skipped', reason: 'channel_disabled' })
 
     delete process.env.SMS_46ELKS_CALLBACK_SECRET
-    await expect(sendSms({ to: '0701234567', body: 'Hej', tenantSmsEnabled: true })).resolves.toEqual({
-      ok: false,
-      skipped: true,
-      mode: 'live',
-      error: 'transport_unavailable',
-    })
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
+      to: '0701234567',
+      body: 'Hej',
+      tenantSmsEnabled: true,
+    })).resolves.toEqual({ status: 'retry', error: 'provider_unavailable' })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -270,29 +230,24 @@ describe('sendSms fysisk leveransgrind', () => {
       }),
     })
 
-    const blocked = await sendSms({
+    const blocked = await deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '0708888888',
       body: 'Hej',
       tenantSmsEnabled: true,
     })
-    expect(blocked).toEqual({
-      ok: false,
-      skipped: true,
-      mode: 'live',
-      error: 'recipient_not_canary',
-    })
+    expect(blocked).toEqual({ status: 'skipped', reason: 'channel_disabled' })
 
-    const sent = await sendSms({
+    const sent = await deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '0701234567',
       body: 'Hej',
       from: 'Corevo',
       tenantSmsEnabled: true,
     })
     expect(sent).toEqual({
-      ok: true,
-      mode: 'live',
-      simulated: false,
-      providerId: 's70df59406a1b4643b96f3f91e0bfb7b0',
+      status: 'sent',
+      providerRef: 's70df59406a1b4643b96f3f91e0bfb7b0',
       parts: 1,
       costOre: 35,
       costCurrency: 'SEK',
@@ -315,16 +270,12 @@ describe('sendSms fysisk leveransgrind', () => {
       new Error('network +46701234567 Din hemliga tid secret-user secret-pass'),
     )
 
-    await expect(sendSms({
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '0701234567',
       body: 'Din hemliga tid',
       tenantSmsEnabled: true,
-      allowProviderDryRun: true,
-    })).resolves.toEqual({
-      ok: false,
-      mode: 'dry_run',
-      error: 'network_error',
-    })
+    })).resolves.toEqual({ status: 'failed', reason: 'delivery_uncertain' })
     expect(JSON.stringify(mocks.warn.mock.calls)).not.toMatch(
       /46701234567|Din hemliga tid|secret-user|secret-pass/,
     )
@@ -448,14 +399,5 @@ describe('sendSms fysisk leveransgrind', () => {
       tenantSmsEnabled: true,
     })).resolves.toEqual({ status: 'skipped', reason: 'channel_disabled' })
     expect(mocks.rpc).not.toHaveBeenCalled()
-  })
-})
-
-describe('parseGuestPhone (legacy seam)', () => {
-  it('plockar telefonen ur gäst-noten utan att tolka fri text', () => {
-    expect(parseGuestPhone('Gäst: Anna <anna@mail.se> 070-123 45 67 — vill ha kort')).toBe(
-      '070-123 45 67',
-    )
-    expect(parseGuestPhone('Gäst: Anna <anna@mail.se>')).toBeNull()
   })
 })

@@ -8,8 +8,8 @@ import {
   removeTenantStaff,
   setStaffSchedule,
   setStaffServices,
-  type ActionState,
-} from '@/lib/platform/actions'
+} from '@/lib/platform/actions/people'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import { Icon } from '@/components/portal/ui'
 import styles from './platform.module.css'
 

@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig, moduleAdminState } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listBlogPosts } from '@/lib/admin/blogg/data'
 import { listMediaAssets } from '@/lib/admin/media/data'
 import { BloggAdmin } from '@/components/admin/BloggAdmin'
 import { Callout, PageHead } from '@/components/portal/ui'
-import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Blogg · Adminpanel' }
@@ -29,24 +28,18 @@ export default async function BloggPage() {
     )
   }
 
-  const [posts, assets] = await Promise.all([
-    listBlogPosts(tenant.id),
-    listMediaAssets(tenant.id),
-  ])
+  const [posts, assets] = await Promise.all([listBlogPosts(tenant.id), listMediaAssets(tenant.id)])
   const config = moduleAdminConfig(states, 'blogg')
   const layoutVariant = typeof config.layout === 'string' ? config.layout : null
-  const readOnly = false
 
   return (
     <section className="portal-section">
-      <ModuleWriteBoundary readOnly={readOnly}>
-        <BloggAdmin
-          posts={posts}
-          tenantName={tenant.name}
-          layoutVariant={layoutVariant}
-          assets={assets}
-        />
-      </ModuleWriteBoundary>
+      <BloggAdmin
+        posts={posts}
+        tenantName={tenant.name}
+        layoutVariant={layoutVariant}
+        assets={assets}
+      />
     </section>
   )
 }

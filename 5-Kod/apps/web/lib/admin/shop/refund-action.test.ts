@@ -4,7 +4,6 @@ const mocks = vi.hoisted(() => ({
   createClient: vi.fn(),
   dispatchPaymentRefundJobById: vi.fn(),
   moduleCtx: vi.fn(),
-  refundShopOrder: vi.fn(),
   revalidatePath: vi.fn(),
   revalidateTenant: vi.fn(),
 }))
@@ -13,7 +12,6 @@ vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.createClient }))
 vi.mock('@/lib/admin/module-ctx', () => ({ moduleCtx: mocks.moduleCtx }))
 vi.mock('@/lib/admin/tenant', () => ({ revalidateTenant: mocks.revalidateTenant }))
-vi.mock('@/lib/stripe/refund', () => ({ refundShopOrder: mocks.refundShopOrder }))
 vi.mock('@/lib/payments/refund-outbox', () => ({
   dispatchPaymentRefundJobById: mocks.dispatchPaymentRefundJobById,
 }))
@@ -23,7 +21,7 @@ vi.mock('@/lib/release/commerce', () => ({
 vi.mock('@/lib/payments/paypal', () => ({ paypalReady: () => false }))
 vi.mock('@/lib/notifications/shop', () => ({ sendOrderStatusEmail: vi.fn() }))
 
-import { refundShopOrderAction } from './actions'
+import { createShopProduct, refundShopOrderAction, updateShopProduct } from './actions'
 
 const tenantId = '123e4567-e89b-42d3-a456-426614174001'
 const orderId = '123e4567-e89b-42d3-a456-426614174002'
@@ -79,7 +77,6 @@ describe('durable webshop refund action', () => {
     expect(rpc).toHaveBeenNthCalledWith(2, 'shop_order_refund_statuses', {
       p_tenant: tenantId,
     })
-    expect(mocks.refundShopOrder).not.toHaveBeenCalled()
   })
 
   it('reports pending after an uncertain dispatch response and never claims completion', async () => {
@@ -118,5 +115,29 @@ describe('durable webshop refund action', () => {
     })
     expect(result.success).toBeUndefined()
     expect(mocks.dispatchPaymentRefundJobById).not.toHaveBeenCalled()
+  })
+})
+
+describe('webshop product writes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.moduleCtx.mockResolvedValue({
+      tenant: { id: tenantId, slug: 'webshop-test', name: 'Webshop test' },
+    })
+  })
+
+  it.each([
+    ['create', createShopProduct],
+    ['update', updateShopProduct],
+  ])('rejects invalid stock through the shared %s parser', async (_, action) => {
+    const fd = new FormData()
+    fd.set('id', 'product-1')
+    fd.set('name', 'Produkt')
+    fd.set('stock', '-1')
+
+    await expect(action({}, fd)).resolves.toEqual({
+      error: 'Lager måste vara 0 eller ett positivt heltal.',
+    })
+    expect(mocks.createClient).not.toHaveBeenCalled()
   })
 })

@@ -41,7 +41,6 @@ export default async function NotificationSettingsPage() {
           address=""
           contactEmail=""
           contactPhone=""
-          customerAccountsEnabled={false}
           notifications={{
             confirmation: values.notifications?.confirmation !== false,
             reminder: values.notifications?.reminder !== false,

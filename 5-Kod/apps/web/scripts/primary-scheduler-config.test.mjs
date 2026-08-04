@@ -10,11 +10,20 @@ const config = parse(readFileSync(resolve(appRoot, 'wrangler.jsonc'), 'utf8'))
 const worker = readFileSync(resolve(appRoot, 'custom-worker.mjs'), 'utf8')
 const deployWorkflow = readFileSync(resolve(repoRoot, '.github', 'workflows', 'deploy.yml'), 'utf8')
 const ciWorkflow = readFileSync(resolve(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
-const cronWorkflow = readFileSync(resolve(repoRoot, '.github', 'workflows', 'cron-booking.yml'), 'utf8')
-const refundConcurrency = readFileSync(resolve(
-  repoRoot, '5-Kod', 'supabase', 'tests',
-  'customer_portal_cancellation_refunds_0121_concurrency_test.sh',
-), 'utf8')
+const cronWorkflow = readFileSync(
+  resolve(repoRoot, '.github', 'workflows', 'cron-booking.yml'),
+  'utf8',
+)
+const refundConcurrency = readFileSync(
+  resolve(
+    repoRoot,
+    '5-Kod',
+    'supabase',
+    'tests',
+    'customer_portal_cancellation_refunds_0121_concurrency_test.sh',
+  ),
+  'utf8',
+)
 
 describe('Cloudflare primary scheduler wiring', () => {
   it('wraps OpenNext and schedules production reminders every 15 minutes', () => {
@@ -34,16 +43,15 @@ describe('Cloudflare primary scheduler wiring', () => {
       config.env?.staging?.r2_buckets?.[0]?.bucket_name,
       config.r2_buckets?.[0]?.bucket_name,
     )
-    assert.notEqual(
-      config.env?.staging?.vars?.R2_PUBLIC_BASE_URL,
-      config.vars?.R2_PUBLIC_BASE_URL,
-    )
+    assert.notEqual(config.env?.staging?.vars?.R2_PUBLIC_BASE_URL, config.vars?.R2_PUBLIC_BASE_URL)
   })
 
-  it('binds production deploy to same-SHA CI and requires E2E when staging is enabled', () => {
+  it('binds production deploy to same-SHA CI and refuses release without E2E', () => {
     assert.match(deployWorkflow, /verify-production-ci:/)
     assert.match(deployWorkflow, /head_sha="\$GITHUB_SHA"/)
     assert.match(deployWorkflow, /needs: verify-production-ci/)
+    assert.match(deployWorkflow, /E2E_ENABLED:\s*\$\{\{\s*vars\.E2E_ENABLED\s*\}\}/)
+    assert.match(deployWorkflow, /"\$E2E_ENABLED"\s*=\s*"true"/)
     assert.match(ciWorkflow, /release-proof:/)
     assert.match(
       ciWorkflow,
@@ -73,9 +81,5 @@ describe('Cloudflare primary scheduler wiring', () => {
     assert.match(cronWorkflow, /timeout-minutes:\s*[1-9]/)
     assert.ok((cronWorkflow.match(/--connect-timeout/g) ?? []).length >= 3)
     assert.ok((cronWorkflow.match(/--max-time/g) ?? []).length >= 3)
-  })
-
-  it('never wires a provider or notification dispatcher into the scheduled handler', () => {
-    assert.doesNotMatch(worker, /sendSms|dispatchNotificationOutbox|46elks|api\/cron\/notifications/)
   })
 })

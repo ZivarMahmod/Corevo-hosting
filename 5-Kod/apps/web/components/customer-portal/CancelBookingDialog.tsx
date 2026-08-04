@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { cancelPortalBookingAction } from '@/app/(customer-portal)/mina/actions'
+import { trapTab } from '@/components/portal/ui/focus'
+import { cancelPortalBookingAction } from '@/lib/customer-portal/server-actions'
 import { usePortalCancellationFeedback } from './PortalCancellationFeedback'
 
 type DialogState = 'closed' | 'confirm' | 'pending' | 'error' | 'policy_blocked' | 'closing'
@@ -54,49 +55,55 @@ export function PortalBookingCancellation({
   const closing = dialogState === 'closing'
   const locked = pending || closing
 
-  const finishClose = useCallback((reason: CloseReason) => {
-    closeTimerRef.current = null
-    closingRef.current = false
-    idempotencyKeyRef.current = null
-    setDialogState('closed')
+  const finishClose = useCallback(
+    (reason: CloseReason) => {
+      closeTimerRef.current = null
+      closingRef.current = false
+      idempotencyKeyRef.current = null
+      setDialogState('closed')
 
-    if (reason === 'success') {
-      setTerminalState('cancelled')
-      if (!feedback) {
-        document.getElementById('huvudinnehall')?.focus()
-        router.refresh()
+      if (reason === 'success') {
+        setTerminalState('cancelled')
+        if (!feedback) {
+          document.getElementById('huvudinnehall')?.focus()
+          router.refresh()
+        }
+        return
       }
-      return
-    }
-    if (reason === 'policy_blocked') {
-      setTerminalState('policy_blocked')
-      feedback?.focusPortalContent()
-      if (!feedback) document.getElementById('huvudinnehall')?.focus()
-      router.refresh()
-      return
-    }
-    triggerRef.current?.focus()
-  }, [feedback, router])
+      if (reason === 'policy_blocked') {
+        setTerminalState('policy_blocked')
+        feedback?.focusPortalContent()
+        if (!feedback) document.getElementById('huvudinnehall')?.focus()
+        router.refresh()
+        return
+      }
+      triggerRef.current?.focus()
+    },
+    [feedback, router],
+  )
 
-  const closeDialog = useCallback((
-    reason: CloseReason = 'dismissed',
-    durationOverride?: number,
-  ) => {
-    if (requestPendingRef.current || closingRef.current) return
-    closingRef.current = true
-    setDialogState('closing')
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
-    closeTimerRef.current = window.setTimeout(
-      () => finishClose(reason),
-      durationOverride ?? (reducedMotion ? 0 : EXIT_DURATION_MS),
-    )
-  }, [finishClose])
+  const closeDialog = useCallback(
+    (reason: CloseReason = 'dismissed', durationOverride?: number) => {
+      if (requestPendingRef.current || closingRef.current) return
+      closingRef.current = true
+      setDialogState('closing')
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+      closeTimerRef.current = window.setTimeout(
+        () => finishClose(reason),
+        durationOverride ?? (reducedMotion ? 0 : EXIT_DURATION_MS),
+      )
+    },
+    [finishClose],
+  )
 
   useEffect(() => setMounted(true), [])
 
-  useEffect(() => () => {
-    if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
-  }, [])
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     if (!dialogOpen) return
@@ -120,25 +127,8 @@ export function PortalBookingCancellation({
         closeDialog(dialogState === 'policy_blocked' ? 'policy_blocked' : 'dismissed')
         return
       }
-      if (event.key !== 'Tab') return
-
-      const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]):not([aria-disabled="true"]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
-      ) ?? [])]
-      if (focusable.length === 0) {
-        event.preventDefault()
-        return
-      }
-      const first = focusable[0]
-      const last = focusable.at(-1)
-      if (!first || !last) return
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
+      const dialog = dialogRef.current
+      if (dialog) trapTab(event, dialog)
     }
 
     document.addEventListener('keydown', onKeyDown)
@@ -180,104 +170,146 @@ export function PortalBookingCancellation({
     }
   }
 
-  const trigger = terminalState === 'none' ? (
-    <button
-      className="cp-btn cp-btn-danger cp-cancel-trigger"
-      type="button"
-      ref={triggerRef}
-      onClick={openDialog}
-      data-cancel-variant={variant}
-    >
-      {triggerLabel}
-    </button>
-  ) : null
-
-  const blocked = terminalState === 'policy_blocked' && variant === 'detail' ? (
-    <p className="cp-cancel-blocked" role="status">
-      {blockedContact.phone ? (
-        <>Den här bokningen kan inte längre avbokas online. Ring {tenantName} på{' '}
-          <a href={`tel:${blockedContact.phone}`}>{blockedContact.phone}</a>.</>
-      ) : (
-        <>Den här bokningen kan inte längre avbokas online. Kontakta {tenantName} via{' '}
-          <a href={blockedContact.website} rel="noopener">deras webbplats</a>.</>
-      )}
-    </p>
-  ) : null
-
-  const dialog = mounted && dialogOpen ? createPortal(
-    <div className="cp-cancel-layer" data-closing={closing ? 'true' : undefined}>
-      <div className="cp-cancel-scrim" aria-hidden="true" />
-      <div
-        className="cp-cancel-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="avboka-titel"
-        aria-describedby="avboka-brod"
-        ref={dialogRef}
+  const trigger =
+    terminalState === 'none' ? (
+      <button
+        className="cp-btn cp-btn-danger cp-cancel-trigger"
+        type="button"
+        ref={triggerRef}
+        onClick={openDialog}
+        data-cancel-variant={variant}
       >
-        <div className="cp-cancel-handle" aria-hidden="true" />
-        <button
-          className="cp-cancel-close"
-          type="button"
-          aria-label="Stäng"
-          aria-disabled={locked ? 'true' : undefined}
-          onClick={() => closeDialog(dialogState === 'policy_blocked' ? 'policy_blocked' : 'dismissed')}
-        >
-          <svg className="cp-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 3 10 10M13 3 3 13" /></svg>
-        </button>
-        <h2 id="avboka-titel">Avboka bokningen?</h2>
-        <p id="avboka-brod" className="cp-cancel-summary">
-          <span className="cp-mono">{bookingSummary}</span>
-          {policyText && <span className="cp-cancel-policy">{policyText}</span>}
-        </p>
+        {triggerLabel}
+      </button>
+    ) : null
 
-        {dialogState === 'error' && (
-          <p className="cp-cancel-error" role="alert">
-            <svg className="cp-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v4M8 11.5h.01" /></svg>
-            Avbokningen kunde inte genomföras. Din bokning är oförändrad.
-          </p>
+  const blocked =
+    terminalState === 'policy_blocked' && variant === 'detail' ? (
+      <p className="cp-cancel-blocked" role="status">
+        {blockedContact.phone ? (
+          <>
+            Den här bokningen kan inte längre avbokas online. Ring {tenantName} på{' '}
+            <a href={`tel:${blockedContact.phone}`}>{blockedContact.phone}</a>.
+          </>
+        ) : (
+          <>
+            Den här bokningen kan inte längre avbokas online. Kontakta {tenantName} via{' '}
+            <a href={blockedContact.website} rel="noopener">
+              deras webbplats
+            </a>
+            .
+          </>
         )}
-        {dialogState === 'policy_blocked' && (
-          <p className="cp-cancel-error" role="alert">
-            <svg className="cp-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v4M8 11.5h.01" /></svg>
-            Bokningen kan inte längre avbokas online. Din bokning är oförändrad.
-          </p>
-        )}
+      </p>
+    ) : null
 
-        <div className="cp-cancel-actions">
-          {dialogState === 'policy_blocked' ? (
-            <button className="cp-btn" type="button" onClick={() => closeDialog('policy_blocked')}>Stäng</button>
-          ) : dialogState === 'error' ? (
-            <>
-              <button className="cp-btn" type="button" onClick={() => closeDialog()}>Behåll bokningen</button>
-              <button className="cp-btn cp-btn-danger" type="button" onClick={submitCancellation}>Försök igen</button>
-            </>
-          ) : (
-            <>
+  const dialog =
+    mounted && dialogOpen
+      ? createPortal(
+          <div className="cp-cancel-layer" data-closing={closing ? 'true' : undefined}>
+            <div className="cp-cancel-scrim" aria-hidden="true" />
+            <div
+              className="cp-cancel-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="avboka-titel"
+              aria-describedby="avboka-brod"
+              ref={dialogRef}
+            >
+              <div className="cp-cancel-handle" aria-hidden="true" />
               <button
-                className="cp-btn"
+                className="cp-cancel-close"
                 type="button"
-                ref={keepRef}
+                aria-label="Stäng"
                 aria-disabled={locked ? 'true' : undefined}
-                onClick={() => closeDialog()}
+                onClick={() =>
+                  closeDialog(dialogState === 'policy_blocked' ? 'policy_blocked' : 'dismissed')
+                }
               >
-                Behåll bokningen
+                <svg className="cp-icon" viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="m3 3 10 10M13 3 3 13" />
+                </svg>
               </button>
-              <button
-                className="cp-btn cp-btn-danger"
-                type="button"
-                aria-disabled={locked ? 'true' : undefined}
-                onClick={submitCancellation}
-              >
-                {pending ? 'Avbokar…' : 'Ja, avboka'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body,
-  ) : null
+              <h2 id="avboka-titel">Avboka bokningen?</h2>
+              <p id="avboka-brod" className="cp-cancel-summary">
+                <span className="cp-mono">{bookingSummary}</span>
+                {policyText && <span className="cp-cancel-policy">{policyText}</span>}
+              </p>
 
-  return <>{trigger}{blocked}{dialog}</>
+              {dialogState === 'error' && (
+                <p className="cp-cancel-error" role="alert">
+                  <svg className="cp-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4.5v4M8 11.5h.01" />
+                  </svg>
+                  Avbokningen kunde inte genomföras. Din bokning är oförändrad.
+                </p>
+              )}
+              {dialogState === 'policy_blocked' && (
+                <p className="cp-cancel-error" role="alert">
+                  <svg className="cp-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4.5v4M8 11.5h.01" />
+                  </svg>
+                  Bokningen kan inte längre avbokas online. Din bokning är oförändrad.
+                </p>
+              )}
+
+              <div className="cp-cancel-actions">
+                {dialogState === 'policy_blocked' ? (
+                  <button
+                    className="cp-btn"
+                    type="button"
+                    onClick={() => closeDialog('policy_blocked')}
+                  >
+                    Stäng
+                  </button>
+                ) : dialogState === 'error' ? (
+                  <>
+                    <button className="cp-btn" type="button" onClick={() => closeDialog()}>
+                      Behåll bokningen
+                    </button>
+                    <button
+                      className="cp-btn cp-btn-danger"
+                      type="button"
+                      onClick={submitCancellation}
+                    >
+                      Försök igen
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="cp-btn"
+                      type="button"
+                      ref={keepRef}
+                      aria-disabled={locked ? 'true' : undefined}
+                      onClick={() => closeDialog()}
+                    >
+                      Behåll bokningen
+                    </button>
+                    <button
+                      className="cp-btn cp-btn-danger"
+                      type="button"
+                      aria-disabled={locked ? 'true' : undefined}
+                      onClick={submitCancellation}
+                    >
+                      {pending ? 'Avbokar…' : 'Ja, avboka'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null
+
+  return (
+    <>
+      {trigger}
+      {blocked}
+      {dialog}
+    </>
+  )
 }

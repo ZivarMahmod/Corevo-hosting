@@ -1,9 +1,6 @@
 // Admin-presentkort (gift card) types + pure helpers. PURE module: no 'server-only',
 // no 'use server'. Safe to import from client components and server loaders/actions
-// alike. Mirrors lib/admin/shop/types.ts — the only import is a type-only BadgeTone
-// (type imports are erased at compile time, so this stays a zero-runtime-dep file).
-
-import type { BadgeTone } from '@/components/portal/ui'
+// alike. Mirrors lib/admin/shop/types.ts and has no UI dependency.
 
 export type GiftCardStatus = 'active' | 'redeemed' | 'expired' | 'void'
 
@@ -51,21 +48,8 @@ export function giftEntryLabel(entryType: string): string {
   }
 }
 
-/**
- * Format a minor-unit amount (e.g. 50000) as a Swedish-formatted string.
- * Same shape as formatCents in lib/admin/shop/types.ts (SEK → "kr" suffix;
- * otherwise ISO code suffix). Kept as a separate copy so this module stays pure.
- */
-export function formatGiftAmount(cents: number, currency = 'SEK'): string {
-  const major = (cents / 100).toLocaleString('sv-SE', {
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  })
-  return currency === 'SEK' ? `${major} kr` : `${major} ${currency}`
-}
-
 /** Gift-card status → Badge tone (matches shop's status→tone convention). */
-export function giftStatusTone(status: GiftCardStatus): BadgeTone {
+export function giftStatusTone(status: GiftCardStatus) {
   switch (status) {
     case 'active':
       return 'success'
@@ -118,26 +102,4 @@ export function kronorToCents(kr: number): number {
  */
 export function giftCardVoidable(status: GiftCardStatus): boolean {
   return status === 'active'
-}
-
-/**
- * Får kortet lösas in? ETT MAKULERAT KORT FÅR ALDRIG LÖSAS IN — det är hela
- * poängen med makulering: ett felutfärdat värdebevis är en pengaskuld, och
- * spärren måste gälla på inlösen-vägen, inte bara i listan.
- *
- * Reglerna, i ordning: status måste vara 'active' ('void' | 'redeemed' | 'expired'
- * är alla obrukbara), saldot måste vara > 0, och giltighetstiden får inte ha
- * passerat.
- *
- * Databaskommandot är den auktoritativa vakten. Predikatet används endast för
- * visning och lokala rena tester.
- */
-export function giftCardRedeemable(
-  card: Pick<GiftCardRow, 'status' | 'balanceCents' | 'expiresAt'>,
-  now: Date = new Date(),
-): boolean {
-  if (card.status !== 'active') return false // 'void' fastnar här — makulerat = obrukbart
-  if (!(card.balanceCents > 0)) return false
-  if (card.expiresAt && new Date(card.expiresAt).getTime() < now.getTime()) return false
-  return true
 }

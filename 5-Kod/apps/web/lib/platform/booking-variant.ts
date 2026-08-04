@@ -5,7 +5,7 @@
 //   tenant_settings.settings.booking.variant
 // as one of the FOUR design ids: 'wizard' | 'compact' | 'drawer' | 'inline'.
 // M3/storefront reads it directly from the raw `settings` jsonb (the same raw-read
-// seam getGoogleReviewUrl uses), NOT from the frozen parseSettings()/getTenantBySlug
+// raw settings seam), not from getTenantBySlug.
 // bundle. Use `readBookingVariant(settings)` / `readBookingMode(settings)` below so
 // the parse + default + legacy-mapping live in ONE place that M3 imports — keep the
 // storage key in sync everywhere.
@@ -24,6 +24,8 @@
 //                      "Boka tid"-CTA:erna scrollar dit. Alla fyra renderar numera
 //                      DISTINKT (Zivar: "det ska finnas olika att välja mellan och de
 //                      ska funka") — presentationen styrs i BookingProvider/layout.
+
+import { resolveCustomerPortalCapabilities } from '@/lib/customer-portal/mode'
 
 export const BOOKING_VARIANTS = ['wizard', 'compact', 'drawer', 'inline'] as const
 export type BookingVariant = (typeof BOOKING_VARIANTS)[number]
@@ -142,4 +144,12 @@ export function isBookingVerificationMode(value: unknown): value is BookingVerif
 export function readBookingVerificationMode(settings: unknown): BookingVerificationMode {
   const value = readBookingPref(settings, 'verificationMode')
   return isBookingVerificationMode(value) ? value : DEFAULT_BOOKING_VERIFICATION_MODE
+}
+
+export function readActiveBookingVerificationMode(
+  settings: unknown,
+): BookingVerificationMode | null {
+  return resolveCustomerPortalCapabilities(settings).passwordless
+    ? readBookingVerificationMode(settings)
+    : null
 }

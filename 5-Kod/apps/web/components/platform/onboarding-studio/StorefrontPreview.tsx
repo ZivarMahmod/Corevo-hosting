@@ -15,15 +15,14 @@
 
 import type { CSSProperties } from 'react'
 import { injectTenantTokens } from '@corevo/ui'
-import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
-import type { StorefrontLayoutProps } from '@/components/storefront/layouts'
-import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
+import { STOREFRONT_LAYOUTS, themeChrome } from '@/components/storefront/layouts/runtime'
+import type { StorefrontLayoutProps } from '@/components/storefront/layouts/types'
 import { Nav } from '@/components/brand/Nav'
 import { NavShell } from '@/components/brand/NavShell'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import type { StorefrontTheme, Service } from '@/lib/tenant-data'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { krToOre } from '@/lib/platform/onboarding-studio/services'
@@ -45,7 +44,9 @@ export function StorefrontPreview({
 }) {
   // CLIENT-SAFE theme guard: cfg.theme is typed `string`; an unknown key (e.g. the
   // design's "Bohem", which has no real layout) → fall back to the default, never crash.
-  const theme: StorefrontTheme = (cfg.theme in STOREFRONT_LAYOUTS ? cfg.theme : DEFAULT_THEME) as StorefrontTheme
+  const theme: StorefrontTheme = (
+    cfg.theme in STOREFRONT_LAYOUTS ? cfg.theme : DEFAULT_THEME
+  ) as StorefrontTheme
   const Layout = STOREFRONT_LAYOUTS[theme]
 
   // Pure, no-I/O content resolve. branding=null (accent never flows through content —
@@ -57,7 +58,11 @@ export function StorefrontPreview({
     ...(cfg.heroLede.trim() ? { heroLede: cfg.heroLede } : {}),
     ...(cfg.tagline.trim() ? { tagline: cfg.tagline } : {}),
   }
-  const content = resolveThemeContent(theme, null, Object.keys(copyOverride).length ? copyOverride : null)
+  const content = resolveThemeContent(
+    theme,
+    null,
+    Object.keys(copyOverride).length ? copyOverride : null,
+  )
 
   // goal-60: mallens EGNA sidhuvud/sidfot (tema-paketen, goal-59). Utan chrome-nyckel
   // → undefined → attrapperna nedan, byte-identiskt med förr.
@@ -113,7 +118,11 @@ export function StorefrontPreview({
     }))
 
   const props: StorefrontLayoutProps = {
-    tenant: { id: '', name: cfg.name || studioPlaceholderName(branchName), slug: cfg.slug || studioPlaceholderSlug(branchName) },
+    tenant: {
+      id: '',
+      name: cfg.name || studioPlaceholderName(branchName),
+      slug: cfg.slug || studioPlaceholderSlug(branchName),
+    },
     theme,
     content,
     services: previewServices, // unsaved cfg → live preview of the typed services (empty → honest empty-state)

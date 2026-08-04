@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
@@ -27,23 +28,15 @@ import styles from './blomstertorget.module.css'
  * stängt stånd). SYNKRONA server-komponenter — ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
-}
-
 /* ═════════════════════════════════ TORGPRISER ═════════════════════════════ */
 
-export function BlomstertorgetShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function BlomstertorgetShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   return (
     <section className={styles.btShop} data-module="shop" data-fulfilment={config.fulfilment}>
@@ -51,12 +44,6 @@ export function BlomstertorgetShop({ data, paused, limit, moreHref, content }: T
       <p className={styles.btLede}>
         Satta 06:45 i morse. Beställ här eller kom till ståndet — samma pris, ingen skillnad.
       </p>
-
-      {paused ? (
-        <p role="status" className={styles.btNotice}>
-          Ståndet är stängt för beställningar just nu — priserna står kvar, korgen är låst.
-        </p>
-      ) : null}
 
       {products.length === 0 ? (
         <p className={styles.btEmpty}>Inga varor är noterade i dagens tidning.</p>
@@ -70,7 +57,7 @@ export function BlomstertorgetShop({ data, paused, limit, moreHref, content }: T
                 aria-label={`${p.name} — visa varan`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.btSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <div>
                 <p className={styles.btPriceName}>
@@ -83,7 +70,7 @@ export function BlomstertorgetShop({ data, paused, limit, moreHref, content }: T
               </div>
               {/* formatProductPrice → "fr. X kr" när varan bär price_from. */}
               <p className={styles.btPriceTal}>{formatProductPrice(p)}</p>
-              {paused ? <span /> : <AddToCart product={p} fulfilment={config.fulfilment} />}
+              <AddToCart product={p} fulfilment={config.fulfilment} />
             </li>
           ))}
         </ul>
@@ -104,7 +91,12 @@ export function BlomstertorgetShop({ data, paused, limit, moreHref, content }: T
 
 /* ═══════════════════════════════════ NOTISER ══════════════════════════════ */
 
-export function BlomstertorgetBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBloggViewProps) {
+export function BlomstertorgetBlogg({
+  posts: allPosts,
+  limit,
+  moreHref,
+  content,
+}: ThemeBloggViewProps) {
   const teaser = typeof limit === 'number'
   const posts = teaser ? allPosts.slice(0, limit) : allPosts
 
@@ -120,7 +112,7 @@ export function BlomstertorgetBlogg({ posts: allPosts, limit, moreHref, content 
       ) : (
         <ul className={styles.btBloggList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggShortDate(p.publishedAt)
             return (
               <li key={p.id} className={styles.btPost}>
                 <article>
@@ -185,9 +177,7 @@ export function BlomstertorgetGalleri({ items, content }: ThemeGalleriViewProps)
                   style={{ backgroundImage: `url(${g.imageUrl})` }}
                 />
               ) : null}
-              {g.caption ? (
-                <figcaption className={styles.btGalCap}>{g.caption}</figcaption>
-              ) : null}
+              {g.caption ? <figcaption className={styles.btGalCap}>{g.caption}</figcaption> : null}
             </figure>
           ))}
         </div>
@@ -243,9 +233,7 @@ export function BlomstertorgetLojalitet({ config, plans, content }: ThemeLojalit
                 className={styles.btCouponRow}
                 data-featured={p.featured ? 'true' : undefined}
               >
-                <span className={styles.btParagraf}>
-                  {formatPlanPrice(p.priceCents)}
-                </span>
+                <span className={styles.btParagraf}>{formatPlanPrice(p.priceCents)}</span>
                 <p>
                   <strong>{p.name}</strong> — {loyaltyIntervalLabel(p.interval)}
                   {p.perks.length > 0 ? ` · ${p.perks.join(' · ')}` : ''}

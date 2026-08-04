@@ -92,3 +92,79 @@ begin
   end if;
 end $$;
 SQL
+
+# A mode cutover must fail immediately while an active credential row is in
+# use. It may be retried after the writer commits, but must never wait while
+# holding tenant_settings and form a cross-table deadlock.
+docker exec -i "$db_container" psql -qAtX -v ON_ERROR_STOP=1 -U postgres -d postgres > "$tmp_dir/mode-holder" <<'SQL' &
+begin;
+set local application_name = 'portal-mode-flow-holder';
+select public_id
+from private.customer_portal_contact_change_flows
+where tenant_id = 'c1240000-0000-4000-8000-000000000001'
+  and completed_at is null
+  and revoked_at is null
+limit 1
+for update;
+select pg_sleep(5);
+commit;
+SQL
+mode_holder_pid=$!
+
+holder_ready=0
+for _ in $(seq 1 40); do
+  holder_ready="$(docker exec -i "$db_container" psql -qAtX -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
+select count(*)
+from pg_stat_activity
+where application_name = 'portal-mode-flow-holder'
+  and wait_event = 'PgSleep';
+SQL
+)"
+  [ "$holder_ready" = "1" ] && break
+  sleep 0.1
+done
+if [ "$holder_ready" != "1" ]; then
+  wait "$mode_holder_pid" || true
+  cat "$tmp_dir/mode-holder" >&2
+  exit 1
+fi
+
+if docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
+  > "$tmp_dir/mode-cutover" 2>&1 <<'SQL'
+\set VERBOSITY verbose
+select * from public.set_customer_portal_mode(
+  'c1240000-0000-4000-8000-000000000001', 'off'
+);
+SQL
+then
+  echo 'mode cutover waited for an active credential instead of failing closed' >&2
+  wait "$mode_holder_pid" || true
+  exit 1
+fi
+grep -q '55P03' "$tmp_dir/mode-cutover"
+wait "$mode_holder_pid"
+
+docker exec -i "$db_container" psql -qAtX -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
+select mode
+from public.set_customer_portal_mode(
+  'c1240000-0000-4000-8000-000000000001', 'off'
+);
+do $$
+begin
+  if (select settings #>> '{customer_portal,mode}'
+      from public.tenant_settings
+      where tenant_id = 'c1240000-0000-4000-8000-000000000001') <> 'off'
+     or exists (select 1 from private.customer_portal_sessions
+                where tenant_id = 'c1240000-0000-4000-8000-000000000001'
+                  and revoked_at is null)
+     or exists (select 1 from private.customer_portal_verified_contacts
+                where tenant_id = 'c1240000-0000-4000-8000-000000000001'
+                  and revoked_at is null)
+     or exists (select 1 from private.customer_portal_contact_change_flows
+                where tenant_id = 'c1240000-0000-4000-8000-000000000001'
+                  and completed_at is null
+                  and (revoked_at is null or new_destination is not null)) then
+    raise exception 'customer_portal_mode_cutover_invalid';
+  end if;
+end $$;
+SQL

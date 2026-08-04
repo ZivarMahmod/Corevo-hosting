@@ -30,11 +30,12 @@ describe('primary booking scheduler', () => {
       now: () => new Date('2026-07-18T10:00:00Z'),
     })
 
-    assert.equal(appRequests.length, 4)
+    assert.equal(appRequests.length, 5)
     assert.equal(new URL(appRequests[0].url).pathname, '/api/cron/pending-expiry')
     assert.equal(new URL(appRequests[1].url).pathname, '/api/cron/reminders')
-    assert.equal(new URL(appRequests[2].url).pathname, '/api/cron/payment-refunds')
-    assert.equal(new URL(appRequests[3].url).pathname, '/api/cron/media-cleanup')
+    assert.equal(new URL(appRequests[2].url).pathname, '/api/cron/notifications')
+    assert.equal(new URL(appRequests[3].url).pathname, '/api/cron/payment-refunds')
+    assert.equal(new URL(appRequests[4].url).pathname, '/api/cron/media-cleanup')
     for (const request of appRequests) {
       assert.equal(request.method, 'POST')
       assert.equal(request.headers.get('authorization'), 'Bearer cron-secret')
@@ -66,6 +67,7 @@ describe('primary booking scheduler', () => {
     assert.deepEqual(paths, [
       '/api/cron/pending-expiry',
       '/api/cron/reminders',
+      '/api/cron/notifications',
       '/api/cron/payment-refunds',
       '/api/cron/media-cleanup',
     ])
@@ -85,6 +87,7 @@ describe('primary booking scheduler', () => {
     assert.deepEqual(paths, [
       '/api/cron/pending-expiry',
       '/api/cron/reminders',
+      '/api/cron/notifications',
       '/api/cron/payment-refunds',
       '/api/cron/media-cleanup',
     ])

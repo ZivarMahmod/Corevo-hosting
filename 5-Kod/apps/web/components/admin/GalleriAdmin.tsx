@@ -250,13 +250,11 @@ export function GalleriAdmin({
   assets,
   tenantName,
   previewHref,
-  readOnly = false,
 }: {
   items: GalleryAdminRow[]
   assets: MediaAssetRow[]
   tenantName: string
   previewHref: string
-  readOnly?: boolean
 }) {
   const router = useRouter()
   const { notify } = useToast()
@@ -265,7 +263,7 @@ export function GalleriAdmin({
 
   function move(index: number, step: -1 | 1) {
     const target = index + step
-    if (readOnly || target < 0 || target >= items.length) return
+    if (target < 0 || target >= items.length) return
     const ordered = [...items]
     ;[ordered[index], ordered[target]] = [ordered[target]!, ordered[index]!]
     const fd = new FormData()
@@ -293,18 +291,12 @@ export function GalleriAdmin({
         <Button
           variant="primary"
           icon="plus"
-          disabled={readOnly || assets.length === 0}
+          disabled={assets.length === 0}
           onClick={() => setDrawerItem('new')}
         >
           Lägg till bild
         </Button>
       </PageHead>
-
-      {readOnly ? (
-        <Callout tone="info" icon="info">
-          Galleriet är pausat. Innehållet visas som skrivskyddat tills modulen är aktiv igen.
-        </Callout>
-      ) : null}
 
       {assets.length === 0 ? (
         <Callout tone="info" icon="upload">
@@ -349,7 +341,7 @@ export function GalleriAdmin({
                     variant="ghost"
                     size="sm"
                     type="button"
-                    disabled={readOnly || moving || index === 0}
+                    disabled={moving || index === 0}
                     onClick={() => move(index, -1)}
                     style={{ minHeight: 44 }}
                   >
@@ -359,28 +351,26 @@ export function GalleriAdmin({
                     variant="ghost"
                     size="sm"
                     type="button"
-                    disabled={readOnly || moving || index === items.length - 1}
+                    disabled={moving || index === items.length - 1}
                     onClick={() => move(index, 1)}
                     style={{ minHeight: 44 }}
                   >
                     Flytta ned
                   </Button>
                 </div>
-                {!readOnly ? (
-                  <div className={styles.rowActions}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      icon="edit"
-                      onClick={() => setDrawerItem(item)}
-                      style={{ minHeight: 44 }}
-                    >
-                      Redigera
-                    </Button>
-                    <DeleteGalleryButton item={item} />
-                  </div>
-                ) : null}
+                <div className={styles.rowActions}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    icon="edit"
+                    onClick={() => setDrawerItem(item)}
+                    style={{ minHeight: 44 }}
+                  >
+                    Redigera
+                  </Button>
+                  <DeleteGalleryButton item={item} />
+                </div>
               </div>
             </li>
           ))}

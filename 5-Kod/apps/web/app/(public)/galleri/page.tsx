@@ -5,9 +5,9 @@ import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { GalleriSection } from '@/components/storefront/galleri/GalleriSection'
 import { pageMetadata } from '@/components/storefront/seo'
 import { loadGalleriData } from '@/lib/storefront/galleri/load-galleri'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,14 +15,7 @@ export function generateMetadata(): Promise<Metadata> {
   return pageMetadata('galleri')
 }
 
-/**
- * Galleriets EGEN sida (goal-64). Alla 12 Claude Design-paket har `/galleri` i sitt
- * manifest — Ateljé Vinters nav länkade redan dit, och sidan fanns inte (404).
- *
- * MODUL-GATEN ÄR HELIG: galleri är en EGEN modul (0057), och en modul som inte är
- * live/paused ger NOLL sida. Layoutens nav-länk är gatad på samma villkor, så en
- * avstängd modul aldrig kan lämna en länk som pekar i tomma luften.
- */
+/** Gallery route; unavailable while the module is off. */
 export default async function GalleriPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
@@ -34,14 +27,10 @@ export default async function GalleriPage() {
   const View = themeModuleViews(settings.theme).galleri
   if (View) {
     const data = await loadGalleriData(tenant.id, tenant.slug)
-    const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+    const copy = await getTenantCopy(bundle)
     const content = resolveThemeContent(settings.theme, settings.branding, copy)
-    return (
-      <>
-        <View items={data?.items ?? []} content={content} tenantName={tenant.name} />
-      </>
-    )
+    return <View items={data?.items ?? []} content={content} tenantName={tenant.name} />
   }
 
-  return <GalleriSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
+  return <GalleriSection tenantId={tenant.id} slug={tenant.slug} pageHero />
 }

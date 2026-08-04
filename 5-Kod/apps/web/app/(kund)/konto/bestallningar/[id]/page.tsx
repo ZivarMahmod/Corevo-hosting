@@ -4,24 +4,16 @@ import { notFound } from 'next/navigation'
 import { requirePortal } from '@/lib/auth/session'
 import { getCustomerId } from '@/lib/kund/customer'
 import { getMyOrder } from '@/lib/kund/shop-orders'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import {
+  PUBLIC_ORDER_STATUS_LABELS,
+  SHOP_FULFILMENT_LABELS,
+  formatShopPrice,
+  type ShopFulfilment,
+} from '@/lib/storefront/shop/types'
 import styles from '@/components/kund/kund.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Beställning' }
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Mottagen',
-  confirmed: 'Bekräftad',
-  ready: 'Klar att hämta',
-  completed: 'Slutförd',
-  cancelled: 'Avbruten',
-}
-const FULFILMENT_LABEL: Record<string, string> = {
-  ship: 'Posta hem',
-  pickup_within_days: 'Hämta i butik',
-  order_in_then_pickup: 'Beställ hem till butik',
-}
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -40,11 +32,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <div className={styles.detail}>
         <div className={styles.detailRow}>
           <span className={styles.detailLabel}>Status</span>
-          <span>{STATUS_LABEL[order.status] ?? order.status}</span>
+          <span>{PUBLIC_ORDER_STATUS_LABELS[order.status] ?? order.status}</span>
         </div>
         <div className={styles.detailRow}>
           <span className={styles.detailLabel}>Leverans</span>
-          <span>{FULFILMENT_LABEL[order.fulfilment] ?? order.fulfilment}</span>
+          <span>
+            {SHOP_FULFILMENT_LABELS[order.fulfilment as ShopFulfilment] ?? order.fulfilment}
+          </span>
         </div>
         {order.items.map((it, i) => (
           <div key={i} className={styles.detailRow}>

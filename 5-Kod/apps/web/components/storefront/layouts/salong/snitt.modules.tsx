@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice, shopCategoryChips } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
@@ -27,23 +28,15 @@ import styles from './snitt.module.css'
  * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
-}
-
 /* ══════════════════════════════════ HYLLAN ════════════════════════════════════ */
 
-export function SnittShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function SnittShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   // Filens ord för det ofiltrerade urvalet är "Allt". Filterraden hör till butikssidan, inte teasern.
   const chips = teaser ? [] : shopCategoryChips(data, 'Allt')
@@ -55,7 +48,9 @@ export function SnittShop({ data, paused, limit, moreHref, content }: ThemeShopV
       </p>
       <h1 className={styles.snPageTitle}>
         {content.shopTitle ?? 'Hyllan'}
-        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>
+          .
+        </span>
       </h1>
       <p className={styles.snPageLede}>
         Det vi jobbar med vid stolarna. Inget vi inte själva har hemma.
@@ -80,12 +75,6 @@ export function SnittShop({ data, paused, limit, moreHref, content }: ThemeShopV
         </div>
       ) : null}
 
-      {paused ? (
-        <p role="status" className={styles.snNotice}>
-          Hyllan är tillfälligt stängd för beställningar. Vi öppnar igen snart.
-        </p>
-      ) : null}
-
       {products.length === 0 ? (
         <p className={styles.snEmpty}>
           {data.activeCategory
@@ -102,7 +91,7 @@ export function SnittShop({ data, paused, limit, moreHref, content }: ThemeShopV
                 aria-label={`${p.name} — visa produkten`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.snSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <div className={styles.snCardBody}>
                 <div className={styles.snShopHead}>
@@ -113,8 +102,7 @@ export function SnittShop({ data, paused, limit, moreHref, content }: ThemeShopV
                   <span className={styles.snShopPrice}>{formatProductPrice(p)}</span>
                 </div>
                 {p.description ? <p className={styles.snShopDesc}>{p.description}</p> : null}
-                {/* Pausad butik → NOLL köpknappar. Katalogen är läsbar, kassan är stängd. */}
-                {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} />}
+                <AddToCart product={p} fulfilment={config.fulfilment} />
               </div>
             </li>
           ))}
@@ -147,7 +135,9 @@ export function SnittBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
       </p>
       <h1 className={styles.snPageTitleAlone}>
         {content.blogTitle ?? 'Journal'}
-        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>
+          .
+        </span>
       </h1>
 
       {posts.length === 0 ? (
@@ -155,7 +145,7 @@ export function SnittBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
       ) : (
         <ul className={styles.snPostList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggShortDate(p.publishedAt)
             return (
               <li key={p.id}>
                 <a href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.snPost}>
@@ -213,7 +203,9 @@ export function SnittTeam({ members, content }: ThemeTeamViewProps) {
       </p>
       <h1 className={styles.snPageTitle}>
         {content.teamTitle}
-        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>
+          .
+        </span>
       </h1>
       <div className={styles.snTeamGrid}>
         {members.map((m) => (
@@ -261,7 +253,9 @@ export function SnittGalleri({ items, content }: ThemeGalleriViewProps) {
       </p>
       <h1 className={styles.snPageTitle}>
         {content.galleryTitle ?? 'Galleri'}
-        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>
+          .
+        </span>
       </h1>
 
       {items.length === 0 ? (
@@ -313,7 +307,9 @@ export function SnittLojalitet({ config, plans, content, tenantName }: ThemeLoja
       </p>
       <h1 className={styles.snPageTitle}>
         {title}
-        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>
+          .
+        </span>
       </h1>
       <p className={styles.snClubLede}>
         {content.clubLede ??
@@ -328,10 +324,14 @@ export function SnittLojalitet({ config, plans, content, tenantName }: ThemeLoja
             </p>
           </div>
           <p className={styles.snCardBig}>Stamkort</p>
-          <p className={styles.snCardSub}
+          <p
+            className={styles.snCardSub}
             data-corevo-editor-field="clubNote"
             data-corevo-editor-stable-field="clubNote"
-            hidden={!content.clubNote}>{content.clubNote ?? ''}</p>
+            hidden={!content.clubNote}
+          >
+            {content.clubNote ?? ''}
+          </p>
         </div>
 
         <div>
@@ -343,7 +343,11 @@ export function SnittLojalitet({ config, plans, content, tenantName }: ThemeLoja
           ))}
 
           {plans.map((p) => (
-            <div key={p.id} className={styles.snPerkRow} data-featured={p.featured ? 'true' : undefined}>
+            <div
+              key={p.id}
+              className={styles.snPerkRow}
+              data-featured={p.featured ? 'true' : undefined}
+            >
               <span className={styles.snPerkNo}>{formatPlanPrice(p.priceCents)}</span>
               <p>
                 <strong>{p.name}</strong> — {loyaltyIntervalLabel(p.interval)}

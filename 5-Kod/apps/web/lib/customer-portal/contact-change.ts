@@ -10,6 +10,7 @@ import {
 } from '@/lib/booking/verification'
 import { sendEmail } from '@/lib/notifications/email'
 import { sendGiadaMessage } from '@/lib/notifications/giada'
+import { esc } from '@/lib/notifications/templates'
 import { createServiceClient } from '@/lib/platform/service'
 import {
   CUSTOMER_PORTAL_KEY_VERSION,
@@ -143,11 +144,6 @@ async function flowAccess(): Promise<{
   }
 }
 
-function escapeHtml(value: string): string {
-  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;').replaceAll("'", '&#39;')
-}
-
 async function deliverPin(input: {
   channel: BookingVerificationChannel
   destination: string
@@ -171,7 +167,7 @@ async function deliverPin(input: {
   const result = await sendEmail({
     to: input.destination,
     subject: `Din kod hos ${tenantName}`,
-    html: `<p>Din verifieringskod hos ${escapeHtml(tenantName)} är:</p>`
+    html: `<p>Din verifieringskod hos ${esc(tenantName)} är:</p>`
       + `<p style="font-size:28px;font-weight:700;letter-spacing:6px">${input.pin}</p>`
       + '<p>Koden gäller i 5 minuter.</p>',
   })

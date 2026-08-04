@@ -3,7 +3,6 @@ import { revalidateTag } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { CurrentUser } from '@/lib/auth/session'
 import { cleanTerminology, type Terminology } from '@/lib/platform/verticals-shared'
-import { tenantStorefrontAppUrl } from '@/lib/storefront-url'
 
 export type AdminTenant = {
   id: string
@@ -155,17 +154,4 @@ export async function revalidateTenantById(
 ): Promise<void> {
   const { data } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (data?.slug) revalidateTenant(data.slug)
-}
-
-/**
- * Absolute URL of a tenant's storefront, e.g. `https://demo.boka.corevo.se`.
- * The back-office lives on `booking.corevo.se`, so we build the storefront origin
- * from the tenant slug + the configured root domain (NEXT_PUBLIC_ROOT_DOMAIN).
- * On localhost there is no wildcard subdomain, so we fall back to `?tenant=<slug>`
- * which the middleware already understands (lib/tenant.ts). Used by the "Se din
- * sida"-links (dashboard + branding) and the branding preview button.
- */
-export function storefrontUrl(slug: string): string {
-  const root = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').trim()
-  return tenantStorefrontAppUrl(slug, null, root) ?? '#'
 }

@@ -2,6 +2,7 @@ const SCHEDULER_NAME = 'cloudflare-reminders-primary'
 const ROUTE_URLS = [
   'https://booking.corevo.se/api/cron/pending-expiry',
   'https://booking.corevo.se/api/cron/reminders',
+  'https://booking.corevo.se/api/cron/notifications',
   'https://booking.corevo.se/api/cron/payment-refunds',
   'https://booking.corevo.se/api/cron/media-cleanup',
 ]

@@ -4,37 +4,83 @@ import { expect, type Page } from '@playwright/test'
 // upp och rivs av apps/web/scripts/e2e-db.mjs (seed → kör → teardown → verify).
 //
 // LÖSENORDET ÄR ALDRIG HÅRDKODAT. Fixturen innehåller en super_admin, och sviten kör
-// endast mot det guardade previewprojektet. Ett känt lösenord på ett
+// endast mot det guardade stagingprojektet. Ett känt lösenord på ett
 // super_admin-konto vore ändå oförsvarligt, även i tio minuter.
-// `e2e-db.mjs seed` slumpar ett engångslösenord och
-// skickar det vidare via E2E_PASSWORD. Saknas variabeln finns ingen fixtur att logga
-// in på — då ska sviten falla direkt, inte gissa.
-const password = process.env.E2E_PASSWORD
-if (!password) {
-  throw new Error(
-    'E2E_PASSWORD saknas. Kör `node apps/web/scripts/e2e-db.mjs seed` och exportera värdet den skriver ut.',
-  )
-}
+// Anroparen genererar ett engångslösenord och skickar det till både seed och
+// Playwright via E2E_PASSWORD. Kräv det först när ett inloggningsflöde använder fixturen;
+// publika read-only-tester ska kunna samlas och köras utan en seedad användare.
 
 export const SEED = {
   tenant: { slug: 'frisor1', name: 'Frisör Ett' },
-  password,
+  get password() {
+    const password = process.env.E2E_PASSWORD
+    if (!password) {
+      throw new Error(
+        'E2E_PASSWORD saknas. Generera och exportera ett engångsvärde innan seed och Playwright körs.',
+      )
+    }
+    return password
+  },
   salonAdmin: 'e2e-admin@frisor1.test',
   staff: 'e2e-staff@frisor1.test',
+  customer: {
+    id: 'e2e00000-0000-0000-0000-000000000101',
+    email: 'e2e-customer@frisor1.test',
+    label: 'Eira Testkund',
+    activeBookingId: 'e2e00000-0000-0000-0000-000000000113',
+  },
+  relationship: {
+    serviceLabel: 'Klippning',
+    staffLabel: 'Frisör',
+    preferenceLabel: 'kort på sidorna',
+    internalNote: 'E2E internt: använd sax vid tinningarna',
+  },
   // e2e-platform, INTE platform@corevo.se: en super_admin med ett engångslösenord får
   // aldrig kunna förväxlas med ett riktigt plattformskonto.
   platformAdmin: 'e2e-platform@corevo.se',
 } as const
 
 // G12 two-zone hosts. `*.localhost` is loopback in Chromium → no DNS needed.
-// booking.localhost = platform host (back-office); the storefront uses the
-// ?tenant= dev override on the default host.
-export const BOOKING_HOST = process.env.E2E_BOOKING_HOST ?? 'http://booking.localhost:3000'
+// booking.localhost = platform host (back-office); frisor1.localhost = storefront.
+export const BOOKING_HOST =
+  process.env.E2E_BOOKING_HOST ?? `http://booking.localhost:${process.env.E2E_PORT ?? '3000'}`
 
-/** Enter the storefront as a given tenant via the ?tenant= dev override (cookie-persisted). */
+function tenantOrigin(slug: string): string {
+  const explicitTarget = process.env.E2E_BASE_URL?.trim()
+  if (!explicitTarget) {
+    return `http://${slug}.localhost:${process.env.E2E_PORT ?? '3000'}`
+  }
+
+  const target = new URL(explicitTarget)
+  const local =
+    target.hostname === 'localhost' ||
+    target.hostname === '127.0.0.1' ||
+    target.hostname.endsWith('.localhost')
+  if (local) return `${target.protocol}//${slug}.localhost${target.port ? `:${target.port}` : ''}`
+
+  const explicitTenantHost = process.env.E2E_TENANT_HOST?.trim()
+  if (!explicitTenantHost) {
+    throw new Error('E2E_TENANT_HOST saknas för det explicita fjärrmålet E2E_BASE_URL.')
+  }
+  const tenant = new URL(explicitTenantHost)
+  if (
+    !['http:', 'https:'].includes(tenant.protocol) ||
+    tenant.username ||
+    tenant.password ||
+    tenant.pathname !== '/' ||
+    tenant.search ||
+    tenant.hash
+  ) {
+    throw new Error(
+      'E2E_TENANT_HOST måste vara ett rent http(s)-origin utan path eller credentials.',
+    )
+  }
+  return tenant.origin
+}
+
+/** Enter the storefront on its real tenant host. */
 export async function gotoTenant(page: Page, path: string, slug = SEED.tenant.slug) {
-  const sep = path.includes('?') ? '&' : '?'
-  await page.goto(`${path}${sep}tenant=${slug}`)
+  await page.goto(new URL(path, `${tenantOrigin(slug)}/`).toString())
 }
 
 async function submitLogin(page: Page, email: string) {
@@ -54,7 +100,7 @@ export async function loginBackoffice(page: Page, email: string) {
 }
 
 /**
- * Storefront CUSTOMER login on the tenant host (via ?tenant=). Only meaningful
+ * Storefront CUSTOMER login on the tenant host. Only meaningful
  * when the tenant has customer accounts enabled (seed: frisor1 = on).
  */
 export async function loginCustomer(page: Page, email: string, slug = SEED.tenant.slug) {
@@ -95,7 +141,10 @@ export async function pickFirstAvailableSlot(page: Page) {
     // Antingen renderas tider, eller så kommer "inga lediga tider"-beskedet — kappla dem.
     await Promise.race([
       time.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {}),
-      page.getByText('Inga lediga tider').waitFor({ state: 'visible', timeout: 4000 }).catch(() => {}),
+      page
+        .getByText('Inga lediga tider')
+        .waitFor({ state: 'visible', timeout: 4000 })
+        .catch(() => {}),
     ])
     if (await time.isVisible().catch(() => false)) {
       await time.click()

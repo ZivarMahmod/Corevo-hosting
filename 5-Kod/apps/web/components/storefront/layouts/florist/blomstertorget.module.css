@@ -80,14 +80,6 @@
   color: var(--color-bg);
 }
 
-/* Den lilla varianten (torgpris-raden, kungörelsernas "Boka plats"). */
-.btBtnSm {
-  composes: btBtn;
-  font-size: 11.5px;
-  padding: 11px 20px;
-  white-space: nowrap;
-}
-
 /* Kursiv textlänk — "läs mer →", "alla kungörelser →". */
 .btItalicLink {
   display: inline-block;
@@ -552,18 +544,6 @@
 }
 
 /* Pausad butik / tom katalog — tidningens egen notruta. */
-.btNotice {
-  margin: 0 0 24px;
-  border-top: 3px solid var(--color-fg);
-  border-bottom: 1px solid var(--color-fg);
-  padding: 16px 0;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--tenant-primary-ink, var(--color-primary));
-}
 
 .btEmpty {
   margin: 0;
@@ -809,15 +789,6 @@
   line-height: 1.7;
 }
 
-.btBtnWide {
-  composes: btBtn;
-  display: block;
-  width: 100%;
-  text-align: center;
-  padding: 14px 0;
-  font-size: 13px;
-}
-
 /* ───────────────────────────────── sidfot ─────────────────────────────────── */
 
 .btFoot {
@@ -873,18 +844,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-fg-2);
-}
-
-.btSrOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* ───────────────────── mobil — speglar filens egen media query ────────────── */
@@ -958,8 +917,6 @@
   }
 
   .btBtn,
-  .btBtnSm,
-  .btBtnWide,
   .btMastCta,
   .btItalicLink,
   .btMoreLink,

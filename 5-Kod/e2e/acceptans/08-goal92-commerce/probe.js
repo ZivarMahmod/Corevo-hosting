@@ -1,8 +1,8 @@
 const { spawnSync } = require('node:child_process')
+const { randomBytes } = require('node:crypto')
 const { readFileSync } = require('node:fs')
 const path = require('node:path')
 
-const PREVIEW_REF = 'cwnhpesrgolflkmyjbrm'
 const ROOT = path.resolve(__dirname, '../../..')
 const SPEC = 'e2e/acceptans/08-goal92-commerce/08-goal92-commerce.accept.spec.ts'
 const E2E_DB = 'apps/web/scripts/e2e-db.mjs'
@@ -32,12 +32,17 @@ function playwright(label, grep, env) {
 }
 
 if (!runtime) {
-  process.exit(
-    playwright('08 contract', '@contract', { E2E_BASE_URL: 'http://127.0.0.1:9' }) ? 0 : 1,
-  )
+  console.error('Usage: node probe.js --runtime')
+  process.exit(1)
 }
 
-const required = ['ACCEPT_BASE_URL', 'GOAL92_ACCEPT_PREVIEW_REF']
+const required = [
+  'ACCEPT_BASE_URL',
+  'GOAL92_ACCEPT_PREVIEW_REF',
+  'E2E_SUPABASE_PROJECT_REF',
+  'E2E_ALLOWED_SUPABASE_PROJECT_REF',
+  'PRODUCTION_SUPABASE_PROJECT_REF',
+]
 const missing = required.filter((name) => !process.env[name])
 if (missing.length) {
   console.error(`FAIL 08-P00 expected=${required.join(',')} actual=missing:${missing.join(',')}`)
@@ -52,8 +57,12 @@ try {
   process.exit(1)
 }
 
+const previewRef = process.env.E2E_ALLOWED_SUPABASE_PROJECT_REF
+
 if (
-  process.env.GOAL92_ACCEPT_PREVIEW_REF !== PREVIEW_REF ||
+  process.env.GOAL92_ACCEPT_PREVIEW_REF !== previewRef ||
+  process.env.E2E_SUPABASE_PROJECT_REF !== previewRef ||
+  previewRef === process.env.PRODUCTION_SUPABASE_PROJECT_REF ||
   target.hostname === 'corevo.se' ||
   target.hostname.endsWith('.corevo.se')
 ) {
@@ -62,8 +71,8 @@ if (
 }
 
 const linkedRef = readFileSync(path.join(ROOT, 'supabase/.temp/project-ref'), 'utf8').trim()
-if (linkedRef !== PREVIEW_REF) {
-  console.error(`FAIL 08-P00 expected=${PREVIEW_REF} actual=${linkedRef || '<missing>'}`)
+if (linkedRef !== previewRef) {
+  console.error(`FAIL 08-P00 expected=allowlisted-staging actual=${linkedRef || '<missing>'}`)
   process.exit(1)
 }
 
@@ -82,10 +91,11 @@ let fixtureAttempted = false
 let internalPassed = false
 try {
   fixtureAttempted = true
-  const seed = run('08 fixture seed', process.execPath, [E2E_DB, 'seed'])
+  const password = `E2e!${randomBytes(24).toString('base64url')}`
+  const seed = run('08 fixture seed', process.execPath, [E2E_DB, 'seed'], {
+    env: { E2E_PASSWORD: password },
+  })
   if (seed.status !== 0) throw new Error('fixture seed failed')
-  const password = /^E2E_PASSWORD=(.+)$/m.exec(seed.stdout || '')?.[1]
-  if (!password) throw new Error('fixture did not return an ephemeral password')
 
   for (const [label, relativePath, outerRollback] of [
     ['08 SQL media', 'supabase/tests/goal92_media_quota.sql', false],
@@ -105,7 +115,7 @@ try {
     ['08 concurrency reserve', 'supabase/tests/goal92_shop_reserve_concurrency.mjs'],
   ]) {
     if (
-      run(label, process.execPath, [script, PREVIEW_REF], {
+      run(label, process.execPath, [script, previewRef], {
         env: { E2E_PASSWORD: password },
       }).status !== 0
     ) {
@@ -120,7 +130,7 @@ try {
       process.env.ACCEPT_BACKOFFICE_URL ||
       (localTarget ? 'http://booking.localhost:3000' : process.env.ACCEPT_BASE_URL),
     E2E_PASSWORD: password,
-    GOAL92_ACCEPT_PREVIEW_REF: PREVIEW_REF,
+    GOAL92_ACCEPT_PREVIEW_REF: previewRef,
     COREVO_COMMERCE_RELEASE: 'settlement-v1-verified',
     COREVO_COMMERCE_TENANT_IDS: 'e2e00000-0000-0000-0000-000000000001',
   }

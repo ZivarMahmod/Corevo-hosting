@@ -1,4 +1,4 @@
-const DEFAULT_PORTAL_HOST = 'mina.corevo.se'
+import { getCustomerPortalHost } from '../tenant'
 
 function isLocalPreview(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname.endsWith('.localhost')
@@ -32,7 +32,7 @@ export function isAllowedPortalPostOrigin(request: Request): boolean {
   const hostHeader = request.headers.get('host')
   if (hostHeader && hostHeader.toLowerCase() !== requestUrl.host.toLowerCase()) return false
 
-  const configuredHost = (process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST ?? DEFAULT_PORTAL_HOST).toLowerCase()
+  const configuredHost = getCustomerPortalHost().toLowerCase()
   if (
     requestUrl.protocol === 'https:' &&
     requestUrl.hostname.toLowerCase() === configuredHost &&
@@ -44,4 +44,25 @@ export function isAllowedPortalPostOrigin(request: Request): boolean {
   const hostname = requestUrl.hostname.toLowerCase()
   if (isLocalPreview(hostname)) return requestUrl.protocol === 'http:' || requestUrl.protocol === 'https:'
   return requestUrl.protocol === 'https:' && hostname.endsWith('.workers.dev')
+}
+
+export function customerPortalOrigin(): string | null {
+  const configuredHost = getCustomerPortalHost().trim().toLowerCase()
+  if (!configuredHost) return null
+
+  try {
+    const url = new URL(`https://${configuredHost}`)
+    if (
+      url.host !== configuredHost
+      || url.port !== ''
+      || url.username !== ''
+      || url.password !== ''
+      || url.pathname !== '/'
+      || url.search !== ''
+      || url.hash !== ''
+    ) return null
+    return url.origin
+  } catch {
+    return null
+  }
 }

@@ -8,7 +8,6 @@ import s from './kurser-section.module.css'
 export async function KurserSection({
   tenantId,
   slug,
-  paused = false,
   checkoutLive = false,
   limit,
   moreHref,
@@ -16,7 +15,6 @@ export async function KurserSection({
 }: {
   tenantId: string
   slug: string
-  paused?: boolean
   checkoutLive?: boolean
   limit?: number
   moreHref?: string
@@ -27,9 +25,10 @@ export async function KurserSection({
     loadKurserConfig(tenantId, slug),
   ])
 
-  if (typeof limit === 'number' && events.length === 0 && !paused) return null
+  if (typeof limit === 'number' && events.length === 0) return null
 
   const shownEvents = typeof limit === 'number' ? events.slice(0, limit) : events
+  const registrationClosed = config.payment === 'checkout' && !checkoutLive
   const lead =
     config.payment === 'checkout' && checkoutLive
       ? 'Boka din plats direkt — kursplatsen läggs i varukorgen och betalas i kassan.'
@@ -48,8 +47,8 @@ export async function KurserSection({
             <SectionHeader eyebrow="— Kurser & event" title="Kommande tillfällen" lead={lead} />
           ) : null}
 
-          {paused ? (
-            <p role="status" className={s.paused}>
+          {registrationClosed ? (
+            <p role="status" className={s.closed}>
               Anmälan är stängd just nu — kommande tillfällen visas, men det går inte
               att anmäla sig för tillfället.
             </p>
@@ -78,7 +77,7 @@ export async function KurserSection({
                       {full ? <span className={s.fullBadge}>Fullbokat</span> : null}
                     </p>
 
-                    {!paused && !full ? (
+                    {!registrationClosed && !full ? (
                       config.payment === 'checkout' && checkoutLive ? (
                         <EventSeatBuy
                           eventId={event.id}

@@ -24,7 +24,7 @@ import {
 import type { ThemeProductViewProps } from './types'
 import s from './calytrix-product.module.css'
 
-export function CalytrixProduct({ config, product, paused }: ThemeProductViewProps) {
+export function CalytrixProduct({ config, product }: ThemeProductViewProps) {
   const paragraphs = (product.description ?? '')
     .split(/\n\s*\n/)
     .map((p) => p.trim())
@@ -74,15 +74,9 @@ export function CalytrixProduct({ config, product, paused }: ThemeProductViewPro
             </div>
           </dl>
 
-          {paused ? (
-            <p role="status" className={s.cxPaused}>
-              Butiken är tillfälligt stängd för nya beställningar. Vi öppnar igen snart.
-            </p>
-          ) : (
-            <div className={s.cxBuy}>
-              <AddToCart product={product} fulfilment={config.fulfilment} />
-            </div>
-          )}
+          <div className={s.cxBuy}>
+            <AddToCart product={product} fulfilment={config.fulfilment} />
+          </div>
         </div>
       </div>
     </section>

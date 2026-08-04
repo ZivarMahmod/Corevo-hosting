@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { OffertSection } from '@/components/storefront/OffertSection'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import { loadOffertData } from '@/lib/storefront/offert/load-offert'
 import { pageMetadata } from '@/components/storefront/seo'
 
@@ -29,8 +29,8 @@ export default async function OffertPage() {
   if (View) {
     const data = await loadOffertData(tenant.id, tenant.slug)
     if (!data) notFound()
-    return <View config={data.config} paused={false} />
+    return <View config={data.config} />
   }
 
-  return <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
+  return <OffertSection tenantId={tenant.id} slug={tenant.slug} pageHero />
 }

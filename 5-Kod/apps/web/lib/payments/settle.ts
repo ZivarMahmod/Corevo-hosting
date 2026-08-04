@@ -195,18 +195,3 @@ export async function completeShopPaymentEvent(
   }
   return true
 }
-
-/** Spegla en redan genomförd extern refund atomiskt i payment + order. */
-export async function recordShopOrderRefunded(orderId: string): Promise<boolean> {
-  const admin = createServiceClient()
-  if (!admin) return false
-  const { data, error } = await admin.rpc('record_shop_order_refund', { p_order_id: orderId })
-  if (error || data !== true) {
-    await captureException(error ?? new Error('refund status was not persisted'), {
-      where: 'payments.settle.refund_persist',
-      orderId,
-    })
-    return false
-  }
-  return true
-}

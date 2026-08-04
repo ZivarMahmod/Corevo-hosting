@@ -23,7 +23,7 @@ vi.mock('react', async (importOriginal) => {
     },
   }
 })
-vi.mock('@/lib/platform/actions', () => ({
+vi.mock('@/lib/platform/actions/theme', () => ({
   setTenantTheme: mocks.setTenantTheme,
 }))
 vi.mock('./ThemeGallery', () => ({

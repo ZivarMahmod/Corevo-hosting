@@ -1,51 +1,6 @@
 import 'server-only'
 import { platformCtx } from './guard'
 
-// Roller & behörighet (RBAC matrix) + Integrationer (status dashboard).
-//
-// Both surfaces are CATALOG views: the role/permission matrix and the integration
-// descriptions are platform CONFIGURATION, not rows in a table — there is no
-// `roles_catalog` or `integrations` table, and inventing one would be faking a
-// data source. So the shape/labels/descriptions/perms are static const (the
-// authoritative least-privilege design), and we bind the ONE honest live signal
-// each surface has:
-//   • Roles    → real cross-tenant user count per role NAME (RLS bypass).
-//   • Integrations → real connected-tenant count where a backing column exists
-//                    (Stripe charges-enabled, Google-review link set, custom
-//                    domain verified). Where no column backs the count we render
-//                    an honest "—", never a fabricated "21 / 24".
-
-// ── Roller & behörighet ─────────────────────────────────────────────────────────
-// Perm / RoleTone / PERMISSION_AREAS live in catalog-shared (NO 'server-only') so the
-// RolesMatrix client island can import the PERMISSION_AREAS value without dragging
-// this server-only module into the client bundle. Imported for local use here +
-// re-exported so every existing server-side importer of these from catalog is intact.
-export type { Perm, RoleTone } from './catalog-shared'
-export { PERMISSION_AREAS } from './catalog-shared'
-
-// goal-21: the role/permission matrix is no longer a hardcoded const — it is the
-// stored, editable role_permissions table overlaid on the code DEFAULT_ROLE_CATALOG
-// (table-less-safe fallback). The catalog read now delegates to roles-permissions.ts,
-// which folds the perm overlay INTO the existing live user-count contract so the
-// roller page + RolesMatrix stay props-driven exactly as today.
-export type { RolePermissions, DefaultRole } from './roles-permissions'
-import type { RolePermissions } from './roles-permissions'
-import { getRolePermissions } from './roles-permissions'
-
-/** Back-compat alias — the matrix view consumes the merged role + live user count. */
-export type PlatformRoleWithUsers = RolePermissions
-
-/**
- * The role catalog with DB-overlaid perms + LIVE cross-tenant user counts (RLS
- * bypass). Delegates to getRolePermissions() (goal-21): perms come from the
- * role_permissions table merged onto DEFAULT_ROLE_CATALOG (pure defaults when the
- * table is absent), user counts from the live users→roles join. Support/Ekonomi have
- * no seeded DB role → users:null so the view shows an honest "—".
- */
-export async function getPlatformRoles(): Promise<PlatformRoleWithUsers[]> {
-  return getRolePermissions()
-}
-
 // ── Integrationer ───────────────────────────────────────────────────────────────
 /** How the connected-count is sourced — drives whether we show a live count + a
  *  derived status badge. null = no per-tenant backing column → no count, no badge. */
@@ -107,7 +62,7 @@ const INTEGRATION_CATALOG: Integration[] = [
   {
     id: 'domain',
     name: 'Cloudflare / Domän',
-    desc: 'Subdomän kundnamn.corevo.se. Egen domän = parkerat spår.',
+    desc: 'Subdomän kundnamn.boka.corevo.se. Egen domän = parkerat spår.',
     color: '#F38020',
     letter: 'C',
     flow: 'tenant_domains',

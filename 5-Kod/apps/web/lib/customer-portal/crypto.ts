@@ -40,6 +40,7 @@ function base64Url(bytes: Uint8Array): string {
 
 type PortalDigestDomain =
   | 'calendar-uid'
+  | 'link-delivery'
   | 'link'
   | 'session'
   | 'recovery-subject'
@@ -49,7 +50,7 @@ type PortalDigestDomain =
   | 'contact-change-code'
   | 'contact-change-session'
 
-async function digest(domain: PortalDigestDomain, secret: string): Promise<string> {
+async function signature(domain: PortalDigestDomain, secret: string): Promise<Uint8Array> {
   const key = await globalThis.crypto.subtle.importKey(
     'raw',
     hmacKey(),
@@ -58,10 +59,13 @@ async function digest(domain: PortalDigestDomain, secret: string): Promise<strin
     ['sign'],
   )
   const message = `corevo:customer-portal:${domain}:v${CUSTOMER_PORTAL_KEY_VERSION}:${secret}`
-  const signature = new Uint8Array(
+  return new Uint8Array(
     await globalThis.crypto.subtle.sign('HMAC', key, toArrayBuffer(encoder.encode(message))),
   )
-  return Array.from(signature, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+async function digest(domain: PortalDigestDomain, secret: string): Promise<string> {
+  return Array.from(await signature(domain, secret), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 export function createPortalPublicId(): string {
@@ -76,6 +80,10 @@ export function createPortalSecret(): string {
 
 export function portalLinkDigest(secret: string): Promise<string> {
   return digest('link', secret)
+}
+
+export async function portalDeliverySecret(deliveryIntentId: string): Promise<string> {
+  return base64Url(await signature('link-delivery', deliveryIntentId.toLowerCase()))
 }
 
 export function portalSessionDigest(secret: string): Promise<string> {

@@ -6,26 +6,15 @@ import { createClient } from '@/lib/supabase/server'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { loadCheckoutOptions } from '@/lib/storefront/shop/checkout-options'
-import { CheckoutForm } from '@/app/butik/kassa/CheckoutForm'
+import { CheckoutForm } from '@/components/storefront/shop/CheckoutForm'
 import { SubpageHero } from '@/components/storefront/sections'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import s from './kassa.module.css'
 import { commerceReleaseGate } from '@/lib/release/commerce'
-
-// ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN. En mall med egen kassa-scen bygger sin egen;
-// funktionen (reserve/confirm, valideringar, CheckoutLoader) är EN och delad. Mallar
-// utan egen kassa får den delade — tills de bygger sin.
-//
-// goal-64: registreringen bodde i en HÅRDKODAD tabell här (CHECKOUT_VIEWS). Nu deklarerar
-// mallen sin kassa i sin egen <key>.theme.ts (moduleViews.checkout).
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kassa' }
 
-// Webshop-kassa (goal-55 körning 7A): kassan bor nu i (public)-skalet så köparen
-// ALDRIG byter värld — samma temade nav/footer + CartProvider som resten av
-// storefronten ((public)/layout.tsx wrappar redan i CartProvider, så ingen egen
-// provider här). Gatad på LIVE shop-modul; paused → ärlig "tillfälligt stängd"-vy.
 export default async function KassaPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
@@ -38,11 +27,6 @@ export default async function KassaPage() {
   const shop = await loadShopData(tenant.id, tenant.slug)
   const fulfilment = shop?.config.fulfilment ?? 'ship'
 
-  // goal-64 — KASSANS VAL, server-side. Leveransvalen kommer ur kundens egna
-  // shop_shipping_options; betalsätten är snittet av vad kunden slagit på och vad som
-  // FAKTISKT är kopplat (Stripe godkänd / PayPal-nycklar satta). Vyn får dem som props
-  // och räknar aldrig ut dem själv — ett betalsätt som inte är konfigurerat får inte
-  // ens kunna renderas.
   const checkout = shop
     ? await loadCheckoutOptions(tenant.id, tenant.slug, shop.config)
     : { shippingOptions: [], paymentMethods: [] }
@@ -61,13 +45,8 @@ export default async function KassaPage() {
     )
   }
 
-  // Mallens egen kassa vinner; den delade är bara fallback (samma mönster som korgen).
   const OwnCheckout = themeModuleViews(bundle.settings.theme).checkout
 
-  // Kundkonto för handel (goal-55 körning 9): kassan ERBJUDER inloggning — aldrig
-  // tvingar (gästköp förblir default). Samma session-seam som confirmOrder i
-  // butik/actions.ts: authenticated server-klient → auth.getUser(). Inloggad kund
-  // får sin order länkad till kontot av confirm_shop_order (p_customer=auth.uid()).
   const accountsEnabled = bundle.settings.customerAccountsEnabled
   let signedInEmail: string | null = null
   let signedIn = false
@@ -78,26 +57,22 @@ export default async function KassaPage() {
     signedInEmail = auth?.user?.email ?? null
   }
 
-  // goal-64 (regression): SubpageHero renderades tidigare ovanpå mallens EGEN kassa
-  // oavsett — en mall som ritar sin egen rubrik ("slutför") fick ett extra generiskt
-  // rubrikband staplat ovanpå. Kontoraden (login-erbjudandet) är däremot en RIKTIG
-  // funktion (ordern länkas till kundkontot) — den tas bort, inte bara det generiska
-  // bandet. Samma regel som varukorgen: mallen äger sidan, inte funktionen.
+  const accountNotice = !accountsEnabled ? null : !signedIn ? (
+    <p className={s.account}>
+      Har du ett konto?{' '}
+      <Link href="/login?next=/kassa" className={`${s.link} ${s.accountLink}`}>
+        Logga in
+      </Link>{' '}
+      så sparas din beställning på Mina sidor.
+    </p>
+  ) : signedInEmail ? (
+    <p className={s.account}>Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.</p>
+  ) : null
+
   if (OwnCheckout) {
     return (
       <section className={`section ${s.shell}`}>
-        {accountsEnabled && !signedIn ? (
-          <p className={s.account}>
-            Har du ett konto?{' '}
-            <Link href="/login?next=/kassa" className={`${s.link} ${s.accountLink}`}>
-              Logga in
-            </Link>{' '}
-            så sparas din beställning på Mina sidor.
-          </p>
-        ) : null}
-        {accountsEnabled && signedIn && signedInEmail ? (
-          <p className={s.account}>Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.</p>
-        ) : null}
+        {accountNotice}
         <OwnCheckout
           fulfilment={fulfilment}
           shippingOptions={checkout.shippingOptions}
@@ -110,25 +85,14 @@ export default async function KassaPage() {
   return (
     <>
       <SubpageHero eyebrow="— Snart klart" title="Kassa" />
-    <section className={`section ${s.shell}`}>
-      {accountsEnabled && !signedIn ? (
-        <p className={s.account}>
-          Har du ett konto?{' '}
-          <Link href="/login?next=/kassa" className={`${s.link} ${s.accountLink}`}>
-            Logga in
-          </Link>{' '}
-          så sparas din beställning på Mina sidor.
-        </p>
-      ) : null}
-      {accountsEnabled && signedIn && signedInEmail ? (
-        <p className={s.account}>Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.</p>
-      ) : null}
-      <CheckoutForm
-        fulfilment={fulfilment}
-        shippingOptions={checkout.shippingOptions}
-        paymentMethods={checkout.paymentMethods}
-      />
-    </section>
+      <section className={`section ${s.shell}`}>
+        {accountNotice}
+        <CheckoutForm
+          fulfilment={fulfilment}
+          shippingOptions={checkout.shippingOptions}
+          paymentMethods={checkout.paymentMethods}
+        />
+      </section>
     </>
   )
 }

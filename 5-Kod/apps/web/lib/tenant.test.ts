@@ -6,14 +6,16 @@ const OPTS = {
   rootDomain: 'corevo.se',
   platformHost: 'booking.corevo.se',
   superadminHost: 'superbooking.corevo.se',
-  staffHost: 'minbooking.corevo.se',
   customerPortalHost: 'mina.corevo.se',
   tenantHostSuffix: 'boka.corevo.se',
 }
 
 describe('getTenantFromHost — host suffix classification', () => {
-  it('resolves a real subdomain to its tenant slug', () => {
-    expect(getTenantFromHost('freshcut.corevo.se', OPTS)).toEqual({ kind: 'tenant', slug: 'freshcut' })
+  it('accepts an already-published root-zone tenant host as legacy input', () => {
+    expect(getTenantFromHost('freshcut.corevo.se', OPTS)).toEqual({
+      kind: 'tenant',
+      slug: 'freshcut',
+    })
   })
 
   it('classifies the platform host', () => {
@@ -25,13 +27,16 @@ describe('getTenantFromHost — host suffix classification', () => {
   })
 
   it('classifies a reserved subdomain (not a tenant)', () => {
-    expect(getTenantFromHost('admin.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'admin' })
+    expect(getTenantFromHost('admin.corevo.se', OPTS)).toEqual({
+      kind: 'reserved',
+      subdomain: 'admin',
+    })
   })
 
-  it('goal-27: classifies the three back-office doors by exact host', () => {
+  it('classifies the back-office doors by exact host', () => {
     expect(getTenantFromHost('superbooking.corevo.se', OPTS)).toEqual({ kind: 'superadmin' })
-    expect(getTenantFromHost('minbooking.corevo.se', OPTS)).toEqual({ kind: 'staff_portal' })
     expect(getTenantFromHost('booking.corevo.se', OPTS)).toEqual({ kind: 'platform' })
+    expect(getTenantFromHost('minbooking.corevo.se', OPTS)).toEqual({ kind: 'staff_portal' })
   })
 
   it('classifies mina.corevo.se as the customer portal before tenant matching', () => {
@@ -44,11 +49,10 @@ describe('getTenantFromHost — host suffix classification', () => {
     ).toEqual({ kind: 'customer_portal' })
   })
 
-  it('goal-27: superbooking/minbooking resolve to their door kind, NOT reserved', () => {
-    // The host-equality check must win over classify()'s reserved branch even
-    // though both names are in the reserved list (for the slug validator).
-    expect(getTenantFromHost('superbooking.corevo.se', OPTS)).not.toMatchObject({ kind: 'reserved' })
-    expect(getTenantFromHost('minbooking.corevo.se', OPTS)).not.toMatchObject({ kind: 'reserved' })
+  it('superbooking resolves to its door kind, not reserved', () => {
+    expect(getTenantFromHost('superbooking.corevo.se', OPTS)).not.toMatchObject({
+      kind: 'reserved',
+    })
   })
 
   it('returns unknown for an external custom domain (→ goal-16 fallback territory)', () => {
@@ -64,7 +68,10 @@ describe('getTenantFromHost — host suffix classification', () => {
   })
 
   it('goal-28: the bare boka.corevo.se branch apex is NOT a tenant', () => {
-    expect(getTenantFromHost('boka.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'boka' })
+    expect(getTenantFromHost('boka.corevo.se', OPTS)).toEqual({
+      kind: 'reserved',
+      subdomain: 'boka',
+    })
     expect(getTenantFromHost('boka.corevo.se', OPTS)).not.toMatchObject({ kind: 'tenant' })
   })
 
@@ -87,8 +94,14 @@ describe('getTenantFromHost — host suffix classification', () => {
     expect(RESERVED_SUBDOMAINS).toContain('mina')
   })
 
+  it('published staff host label "minbooking" is reserved (cannot be registered as a tenant)', () => {
+    expect(RESERVED_SUBDOMAINS).toContain('minbooking')
+  })
+
   it('goal-28: the boka branch is read from env, not hardcoded (suffix override honored)', () => {
-    expect(getTenantFromHost('demo.book.example.com', { ...OPTS, tenantHostSuffix: 'book.example.com' })).toEqual({
+    expect(
+      getTenantFromHost('demo.book.example.com', { ...OPTS, tenantHostSuffix: 'book.example.com' }),
+    ).toEqual({
       kind: 'tenant',
       slug: 'demo',
     })
@@ -96,14 +109,20 @@ describe('getTenantFromHost — host suffix classification', () => {
 
   it('POS-SAFETY: a bare *.corevo.se subdomain is unchanged by the boka branch', () => {
     // The boka block must NEVER hijack a plain POS subdomain on the shared zone.
-    expect(getTenantFromHost('admin.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'admin' })
-    expect(getTenantFromHost('kiosk.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'kiosk' })
+    expect(getTenantFromHost('admin.corevo.se', OPTS)).toEqual({
+      kind: 'reserved',
+      subdomain: 'admin',
+    })
+    expect(getTenantFromHost('kiosk.corevo.se', OPTS)).toEqual({
+      kind: 'reserved',
+      subdomain: 'kiosk',
+    })
     expect(getTenantFromHost('superadmin.corevo.se', OPTS)).toEqual({
       kind: 'reserved',
       subdomain: 'superadmin',
     })
     expect(getTenantFromHost('corevo.se', OPTS)).toEqual({ kind: 'root' })
-    // The three back-office doors stay on their own kinds.
+    // Back-office doors stay on their own kinds.
     expect(getTenantFromHost('booking.corevo.se', OPTS)).toEqual({ kind: 'platform' })
     expect(getTenantFromHost('superbooking.corevo.se', OPTS)).toEqual({ kind: 'superadmin' })
     expect(getTenantFromHost('minbooking.corevo.se', OPTS)).toEqual({ kind: 'staff_portal' })
@@ -151,10 +170,12 @@ describe('?tenant= / /t/ override is gated to preview hosts (tenant-confusion fi
   const qs = (s: string) => new URLSearchParams(s)
 
   it('IGNORES ?tenant= on a real production tenant host (serves the host subdomain)', () => {
-    expect(getTenantFromHost('freshcut.corevo.se', { ...OPTS, search: qs('tenant=evil') })).toEqual({
-      kind: 'tenant',
-      slug: 'freshcut',
-    })
+    expect(getTenantFromHost('freshcut.corevo.se', { ...OPTS, search: qs('tenant=evil') })).toEqual(
+      {
+        kind: 'tenant',
+        slug: 'freshcut',
+      },
+    )
   })
 
   it('IGNORES ?tenant= on the production platform host', () => {
@@ -164,7 +185,9 @@ describe('?tenant= / /t/ override is gated to preview hosts (tenant-confusion fi
   })
 
   it('HONORS ?tenant= on preview/dev hosts (workers.dev, localhost)', () => {
-    expect(getTenantFromHost('app.abc.workers.dev', { ...OPTS, search: qs('tenant=demo') })).toEqual({
+    expect(
+      getTenantFromHost('app.abc.workers.dev', { ...OPTS, search: qs('tenant=demo') }),
+    ).toEqual({
       kind: 'tenant',
       slug: 'demo',
     })

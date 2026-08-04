@@ -3,6 +3,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
 import { createServiceClient } from '@/lib/platform/service'
 import {
+  legacyTenantStorefrontHost,
+  normalizeTenantStorefrontOrigin,
+  tenantStorefrontHost,
+} from '@/lib/storefront-url'
+import {
   createCustomerClaimToken,
   customerClaimPath,
   hashCustomerClaimToken,
@@ -101,10 +106,12 @@ export async function createCustomerClaimLink(args: {
       .eq('verified', true),
   ])
   if (!tenant?.slug) return { ok: false, reason: 'error' }
-  const suffix = process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX ?? 'boka.corevo.se'
+  const canonicalHost = tenantStorefrontHost(tenant.slug)
+  const legacyHost = legacyTenantStorefrontHost(tenant.slug)
+  if (!canonicalHost || !legacyHost) return { ok: false, reason: 'error' }
   const allowedHosts = new Set([
-    `${tenant.slug}.corevo.se`,
-    `${tenant.slug}.${suffix}`,
+    canonicalHost,
+    legacyHost,
     ...(domains ?? []).map((row) => row.domain.toLowerCase()),
   ])
   if (
@@ -116,7 +123,9 @@ export async function createCustomerClaimLink(args: {
   ) {
     return { ok: false, reason: 'invalid_origin' }
   }
-  const origin = new URL(args.origin)
+  const normalizedOrigin = normalizeTenantStorefrontOrigin(tenant.slug, args.origin)
+  if (!normalizedOrigin) return { ok: false, reason: 'invalid_origin' }
+  const origin = new URL(normalizedOrigin)
 
   const token = createCustomerClaimToken()
   const tokenHash = await hashCustomerClaimToken(token)

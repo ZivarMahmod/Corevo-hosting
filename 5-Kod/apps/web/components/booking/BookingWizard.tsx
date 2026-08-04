@@ -6,15 +6,14 @@ import { bookingStatusPresentation } from '@/lib/booking/confirmation-status'
 import { useRouter } from 'next/navigation'
 import {
   cancelBookingVerification,
-  getAvailableSlots,
   getBookingContactModeAction,
   resendBookingVerification,
   startBookingVerification,
-  startBookingCheckout,
   verifyAndCreateBooking,
   type BookingVerificationStarted,
-  type SlotOption,
-} from '@/app/boka/actions'
+} from '@/lib/booking/verification-actions'
+import { getAvailableSlots, type SlotOption } from '@/lib/booking/availability-actions'
+import { startBookingCheckout } from '@/lib/booking/checkout-actions'
 import type { BookingContactAvailability } from '@/lib/notifications/giada'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import { normalizeBookingContact } from '@/lib/booking/contact-normalization'
@@ -80,7 +79,7 @@ function StaffAvatar({
   if (mode === 'foto' && avatarUrl) {
     return (
       <span className="fc-avatar fc-avatar--foto" aria-hidden>
-        {/* Plain <img> — storefrontens remote-image-config är fryst (aldrig next/image). */}
+        {/* Plain <img> — fjärrkällan är inte konfigurerad för next/image. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={avatarUrl} alt="" width={46} height={46} loading="lazy" />
       </span>

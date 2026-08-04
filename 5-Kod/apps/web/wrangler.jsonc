@@ -26,10 +26,8 @@
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNseWx2b3d0b3didG90cmFodWFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTg4MDcsImV4cCI6MjA5NTc3NDgwN30.ZSm3eMT-PxqfDPN2P584EVBlWfUwpeQ6gKOnKBvqxJU",
     "NEXT_PUBLIC_ROOT_DOMAIN": "corevo.se",
     "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
-    // goal-27 — back-office 3-door split. superbooking = platform/super-admin,
-    // minbooking = staff. booking stays salon-admin. Read at runtime by lib/tenant.ts.
+    // Back-office split: superbooking = platform, booking = admin + staff.
     "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
-    "NEXT_PUBLIC_STAFF_HOST": "minbooking.corevo.se",
     "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
     "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms",
     // goal-28 — salon storefronts live on the dedicated wildcard branch
@@ -59,21 +57,17 @@
     // Kräver worker-secrets CF_API_TOKEN + CF_ZONE_ID (+ CF_FALLBACK_ORIGIN) — satta
     // 2026-06-06. Av = sätt "false"/ta bort + redeploy → panelen spärras direkt.
     "DOMAIN_PROVISIONING_ENABLED": "true",
-    // goal-48: onboarding-studio. ON i prod 2026-06-26 (Zivar: inga kunder än → prod ÄR
-    // testmiljön, "lägg live så jag kan testa"). CreateTenantForm kvar bakom flaggan som
-    // fallback om studion krånglar. Read at call-time.
-    "ONBOARDING_STUDIO_ENABLED": "true"
   },
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   // R2 media bucket binding — used by lib/r2/upload.ts (G07 admin logo upload).
   // Build/lint/`next dev` don't need it; `preview` simulates R2 locally (miniflare).
   // OPS (G08): create the bucket on the account + set R2_PUBLIC_BASE_URL before deploy.
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   // ── Custom domains (FX-14): live production hostnames bound to THIS worker. ──
   // Declared here so a top-level `deploy` re-asserts them and can NEVER detach
@@ -85,10 +79,10 @@
   // goal-27 — ALL live production hostnames are declared here so a top-level `deploy`
   // CREATES + RE-ASSERTS them and they STOP disappearing (the FX-14 trap: a domain that
   // lives only in the CF dashboard gets detached when a deploy reconciles to config).
-  // The three back-office doors + the isolated customer portal:
-  //   booking.corevo.se       — salon admin           (kind 'platform')
+  // The back-office doors + the isolated customer portal:
+  //   booking.corevo.se       — salon admin + staff   (kind 'platform')
   //   superbooking.corevo.se  — platform/super-admin  (kind 'superadmin')
-  //   minbooking.corevo.se    — staff schedule         (kind 'staff_portal')
+  //   minbooking.corevo.se    — published staff compatibility (same /personal owner)
   //   mina.corevo.se          — customer portal        (kind 'customer_portal')
   // freshcut.corevo.se + salongzorbar.corevo.se + demo.corevo.se were dropped: those
   // tenants were deleted in the baseline reset, so binding them would RESURRECT dead
@@ -96,22 +90,15 @@
   //
   // goal-28 — salon storefronts via ONE wildcard route on a DEDICATED branch:
   //   *.boka.corevo.se  → this worker (every <slug>.boka.corevo.se storefront).
-  // A new salon = one DB row; its subdomain works immediately, no per-salon CF job.
+  // With separate edge-certificate coverage active, a new salon needs only one DB row.
   // It is a ROUTE (pattern + zone_name), NOT a custom_domain — wildcards can't be
-  // custom domains, and CF manages the *.boka.corevo.se cert on the corevo.se zone.
+  // custom domains. The route does not itself provision TLS for this second-level
+  // wildcard; edge-certificate coverage is a separate launch prerequisite.
   // 🛑 NEVER widen this to *.corevo.se: that would capture the POS subdomains
   // (admin/kiosk/superadmin/www/dev) on this SHARED zone and break the POS. The
   // 'boka' branch is isolated and never touches a bare POS subdomain.
-  // goal-32 — this block holds ONLY the fixed infra hosts (the back-office/customer portal doors +
-  // the boka wildcard). PER-CUSTOMER storefront domains (<slug>.corevo.se) are NO
-  // LONGER hand-listed here: scripts/gen-deploy-config.mjs reads the active tenants
-  // from the DB and APPENDS one custom_domain route per salon, writing
-  // wrangler.deploy.json. PROD deploys run through scripts/deploy-prod.mjs (which
-  // uses that generated config) so every deploy RE-ASSERTS every customer domain
-  // and none can be detached. ⚠️ A bare `wrangler deploy` against THIS file would
-  // ship only the fixed hosts and detach all customer domains — never bare-deploy
-  // prod; always go through deploy-prod.mjs. (test-barber.corevo.se used to sit here
-  // as a temp manual line; it now arrives automatically from the DB.)
+  // This array is the source of truth for fixed infra, the storefront wildcard and
+  // every explicit customer custom domain. deploy-prod.mjs validates it before use.
   "routes": [
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
@@ -121,7 +108,7 @@
     { "pattern": "freshcut.corevo.se", "custom_domain": true },
     { "pattern": "florist.corevo.se", "custom_domain": true },
     { "pattern": "zentum.corevo.se", "custom_domain": true },
-    { "pattern": "demo.corevo.se", "custom_domain": true }
+    { "pattern": "demo.corevo.se", "custom_domain": true },
   ],
   //
   // ── Named environments (G11) ────────────────────────────────────────────────
@@ -160,7 +147,6 @@
         "NEXT_PUBLIC_ROOT_DOMAIN": "corevo.se",
         "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
         "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
-        "NEXT_PUBLIC_STAFF_HOST": "minbooking.corevo.se",
         "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
         "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms",
         "NEXT_PUBLIC_TENANT_HOST_SUFFIX": "boka.corevo.se",
@@ -172,9 +158,7 @@
         "SMS_DELIVERY_MODE": "off",
         "R2_PUBLIC_BASE_URL": "https://staging-media-required.invalid",
         "DOMAIN_PROVISIONING_ENABLED": "false",
-        // goal-48 — onboarding-studio ENABLED on staging only.
-        "ONBOARDING_STUDIO_ENABLED": "true"
-      }
-    }
-  }
+      },
+    },
+  },
 }

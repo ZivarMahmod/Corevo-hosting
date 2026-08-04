@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act, type ComponentType, type ReactNode } from 'react'
+import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { KunderBoard, buildKunderCsv, type KundCardVM } from './KunderBoard'
@@ -32,7 +32,7 @@ vi.mock('@/components/portal/ui', () => ({
   useToast: () => ({ notify: mocks.notify }),
 }))
 
-vi.mock('@/lib/platform/actions', () => ({ setTenantStatus: mocks.setTenantStatus }))
+vi.mock('@/lib/platform/actions/status', () => ({ setTenantStatus: mocks.setTenantStatus }))
 
 const TENANTS: KundCardVM[] = [
   {

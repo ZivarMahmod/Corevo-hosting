@@ -89,7 +89,7 @@ vi.mock('@/lib/security/rate-limit', () => ({
   LIMITS: { booking: { max: 1, windowSecs: 1 } },
 }))
 
-import { confirmOrder, startPaypalCheckout, startShopCheckout } from './actions'
+import { confirmOrder, startPaypalCheckout, startShopCheckout } from '@/lib/storefront/shop/actions'
 
 beforeEach(() => {
   vi.clearAllMocks()

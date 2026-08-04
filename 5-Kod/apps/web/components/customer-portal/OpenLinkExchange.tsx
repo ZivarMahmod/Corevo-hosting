@@ -6,6 +6,16 @@ import { parsePortalLinkFragment } from '@/lib/customer-portal/link'
 
 type State = 'checking' | 'error'
 
+function exchangeDestination(value: unknown): string | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const result = value as Record<string, unknown>
+  if (result.ok !== true || typeof result.destination !== 'string') return null
+  return result.destination === '/mina'
+    || /^\/mina\/bokningar\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(result.destination)
+    ? result.destination
+    : null
+}
+
 export function OpenLinkExchange({ tenantSlug }: { tenantSlug: string }) {
   const router = useRouter()
   const [state, setState] = useState<State>('checking')
@@ -35,9 +45,11 @@ export function OpenLinkExchange({ tenantSlug }: { tenantSlug: string }) {
       referrerPolicy: 'no-referrer',
       signal: controller.signal,
     })
-      .then((response) => {
+      .then(async (response) => {
         if (!response.ok) throw new Error('exchange_failed')
-        if (!controller.signal.aborted) router.replace('/mina')
+        const destination = exchangeDestination(await response.json())
+        if (!destination) throw new Error('exchange_failed')
+        if (!controller.signal.aborted) router.replace(destination)
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return

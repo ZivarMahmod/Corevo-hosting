@@ -2,6 +2,12 @@
 // tested. Corevo invoices each salong manually; this computes the amount Zivar
 // reads off the platform billing view. No Stripe, no money movement here.
 
+import {
+  formatTenantMoney,
+  parseTenantMoneyInput,
+  tenantMoneyInputValue,
+} from '@/lib/tenant-region'
+
 export const BILLING_MODELS = ['per_booking', 'flat_monthly'] as const
 export type BillingModel = (typeof BILLING_MODELS)[number]
 
@@ -40,30 +46,8 @@ export function monthlyFeeCents(input: BillingInputs): number {
 
 /** öre → "1 234 kr" (sv-SE, no decimals). */
 export function formatPrice(cents: number | null | undefined): string {
-  if (cents == null) return '–'
-  return new Intl.NumberFormat('sv-SE', {
-    style: 'currency',
-    currency: 'SEK',
-    maximumFractionDigits: 0,
-  }).format(cents / 100)
+  return cents == null ? '–' : formatTenantMoney(cents)
 }
 
-/** "1234,50" (kr) form field → integer öre, or null if blank/invalid. */
-export function kronorToCents(raw: string): number | null {
-  const s = raw.trim().replace(/\s/g, '').replace(',', '.')
-  if (s === '') return null
-  const n = Number(s)
-  if (!Number.isFinite(n) || n < 0) return null
-  return Math.round(n * 100)
-}
-
-/** integer öre → "1234.5" for a kr-denominated <input>. */
-export function centsToKronorInput(cents: number | null | undefined): string {
-  if (cents == null) return ''
-  return (cents / 100).toString()
-}
-
-/** YYYY-MM label for a Date in a given month offset, e.g. "2026-06". */
-export function monthKey(year: number, month1to12: number): string {
-  return `${year}-${String(month1to12).padStart(2, '0')}`
-}
+export { parseTenantMoneyInput as kronorToCents }
+export { tenantMoneyInputValue as centsToKronorInput }

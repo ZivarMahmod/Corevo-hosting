@@ -1,53 +1,22 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Card, Icon, PageHead, Button, type IconName } from '@/components/portal/ui'
-import type { PlatformAuditEntry, AuditActor, AuditTone } from '@/lib/platform/audit'
+import { Card, Icon, PageHead, Button } from '@/components/portal/ui'
+import type { PlatformAuditEntry, AuditActor } from '@/lib/platform/audit'
 import styles from './drift.module.css'
+import type { IconName } from '@/lib/ui-icons'
+import {
+  PLATFORM_AUDIT_TONE_COLORS,
+  platformAuditActionLabel,
+} from '@/lib/platform/audit-labels'
 
 // Drift & logg — cross-tenant audit feed island (LAW: SuperPlatform.jsx → SuperOps).
 // The server page gates (requirePlatformAdmin) and reads ONE unfiltered batch; this
 // client component filters q + actor IN MEMORY exactly like the mock (rows already
 // carry their classified actor/tone from the foundation read) and exports the
-// currently-filtered set as CSV. Read-only — never mutates the log
-// (build-once-never-delete), so no toast/consequence band here.
+// currently-filtered set as CSV. Read-only — never mutates the append-only log.
 
 const ACTORS: (AuditActor | 'Alla')[] = ['Alla', 'Zivar', 'System', 'Kund']
-
-// tone → swatch colour for the row icon-tile + empty accents. Mirrors the
-// mock's SP_AUDIT_TONE (var(--c-*) muted status tokens), kept in this island.
-const TONE_COLOR: Record<AuditTone, string> = {
-  info: 'var(--c-info)',
-  success: 'var(--c-success)',
-  warning: 'var(--c-warning)',
-  danger: 'var(--c-danger)',
-  neutral: 'var(--c-ink-3)',
-}
-
-// audit_log stores dotted action keys; the read deliberately leaves them raw so the
-// VIEW owns the action vocabulary (humanized label + icon). meta is not surfaced by
-// the frozen read, so the label is derived from the key alone — the status suffix
-// (booking.status.<x>) carries the state, no meta needed.
-const BOOKING_STATUS_SV: Record<string, string> = {
-  pending: 'avvaktar',
-  confirmed: 'bekräftad',
-  completed: 'genomförd',
-  cancelled: 'avbokad',
-  no_show: 'utebliven',
-}
-
-const ACTION_LABELS: Record<string, string> = {
-  'tenant.create': 'Kund skapad (atomiskt)',
-  'tenant.suspend': 'Kund suspenderad',
-  'tenant.activate': 'Kund återaktiverad',
-  'tenant.delete': 'Kund raderad (mjuk)',
-  'tenant.branding': 'Varumärke uppdaterat',
-  'tenant.billing': 'Prismodell ändrad',
-  'tenant.invite': 'Personal inbjuden (magic-link)',
-  'tenant.update': 'Kunddata redigerad',
-  'tenant.password_reset': 'Lösenordsreset skickad',
-  'tenant.staff_create': 'Personal tillagd',
-}
 
 const ACTION_ICONS: Record<string, IconName> = {
   'tenant.create': 'plus',
@@ -60,18 +29,6 @@ const ACTION_ICONS: Record<string, IconName> = {
   'tenant.update': 'edit',
   'tenant.password_reset': 'mail',
   'tenant.staff_create': 'user',
-}
-
-/** Humanized action label from the raw dotted key (no meta available). */
-function actionLabel(action: string): string {
-  if (ACTION_LABELS[action]) return ACTION_LABELS[action]
-  if (action.startsWith('booking.status.')) {
-    const status = action.slice('booking.status.'.length)
-    return `Bokning ${BOOKING_STATUS_SV[status] ?? status}`
-  }
-  if (action.startsWith('booking.')) return 'Bokningshändelse'
-  // Honest fallback: show the raw key rather than invent a label.
-  return action
 }
 
 /** Row icon for the tone-tile. Tenant keys map directly; booking → calendar/clock. */
@@ -98,7 +55,7 @@ function downloadCsv(rows: PlatformAuditEntry[]) {
   const header = ['Tid', 'Åtgärd', 'Mål', 'Aktör', 'Ton']
   const esc = (s: string) => `"${String(s).replace(/"/g, '""')}"`
   const lines = rows.map((r) =>
-    [fmtTime.format(new Date(r.at)), actionLabel(r.action), targetLine(r), r.actor, r.tone]
+    [fmtTime.format(new Date(r.at)), platformAuditActionLabel(r.action), targetLine(r), r.actor, r.tone]
       .map(esc)
       .join(','),
   )
@@ -123,7 +80,7 @@ export function DriftLog({ entries }: { entries: PlatformAuditEntry[] }) {
     return entries.filter((e) => {
       if (actor !== 'Alla' && e.actor !== actor) return false
       if (!needle) return true
-      const hay = `${actionLabel(e.action)} ${targetLine(e)} ${e.action}`.toLowerCase()
+      const hay = `${platformAuditActionLabel(e.action)} ${targetLine(e)} ${e.action}`.toLowerCase()
       return hay.includes(needle)
     })
   }, [entries, q, actor])
@@ -181,18 +138,18 @@ export function DriftLog({ entries }: { entries: PlatformAuditEntry[] }) {
           <h2 className="h2">Audit-logg</h2>
           <span className={`num ${styles.chip}`}>
             <Icon name="layers" size={12} />
-            audit_log · build-once-never-delete
+            audit_log · append-only
           </span>
         </div>
 
         <div className={styles.rows}>
           {filtered.map((e, i) => (
             <div key={e.id} className={styles.row} style={i ? undefined : { borderTop: 'none' }}>
-              <span className={styles.tile} style={{ color: TONE_COLOR[e.tone] }}>
+              <span className={styles.tile} style={{ color: PLATFORM_AUDIT_TONE_COLORS[e.tone] }}>
                 <Icon name={actionIcon(e.action)} size={17} />
               </span>
               <div className={styles.rowBody}>
-                <div className={styles.rowAction}>{actionLabel(e.action)}</div>
+                <div className={styles.rowAction}>{platformAuditActionLabel(e.action)}</div>
                 <div className={styles.rowTarget}>{targetLine(e)}</div>
               </div>
               <span className={styles.actor}>{e.actor}</span>

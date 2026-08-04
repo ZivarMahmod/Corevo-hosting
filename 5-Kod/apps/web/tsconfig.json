@@ -5,6 +5,8 @@
     "paths": {
       "@/*": ["./*"]
     },
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "plugins": [{ "name": "next" }],
     "allowJs": true,
     "incremental": true

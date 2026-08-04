@@ -14,7 +14,7 @@ import { setBookingStatus } from '@/lib/admin/actions'
 import { REPEAT_KINDS, REPEAT_LABELS, type RepeatKind } from '@/lib/admin/block-series'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { Button, Callout, Modal, useToast } from '@/components/portal/ui'
-import type { CalendarBlock, CalendarStaff } from './CalendarBoard'
+import type { CalendarBlock, CalendarStaff } from './calendar-types'
 import styles from './calendar.module.css'
 
 /** Blockera tid — samma yta för att skapa och för att ta bort (goal-66, B-22).

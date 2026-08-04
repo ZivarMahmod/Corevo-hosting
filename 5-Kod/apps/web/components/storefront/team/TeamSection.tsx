@@ -1,7 +1,7 @@
 // Teamet — DEN DELADE SEKTIONEN (goal-64).
 //
 // SERVER-komponent. Detta är FALLBACKEN: mallar som deklarerar `moduleViews.team` i sin
-// <key>.theme.ts äger formen själva (vektor-regeln) och når aldrig hit.
+// runtime-mappen äger formen själva (vektor-regeln) och når aldrig hit.
 //
 // BOKNINGS-KOPPLINGEN (HANDOFF §4: "teamkorten och prisraderna förifyller bokningen via
 // bookAs() — behåll den kopplingen"): varje teamkort länkar till /boka?personal=<staffId>.
@@ -45,7 +45,7 @@ function MemberCard({ member, ctaLabel }: { member: TeamMember; ctaLabel: string
     <li className={s.card}>
       <div className={s.media}>
         {member.imageUrl ? (
-          // Plain <img> — storefrontens remote-image-config är fryst (aldrig next/image).
+          // Plain <img> — fjärrkällan är inte konfigurerad för next/image.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={member.imageUrl} alt={member.name} loading="lazy" className={s.img} />
         ) : (

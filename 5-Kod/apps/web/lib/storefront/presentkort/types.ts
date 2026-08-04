@@ -15,13 +15,6 @@
 // branch on. The DB table (gift_cards, 0036) is variant-agnostic; only presentation
 // differs.
 //
-// ⚠ PAYMENT PARKED (compliance): a gift card touches money, but NO betal-rails are
-// built (locked rule: no payment services without explicit OK). The `payment` hook
-// is a PARKED hook — `paymentEnabled` is ALWAYS false until rails open; there is no
-// provider, no purchase, no order. The storefront reads `paymentEnabled` (always
-// false today) and never renders a pay step. This mirrors the shop's parked payment
-// hook EXACTLY.
-
 /** The two fulfilment variants (mirrors modules.variant_schema.fulfilment.enum in
  *  0036). */
 export const PRESENTKORT_FULFILMENTS = ['digital', 'physical'] as const
@@ -34,10 +27,7 @@ export const PRESENTKORT_FULFILMENT_LABELS: Record<PresentkortFulfilment, string
   physical: 'Fysiskt (hämtas)',
 }
 
-/** Parsed tenant_modules.config for the presentkort module. Defaults mirror 0036's
- *  default_config. `paymentEnabled` is a PARKED hook — betal-rails are paused
- *  (compliance); it is ALWAYS false until rails open and the storefront never
- *  renders a pay step (same shape as the shop's payment hook). */
+/** Parsed tenant_modules.config for the presentkort module. */
 export type PresentkortConfig = {
   fulfilment: PresentkortFulfilment
   /**
@@ -68,20 +58,6 @@ export type PresentkortConfig = {
    * så befintliga kunder är oförändrade.
    */
   deliveryModes: GiftDeliveryMode[]
-  /** Betal-hook (legacy 0036). Betal-rälsen gatas numera av tenant_settings.payments_enabled
-   *  + stripe_charges_enabled i confirm_shop_order — samma gate som produkter. */
-  paymentEnabled: boolean
-}
-
-/**
- * Är beloppet ett av kundens EGNA? Ren spegling av vakten i reserve_shop_order (0059) —
- * samma regel, två lager. Klient-lagret är bekvämlighet (ingen knapp för ett belopp som
- * ändå skulle avvisas); SERVER-lagret är sanningen och kan inte förbigås.
- * Tom lista = inga belopp konfigurerade = INGET belopp är giltigt (aldrig "då är allt ok").
- */
-export function isAllowedGiftAmount(config: PresentkortConfig, amount: number): boolean {
-  if (!Number.isInteger(amount) || amount <= 0) return false
-  return config.amountPresets.includes(amount)
 }
 
 /** Auroras giftModes = ['Digitalt','Inslaget i butik'] → gift_cards.delivery_mode (0057). */
@@ -90,12 +66,6 @@ export type GiftDeliveryMode = (typeof GIFT_DELIVERY_MODES)[number]
 export const GIFT_DELIVERY_LABELS: Record<GiftDeliveryMode, string> = {
   digital: 'Digitalt',
   in_store: 'Inslaget i butik',
-}
-
-/** Kundens leveransval, härlett ur den konfigurerade varianten (0036 fulfilment).
- *  physical → kortet hämtas i butik; digital → det mejlas. Ingen bransch-if. */
-export function giftDeliveryModes(config: PresentkortConfig): GiftDeliveryMode[] {
-  return config.fulfilment === 'physical' ? ['in_store'] : ['digital']
 }
 
 /** Everything the PresentkortSection needs after the loader runs. Config only —
@@ -112,7 +82,6 @@ const DEFAULT_PRESENTKORT_CONFIG: PresentkortConfig = {
   headline: 'Presentkort',
   codePrefix: '',
   deliveryModes: ['digital'],
-  paymentEnabled: false,
 }
 
 function asFulfilment(raw: unknown): PresentkortFulfilment {
@@ -144,20 +113,11 @@ function asPositiveIntArray(raw: unknown, fallback: number[]): number[] {
 
 /**
  * Defensively coerce the raw tenant_modules.config jsonb into a typed
- * PresentkortConfig. Robust to missing/partial config (a freshly activated draft has
- * only the 0036 default; a malformed row degrades to DEFAULT_PRESENTKORT_CONFIG).
- * Reads the snake_case jsonb keys (amount_presets, currency, headline, payment.enabled)
- * exactly as written by the migration default_config. The payment hook is always read
- * as disabled unless an explicit `payment.enabled === true` appears — and even then
- * the storefront does not render a pay step (rails parked, compliance).
+ * PresentkortConfig. Missing or malformed values fall back to the current defaults.
  */
 export function parsePresentkortConfig(raw: unknown): PresentkortConfig {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...DEFAULT_PRESENTKORT_CONFIG }
   const src = raw as Record<string, unknown>
-  const pay = (src.payment && typeof src.payment === 'object' ? src.payment : {}) as Record<
-    string,
-    unknown
-  >
   const fulfilment = asFulfilment(src.fulfilment)
   // `amounts` = goal-64:s nyckel; `amount_presets` = 0036:s. Läs den nya först, fall
   // tillbaka på den gamla — EXAKT samma prioritet som reserve_shop_order (0059), annars
@@ -175,7 +135,6 @@ export function parsePresentkortConfig(raw: unknown): PresentkortConfig {
     headline: asNonEmptyString(src.headline, DEFAULT_PRESENTKORT_CONFIG.headline),
     codePrefix: typeof src.code_prefix === 'string' ? src.code_prefix.trim() : '',
     deliveryModes: rawModes.length > 0 ? rawModes : fulfilment === 'physical' ? ['in_store'] : ['digital'],
-    paymentEnabled: pay.enabled === true,
   }
 }
 

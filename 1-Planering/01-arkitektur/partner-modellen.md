@@ -1,11 +1,9 @@
-# Partner-modellen — varför superadmin ska klara ALLT utan backend
+# Partner-modellen
 
-> Zivar 2026-07-18 (muntligt, strukturerat här; skärpt samma dag). Sekvensen:
-> **(1) superadmin maxas för Zivar först** (goal-72), **(2) partner-rollen
-> läggs direkt därefter** — den ska INTE vänta. Partnern får nästan identisk
-> yta som Zivars superadmin, bara isolerad till sina kunder. Globala kataloger,
-> partnerhantering och pris ligger root-only. Zivar ser och följer partnerns
-> data. Samma produkt, ett scoping-lager till.
+Partnern använder samma plattformsyta som Corevo-operatören, men är server- och
+RLS-skopad till sina egna kunder. Globala kataloger, partnerhantering och pris är
+root-only. Det är samma produkt med ett extra auktoritetslager, inte en separat
+partnerapp.
 
 ## Modellen
 
@@ -43,7 +41,7 @@ partnern den automatiskt — och kan börja söka sådana kunder i sitt land.
 Branschmotorn (EN kodbas, moduler à la carte) är alltså också partnerns
 tillväxtmotor. Se `multibransch-plattform-arkitektur.md` (kanon).
 
-## Implementerad arkitektur (etapp 4 i goal-72)
+## Implementerad arkitektur
 
 1. **Partner-scoping i DB:** tenants ägs av en partner (partner-organisation
    ovanför tenant). RLS/server-grindar filtrerar allt platform-UI per partner.
@@ -59,7 +57,7 @@ tillväxtmotor. Se `multibransch-plattform-arkitektur.md` (kanon).
 5. **Isolerade ytor:** partnerns admin ser bara sina kunder, sina kostnader,
    sin fakturering. Ingen läcka mellan partners.
 
-## Regler för allt som byggs NU (goal-72 m.fl.)
+## Regler
 
 - **Servern bestämmer listan.** UI:t får aldrig anta "alla tenants" — det
   frågar servern vilka tenants som finns. Då blir partner-filtret en

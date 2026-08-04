@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { setTenantTheme, type ActionState } from '@/lib/platform/actions'
+import { setTenantTheme } from '@/lib/platform/actions/theme'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
 import { themeContentCompatibility } from '@/lib/platform/theme-capabilities'
 import { ThemeGallery } from './ThemeGallery'

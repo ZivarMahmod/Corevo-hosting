@@ -14,6 +14,12 @@ const runtimeSql = readFileSync(
   ),
   'utf8',
 ).toLowerCase()
+const deliveryMigration = readFileSync(
+  fileURLToPath(
+    new URL('../../../../supabase/migrations/20260804140000_customer_portal_mode_delivery.sql', import.meta.url),
+  ),
+  'utf8',
+).toLowerCase()
 
 const ci = readFileSync(
   fileURLToPath(new URL('../../../../../.github/workflows/ci.yml', import.meta.url)),
@@ -52,6 +58,14 @@ const criticalRpcs = [
 ] as const
 
 describe('customer portal 0120 migration contract', () => {
+  it('preserves existing legacy mode during the transactional delivery cutover', () => {
+    expect(deliveryMigration.trimStart()).toMatch(/^--[^\n]*\n\s*begin;/)
+    expect(deliveryMigration.trimEnd()).toMatch(/commit;$/)
+    expect(deliveryMigration).toMatch(
+      /when ts\.settings #>> '\{customer_portal,mode\}' = 'legacy_account'\s+then coalesce\(ts\.settings, '\{\}'::jsonb\)/,
+    )
+  })
+
   it('keeps every credential table private and hash-only', () => {
     for (const table of [
       'customer_portal_links',
@@ -111,22 +125,10 @@ describe('customer portal 0120 migration contract', () => {
     )
   })
 
-  it('serializes exchange and cancellation and binds every booking to session ownership', () => {
+  it('serializes link exchange and binds it to the consumed credential', () => {
     expect(migration).toMatch(
       /customer_portal_exchange_link[\s\S]*?for update[\s\S]*?consumed_at/,
     )
-    const cancel = migration.match(
-      /create or replace function public\.customer_portal_cancel_booking[\s\S]*?\n\$\$;/,
-    )?.[0]
-    expect(cancel).toBeTruthy()
-    expect(cancel).toContain('for update')
-    expect(cancel).toContain('b.tenant_id = v_session.tenant_id')
-    expect(cancel).toContain('b.customer_id = v_session.customer_id')
-    expect(migration).toContain("'booking:' || v_booking.id::text || ':cancelled'")
-    expect(migration).toContain("'already_cancelled'")
-    expect(migration).toContain("'not_found'")
-    expect(migration).toContain("'not_allowed'")
-    expect(migration).toContain('p_idempotency_key')
   })
 
   it('enforces replay, expiry, rotation, bounded pages and GDPR revocation in postgres', () => {
@@ -370,7 +372,7 @@ describe('customer portal 0120 migration contract', () => {
 
   it('moves the database release inventory through the latest timestamped migration without pretending production is applied', () => {
     for (const workflow of [ci, deploy]) {
-      expect(workflow).toContain('--expected-latest 20260803191057')
+      expect(workflow).toContain('--expected-latest 20260804150000')
       expect(workflow).toMatch(/--required-test-versions[^\n]*0130,0131,0132,0133,0134,0135/)
     }
     expect(deploy).toContain('PROD_DB_MIGRATION')

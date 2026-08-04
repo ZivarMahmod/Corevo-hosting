@@ -9,8 +9,8 @@ const portal = (pathname: string) =>
   decideCustomerPortalHostRoute({ hostKind: 'customer_portal', pathname, preview: false })
 
 describe('customer portal host route firewall', () => {
-  it('allows exactly the 11 canonical page-route families on mina.corevo.se', () => {
-    expect(CUSTOMER_PORTAL_ROUTE_PATTERNS).toHaveLength(11)
+  it('allows exactly the 10 canonical page-route families on mina.corevo.se', () => {
+    expect(CUSTOMER_PORTAL_ROUTE_PATTERNS).toHaveLength(10)
     for (const pathname of [
       '/oppna/freshcut',
       '/aterhamta/freshcut',
@@ -22,7 +22,6 @@ describe('customer portal host route firewall', () => {
       '/mina/profil',
       '/mina/sakerhet',
       '/mina/installera',
-      '/mina/integritet',
     ]) {
       expect(portal(pathname), pathname).toBe('allow')
       expect(portal(`${pathname}/`), `${pathname}/`).toBe('allow')
@@ -70,7 +69,6 @@ describe('customer portal host route firewall', () => {
       'tenant',
       'platform',
       'superadmin',
-      'staff_portal',
       'root',
       'reserved',
       'unknown',

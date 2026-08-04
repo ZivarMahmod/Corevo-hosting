@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CommandPalette, type CommandItem } from './ui/CommandPalette'
-import { Icon, type IconName } from './ui/Icon'
+import { Icon } from './ui/Icon'
 import { Modal } from './ui/Modal'
 import { ThemeSwitch } from './ThemeSwitch'
 import styles from './Topnav.module.css'
@@ -20,6 +20,7 @@ import {
   MOBILE_SEARCH_EVENT,
   type MobileCalendarMeta,
 } from './mobile-search-event'
+import type { IconName } from '@/lib/ui-icons'
 
 /**
  * Back-office-skalet från 2026-07-13-handoffen. Var superadmin-only (PlatformTopnav);
@@ -133,7 +134,6 @@ function desktopSubnavIcon(href: string): IconName {
   if (href === '/branscher') return 'layers'
   if (href === '/integrationer') return 'link'
   if (href === '/domaner') return 'globe'
-  if (href === '/roller') return 'shield'
   return 'settings'
 }
 
@@ -177,7 +177,6 @@ export function Topnav({
   brandName,
   brandSub,
   brandLabel,
-  primaryAction,
   quickActions,
   contextLink,
   themeVariant = 'segmented',
@@ -204,7 +203,6 @@ export function Topnav({
   brandSub: string
   /** aria-label på varumärkeslänken. */
   brandLabel: string
-  primaryAction?: { href: string; label: string; icon: IconName }
   /** Genvägsraden (Zivar 2026-07-18): dashboardens genvägar flyttade till bannern som
    *  cirkulära ikonknappar för åtkomst från varje adminyta. Ersätter GENVÄGAR-kortet. */
   quickActions?: readonly TopnavQuickAction[]

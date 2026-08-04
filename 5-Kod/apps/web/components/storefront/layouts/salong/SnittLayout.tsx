@@ -24,7 +24,7 @@ import styles from './snitt.module.css'
  * Filen har varken butiks- eller blogg-band på hemmet — och då har inte mallen det
  * heller. Modulerna nås via nav och sidfot, precis som i filen. Att lägga till en
  * sektion "för att de andra mallarna har en" ÄR att improvisera bort mallen
- * (CLAUDE.md § DESIGN-TROHET).
+ * (se AGENTS.md:s UI-acceptansregel).
  *
  * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
  * renderar samma komponent.

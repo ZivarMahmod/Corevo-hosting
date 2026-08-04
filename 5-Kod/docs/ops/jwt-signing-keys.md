@@ -26,7 +26,7 @@ sidladdning. Tidigare betalade varje admin-sida 2–3 seriella `getUser()`-rundo
   nätverksverifiering (långsammare) eller nekar.
 - Legacy HS256-nyckeln kan revokeras när alla tokens utfärdade före rotationen
   löpt ut (refresh-cykeln är kort; cookien är 400 dagar men tokens byts löpande).
-- **Rök efter deploy** (planens STOP-villkor): logga in på alla tre dörrar,
+- **Rök efter deploy** (planens STOP-villkor): logga in på booking och superbooking,
   navigera adminen — sessionen ska hålla (ingen utloggningsloop) och
   nätverksfliken ska visa färre `/auth/v1/user`-anrop. Backa middleware-steget
   om utloggningsloop uppstår (behåll getUser DÄR, byt bara DAL-rundan).

@@ -3,13 +3,13 @@ import {
   THEME_CONTENT,
   resolveTenantCopy,
   resolveThemeContent,
-  type CopyOverride,
-} from '@/components/storefront/theme-content'
+} from '@/lib/storefront/theme-content'
+import type { CopyOverride } from './theme-copy'
 
 // M2↔M6 copy-content contract. Owner copy lives in tenant_settings.settings.copy
 // and is read here with a defensive per-field fallback to the per-theme default in
-// THEME_CONTENT. `parseSettings` (frozen) does NOT validate `copy`, so the object
-// reaching these functions is effectively unknown-shaped — these tests pin that
+// THEME_CONTENT. `parseSettings` passes through the optional `copy` object, so the
+// value remains unknown-shaped — these tests pin that
 // only a non-empty (post-trim) string overrides; everything else falls back.
 
 const FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic'] as const
@@ -67,7 +67,7 @@ describe('resolveTenantCopy — per-field owner-vs-default fallback', () => {
 
   it('non-string values (number/object/array) are rejected → theme default', () => {
     const base = THEME_CONTENT.salvia
-    // Simulate malformed jsonb that frozen parseSettings does not validate.
+    // Simulate malformed jsonb that parseSettings intentionally passes through.
     const malformed = { heroTitle: 42, heroLede: {}, tagline: ['x'] } as unknown as CopyOverride
     const out = resolveTenantCopy('salvia', malformed)
     expect(out.heroTitle).toBe(base.heroTitle)

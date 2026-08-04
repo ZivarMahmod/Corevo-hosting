@@ -2,8 +2,8 @@
 
 // Onboarding-studio (goal-48 W1) — the ROOT shell that assembles the leaves into the
 // honest linear journey Kunder → Onboarding-studio → Live. Ports the design's App
-// stage-machine (app.jsx:19–168), but driven by the REAL StudioCfg reducer (state.ts)
-// and the proven createTenant FormData contract (state.ts/buildCreateTenantFormData).
+// stage-machine (app.jsx:19–168), driven by StudioCfg-reducern och
+// createTenant-kontraktet i state.ts/buildTenantOnboardingFormData.
 //
 // HONESTY (build-contract §9): the single real write is createTenant, fired ONLY by
 // the live panel's Lansera button. There is NO 6-task fake DB-launch theatre (the
@@ -12,8 +12,7 @@
 // banner with the real slug + message; error → an honest inline error strip). The
 // design's result-stage CustomerAdmin mock + Storefront render are W-later, not W1.
 //
-// Inline-styled against the [data-world="backoffice"] --c-* tokens (project
-// convention; no *.module.css). Flag-OFF (CreateTenantForm) is never touched.
+// Inline-styled against the [data-world="backoffice"] --c-* tokens.
 import {
   startTransition,
   useActionState,
@@ -24,11 +23,11 @@ import {
   type CSSProperties,
 } from 'react'
 import { Button, Icon } from '@/components/portal/ui'
-import { createTenant } from '@/lib/platform/actions'
+import { createTenant } from '@/lib/platform/actions/tenants'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { initStudioCfg } from '@/lib/platform/onboarding-studio/model'
 import {
-  buildCreateTenantFormData,
+  buildTenantOnboardingFormData,
   makeStudioReducer,
   type StudioStage,
 } from '@/lib/platform/onboarding-studio/state'
@@ -47,11 +46,8 @@ export type OnboardingStudioProps = {
 }
 
 /**
- * Thin remount host. The frozen reducer has no `reset` action (state.ts is frozen),
- * so "Onboarda nästa kund" gets a TRUE clean slate by bumping `runId` → the whole
- * machine (cfg / stage / step / action-state) remounts fresh. This prevents the real
- * footgun of re-prefilling the previous customer's name/slug/modules and re-submitting
- * a duplicate slug. Keep this wrapper minimal — only the remount key lives here.
+ * Remount the whole machine for "Onboarda nästa kund" so reducer state and
+ * useActionState reset together. Only the remount key lives in this host.
  */
 export function OnboardingStudio({ presets }: OnboardingStudioProps) {
   const [runId, setRunId] = useState(0)
@@ -113,7 +109,7 @@ function StudioMachine({
   // Lansera → build the FormData and fire the proven createTenant action. The success
   // effect above flips us to the result stage; an error lands in result.error (below).
   const onLaunch = () => {
-    startTransition(() => formAction(buildCreateTenantFormData(cfg)))
+    startTransition(() => formAction(buildTenantOnboardingFormData(cfg)))
   }
 
   // Bransch-NAMNET (cfg bär bara nyckeln) → preview/resultat-attrappernas placeholder-

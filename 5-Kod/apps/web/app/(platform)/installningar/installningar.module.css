@@ -4,7 +4,7 @@
    cards containing only facts that are true in the live platform.
 
    HONESTY (NEVER FAKE DATA + "no dead toggles"): no platform-settings store exists
-   (foundation: migration out of frozen scope), so no fake or disabled setting is
+   (foundation: migration required), so no fake or disabled setting is
    rendered. The audit-guard invariant and the manual billing model remain as
    explicit, non-interactive facts. */
 

@@ -8,12 +8,17 @@ import type {
   ShopRefundStatus,
   ShippingOptionRow,
 } from '@/lib/admin/shop/types'
-import { SHOP_PAYMENT_METHODS, type ShopPaymentMethod } from '@/lib/storefront/shop/types'
+import {
+  SHOP_FULFILMENT_LABELS,
+  SHOP_PAYMENT_METHODS,
+  formatShopPrice,
+  type ShopFulfilment,
+  type ShopPaymentMethod,
+} from '@/lib/storefront/shop/types'
 import { centsToKronorInput } from '@/lib/admin/format'
 import {
   SHOP_ORDER_STATUSES,
   SHOP_ORDER_STATUS_LABELS,
-  formatCents,
 } from '@/lib/admin/shop/types'
 import {
   createShopProduct,
@@ -50,13 +55,6 @@ import {
   statusTone,
   useToast,
 } from '@/components/portal/ui'
-
-// ── Fulfilment display label ────────────────────────────────────────────────
-const FULFILMENT_LABELS: Record<string, string> = {
-  ship: 'Posta hem',
-  pickup_within_days: 'Hämta i butik',
-  order_in_then_pickup: 'Beställ hem till butik',
-}
 
 const REFUND_STATUS_LABELS: Record<ShopRefundStatus, string> = {
   pending: 'Återbetalning pågår',
@@ -112,7 +110,7 @@ export function ShopAdmin({
       <PageHead
         eyebrow={tenantName}
         title="Webshop"
-        lede={`Leveranssätt: ${FULFILMENT_LABELS[fulfilment] ?? fulfilment}`}
+        lede={`Leveranssätt: ${SHOP_FULFILMENT_LABELS[fulfilment as ShopFulfilment] ?? fulfilment}`}
       >
         <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
           Ny produkt
@@ -149,7 +147,7 @@ export function ShopAdmin({
                   imageUrl={assets.find((a) => a.id === p.image_asset_id)?.url ?? null}
                 />,
                 <span key="pris" className="num" style={{ fontWeight: 600 }}>
-                  {formatCents(p.price_cents, p.currency)}
+                  {formatShopPrice(p.price_cents, p.currency)}
                 </span>,
                 <StockCell key="lager" product={p} />,
                 <ActiveToggle key="status" product={p} />,
@@ -243,7 +241,7 @@ function ShippingSection({ options }: { options: ShippingOptionRow[] }) {
                 {o.description ? <div className="muted">{o.description}</div> : null}
               </div>,
               <span key="pris" className="num" style={{ fontWeight: 600 }}>
-                {o.cost_cents === 0 ? 'Fritt' : formatCents(o.cost_cents)}
+                {o.cost_cents === 0 ? 'Fritt' : formatShopPrice(o.cost_cents)}
               </span>,
               <Badge key="status" tone={o.active ? statusTone('active') : undefined}>
                 {o.active ? 'Aktiv' : 'Avstängd'}
@@ -463,7 +461,7 @@ function ShopAnalytics({ orders }: { orders: ShopOrderRow[] }) {
   return (
     <div style={{ marginTop: 24, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
       <Stat label="Ordrar" value={String(real.length)} />
-      <Stat label="Omsättning" value={formatCents(revenue, currency)} />
+      <Stat label="Omsättning" value={formatShopPrice(revenue, currency)} />
       <Stat label="Kunder" value={String(customers)} />
       <Card>
         <span className="eyebrow" style={{ display: 'block', marginBottom: 6 }}>
@@ -626,14 +624,14 @@ function OrdersSection({ orders, onOpen }: { orders: ShopOrderRow[]; onOpen: (o:
         rows={orders.map((o) => [
           <OrderCustomerCell key="kund" order={o} />,
           <span key="lev" style={{ fontSize: 13 }}>
-            {FULFILMENT_LABELS[o.fulfilment] ?? o.fulfilment}
+            {SHOP_FULFILMENT_LABELS[o.fulfilment as ShopFulfilment] ?? o.fulfilment}
           </span>,
           <OrderStatusCell key="status" order={o} />,
           <span key="refund">
             {o.refund_status ? <RefundStatusBadge status={o.refund_status} /> : '—'}
           </span>,
           <span key="belopp" className="num" style={{ fontWeight: 600 }}>
-            {formatCents(o.total_cents, o.currency)}
+            {formatShopPrice(o.total_cents, o.currency)}
           </span>,
           <span key="datum" style={{ fontSize: 12, color: 'var(--c-ink-3)', whiteSpace: 'nowrap' }}>
             {new Date(o.created_at).toLocaleDateString('sv-SE')}
@@ -687,7 +685,7 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
   return (
     <Drawer
       title={`Order #${order.id.slice(0, 8)}`}
-      sub={`${FULFILMENT_LABELS[order.fulfilment] ?? order.fulfilment} · ${new Date(order.created_at).toLocaleString('sv-SE')}`}
+      sub={`${SHOP_FULFILMENT_LABELS[order.fulfilment as ShopFulfilment] ?? order.fulfilment} · ${new Date(order.created_at).toLocaleString('sv-SE')}`}
       accent={<Badge tone={statusTone(order.payment_status)}>{order.payment_status}</Badge>}
       onClose={onClose}
       ariaLabel={`Order ${order.id}`}
@@ -714,7 +712,7 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
               <span>
                 {it.product_name} × {it.quantity}
               </span>
-              <span className="num">{formatCents(it.unit_price_cents * it.quantity, order.currency)}</span>
+              <span className="num">{formatShopPrice(it.unit_price_cents * it.quantity, order.currency)}</span>
             </div>
           ))}
           <div
@@ -728,7 +726,7 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
             }}
           >
             <span>Totalt</span>
-            <span className="num">{formatCents(order.total_cents, order.currency)}</span>
+            <span className="num">{formatShopPrice(order.total_cents, order.currency)}</span>
           </div>
         </div>
 

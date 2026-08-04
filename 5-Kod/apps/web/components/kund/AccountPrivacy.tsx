@@ -8,12 +8,12 @@ export type NameMode = 'full' | 'first' | 'initial'
  * INTEGRITET panel (§4.8). Shows the customer how their name is presented to the
  * salon + their contact details + the data-retention promise.
  *
- * ⚠️ PERSISTENCE FLAG (honest, no dead controls):
+ * Persistence contract:
  *  · NAME-DISPLAY picker — the customers table HAS the backing columns
  *    (display_name / name_hidden) and customers_rls (0011 §6.1) WOULD permit a
  *    kund to self-write their own row. BUT the only server action that writes
  *    them (`setCustomerPrivacy`, lib/admin/actions.ts) is owner-scoped (adminCtx),
- *    and lib/* is FROZEN this wave (consume-only) — so there is NO customer-
+ *    so there is NO customer-
  *    callable save path. We therefore render the picker as a STATIC reflection of
  *    the REAL stored choice (read from the customer's own row), clearly marked as
  *    salon-managed, instead of a live-looking toggle that silently saves nothing.
@@ -94,8 +94,7 @@ export function AccountPrivacy({
         Visas i verksamhetens system som <b>{shown}</b>
       </p>
 
-      {/* Honest FLAG (per-path, no non-existent paths): name-DISPLAY mode has no
-          customer-callable save action in the consume-only lib — only the salon
+      {/* Name-display mode has no customer-callable save action; only the business
           can change it. */}
       <p className={styles.flag}>
         Hur ditt namn visas hanteras av verksamheten — hör av dig om du vill ändra det. Ditt namn och
@@ -119,14 +118,10 @@ export function AccountPrivacy({
         </div>
       </div>
 
-      {/* Consent row — STATIC, FLAGGED indicator. There is no consent column on
-          customers and no customer-callable action, so this is NOT an interactive
-          toggle (that would be a dead/fake-saving control). It reflects the real
-          retention behaviour: while your account exists, your contact details are
-          kept so you don't re-enter them. The genuine self-service controls
-          (export + permanently erase) are wired on /konto/profil. */}
+      {/* There is no separate consent column. State the real retention behaviour;
+          export and erase are wired on /konto/profil. */}
       <div className={styles.consent}>
-        <div className={styles.consentText}>
+        <div>
           <div className={styles.consentLabel}>Spara mina uppgifter för nästa gång</div>
           <div className={styles.consentSub}>
             Dina uppgifter sparas så länge du har ett konto. Vill du bli glömd kan du exportera eller
@@ -137,16 +132,6 @@ export function AccountPrivacy({
             .
           </div>
         </div>
-        <button
-          type="button"
-          className={styles.toggleStatic}
-          aria-disabled="true"
-          aria-label="Uppgifter sparas medan kontot finns (hanteras via Min profil)"
-          title="Hanteras via Min profil"
-          tabIndex={-1}
-        >
-          <span aria-hidden />
-        </button>
       </div>
     </section>
   )

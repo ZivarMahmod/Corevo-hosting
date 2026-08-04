@@ -18,7 +18,7 @@
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { KURS_SUBMIT_INITIAL, type KursSubmitState } from '@/lib/storefront/kurser/types'
-import { submitEventRegistration } from '@/app/(public)/kurser/actions'
+import { submitEventRegistration } from '@/lib/storefront/kurser/actions'
 import styles from './storefront-form.module.css'
 
 /** Submit button. Nested so useFormStatus reads THIS form's pending state. */

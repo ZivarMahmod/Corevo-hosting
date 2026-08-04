@@ -1,7 +1,7 @@
 import type { Service, TenantContact, TenantLocation, StorefrontTheme } from '@/lib/tenant-data'
 import type { ShopProduct } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
-import type { ResolvedThemeContent } from '../theme-content'
+import type { ResolvedThemeContent } from '@/lib/storefront/theme-content.types'
 
 /**
  * Förladdade modul-teasers för teman som väver in butik/blogg/presentkort i sitt
@@ -12,28 +12,21 @@ import type { ResolvedThemeContent } from '../theme-content'
  * inga modulsektioner, vilket är rätt: previewn har egna modul-mockar.
  */
 export type LayoutModuleTeasers = {
-  /** true när /boka får nås (live eller paused; off/draft döljs). */
+  /** true när bokningsmodulen är live. */
   bookingReachable: boolean
   /** Max 3 produkter när shop-modulen är live; annars tom. */
   shopTeasers: ShopProduct[]
   /** Max 3 publicerade inlägg när blogg-modulen är live; annars tom. */
   bloggTeasers: BloggPost[]
-  /** true när /presentkort renderar (live/paused + läsbar config). */
+  /** true när presentkort är live och har läsbar config. */
   presentkortReachable: boolean
   /** true när /shop går att nå och har minst en aktiv produkt. */
   shopReachable: boolean
   /** true när /blogg går att nå och har minst ett publicerat inlägg. */
   bloggReachable: boolean
-  /** true när /offert renderar (live/paused + läsbar config). */
+  /** true när offert är live och har läsbar config. */
   offertReachable: boolean
-  /**
-   * goal-64: true när /klubb går att nå (lojalitet live ELLER paused).
-   *
-   * Klubben fick ingen route förrän nu, så mallar som HAR den (Onyx "Kretsen", Auroras
-   * klubbband, Siluetts "Första raden") tvingades rendera den som olänkad text — en länk
-   * hade blivit en 404. Nu finns sidan, men gaten är fortfarande helig: lojalitet av →
-   * NOLL länkar dit. Flaggan är hela skillnaden mellan en länk och en 404-fälla.
-   */
+  /** true när lojalitet är live och har läsbar config. */
   lojalitetReachable: boolean
   /** true när /kurser renderar och har minst ett kommande öppet tillfälle. */
   kurserReachable: boolean

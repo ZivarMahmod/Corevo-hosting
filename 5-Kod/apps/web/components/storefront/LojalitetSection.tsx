@@ -1,28 +1,4 @@
-// Lojalitet storefront SECTION (multi-bransch spår 5, §15 skelett vs skin).
-//
-// SERVER component. The SECTION reads module data (resolved config via
-// loadLojalitetData); the TEMPLATE/skin gives the look. Per §15: "funktioner bor i
-// MODULEN, inte i mallen" — this section IS the lojalitet module's storefront
-// surface, injected at the module's default_section_position ('main', per 0035). It
-// styles itself with the storefront design tokens (var(--color-*) / var(--font-*)),
-// the SAME token-driven approach as ShopSection / BloggSection — no new palette, so
-// it blends into whichever skin the tenant runs.
-//
-// GATING (caller contract): render this ONLY when the tenant's lojalitet module is
-// LIVE. The call site (storefront page) resolves tenant_modules.state via
-// getTenantModuleStates() + isModuleLive(states,'lojalitet') and renders
-// <LojalitetSection> only then — EXACTLY the booking + shop + offert + blogg gate
-// shape. draft/off never reach here; a PAUSED lojalitet renders the section with a
-// paused notice — same contract as the booking paused banner / paused blogg.
-//
-// PRESENTATION VARIANTS (config-first, beslut 14.5): the section behaves per the
-// resolved variant via the pure helpers in lib/storefront/lojalitet/types.ts:
-//   points     → visa poäng-program (tjäna X poäng per besök).
-//   stamp_card → stämpelkort (rita stampGoal tomma stämpel-cirklar).
-// No `if (bransch)` anywhere — only the variant drives the difference.
-//
-// NO PAYMENT (unlike shop/offert): loyalty points never touch direct money. The
-// homepage CTA leads to the module's existing signup surface instead of duplicating it.
+// Callers render this section only for a live lojalitet module.
 
 import { SectionHeader } from './sections'
 import Link from 'next/link'
@@ -30,18 +6,10 @@ import s from './promo-section.module.css'
 import { lojalitetVariantLabel, type LojalitetData } from '@/lib/storefront/lojalitet/types'
 import { loadLojalitetData } from '@/lib/storefront/lojalitet/load-lojalitet'
 
-/** Resolve + render the lojalitet section for one tenant. Returns null when there
- *  is nothing to show (no lojalitet module row) so the caller can compose
- *  unconditionally. `paused` renders a paused notice over the promo. */
-export async function LojalitetSection({
-  tenantId,
-  slug,
-  paused = false,
-}: {
+/** Resolve + render the lojalitet section for one live tenant module. */
+export async function LojalitetSection({ tenantId, slug }: {
   tenantId: string
   slug: string
-  /** true when tenant_modules.state='lojalitet' is 'paused' → promo shown, paused. */
-  paused?: boolean
 }) {
   const data: LojalitetData | null = await loadLojalitetData(tenantId, slug)
   if (!data) return null
@@ -56,12 +24,6 @@ export async function LojalitetSection({
           title={config.headline}
           lead={config.perkText}
         />
-
-        {paused ? (
-          <p role="status" className={s.notice}>
-            Lojalitetsprogrammet är pausat just nu.
-          </p>
-        ) : null}
 
         {config.variant === 'stamp_card' ? (
           <ul
@@ -79,11 +41,9 @@ export async function LojalitetSection({
           </p>
         )}
 
-        {!paused ? (
-          <Link href="/klubb" className={s.cta}>
-            Bli medlem
-          </Link>
-        ) : null}
+        <Link href="/klubb" className={s.cta}>
+          Bli medlem
+        </Link>
       </div>
     </section>
   )

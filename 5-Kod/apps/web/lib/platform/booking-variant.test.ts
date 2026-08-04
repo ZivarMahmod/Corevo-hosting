@@ -138,4 +138,25 @@ describe('booking verification channel policy', () => {
     expect(readBookingVerificationMode({ booking: {} })).toBe('sms_with_email_fallback')
     expect(readBookingVerificationMode(null)).toBe('sms_with_email_fallback')
   })
+
+  it('activates booking PIN only for the passwordless tenant mode', () => {
+    expect(bookingVariantModule.readActiveBookingVerificationMode({
+      customer_portal: { mode: 'passwordless_tenant' },
+      booking: { verificationMode: 'email_only' },
+    })).toBe('email_only')
+    expect(bookingVariantModule.readActiveBookingVerificationMode({
+      customer_portal: { mode: 'passwordless_tenant' },
+      booking: {},
+    })).toBe('sms_with_email_fallback')
+
+    for (const mode of ['legacy_account', 'off', 'global_account', 'unknown']) {
+      expect(bookingVariantModule.readActiveBookingVerificationMode({
+        customer_portal: { mode },
+        booking: { verificationMode: 'email_only' },
+      })).toBeNull()
+    }
+    expect(bookingVariantModule.readActiveBookingVerificationMode({
+      booking: { verificationMode: 'email_only' },
+    })).toBeNull()
+  })
 })

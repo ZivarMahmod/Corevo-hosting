@@ -55,11 +55,6 @@ export function monthGridRangeUtc(
   }
 }
 
-/** Måndagen ('YYYY-MM-DD') i veckan som innehåller `date`. */
-export function mondayOfDate(date: string): string {
-  return mondayOf(date)
-}
-
 /** Lägg till `n` månader på en 'YYYY-MM-DD' (klampas till månadens sista dag —
  *  31 jan + 1 månad = 28/29 feb, aldrig ett överspill till mars). */
 export function addMonths(date: string, n: number): string {

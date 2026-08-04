@@ -1,192 +1,6 @@
 /* Staff-portal-scoped styles (G06). CSS module → hashed class names, no leakage.
-   Uses the frozen Corevo design tokens (--c-forest forest, --c-gold gold,
+   Uses the shared Corevo design tokens (--c-forest forest, --c-gold gold,
    --radius-*, --shadow-*, state colors). Components reference variables only. */
-
-/* ── Sub-nav (Idag / Arbetstider / Frånvaro) ─────────────────────────────── */
-.nav {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.75rem;
-}
-.navLink {
-  text-decoration: none;
-  color: inherit;
-  padding: 0.45rem 0.95rem;
-  border-radius: var(--radius-pill, 999px);
-  border: 1px solid color-mix(in srgb, var(--c-ink) 14%, transparent);
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition:
-    color var(--dur-fast, 0.15s) var(--ease-out, ease),
-    border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
-    background var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.navLink:hover {
-  border-color: var(--c-forest);
-  color: var(--c-forest);
-}
-.navLinkActive,
-.navLinkActive:hover {
-  background: var(--c-forest-fill, var(--c-forest));
-  border-color: var(--c-forest);
-  color: #fff;
-  font-weight: 600;
-}
-
-/* ── Date navigation + view toggle ───────────────────────────────────────── */
-.dateNav {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin: 0.75rem 0 1.25rem;
-}
-.dateNav a {
-  text-decoration: none;
-  color: inherit;
-  border: 1px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
-  border-radius: var(--radius-md, 0.5rem);
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  transition:
-    border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
-    color var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.dateNav a:hover {
-  border-color: var(--c-forest);
-  color: var(--c-forest);
-}
-.dateNavSpacer {
-  flex: 1;
-}
-.viewToggle {
-  display: inline-flex;
-  gap: 0.25rem;
-  padding: 0.2rem;
-  border-radius: var(--radius-pill, 999px);
-  background: color-mix(in srgb, var(--c-ink) 6%, transparent);
-}
-.viewToggle a {
-  border: 1px solid transparent;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.85rem;
-}
-.viewToggle a:hover {
-  border-color: transparent;
-  color: var(--c-forest);
-}
-.viewToggleActive,
-.viewToggleActive:hover {
-  background: var(--c-paper);
-  color: var(--c-forest);
-  font-weight: 600;
-  box-shadow: var(--shadow-soft);
-}
-
-/* ── Today overview stats ────────────────────────────────────────────────── */
-.stats {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  margin: 1.25rem 0 2rem;
-}
-.stat {
-  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  border-radius: var(--radius-lg, 0.625rem);
-  padding: 1.1rem 1.25rem;
-  background: var(--c-paper);
-  box-shadow: var(--shadow-soft);
-}
-.statValue {
-  font-family: var(--font-display);
-  font-size: 1.9rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--c-forest);
-}
-.statLabel {
-  font-size: 0.82rem;
-  opacity: 0.72;
-  margin-top: 0.2rem;
-}
-
-/* ── Day groups + booking list ───────────────────────────────────────────── */
-.dayGroup {
-  margin-bottom: 1.75rem;
-}
-.dayHeading {
-  font-size: 1.05rem;
-  margin: 0 0 0.6rem;
-  text-transform: capitalize;
-  color: var(--c-forest);
-}
-
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.row {
-  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  border-radius: var(--radius-lg, 0.625rem);
-  padding: 0.85rem 1.1rem;
-  background: var(--c-paper);
-  box-shadow: var(--shadow-soft);
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.rowHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.rowMain {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-.rowTime {
-  font-weight: 700;
-  color: var(--c-forest);
-}
-.rowSub {
-  font-size: 0.85rem;
-  opacity: 0.78;
-}
-
-/* ── Status badges ───────────────────────────────────────────────────────── */
-.badge {
-  display: inline-block;
-  padding: 0.18rem 0.6rem;
-  border-radius: var(--radius-pill, 999px);
-  font-size: 0.72rem;
-  font-weight: 600;
-  white-space: nowrap;
-  background: color-mix(in srgb, var(--c-ink) 10%, transparent);
-}
-.badgePending {
-  background: color-mix(in srgb, var(--c-gold) 22%, transparent);
-  color: color-mix(in srgb, var(--c-ink) 80%, var(--c-gold));
-}
-.badgeConfirmed {
-  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 16%, transparent);
-  color: var(--c-forest);
-}
-.badgeCompleted {
-  background: color-mix(in srgb, var(--c-success, #36a165) 22%, transparent);
-  color: color-mix(in srgb, var(--c-success, #36a165) 85%, var(--c-ink));
-}
-.badgeNo_show,
-.badgeCancelled {
-  background: color-mix(in srgb, var(--c-danger, #d62f2f) 16%, transparent);
-  color: color-mix(in srgb, var(--c-danger, #d62f2f) 80%, var(--c-ink));
-}
 
 /* ── Booking status actions + generic delete ─────────────────────────────── */
 .actions {
@@ -230,19 +44,6 @@
   color: var(--c-danger, #d62f2f);
 }
 
-/* ── Add forms (working hours / time off) ────────────────────────────────── */
-.form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.85rem;
-  align-items: flex-end;
-  margin: 1rem 0 1.5rem;
-  padding: 1.25rem;
-  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  border-radius: var(--radius-lg, 0.625rem);
-  background: var(--c-paper);
-  box-shadow: var(--shadow-soft);
-}
 .field {
   display: flex;
   flex-direction: column;
@@ -318,53 +119,6 @@
 }
 
 /* ── Client card: drawer ─────────────────────────────────────────────────── */
-.drawerOverlay {
-  position: fixed;
-  inset: 0;
-  background: color-mix(in srgb, var(--c-ink) 35%, transparent);
-  display: flex;
-  justify-content: flex-end;
-  z-index: 50;
-}
-.drawer {
-  width: min(30rem, 100vw);
-  height: 100%;
-  overflow-y: auto;
-  background: var(--c-paper);
-  box-shadow: var(--shadow-lifted, 0 10px 40px rgba(0, 0, 0, 0.25));
-  padding: 1.5rem;
-}
-.drawerHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-.drawerTitle {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--c-forest);
-  margin: 0;
-}
-.cardSections {
-  display: grid;
-  gap: 1.5rem;
-}
-.eyebrow {
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--c-forest);
-  margin-bottom: 0.6rem;
-}
-.detailGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1rem;
-}
 .detailLabel {
   font-size: 0.72rem;
   opacity: 0.7;
@@ -388,59 +142,6 @@
 .piiGrid {
   display: flex;
   gap: 1.5rem;
-}
-
-/* ── Client card: loyalty ────────────────────────────────────────────────── */
-.loyaltyHead {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-}
-.loyaltyPoints {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--c-gold-600, var(--c-gold));
-}
-.loyaltyTier {
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.18rem 0.6rem;
-  border-radius: var(--radius-pill, 999px);
-  background: var(--c-gold-100, color-mix(in srgb, var(--c-gold) 18%, transparent));
-  color: var(--c-gold-600, var(--c-gold));
-}
-
-/* ── Client card: history ────────────────────────────────────────────────── */
-.histList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.histRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
-}
-.histRow:last-child {
-  border-bottom: none;
-}
-.histService {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.histMeta {
-  font-size: 0.78rem;
-  opacity: 0.7;
-  margin-top: 0.1rem;
-}
-.histPrice {
-  font-size: 0.85rem;
-  opacity: 0.85;
-  white-space: nowrap;
 }
 
 /* ── Notes form + inline forms ───────────────────────────────────────────── */
@@ -484,26 +185,6 @@
   background: color-mix(in srgb, var(--c-ink) 4%, transparent);
 }
 
-/* ── Walk-in ─────────────────────────────────────────────────────────────── */
-.walkin {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-end;
-}
-.walkin .form {
-  width: 100%;
-}
-
-/* ── Read-only schedule rows ─────────────────────────────────────────────── */
-.readonlyHint {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  opacity: 0.72;
-}
-
 /* ── Loading skeletons ───────────────────────────────────────────────────── */
 .skeleton {
   position: relative;
@@ -535,16 +216,8 @@
   }
 }
 
-/* ── Touch targets (Våg 4): tablet-in-salon is the primary staff context, so the
-   daily booking actions (Genomförd / Uteblev / Omboka / Avboka) + sub-nav must
-   clear the ~44px tap guideline. Gated on `pointer: coarse` (touch devices only)
-   so DESKTOP (fine pointer) stays byte-identical — no padding/layout change there.
-   Additive: only adds min-height + centers content on coarse pointers. */
 @media (pointer: coarse) {
-  .btn,
-  .navLink,
-  .viewToggle a,
-  .dateNav a {
+  .btn {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
@@ -552,15 +225,6 @@
   }
 }
 
-.skelStats {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  margin: 1.25rem 0 2rem;
-}
-.skelStat {
-  height: 5.5rem;
-}
 .skelRow {
   height: 3.75rem;
   margin-bottom: 0.6rem;

@@ -70,17 +70,6 @@ export function todayInTz(timeZone: string): string {
   }).format(new Date())
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Ej bekräftad',
-  confirmed: 'Bekräftad',
-  completed: 'Genomförd',
-  cancelled: 'Avbokad',
-  no_show: 'Uteblev',
-}
-export function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status
-}
-
 /** Guest contact rides bookings.note as "Gäst: <name> <<email>> <phone>" (G04). */
 export function parseGuestName(note: string | null): string | null {
   if (!note) return null

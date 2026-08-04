@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isAllowedPortalPostOrigin } from './origin'
+import { customerPortalOrigin, isAllowedPortalPostOrigin } from './origin'
 
 const request = (url: string, origin?: string, host?: string) =>
   new Request(url, {
@@ -11,6 +11,19 @@ const request = (url: string, origin?: string, host?: string) =>
   })
 
 describe('customer portal POST origin fence', () => {
+  it('builds the delivery origin from the same call-time host owner', () => {
+    const previous = process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST
+    try {
+      process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST = 'portal.example.se'
+      expect(customerPortalOrigin()).toBe('https://portal.example.se')
+      process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST = 'portal.example.se/path'
+      expect(customerPortalOrigin()).toBeNull()
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST
+      else process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST = previous
+    }
+  })
+
   it('allows only same-origin HTTPS on mina.corevo.se', () => {
     expect(
       isAllowedPortalPostOrigin(

@@ -7,12 +7,23 @@ export type BookingStatusPresentation = {
   canManage: boolean
 }
 
+export const BOOKING_STATUS_LABELS: Record<string, string> = {
+  pending: 'Ej bekräftad',
+  confirmed: 'Bekräftad',
+  completed: 'Genomförd',
+  cancelled: 'Avbokad',
+  no_show: 'Uteblev',
+}
+
+export function bookingStatusLabel(status: string): string {
+  return BOOKING_STATUS_LABELS[status] ?? status
+}
+
 const PRESENTATIONS: Record<string, BookingStatusPresentation> = {
   pending: {
     eyebrow: 'FÖRFRÅGAN MOTTAGEN',
     heading: 'Din bokningsförfrågan är mottagen',
-    message:
-      'Tiden är inte bekräftad ännu. Du får ett besked när verksamheten har godkänt den.',
+    message: 'Tiden är inte bekräftad ännu. Du får ett besked när verksamheten har godkänt den.',
     stamp: 'VÄNTAR PÅ SVAR',
     canAddToCalendar: false,
     canManage: true,
@@ -61,6 +72,8 @@ const UNKNOWN: BookingStatusPresentation = {
   canManage: false,
 }
 
-export function bookingStatusPresentation(status: string | null | undefined): BookingStatusPresentation {
+export function bookingStatusPresentation(
+  status: string | null | undefined,
+): BookingStatusPresentation {
   return (status && PRESENTATIONS[status]) || UNKNOWN
 }

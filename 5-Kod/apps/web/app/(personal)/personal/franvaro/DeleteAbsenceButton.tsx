@@ -5,8 +5,8 @@ import { deleteTimeOff, type ActionState } from '@/lib/personal/actions'
 import { Button, useToast } from '@/components/portal/ui'
 
 /**
- * Co-located delete for one frånvaro row. Mirrors the shared DeleteRowButton
- * (same `deleteTimeOff` action, hidden id) but adds the §4.10 consequence toast
+ * Co-located delete for one frånvaro row. Uses `deleteTimeOff` with a hidden id
+ * and adds the §4.10 consequence toast
  * the shared button can't fire (it's owned by the shared pass and swallows its
  * own success). Additive: keeps the shipped immediate-delete behavior.
  */

@@ -15,18 +15,6 @@ import type {
   VerticalPresetData,
 } from './verticals-shared'
 
-// Re-export the client-safe surface so existing SERVER importers can keep importing
-// the types + modulesForVertical from '@/lib/platform/verticals'. (Client code must
-// import these from './verticals-shared' directly — importing them from here would
-// pull this module's `server-only` marker into the client bundle.)
-export type {
-  ModuleOption,
-  VerticalPreset,
-  TemplateOption,
-  VerticalPresetData,
-} from './verticals-shared'
-export { modulesForVertical } from './verticals-shared'
-
 /** Coerce a jsonb `default_modules` value into a clean { key: state } map. */
 function parseDefaultModules(raw: unknown): Record<string, ModuleState> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { buildFixedProbeTargets, buildProbeTargets, isHealthyStatus } from './check_domains.mjs'
 
 describe('buildProbeTargets', () => {
-  it('probes committed custom domains before falling back to the booking path', () => {
+  it('always probes the canonical booking host and any published compatibility domain', () => {
     expect(buildProbeTargets(['FreshCut', ' demo '], ['freshcut.corevo.se'])).toEqual([
+      { host: 'freshcut.boka.corevo.se', path: '/boka' },
       { host: 'freshcut.corevo.se', path: '/' },
       { host: 'demo.boka.corevo.se', path: '/boka' },
     ])

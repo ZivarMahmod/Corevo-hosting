@@ -1,4 +1,4 @@
-// @corevo/auth — FROZEN contract (G02).
+// @corevo/auth — shared authentication contract.
 // Shared @supabase/ssr client factories + tenant-claim helper.
 // Auth = Supabase Auth (ADR 01 §4). tenant_id is a JWT claim in app_metadata
 // (server-set via Custom Access Token Hook), read by RLS via auth.tenant_id().
@@ -10,9 +10,8 @@ import type { Database } from '@corevo/db'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://localhost:54321'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'anon-placeholder-key'
-// HISTORISK kommentar sade "shared across *.corevo.se" — sedan goal-27 är cookien
-// HOST-LOCKED per dörr (superbooking/booking/minbooking) och AUTH_COOKIE_DOMAIN är
-// TOM i prod. Sätt den ALDRIG till `.corevo.se`: det skulle skicka super-admin-
+// Cookien är host-låst och AUTH_COOKIE_DOMAIN är tom i produktion. Sätt den
+// aldrig till `.corevo.se`: det skulle skicka super-admin-
 // sessionen till varenda tenant-storefront. Data isolation via RLS (ADR 01 §2).
 const AUTH_COOKIE_DOMAIN = process.env.AUTH_COOKIE_DOMAIN || undefined
 // Session lifetime is NOT controllable here. @supabase/ssr (0.10.3) hardcodes the

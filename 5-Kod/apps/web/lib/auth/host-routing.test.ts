@@ -1,14 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { decideBackofficeRoute, type BackofficeHostKind } from './host-routing'
+import {
+  canonicalPlatformCustomerUrl,
+  decideBackofficeRoute,
+  type BackofficeHostKind,
+} from './host-routing'
 import { PLATFORM_ROUTE_PREFIXES } from './platform-routes'
 
-// goal-27 — 3-door back-office grind. These lock the PRODUCTION host policy:
-// superbooking = platform surfaces, booking = salon admin, minbooking = staff.
+// Production host policy: superbooking = platform, booking = admin + staff.
 // Cross-door surfaces redirect to the owning host; the rest bounce home.
 const HOSTS = {
   superadmin: 'superbooking.corevo.se',
   platform: 'booking.corevo.se',
-  staff: 'minbooking.corevo.se',
 }
 const decide = (hostKind: BackofficeHostKind, path: string) =>
   decideBackofficeRoute({ hostKind, path, hosts: HOSTS })
@@ -28,13 +30,21 @@ describe('superadmin host (superbooking) — platform surfaces only', () => {
     }
   })
   it('redirects salon-admin + staff surfaces to their own hosts', () => {
-    expect(decide('superadmin', '/admin')).toEqual({ action: 'redirectHost', host: HOSTS.platform, to: '/admin' })
+    expect(decide('superadmin', '/admin')).toEqual({
+      action: 'redirectHost',
+      host: HOSTS.platform,
+      to: '/admin',
+    })
     expect(decide('superadmin', '/admin/installningar')).toEqual({
       action: 'redirectHost',
       host: HOSTS.platform,
       to: '/admin/installningar',
     })
-    expect(decide('superadmin', '/personal')).toEqual({ action: 'redirectHost', host: HOSTS.platform, to: '/personal' })
+    expect(decide('superadmin', '/personal')).toEqual({
+      action: 'redirectHost',
+      host: HOSTS.platform,
+      to: '/personal',
+    })
   })
   it('bounces anything else (storefront) to the dashboard home', () => {
     expect(decide('superadmin', '/boka')).toEqual({ action: 'redirect', to: '/' })
@@ -42,14 +52,17 @@ describe('superadmin host (superbooking) — platform surfaces only', () => {
   })
 })
 
-describe('platform host (booking) — salon admin only', () => {
+describe('platform host (booking) — admin and staff', () => {
   it('passes the salon-admin surface', () => {
     expect(decide('platform', '/admin')).toEqual({ action: 'pass' })
     expect(decide('platform', '/admin/tjanster')).toEqual({ action: 'pass' })
   })
   it('redirects platform surfaces to superbooking', () => {
-    expect(decide('platform', '/salonger')).toEqual({ action: 'redirectHost', host: HOSTS.superadmin, to: '/salonger' })
-    expect(decide('platform', '/kunder')).toEqual({ action: 'redirectHost', host: HOSTS.superadmin, to: '/kunder' })
+    expect(decide('platform', '/kunder')).toEqual({
+      action: 'redirectHost',
+      host: HOSTS.superadmin,
+      to: '/kunder',
+    })
     expect(decide('platform', '/slutkunder')).toEqual({
       action: 'redirectHost',
       host: HOSTS.superadmin,
@@ -78,32 +91,72 @@ describe('platform host (booking) — salon admin only', () => {
   })
 })
 
-describe('staff_portal host (minbooking) — staff schedule only', () => {
-  it('passes the staff surface', () => {
+describe('staff compatibility host (minbooking) — published staff contract only', () => {
+  it('serves staff routes without creating another staff implementation', () => {
     expect(decide('staff_portal', '/personal')).toEqual({ action: 'pass' })
     expect(decide('staff_portal', '/personal/arbetstider')).toEqual({ action: 'pass' })
   })
-  it('redirects platform + admin surfaces to their hosts', () => {
-    expect(decide('staff_portal', '/salonger')).toEqual({
+
+  it('moves admin and platform routes to their canonical hosts', () => {
+    expect(decide('staff_portal', '/admin')).toEqual({
       action: 'redirectHost',
-      host: HOSTS.superadmin,
-      to: '/salonger',
+      host: HOSTS.platform,
+      to: '/admin',
     })
     expect(decide('staff_portal', '/kunder')).toEqual({
       action: 'redirectHost',
       host: HOSTS.superadmin,
       to: '/kunder',
     })
-    expect(decide('staff_portal', '/slutkunder')).toEqual({
-      action: 'redirectHost',
-      host: HOSTS.superadmin,
-      to: '/slutkunder',
-    })
-    expect(decide('staff_portal', '/admin')).toEqual({ action: 'redirectHost', host: HOSTS.platform, to: '/admin' })
   })
-  it('sends / (and unknown paths) to /personal', () => {
+
+  it('lands unknown paths on the existing staff surface', () => {
     expect(decide('staff_portal', '/')).toEqual({ action: 'redirect', to: '/personal' })
     expect(decide('staff_portal', '/konto')).toEqual({ action: 'redirect', to: '/personal' })
+  })
+})
+
+describe('published /salonger compatibility URL', () => {
+  const canonical = (
+    raw: string,
+    hostKind: BackofficeHostKind | null = 'superadmin',
+    preview = false,
+  ) =>
+    canonicalPlatformCustomerUrl(new URL(raw), {
+      hostKind,
+      preview,
+      superadminHost: HOSTS.superadmin,
+    })
+
+  it.each([
+    ['https://superbooking.corevo.se/salonger', 'https://superbooking.corevo.se/kunder'],
+    [
+      'https://booking.corevo.se/salonger/tenant-id?tab=drift',
+      'https://superbooking.corevo.se/kunder/tenant-id?tab=drift',
+    ],
+    [
+      'https://minbooking.corevo.se/salonger/ny?from=staff',
+      'https://superbooking.corevo.se/kunder/ny?from=staff',
+    ],
+  ])('maps %s in one redirect without losing suffix or query', (legacy, expected) => {
+    expect(canonical(legacy)?.toString()).toBe(expected)
+  })
+
+  it('keeps preview on its current host', () => {
+    expect(
+      canonical('http://booking.localhost:3000/salonger/id?tab=drift', 'platform', true)?.toString(),
+    ).toBe('http://booking.localhost:3000/kunder/id?tab=drift')
+  })
+
+  it.each(['/kunder', '/slutkunder', '/salonger-arkiv', '/admin/salonger'])(
+    'does not rewrite unrelated path %s',
+    (path) => {
+      expect(canonical(`https://superbooking.corevo.se${path}`)).toBeNull()
+    },
+  )
+
+  it('never maps the alias for a tenant/custom/unknown host', () => {
+    expect(canonical('https://freshcut.corevo.se/salonger', null)).toBeNull()
   })
 })
 

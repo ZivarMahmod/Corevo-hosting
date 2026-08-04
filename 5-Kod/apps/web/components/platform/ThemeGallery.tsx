@@ -167,7 +167,7 @@ function ThemeCard({
     <button type="button" onClick={onPick} aria-pressed={isSelected} className={s.card}>
       <span className={s.thumb} style={{ background: theme.bg }} aria-hidden="true">
         {theme.hero ? (
-          // eslint-disable-next-line @next/next/no-img-element -- remote-image-configen är fryst (aldrig next/image)
+          // eslint-disable-next-line @next/next/no-img-element -- fjärrkällan är inte konfigurerad för next/image
           <img src={theme.hero} alt="" className={s.thumbImg} loading="lazy" />
         ) : null}
         {/* Palett-remsan ovanpå fotot: mallens primary + ink + bakgrund. */}

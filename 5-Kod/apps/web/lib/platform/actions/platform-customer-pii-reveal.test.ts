@@ -9,14 +9,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../guard', () => ({ platformCtx: () => mocks.platformCtx() }))
 vi.mock('../audit', () => ({ logPlatformAction: (...args: unknown[]) => mocks.audit(...args) }))
 vi.mock('./observe', () => ({ reportActionError: (...args: unknown[]) => mocks.report(...args) }))
-vi.mock('../service', () => ({ createServiceClient: vi.fn(), hasServiceRole: vi.fn() }))
+vi.mock('../service', () => ({ createServiceClient: vi.fn() }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/admin/tenant', () => ({ revalidateTenantById: vi.fn() }))
-vi.mock('@/lib/auth/invite', () => ({ inviteRedirectUrl: vi.fn() }))
 vi.mock('@/lib/auth/staff-invite-service', () => ({
-  compensateFailedStaffInvite: vi.fn(),
-  findExistingStaffInviteProfile: vi.fn(),
-  findStaffInviteBinding: vi.fn(),
+  provisionStaffInvite: vi.fn(),
 }))
 
 import { revealPlatformCustomerContact } from './people'

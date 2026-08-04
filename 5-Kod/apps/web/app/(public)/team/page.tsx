@@ -4,10 +4,10 @@ import { currentTenant } from '@/lib/tenant-data'
 import { TeamSection } from '@/components/storefront/team/TeamSection'
 import { pageMetadata } from '@/components/storefront/seo'
 import { loadTeamMembers } from '@/lib/storefront/team/load-team'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
-import { branschBokning } from '@/components/storefront/bransch-copy'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
+import { branschBokning } from '@/lib/storefront/bransch-copy'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +33,7 @@ export default async function TeamPage() {
   // VEKTOR-REGELN: mallen äger formen, plattformen datan + boknings-kopplingen.
   const View = themeModuleViews(settings.theme).team
   if (View) {
-    const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+    const copy = await getTenantCopy(bundle)
     const content = resolveThemeContent(settings.theme, settings.branding, copy)
     return <View members={members} content={content} tenantName={tenant.name} />
   }

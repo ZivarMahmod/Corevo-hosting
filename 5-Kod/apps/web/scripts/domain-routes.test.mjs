@@ -12,7 +12,10 @@ import {
   RESERVED,
 } from './domain-routes.mjs'
 
-const CANONICAL_RESERVED = 'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(',')
+const CANONICAL_RESERVED =
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(
+    ',',
+  )
 
 // A wrangler.jsonc shape with COMMENTS + top-level routes + an empty staging.routes.
 const WR = `{
@@ -44,7 +47,13 @@ describe('applyCustomDomainEdit', () => {
     expect(text).toContain('top comment that MUST survive')
     expect(text).toContain('env block comment')
     // the fixed hosts + boka wildcard untouched
-    for (const p of ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se', '*.boka.corevo.se/*']) {
+    for (const p of [
+      'booking.corevo.se',
+      'superbooking.corevo.se',
+      'minbooking.corevo.se',
+      'mina.corevo.se',
+      '*.boka.corevo.se/*',
+    ]) {
       expect(text).toContain(p)
     }
   })
@@ -88,13 +97,19 @@ describe('applyCustomDomainEdit', () => {
 describe('readCustomDomainPatternsFromText', () => {
   it('returns custom_domain patterns and EXCLUDES the zone_name wildcard', () => {
     const out = readCustomDomainPatternsFromText(WR)
-    expect(out).toEqual(['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'mina.corevo.se'])
+    expect(out).toEqual([
+      'booking.corevo.se',
+      'superbooking.corevo.se',
+      'minbooking.corevo.se',
+      'mina.corevo.se',
+    ])
     expect(out).not.toContain('*.boka.corevo.se/*')
   })
 })
 
 describe('fixed-route protection (customer portal + *.boka wildcard)', () => {
-  it('REQUIRED_FIXED_ROUTES includes mina.corevo.se and the storefront wildcard', () => {
+  it('REQUIRED_FIXED_ROUTES includes published portal hosts and the storefront wildcard', () => {
+    expect(REQUIRED_FIXED_ROUTES).toContain('minbooking.corevo.se')
     expect(REQUIRED_FIXED_ROUTES).toContain('mina.corevo.se')
     expect(REQUIRED_FIXED_ROUTES).toContain('*.boka.corevo.se/*')
     // and the custom_domain reader does NOT see it → it must be asserted via all-routes
@@ -108,7 +123,10 @@ describe('fixed-route protection (customer portal + *.boka wildcard)', () => {
   })
 
   it('the editor REFUSES to operate on a file already missing the boka wildcard (fail-closed)', () => {
-    const broken = WR.replace('    { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" }\n', '')
+    const broken = WR.replace(
+      '    { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" }\n',
+      '',
+    )
     expect(() => applyCustomDomainEdit(broken, 'newsalon')).toThrow(/\*\.boka\.corevo\.se/)
   })
 })
@@ -155,6 +173,11 @@ describe('wrangler production/staging contract', () => {
 
   it('binds mina.corevo.se only to the production worker', () => {
     expect(cfg.routes).toContainEqual({ pattern: 'mina.corevo.se', custom_domain: true })
+    expect(cfg.env.staging.routes).toEqual([])
+  })
+
+  it('binds the published minbooking compatibility host only to production', () => {
+    expect(cfg.routes).toContainEqual({ pattern: 'minbooking.corevo.se', custom_domain: true })
     expect(cfg.env.staging.routes).toEqual([])
   })
 

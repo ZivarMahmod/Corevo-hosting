@@ -32,14 +32,13 @@ import styles from './onyx.module.css'
 
 /* ═════════════════════════════════ BUTIKEN ════════════════════════════════ */
 
-export function OnyxShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function OnyxShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   return (
     <section className={styles.onShop} data-module="shop" data-fulfilment={config.fulfilment}>
@@ -49,12 +48,6 @@ export function OnyxShop({ data, paused, limit, moreHref, content }: ThemeShopVi
         Begränsade antal per vecka. När droppet är slut är det slut — nästa måndag kommer nya
         sorter.
       </p>
-
-      {paused ? (
-        <p role="status" className={styles.onNotice}>
-          [ STÄNGT ] BUTIKEN TAR EMOT INGA NYA BESTÄLLNINGAR JUST NU.
-        </p>
-      ) : null}
 
       {products.length === 0 ? (
         <p className={styles.onEmpty}>[ TOMT ] DROPPET ÄR SLUT.</p>
@@ -69,7 +62,7 @@ export function OnyxShop({ data, paused, limit, moreHref, content }: ThemeShopVi
                   aria-label={`${p.name} — visa produkten`}
                   style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                 >
-                  <span className={styles.onSrOnly}>{p.imageAlt ?? p.name}</span>
+                  <span className="sr-only">{p.imageAlt ?? p.name}</span>
                 </a>
                 {/* Filens etikett i bildhörnet — render-on-present: ingen badge → ingen ruta. */}
                 {p.badge ? <span className={styles.onCardTag}>{p.badge}</span> : null}
@@ -82,8 +75,7 @@ export function OnyxShop({ data, paused, limit, moreHref, content }: ThemeShopVi
                 <span className={styles.onCardPrice}>{formatProductPrice(p)}</span>
               </div>
               {p.description ? <p className={styles.onCardDesc}>{p.description}</p> : null}
-              {/* Pausad butik → NOLL köpknappar. Katalogen är fortfarande läsbar. */}
-              {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} compact />}
+              <AddToCart product={p} fulfilment={config.fulfilment} compact />
             </li>
           ))}
         </ul>

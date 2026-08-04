@@ -24,8 +24,11 @@ vi.mock('@/components/portal/ui', () => ({
   useToast: () => ({ notify: mocks.notify }),
 }))
 
-vi.mock('@/lib/platform/actions', () => ({
+vi.mock('@/lib/platform/actions/status', () => ({
   setTenantStatus: mocks.setTenantStatus,
+}))
+
+vi.mock('@/lib/platform/actions/domains', () => ({
   removeCustomDomain: mocks.removeCustomDomain,
   addCustomDomain: mocks.addCustomDomain,
   verifyCustomDomain: mocks.verifyCustomDomain,

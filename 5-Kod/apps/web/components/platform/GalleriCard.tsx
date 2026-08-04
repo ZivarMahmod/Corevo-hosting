@@ -5,8 +5,8 @@ import {
   createGalleryItem,
   updateGalleryItem,
   deleteGalleryItem,
-  type ActionState,
-} from '@/lib/platform/actions'
+} from '@/lib/admin/galleri/actions'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
 import { GALLERY_RATIOS, type GalleryAdminRow } from '@/lib/admin/galleri/types'
 import styles from './platform.module.css'
@@ -147,7 +147,7 @@ function GalleryRow({
     deleteGalleryItem,
     {},
   )
-  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffTeamCard): en radering
+  // Tvåstegsbekräftelse: en radering
   // på ETT klick är hur en operatör raderar fel bild.
   const [armed, setArmed] = useState(false)
 

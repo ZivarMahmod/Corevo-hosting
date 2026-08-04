@@ -16,7 +16,6 @@
     "deploy": "turbo run deploy",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css,mjs}\"",
     "verify:tenant": "node apps/web/scripts/verify-tenant.ts",
-    "test:acceptance:contract": "node -e \"const { spawnSync } = require('node:child_process'); const probes = ['e2e/acceptans/03-redigera-sidan-v2/probe.js', 'e2e/acceptans/04-installningar-v2/probe.js', 'e2e/acceptans/05-kundportal-losenordsfri-pwa/probe.js', 'e2e/acceptans/06-frisoradmin-pwa/probe.js', 'e2e/acceptans/07-admin-mobile-chrome/probe.js', 'e2e/acceptans/09-goal93-mallar/probe-all.js']; let failed = false; for (const probe of probes) { const result = spawnSync(process.execPath, [probe, '--contract'], { stdio: 'inherit' }); failed ||= result.status !== 0; } process.exit(failed ? 1 : 0)\"",
     "test:goal93:contract": "node e2e/acceptans/09-goal93-mallar/probe-all.js --contract",
     "test:goal93:browser": "node e2e/acceptans/09-goal93-mallar/probe-all.js --browser",
     "test:goal93:runtime": "node e2e/acceptans/09-goal93-mallar/probe-all.js --runtime",

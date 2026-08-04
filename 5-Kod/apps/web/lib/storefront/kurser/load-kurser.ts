@@ -1,21 +1,5 @@
-// Kurser/event-modul — SERVER data loader (goal-54 körning 4). Fetches the
-// tenant's upcoming OPEN tenant_events via the anonymous public client, shaped
-// for the /kurser page. Modeled on lib/storefront/blogg/load-blogg.ts.
-//
-// CRITICAL (same fence as load-blogg.ts, ADR 01 §2): the `anon` role carries NO
-// tenant_id claim, so RLS does NOT isolate tenants for the public client. Every
-// query filters by the resolved tenant_id IN THE APP LAYER.
-//
-// TAKEN-RÄKNING (medvetet val): anon får LÄSA tenant_events men INTE
-// event_registrations (anon har bara insert där). Antalet tagna platser måste
-// därför räknas med SERVICE-klienten (lib/platform/service) — den kör
-// server-side inuti unstable_cache, läcker aldrig till klienten, och läser bara
-// en aggregerad siffra (aldrig PII-fälten). När SUPABASE_SERVICE_ROLE_KEY
-// saknas (lokal dev) degraderar vi till taken=null → UI:t visar "Max Y platser"
-// utan "kvar"-siffra istället för att gissa eller krascha.
-//
-// GATING IS THE CALLER'S JOB: /kurser gate:ar på booking-modulen (live/paused)
-// innan loadern anropas — samma kontrakt som blogg/shop/offert.
+// Caller gates the live kurser module. Every anon query keeps tenant_id; the
+// server-only service client reads only aggregate registration counts.
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'

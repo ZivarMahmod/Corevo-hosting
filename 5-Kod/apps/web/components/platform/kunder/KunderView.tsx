@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { sendPasswordReset, createPlatformCustomer } from '@/lib/platform/actions'
+import { sendPasswordReset, createPlatformCustomer } from '@/lib/platform/actions/people'
 import type { CustomerListItem } from '@/lib/platform/people'
 import { PlatformPiiReveal } from '@/components/platform/PlatformPiiReveal'
 import type { PiiContact } from '@/components/portal/ui/PiiReveal'

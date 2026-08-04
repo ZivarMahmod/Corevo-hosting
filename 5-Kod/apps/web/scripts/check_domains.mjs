@@ -1,8 +1,9 @@
 // goal-32 F4 — domain health guard (offline; NEVER runs in the Worker).
 //
 // Lists every active tenant (the SAME source the deploy generator uses) and asserts:
-//   1. each active tenant's committed custom domain, or fallback booking host, responds,
-//   2. the fixed application hosts are alive.
+//   1. each active tenant's canonical booking host responds,
+//   2. every published compatibility domain responds,
+//   3. the fixed application hosts are alive.
 // Exit 0 = all up, 1 = something drifted. Run after every prod deploy:
 //   node scripts/check_domains.mjs
 //
@@ -25,13 +26,16 @@ export function buildFixedProbeTargets(hosts) {
 export function buildProbeTargets(slugs, customDomains = []) {
   const custom = new Set(customDomains.map((host) => String(host).trim().toLowerCase()))
   return slugs
-    .map((slug) => String(slug || '').trim().toLowerCase())
+    .map((slug) =>
+      String(slug || '')
+        .trim()
+        .toLowerCase(),
+    )
     .filter(Boolean)
-    .map((slug) => {
+    .flatMap((slug) => {
       const customHost = `${slug}.${ROOT_DOMAIN}`
-      return custom.has(customHost)
-        ? { host: customHost, path: '/' }
-        : { host: `${slug}.${TENANT_SUFFIX}`, path: '/boka' }
+      const canonical = { host: `${slug}.${TENANT_SUFFIX}`, path: '/boka' }
+      return custom.has(customHost) ? [canonical, { host: customHost, path: '/' }] : [canonical]
     })
 }
 
@@ -64,21 +68,25 @@ async function main() {
   const raw = readFileSync(resolve(here, '..', 'wrangler.jsonc'), 'utf8')
   const config = parseJsonc(raw, [], { allowTrailingComma: true }) || {}
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || config.vars?.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || config.vars?.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || config.vars?.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supaUrl || !anonKey) throw new Error('check_domains: missing Supabase URL / anon key')
 
   const slugs = await fetchActiveSlugs(supaUrl, anonKey)
-  const tenantTargets = buildProbeTargets(slugs, readCustomDomainPatterns(resolve(here, '..', 'wrangler.jsonc')))
-  const targets = [
-    ...buildFixedProbeTargets(REQUIRED_FIXED_HOSTS),
-    ...tenantTargets,
-  ]
+  const tenantTargets = buildProbeTargets(
+    slugs,
+    readCustomDomainPatterns(resolve(here, '..', 'wrangler.jsonc')),
+  )
+  const targets = [...buildFixedProbeTargets(REQUIRED_FIXED_HOSTS), ...tenantTargets]
 
   const results = await Promise.all(targets.map(probe))
   const down = results.filter((r) => !r.ok)
 
-  console.log(`\ncheck_domains → ${targets.length} hosts (${REQUIRED_FIXED_HOSTS.length} fixed + ${tenantTargets.length} kunder)\n`)
-  for (const r of results) console.log(`  ${r.ok ? 'UP  ' : 'DOWN'}  ${r.host}${r.path}  (${r.status})`)
+  console.log(
+    `\ncheck_domains → ${targets.length} hosts (${REQUIRED_FIXED_HOSTS.length} fixed + ${tenantTargets.length} tenant-hostar)\n`,
+  )
+  for (const r of results)
+    console.log(`  ${r.ok ? 'UP  ' : 'DOWN'}  ${r.host}${r.path}  (${r.status})`)
   console.log(`\n${down.length === 0 ? 'ALL UP' : `${down.length} DOWN`}\n`)
   process.exit(down.length === 0 ? 0 : 1)
 }

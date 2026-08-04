@@ -1,7 +1,7 @@
 -- ============================================================================
 -- ROLLBACK — 0038 site_content_vertical_defaults (Sajtbyggare S1, F2)
 --
--- ⚠️ DESTRUKTIV. Bryter build-once-never-delete med AVSIKT. ENBART för en SAFE
+-- ⚠️ DESTRUKTIV. Bryter den normala additiva migrationsdisciplinen med AVSIKT. ENBART för en SAFE
 -- Supabase-branch under utveckling. KÖR ALDRIG mot prod (clylvowtowbtotrahuad) —
 -- på prod gäller framåt-only (samma regel som 0026_0029_multibranch_rollback).
 --

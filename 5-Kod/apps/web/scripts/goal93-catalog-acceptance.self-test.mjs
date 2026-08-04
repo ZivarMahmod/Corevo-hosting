@@ -229,7 +229,7 @@ test('rejects a renderable legacy theme missing from the DB projection', () => {
   )
 })
 
-test('requires both viewports and all module fixture states', () => {
+test('requires both viewports and binary module fixture states', () => {
   assert.throws(
     () =>
       buildAcceptanceMatrix({
@@ -242,11 +242,11 @@ test('requires both viewports and all module fixture states', () => {
     () =>
       buildAcceptanceMatrix({
         ...contract(),
-        fixtureStates: { shop: ['full', 'off-empty'] },
+        fixtureStates: { shop: ['full'] },
       }),
-    /fixture-state:shop:paused/,
+    /fixture-state:shop:off-empty/,
   )
-  assert.equal(buildAcceptanceMatrix(contract()).length, 8)
+  assert.equal(buildAcceptanceMatrix(contract()).length, 6)
 })
 
 test('accepts only the Goal preview and rejects production', () => {

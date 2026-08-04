@@ -7,17 +7,19 @@ import { POST } from './route'
 
 const originalKey = process.env.CUSTOMER_PORTAL_HMAC_KEY
 const linkPublicId = '123e4567-e89b-42d3-a456-426614174000'
+const bookingId = '223e4567-e89b-42d3-a456-426614174000'
 const secret = 'A'.repeat(43)
 
 function request(
   body: unknown,
-  options: { origin?: string; url?: string; contentType?: string; rawBody?: string } = {},
+  options: { origin?: string; url?: string; contentType?: string; rawBody?: string; cookie?: string } = {},
 ): Request {
   return new Request(options.url ?? 'https://mina.corevo.se/api/customer-portal/exchange', {
     method: 'POST',
     headers: {
       origin: options.origin ?? 'https://mina.corevo.se',
       'content-type': options.contentType ?? 'application/json',
+      ...(options.cookie ? { cookie: options.cookie } : {}),
     },
     body: options.rawBody ?? JSON.stringify(body),
   })
@@ -42,6 +44,7 @@ describe('POST /api/customer-portal/exchange', () => {
         outcome: 'ok',
         session_public_id: args.p_new_session_public_id,
         tenant_slug: 'freshcut',
+        booking_id: bookingId,
       }],
       error: null,
     }))
@@ -50,7 +53,10 @@ describe('POST /api/customer-portal/exchange', () => {
   it('exchanges digests through 0120 and sets the exact host-only session cookie', async () => {
     const response = await POST(request(body))
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ ok: true })
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      destination: `/mina/bokningar/${bookingId}`,
+    })
     expect(response.headers.get('cache-control')).toBe('no-store')
     expect(response.headers.get('referrer-policy')).toBe('no-referrer')
 
@@ -61,6 +67,8 @@ describe('POST /api/customer-portal/exchange', () => {
       p_new_session_public_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       p_new_session_digest: expect.stringMatching(/^[a-f0-9]{64}$/),
       p_key_version: 1,
+      p_existing_session_public_id: null,
+      p_existing_session_digest: null,
     })
     expect(JSON.stringify(rpc.mock.calls)).not.toContain(secret)
 
@@ -74,9 +82,39 @@ describe('POST /api/customer-portal/exchange', () => {
     expect(cookie.toLowerCase()).not.toContain('domain=')
   })
 
+  it('reopens a consumed link with the matching existing session without rotating its cookie', async () => {
+    const sessionPublicId = '323e4567-e89b-42d3-a456-426614174000'
+    const sessionSecret = 'S'.repeat(43)
+    rpc.mockImplementationOnce(async () => ({
+      data: [{
+        outcome: 'ok',
+        session_public_id: sessionPublicId,
+        tenant_slug: 'freshcut',
+        booking_id: bookingId,
+      }],
+      error: null,
+    }))
+
+    const response = await POST(request(body, {
+      cookie: `__Host-corevo-portal=v1.${sessionPublicId}.${sessionSecret}`,
+    }))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('set-cookie')).toBeNull()
+    expect(rpc).toHaveBeenCalledWith('customer_portal_exchange_link', expect.objectContaining({
+      p_existing_session_public_id: sessionPublicId,
+      p_existing_session_digest: expect.stringMatching(/^[a-f0-9]{64}$/),
+    }))
+  })
+
   it('fails neutrally when DB tenant does not match the route tenant', async () => {
     rpc.mockImplementationOnce(async (_name: string, args: Record<string, string | number>) => ({
-      data: [{ outcome: 'ok', session_public_id: args.p_new_session_public_id, tenant_slug: 'other' }],
+      data: [{
+        outcome: 'ok',
+        session_public_id: args.p_new_session_public_id,
+        tenant_slug: 'other',
+        booking_id: bookingId,
+      }],
       error: null,
     }))
     const response = await POST(request(body))

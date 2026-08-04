@@ -1,18 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
   BRANSCH_COPY,
-  BRANSCH_IMAGES,
   branschCopy,
-  branschMedia,
-} from '@/components/storefront/bransch-copy'
-import { withBranschMedia } from '@/components/storefront/images'
+} from './bransch-copy'
+import { BRANSCH_IMAGES, branschMedia, withBranschMedia } from './images'
 import {
   THEME_CONTENT,
-  layerCopy,
   resolveThemeContent,
-  COPY_OVERRIDE_KEYS,
-  type CopyOverride,
-} from '@/components/storefront/theme-content'
+} from '@/lib/storefront/theme-content'
+import { COPY_OVERRIDE_KEYS, layerCopy, type CopyOverride } from './theme-copy'
 
 // BRANSCH-LAGRET. Zivar: "när jag skapar en tatueringsstudio ska de inte vara en mall
 // som säger välkommen till din slaong. branschen avgör mycket av vad som kommer stå."

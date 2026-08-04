@@ -1,7 +1,7 @@
 {
   "name": "Mina bokningar · Corevo",
   "short_name": "Mina bokningar",
-  "id": "/mina",
+  "id": "/mina/",
   "start_url": "/mina/",
   "scope": "/mina/",
   "display": "standalone",

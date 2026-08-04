@@ -61,9 +61,9 @@ iOS (i `<head>`, då iOS ignorerar manifest-ikoner):
 <meta name="theme-color" content="#191a17">
 ```
 
-> Corevo:s kundportalmanifest genereras i
-> `5-Kod/apps/web/app/api/customer-portal/manifest/route.ts`.
-> Byt ut kundportalens ikoner mot dessa och behåll befintlig manifest-logik.
+> Corevo:s kundportalmanifest finns statiskt i
+> `5-Kod/apps/web/public/pwa/customer-portal.webmanifest`.
+> Byt ut kundportalens ikoner mot dessa och behåll befintlig manifestdefinition.
 
 ## Källa
 - De fem levererade PNG-filerna ovan är nuvarande källa i repot.

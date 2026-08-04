@@ -22,12 +22,9 @@ import {
   resolveEditorPickMessage,
 } from './SidaStudioV2.pick'
 import { resolveSiteEditorTabId, siteEditorPreviewSrc, siteEditorTabHref } from './SidaStudioV2.tabs'
-import type { SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
+import type { SiteEditorField, SiteEditorManifest, SiteEditorTab } from '@/lib/platform/site-editor-manifest'
 import { ThemePicker, type ThemeCopyMode } from './ThemePicker'
 import { BookingPanel, type BookingPanelConfig } from './BookingSettings'
-
-export { resolveSiteEditorTabId, siteEditorTabHref } from './SidaStudioV2.tabs'
-export type { SiteEditorCard, SiteEditorField, SiteEditorManifest, SiteEditorTab } from './SidaStudioV2.manifest'
 
 const MESSAGE_SOURCE = 'corevo-sida'
 const HISTORY_BACK_TARGET = '__corevo_history_back__'

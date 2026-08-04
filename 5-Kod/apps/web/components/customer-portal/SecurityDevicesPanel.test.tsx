@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/app/(customer-portal)/mina/actions', () => ({
+vi.mock('@/lib/customer-portal/server-actions', () => ({
   revokeOtherPortalSessionsAction: vi.fn(),
   revokePortalBookingTrustsAction: vi.fn(),
 }))

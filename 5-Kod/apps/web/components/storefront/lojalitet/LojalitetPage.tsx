@@ -28,12 +28,9 @@ import s from './klubb.module.css'
 export function LojalitetPage({
   config,
   plans,
-  paused = false,
 }: {
   config: LojalitetConfig
   plans: LoyaltyPlan[]
-  /** tenant_modules.state = 'paused' → sidan läsbar, men klubben tar inte emot medlemmar. */
-  paused?: boolean
 }) {
   return (
     <section className="section" data-module="lojalitet" data-variant={config.variant}>
@@ -43,12 +40,6 @@ export function LojalitetPage({
           title={config.headline}
           lead={config.perkText}
         />
-
-        {paused ? (
-          <p role="status" className={s.notice}>
-            Lojalitetsprogrammet är pausat just nu — du kan inte gå med för tillfället.
-          </p>
-        ) : null}
 
         {/* Klubbens förmåner (mallarnas clubPerks). Ingen lista i kundens config →
             ingen lista här. */}
@@ -98,7 +89,7 @@ export function LojalitetPage({
                     ))}
                   </ul>
                 ) : null}
-                {!paused ? <JoinClubForm planId={plan.id} cta="Starta" /> : null}
+                <JoinClubForm planId={plan.id} cta="Starta" />
               </li>
             ))}
           </ul>
@@ -106,7 +97,7 @@ export function LojalitetPage({
 
         {/* Klubb utan nivåer (stämpelkort/poäng) → ETT intag. Med nivåer bär varje nivå
             sin egen CTA ovan, och en till här hade bara varit en dublett. */}
-        {!paused && plans.length === 0 ? <JoinClubForm compact /> : null}
+        {plans.length === 0 ? <JoinClubForm compact /> : null}
       </div>
     </section>
   )

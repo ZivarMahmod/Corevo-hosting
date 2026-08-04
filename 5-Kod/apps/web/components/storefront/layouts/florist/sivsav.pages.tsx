@@ -53,7 +53,7 @@ export function SivSavOm({ content, tenant }: ThemePageProps) {
         ))}
       </div>
 
-      <p className={styles.ssSrOnly}>{tenant.name}</p>
+      <p className="sr-only">{tenant.name}</p>
     </section>
   )
 }

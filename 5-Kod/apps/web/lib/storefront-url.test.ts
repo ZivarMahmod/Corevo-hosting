@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  legacyTenantStorefrontHost,
+  normalizeTenantStorefrontOrigin,
   tenantStorefrontAppUrl,
   tenantStorefrontHost,
   tenantStorefrontUrl,
@@ -7,8 +9,8 @@ import {
 
 describe('canonical tenant storefront origin', () => {
   it('builds the first-level tenant host as the standard production origin', () => {
-    expect(tenantStorefrontUrl(' FreshCut ')).toBe('https://freshcut.corevo.se')
-    expect(tenantStorefrontHost(' FreshCut ')).toBe('freshcut.corevo.se')
+    expect(tenantStorefrontUrl(' FreshCut ')).toBe('https://freshcut.boka.corevo.se')
+    expect(tenantStorefrontHost(' FreshCut ')).toBe('freshcut.boka.corevo.se')
   })
 
   it('lets a verified custom domain win', () => {
@@ -27,12 +29,22 @@ describe('canonical tenant storefront origin', () => {
     expect(tenantStorefrontAppUrl('freshcut', null, '127.0.0.1:3000')).toBe(
       'http://127.0.0.1:3000/?tenant=freshcut',
     )
-    expect(tenantStorefrontHost('freshcut')).toBe('freshcut.corevo.se')
+    expect(tenantStorefrontHost('freshcut')).toBe('freshcut.boka.corevo.se')
   })
 
   it('keeps production app links on the canonical host', () => {
     expect(tenantStorefrontAppUrl('freshcut', null, 'corevo.se')).toBe(
-      'https://freshcut.corevo.se',
+      'https://freshcut.boka.corevo.se',
+    )
+  })
+
+  it('keeps the old root-zone host explicit instead of treating it as canonical', () => {
+    expect(legacyTenantStorefrontHost(' FreshCut ')).toBe('freshcut.corevo.se')
+    expect(normalizeTenantStorefrontOrigin('freshcut', 'https://freshcut.corevo.se')).toBe(
+      'https://freshcut.boka.corevo.se',
+    )
+    expect(normalizeTenantStorefrontOrigin('freshcut', 'https://boka.freshcut.se')).toBe(
+      'https://boka.freshcut.se',
     )
   })
 

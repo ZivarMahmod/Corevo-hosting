@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SiteEditorTab } from './SidaStudioV2.manifest'
+import type { SiteEditorTab } from '@/lib/platform/site-editor-manifest'
 import {
   editorFieldTargets,
   resolveEditorFieldTarget,

@@ -1,7 +1,7 @@
 'use client'
 
-// Webshop add-to-cart-kontroll (köp-räls, goal-49). Ersätter den parkerade ShopCta
-// när shoppen är LIVE: variantval (om >1), qty-stepper (ej fri textruta — Baymard),
+// Webshop add-to-cart-kontroll (köp-räls, goal-49): variantval (om >1),
+// qty-stepper (ej fri textruta — Baymard),
 // add-knapp med feedback. Klient-pur: importerar bara pure types + useCart (ingen
 // server-only). Lägger raden i klient-varukorgen; ordern föds vid kassa-start.
 //

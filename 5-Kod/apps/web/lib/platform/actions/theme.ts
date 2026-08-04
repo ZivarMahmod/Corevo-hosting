@@ -9,13 +9,10 @@ import {
   STOREFRONT_THEMES,
   type StorefrontTheme,
 } from '@/lib/tenant-data'
-import { isSelectableTheme } from '@/lib/platform/theme-palettes'
-import {
-  cleanCopyOverride,
-  layerCopy,
-  materializeThemeCopy,
-} from '@/components/storefront/theme-content'
-import { getVerticalCopy } from '@/components/storefront/vertical-copy'
+import { isSelectableCatalogTheme } from '@/lib/platform/theme-catalog'
+import { materializeThemeCopy } from '@/lib/storefront/theme-content'
+import { cleanCopyOverride, layerCopy } from '@/lib/storefront/theme-copy'
+import { getVerticalCopy } from '@/lib/storefront/vertical-copy'
 import { themeOwnsCopy } from '@/lib/platform/theme-capabilities'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC } from './shared'
@@ -47,7 +44,7 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
     return { error: GENERIC }
   }
   if (!tenant) return { error: 'Okänd kund.' }
-  if (!isSelectableTheme(theme) && !(tenant.slug === 'freshcut' && theme === 'freshcut')) {
+  if (!isSelectableCatalogTheme(theme) && !(tenant.slug === 'freshcut' && theme === 'freshcut')) {
     return { error: 'Mallen är inte tillgänglig för den här kunden.' }
   }
 

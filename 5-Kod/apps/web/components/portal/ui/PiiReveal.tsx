@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { useToast } from './Toast'
 
-export { maskEmail, maskPhone } from './pii'
-
 export type PiiContact = {
   email: string | null
   phone: string | null

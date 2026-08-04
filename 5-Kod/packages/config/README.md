@@ -1,6 +1,7 @@
 # @corevo/config
 
-Shared build configuration (**FROZEN after Wave 0 / G01** — do not edit in a parallel worktree).
+Shared build configuration. Change the existing owner here when the shared build
+contract changes; do not add a second preset beside it.
 
 | Concern    | Source                                   |
 | ---------- | ---------------------------------------- |

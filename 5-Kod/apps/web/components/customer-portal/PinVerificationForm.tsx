@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { resendRecoveryAction } from '@/app/(customer-portal)/(open)/aterhamta/[tenantSlug]/actions'
-import { verifyRecoveryAction } from '@/app/(customer-portal)/(open)/verifiera/[tenantSlug]/actions'
+import { resendRecoveryAction, verifyRecoveryAction } from '@/lib/customer-portal/recovery-actions'
+import { FormError } from './FormError'
 
 type InitialRecoveryState =
   | { state: 'sent'; attemptsRemaining: number; retryAfterSeconds: number }
@@ -20,15 +20,6 @@ type ResendResult =
   | { state: 'unavailable' }
   | { state: 'cooldown' | 'max_attempts'; retryAfterSeconds: number }
 
-function FormError({ id, children }: { id?: string; children: ReactNode }) {
-  return (
-    <p className="cp-form-error" id={id} role="alert">
-      <svg className="cp-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></svg>
-      <span>{children}</span>
-    </p>
-  )
-}
-
 function countdownLabel(seconds: number): string {
   const minutes = Math.floor(seconds / 60).toString().padStart(2, '0')
   const rest = (seconds % 60).toString().padStart(2, '0')
@@ -36,13 +27,11 @@ function countdownLabel(seconds: number): string {
 }
 
 export function PinVerificationForm({
-  mode,
   tenantSlug,
   initialState,
   verifyAction = verifyRecoveryAction,
   resendAction = resendRecoveryAction,
 }: {
-  mode: 'recovery'
   tenantSlug: string
   initialState: InitialRecoveryState
   verifyAction?: (tenantSlug: string, code: string) => Promise<VerifyResult>

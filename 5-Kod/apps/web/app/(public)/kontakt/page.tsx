@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { LocationHours, ClosingCta } from '@/components/storefront/sections'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
 import { pageMetadata } from '@/components/storefront/seo'
-import { themePages } from '@/components/storefront/layouts/florist/layouts'
+import { themePages } from '@/components/storefront/layouts/runtime'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +17,7 @@ export default async function ContactPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings, location } = bundle
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+  const copy = await getTenantCopy(bundle)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)
 
   // goal-59 TEMA-PAKET: mallens egen kontaktsida när den äger den (se om/page.tsx).

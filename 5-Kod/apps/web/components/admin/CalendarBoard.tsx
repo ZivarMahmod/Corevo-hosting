@@ -15,6 +15,7 @@ import { addDays, addMonths, dayKey, isoWeekNumber } from '@/lib/admin/dates'
 import { occupancyPct } from '@/lib/admin/dashboard-view'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
+import { getFocusableElements, trapTab } from '@/components/portal/ui/focus'
 import dynamic from 'next/dynamic'
 import {
   BookingDrawer,
@@ -27,6 +28,7 @@ import {
   type BookingRow,
 } from './BookingDrawer'
 import type { CalendarService, NewBookingSeed } from './NewBookingDrawer'
+import type { CalendarBlock, CalendarStaff } from './calendar-types'
 
 // Prestanda B4: dynamic() splittar dessa fyra ur kalenderns HUVUD-chunk (~40-50 kB).
 // NewBookingDrawer + BlockDrawer renderas villkorligt (creating/blocking-state) → chunken
@@ -69,35 +71,6 @@ import {
  *
  *  Vy + datum bor i URL:en (?vy=&datum=), inte i local state — en delad länk öppnar
  *  exakt samma arbetsbord, och webbläsarens bakåtknapp fungerar. */
-
-export type CalendarStaff = {
-  id: string
-  name: string
-  /** Arbetstidens ytterkanter den valda dagen ('HH:MM'), null = ledig. */
-  start: string | null
-  end: string | null
-  /** goal-67: personens kalenderfärg (hex). Serverhärledd — aldrig null här. */
-  color: string
-  /** Arbetsminuter den valda dagen (sammanslagna pass) — nämnaren i beläggningssiffran. */
-  workedMinutes: number
-  /** Resurskopplingarna bakom ombokningsväljaren; båda är tenant-fencade på servern. */
-  serviceIds: string[]
-  locationIds: string[]
-}
-
-/** En blockerad tid (time_off): rast, frånvaro eller avvikande arbetstid. EN
- *  mekanism för allt som gör resursen obokningsbar — ingen separat rast- eller
- *  frånvaromodul (Wavys lärdom: en mekanism, fyra behov). */
-export type CalendarBlock = {
-  id: string
-  staffId: string
-  startTs: string
-  endTs: string
-  reason: string
-  /** Satt när blockeringen ingår i en återkommande serie — då erbjuder drawern
-   *  "endast denna / denna och framåt" i stället för en enkel borttagning. */
-  seriesId: string | null
-}
 
 export type CalendarView = 'dag' | 'vecka' | 'manad'
 
@@ -329,32 +302,20 @@ export function CalendarBoard({
     if (!mobileDateOpen) return
     const dialog = mobileDateDialogRef.current
     const returnFocus = mobileDateReturnFocusRef.current
-    const focusable = () => [...(dialog?.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])') ?? [])]
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
         setMobileDateOpen(false)
         return
       }
-      if (event.key !== 'Tab') return
-      const controls = focusable()
-      const first = controls[0]
-      const last = controls.at(-1)
-      if (!first || !last) {
-        event.preventDefault()
-      } else if (!dialog?.contains(document.activeElement)) {
-        event.preventDefault()
-        ;(event.shiftKey ? last : first).focus()
-      } else if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
+      if (dialog) trapTab(event, dialog)
     }
     document.addEventListener('keydown', onKeyDown)
-    ;(dialog?.querySelector<HTMLElement>('[aria-current="date"]') ?? focusable()[0] ?? dialog)?.focus()
+    ;(
+      dialog?.querySelector<HTMLElement>('[aria-current="date"]') ??
+      (dialog && getFocusableElements(dialog)[0]) ??
+      dialog
+    )?.focus()
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       if (returnFocus?.isConnected) returnFocus.focus()
@@ -363,10 +324,11 @@ export function CalendarBoard({
   }, [mobileDateOpen])
 
   useEffect(() => {
-    const toggleMobileDate = () => setMobileDateOpen((open) => {
-      if (!open) mobileDateReturnFocusRef.current = document.activeElement as HTMLElement | null
-      return !open
-    })
+    const toggleMobileDate = () =>
+      setMobileDateOpen((open) => {
+        if (!open) mobileDateReturnFocusRef.current = document.activeElement as HTMLElement | null
+        return !open
+      })
     window.addEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
     return () => window.removeEventListener(MOBILE_CALENDAR_DATE_EVENT, toggleMobileDate)
   }, [])
@@ -2293,7 +2255,7 @@ function MonthGrid({
   onOpen: (b: BookingRow) => void
   colorOf: (staffId: string) => string
 }) {
-  const { cells, month } = useMemo(() => {
+  const cells = useMemo(() => {
     const anchor = new Date(`${date}T12:00:00Z`)
     const month = anchor.getUTCMonth()
     const first = new Date(Date.UTC(anchor.getUTCFullYear(), month, 1, 12))
@@ -2309,7 +2271,7 @@ function MonthGrid({
       // Sluta efter hel vecka när månaden är slut — annars ritas en tom sjätte rad.
       if (i >= 27 && d.getUTCDay() === 0 && d.getUTCMonth() !== month) break
     }
-    return { cells, month }
+    return cells
   }, [date])
 
   // goal-67: månadsvyn visar BOKNINGARNA, inte bara ett antal. "3 bokningar" tvingar

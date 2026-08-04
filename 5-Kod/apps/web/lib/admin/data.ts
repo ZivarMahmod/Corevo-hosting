@@ -1,11 +1,11 @@
 import 'server-only'
 import { cache } from 'react'
 import type { Tables } from '@corevo/db'
-import type { TenantBranding } from '@corevo/ui'
 import { createClient } from '@/lib/supabase/server'
 import { sanitizeBookingNote } from '@/lib/booking/note'
 import { contactWindowBounds } from '@/lib/booking/contact-window'
 import { staffColor } from './staff-colors'
+import { staffReadiness, type StaffReadiness } from './staff-readiness'
 import { hmToMinutes, sumMergedMinutes } from './dashboard-view'
 
 // Every read here runs through the cookie-bound authenticated client, so RLS
@@ -17,7 +17,6 @@ export type ServiceRow = Tables<'services'>
 export type StaffRow = Tables<'staff'>
 export type LocationRow = Tables<'locations'>
 export type SettingsRow = Tables<'tenant_settings'>
-export type DomainRow = Tables<'tenant_domains'>
 export type WorkingHourRow = Tables<'working_hours'>
 
 export type SlotRow = Tables<'working_hour_slots'>
@@ -28,6 +27,123 @@ export type StaffWithServices = StaffRow & {
   /** All historical bookings, including cancelled ones. Any history means the
    * staff identity must be archived through active=false instead of deleted. */
   bookingCount: number
+}
+
+export type StaffDayRow = {
+  id: string
+  startTs: string
+  status: string
+  serviceName: string | null
+  customerLabel: string
+}
+
+export type StaffServiceOption = {
+  id: string
+  name: string
+  active: boolean
+  locationId: string | null
+  durationMin?: number
+}
+
+export type StaffCard = {
+  id: string
+  displayName: string
+  title: string | null
+  active: boolean
+  bookingCount: number
+  serviceCount: number
+  serviceIds: string[]
+  serviceNames: string[]
+  hasAccount: boolean
+  locationName: string | null
+  locationId: string | null
+  readiness: StaffReadiness
+  avatarUrl: string | null
+  showOnSite: boolean
+  color: string | null
+  today: StaffDayRow[]
+}
+
+type StaffCardContext = {
+  serviceOptions: StaffServiceOption[]
+  serviceNames: ReadonlyMap<string, string>
+  locationNames: ReadonlyMap<string, string>
+  confirmedLocations: ReadonlySet<string>
+  workingHours: readonly Pick<WorkingHourRow, 'staff_id' | 'location_id'>[]
+}
+
+export function staffCardContext(
+  services: readonly Pick<ServiceRow, 'id' | 'name' | 'active' | 'location_id' | 'duration_min'>[],
+  locations: readonly Pick<LocationRow, 'id' | 'name'>[],
+  openingHours: readonly { location_id: string; confirmed_at: string | null }[],
+  workingHours: readonly Pick<WorkingHourRow, 'staff_id' | 'location_id'>[],
+): StaffCardContext {
+  return {
+    serviceOptions: services.map((service) => ({
+      id: service.id,
+      name: service.name,
+      active: service.active,
+      locationId: service.location_id,
+      durationMin: service.duration_min,
+    })),
+    serviceNames: new Map(services.map((service) => [service.id, service.name])),
+    locationNames: new Map(locations.map((location) => [location.id, location.name])),
+    confirmedLocations: new Set(
+      openingHours.filter((row) => row.confirmed_at !== null).map((row) => row.location_id),
+    ),
+    workingHours,
+  }
+}
+
+export function toStaffCard(
+  member: Pick<
+    StaffWithServices,
+    | 'id'
+    | 'displayName'
+    | 'title'
+    | 'active'
+    | 'bookingCount'
+    | 'serviceIds'
+    | 'profile_id'
+    | 'location_id'
+    | 'avatar_url'
+    | 'show_on_site'
+    | 'color'
+  >,
+  today: readonly StaffDayRow[],
+  context: StaffCardContext,
+): StaffCard {
+  return {
+    id: member.id,
+    displayName: member.displayName,
+    title: member.title,
+    active: member.active,
+    bookingCount: member.bookingCount,
+    serviceCount: member.serviceIds.length,
+    serviceIds: member.serviceIds,
+    serviceNames: member.serviceIds
+      .map((id) => context.serviceNames.get(id))
+      .filter((name): name is string => Boolean(name)),
+    hasAccount: Boolean(member.profile_id),
+    locationName: (member.location_id && context.locationNames.get(member.location_id)) || null,
+    locationId: member.location_id,
+    readiness: staffReadiness({
+      active: member.active,
+      locationId: member.location_id,
+      openingHoursConfirmed: Boolean(
+        member.location_id && context.confirmedLocations.has(member.location_id),
+      ),
+      workingHoursCount: context.workingHours.filter(
+        (row) => row.staff_id === member.id && row.location_id === member.location_id,
+      ).length,
+      serviceIds: member.serviceIds,
+      services: context.serviceOptions,
+    }),
+    avatarUrl: member.avatar_url,
+    showOnSite: member.show_on_site,
+    color: member.color ?? null,
+    today: [...today].sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),
+  }
 }
 
 export type AdminBooking = {
@@ -199,61 +315,6 @@ export async function getSettingsRow(tenantId: string): Promise<SettingsRow | nu
   return data ?? null
 }
 
-export function brandingOf(row: SettingsRow | null): TenantBranding {
-  return (row?.branding ?? {}) as TenantBranding
-}
-
-/** Owner editorial copy override (settings.copy) for the branding editor's copy
- *  fields. Returns a plain {field: string} map (missing → ''). Read-only mirror of
- *  the M2 contract's CopyOverride shape; defensive against malformed jsonb. */
-export type CopyFields = {
-  heroEyebrow: string
-  heroTitle: string
-  heroLede: string
-  aboutCopy: string
-  tagline: string
-  italic: string
-}
-
-export function copyOf(row: SettingsRow | null): CopyFields {
-  const raw = ((row?.settings ?? {}) as Record<string, unknown>).copy
-  const c = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
-  const str = (v: unknown): string => (typeof v === 'string' ? v : '')
-  return {
-    heroEyebrow: str(c.heroEyebrow),
-    heroTitle: str(c.heroTitle),
-    heroLede: str(c.heroLede),
-    aboutCopy: str(c.aboutCopy),
-    tagline: str(c.tagline),
-    italic: str(c.italic),
-  }
-}
-
-export async function listDomains(tenantId: string): Promise<DomainRow[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('tenant_domains')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .order('is_primary', { ascending: false })
-  return data ?? []
-}
-
-export async function listWorkingHours(
-  tenantId: string,
-  staffId: string,
-): Promise<WorkingHourRow[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('working_hours')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .eq('staff_id', staffId)
-    .order('weekday', { ascending: true })
-    .order('start_time', { ascending: true })
-  return data ?? []
-}
-
 /** Explicit bookable start times per (staff, weekday) — M6 §5 model. Active only;
  *  weekday→start ordered for a clean per-day grouping. */
 export async function listWorkingHourSlots(tenantId: string, staffId: string): Promise<SlotRow[]> {
@@ -387,30 +448,6 @@ export async function listBookings(
   )
 }
 
-/** Exakt antal rader för en smal bokningskö. Listans `.range()` får aldrig vara
- * samma sak som totalen som visas för användaren. */
-export async function countBookings(
-  tenantId: string,
-  filters: Omit<BookingFilters, 'limit' | 'offset' | 'query'> = {},
-): Promise<number> {
-  const supabase = await createClient()
-  let q = supabase
-    .from('bookings')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', tenantId)
-  if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
-  if (filters.toUtc) q = q.lt('start_ts', filters.toUtc)
-  if (filters.endToUtc) q = q.lte('end_ts', filters.endToUtc)
-  if (filters.cancelledFromUtc) q = q.gte('cancelled_at', filters.cancelledFromUtc)
-  if (filters.cancelledToUtc) q = q.lt('cancelled_at', filters.cancelledToUtc)
-  if (filters.staffId) q = q.eq('staff_id', filters.staffId)
-  if (filters.status) q = q.eq('status', filters.status)
-  if (filters.statuses?.length) q = q.in('status', filters.statuses)
-  if (filters.locationId) q = q.eq('location_id', filters.locationId)
-  const { count, error } = await q
-  if (error) throw new Error(`countBookings: ${error.message}`)
-  return count ?? 0
-}
 
 // ── Customers (M6 §3.1 + §4 — identity vs time-bound PII) ─────────────────────
 export type CustomerRow = Tables<'customers'>
@@ -422,6 +459,13 @@ export type CustomerRow = Tables<'customers'>
  *  poäng (migr 0011:107). Trösklar nedan; tenant-konfigurerbara trösklar är en
  *  framtida förbättring (idag standardvärden). */
 export type CustomerTier = 'guld' | 'silver' | 'brons' | 'ny'
+
+export const CUSTOMER_TIER_LABELS: Record<CustomerTier, string> = {
+  guld: 'Guld',
+  silver: 'Silver',
+  brons: 'Brons',
+  ny: 'Ny',
+}
 
 const TIER_GULD = 500
 const TIER_SILVER = 150
@@ -711,8 +755,8 @@ export type StaffDay = {
 }
 
 /** Dagens resursläge: aktiv personal + deras arbetstid för veckodagen (0=sön … 6=lör,
- *  samma konvention som working_hours.weekday). EN läsning för hela tenanten — den
- *  gamla listWorkingHours(staffId) är per resurs och blir N+1 i en dagvy.
+ *  samma konvention som working_hours.weekday). EN läsning för hela tenanten; en
+ *  separat fråga per resurs skulle ge N+1 i en dagvy.
  *  Kalenderns kolumner (goal-66) läser samma funktion: en resurs som är ledig ska
  *  ritas som ledig, inte utelämnas. */
 export async function staffDays(
@@ -1013,27 +1057,4 @@ export async function listBookingPayments(
     })
   }
   return out
-}
-
-/**
- * The payment row for a single booking (or the null no-payment state). tenant_id
- * is passed for defence-in-depth + stable scoping (RLS already fences it).
- */
-export async function getBookingPaymentStatus(
-  bookingId: string,
-  tenantId: string,
-): Promise<BookingPayment> {
-  if (!bookingId) return { status: null, amountCents: null }
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('payments')
-    .select('status, amount_cents')
-    .eq('tenant_id', tenantId)
-    .eq('booking_id', bookingId)
-    .maybeSingle()
-  if (!data) return { status: null, amountCents: null }
-  return {
-    status: normalisePaymentStatus(data.status),
-    amountCents: data.amount_cents ?? null,
-  }
 }

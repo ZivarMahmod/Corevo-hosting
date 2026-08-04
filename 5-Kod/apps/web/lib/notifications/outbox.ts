@@ -2,12 +2,12 @@ import 'server-only'
 import type { Json } from '@corevo/db'
 import { createServiceClient } from '@/lib/platform/service'
 import { logger } from '@/lib/observability'
-import type { ChannelDecision, NotificationCategory, NotificationChannel } from './router'
 
-// 0092 gör 0091-ledgern till den enda durable kön. Nya producenter ska anropa
-// enqueueNotification(); worker äger transport, retry och terminal kvittens.
-// logOutbox() finns temporärt kvar som kompatibilitetsadapter för call-sites som
-// U4 flyttar från direkttransport. Den får inte användas av nya producenter.
+// 0092 gör 0091-ledgern till den enda durable kön. Worker äger transport,
+// retry och terminal kvittens.
+
+export type NotificationCategory = 'transactional' | 'marketing'
+export type NotificationChannel = 'email' | 'sms'
 
 export type NotificationOutboxStatus =
   | 'routing'
@@ -66,7 +66,7 @@ function isClaimedOutboxRow(value: unknown): value is ClaimedNotificationOutboxR
     && typeof row.tenant_id === 'string'
     && typeof row.event_type === 'string'
     && typeof row.event_key === 'string'
-    && typeof row.chosen_channel === 'string'
+    && (row.chosen_channel === 'email' || row.chosen_channel === 'sms')
     && typeof row.lease_token === 'string'
     && row.lease_token.length > 0
     && typeof row.lease_expires_at === 'string'
@@ -80,53 +80,6 @@ function claimIdentity(value: unknown): { id: string; leaseToken: string } | nul
     && row.lease_token.length > 0
     ? { id: row.id, leaseToken: row.lease_token }
     : null
-}
-
-export type EnqueueNotification = {
-  tenantId: string
-  customerId?: string | null
-  bookingId?: string | null
-  staffId?: string | null
-  eventType: string
-  /** Stabil domännyckel, t.ex. booking:<id>:confirmation. */
-  eventKey: string
-  category: NotificationCategory
-  channel: NotificationChannel
-  fallbackChannel?: NotificationChannel | null
-  consentState?: Json
-  /** Transportdata. PII måste scrubbas av GDPR-erase i samma release som producenten. */
-  payload: Json
-  maxAttempts?: number
-}
-
-export type EnqueueResult = { id: string | null; inserted: boolean; error?: string }
-
-export async function enqueueNotification(entry: EnqueueNotification): Promise<EnqueueResult> {
-  const admin = createServiceClient()
-  if (!admin) return { id: null, inserted: false, error: 'service_role_unavailable' }
-
-  const { data, error } = await admin.rpc('enqueue_notification', {
-    p_tenant: entry.tenantId,
-    p_customer: entry.customerId ?? null,
-    p_booking: entry.bookingId ?? null,
-    p_staff: entry.staffId ?? null,
-    p_event_type: entry.eventType,
-    p_event_key: entry.eventKey,
-    p_category: entry.category,
-    p_channel: entry.channel,
-    p_fallback_channel: entry.fallbackChannel ?? null,
-    p_consent_state: entry.consentState ?? {},
-    p_payload: entry.payload,
-    p_max_attempts: entry.maxAttempts ?? 5,
-  })
-  if (error) {
-    logger.warn('outbox.enqueue_failed', { event: entry.eventType, error: error.message })
-    return { id: null, inserted: false, error: 'enqueue_failed' }
-  }
-
-  const value = Array.isArray(data) ? data[0] : data
-  if (!value?.id) return { id: null, inserted: false, error: 'enqueue_no_result' }
-  return { id: value.id, inserted: value.inserted }
 }
 
 export type NotificationDeliveryResult =
@@ -236,9 +189,8 @@ function nextRetryAt(row: ClaimedNotificationOutboxRow, now: Date): string {
 }
 
 /**
- * Foundation only: U4 flyttar producenterna till enqueue och U3/U4 kopplar den
- * verkliga, gateade transportadaptern. Utan explicit adapter claimas ingenting —
- * off-läge får aldrig förbruka attempt_count.
+ * Utan explicit transportadapter claimas ingenting; off-läge får aldrig förbruka
+ * attempt_count.
  */
 export async function dispatchNotificationOutbox(options: {
   deliver?: NotificationDelivery
@@ -435,58 +387,4 @@ export async function dispatchNotificationOutboxById(
     throw new Error('outbox_id_invalid')
   }
   return dispatchNotificationOutbox({ outboxId, deliver })
-}
-
-export type OutboxWrite = {
-  tenantId: string
-  customerId?: string | null
-  bookingId?: string | null
-  staffId?: string | null
-  eventType: string
-  category: NotificationCategory
-  decision: ChannelDecision
-  status: 'sent' | 'failed' | 'skipped'
-  /** Kanal som faktiskt användes (kan vara decisionens fallback). */
-  usedChannel?: NotificationChannel | null
-  skipReason?: string | null
-  costOre?: number | null
-  costCurrency?: string | null
-  parts?: number | null
-  providerRef?: string | null
-}
-
-export async function logOutbox(entry: OutboxWrite): Promise<void> {
-  try {
-    const admin = createServiceClient()
-    if (!admin) {
-      logger.info('outbox.skipped_no_service_role', { event: entry.eventType })
-      return
-    }
-    const { error } = await admin.from('notifications_outbox').insert({
-      tenant_id: entry.tenantId,
-      customer_id: entry.customerId ?? null,
-      booking_id: entry.bookingId ?? null,
-      staff_id: entry.staffId ?? null,
-      event_type: entry.eventType,
-      category: entry.category,
-      chosen_channel: entry.usedChannel ?? entry.decision.channel,
-      fallback_channel: entry.decision.fallback,
-      consent_state: entry.decision.consentState as Json,
-      status: entry.status,
-      skip_reason: entry.skipReason ?? entry.decision.skipReason ?? null,
-      cost_ore: entry.costOre ?? null,
-      cost_currency: entry.costOre === null || entry.costOre === undefined
-        ? null
-        : safeCostCurrency(entry.costCurrency) ?? 'SEK',
-      parts: safeParts(entry.parts),
-      provider_ref: entry.providerRef ?? null,
-      sent_at: entry.status === 'sent' ? new Date().toISOString() : null,
-    })
-    if (error) logger.warn('outbox.write_failed', { event: entry.eventType, error: error.message })
-  } catch (err) {
-    logger.warn('outbox.write_threw', {
-      event: entry.eventType,
-      error: err instanceof Error ? err.message : String(err),
-    })
-  }
 }

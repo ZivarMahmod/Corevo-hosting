@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState } from 'react'
-import { saveTenantLegal, type ActionState } from '@/lib/platform/actions'
+import { saveTenantLegal } from '@/lib/platform/actions/data'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import styles from './platform.module.css'
 
 /**

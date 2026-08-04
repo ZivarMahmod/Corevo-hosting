@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice, shopCategoryChips } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
@@ -28,23 +29,15 @@ import styles from './lunaria.module.css'
  * stängd butik). SYNKRONA server-komponenter — ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
-}
-
 /* ════════════════════════════════ BLOMSTERBODEN ════════════════════════════════ */
 
-export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function LunariaShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   // Filens ord för det ofiltrerade urvalet är "Allt". Teasern har ingen filterrad i filen.
   const chips = teaser ? [] : shopCategoryChips(data, 'Allt')
@@ -73,12 +66,6 @@ export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeSho
         </div>
       ) : null}
 
-      {paused ? (
-        <p role="status" className={styles.lnNotice}>
-          Butiken tar för närvarande inte emot nya beställningar. Vi öppnar snart igen.
-        </p>
-      ) : null}
-
       {products.length === 0 ? (
         <p className={styles.lnEmpty}>
           {data.activeCategory
@@ -96,7 +83,7 @@ export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeSho
                   aria-label={`${p.name} — visa verket`}
                   style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                 >
-                  <span className={styles.lnSrOnly}>{p.imageAlt ?? p.name}</span>
+                  <span className="sr-only">{p.imageAlt ?? p.name}</span>
                 </a>
                 <div className={styles.lnCardBody}>
                   <h3 className={styles.lnCardName}>
@@ -105,7 +92,7 @@ export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeSho
                   {p.description ? <p className={styles.lnCardDesc}>{p.description}</p> : null}
                   {/* formatProductPrice → "fr. X kr" när produkten bär price_from. */}
                   <p className={styles.lnCardPrice}>{formatProductPrice(p)}</p>
-                  {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} compact />}
+                  <AddToCart product={p} fulfilment={config.fulfilment} compact />
                 </div>
               </div>
             </li>
@@ -141,7 +128,7 @@ export function LunariaBlogg({ posts: allPosts, limit, moreHref, content }: Them
       ) : (
         <ul className={styles.lnPostList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggShortDate(p.publishedAt)
             return (
               <li key={p.id}>
                 <a className={styles.lnPost} href={p.slug ? `/blogg/${p.slug}` : '/blogg'}>
@@ -151,7 +138,7 @@ export function LunariaBlogg({ posts: allPosts, limit, moreHref, content }: Them
                       p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined
                     }
                   >
-                    <span className={styles.lnSrOnly}>{p.coverImageAlt ?? p.title}</span>
+                    <span className="sr-only">{p.coverImageAlt ?? p.title}</span>
                   </span>
                   <span className={styles.lnPostBody}>
                     {/* Filen: "{{ b.tag }} · {{ b.date }}" i guld versal. Taggen = blog_posts.tag. */}
@@ -231,12 +218,7 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'] as c
  * påhittat nummer. "ERT NAMN" står kvar: det ÄR designens tomma fält, inte en påhittad person.
  * Förmånerna kommer ur klubbens config; inga förmåner → inga rutor.
  */
-export function LunariaLojalitet({
-  config,
-  plans,
-  content,
-  tenantName,
-}: ThemeLojalitetViewProps) {
+export function LunariaLojalitet({ config, plans, content, tenantName }: ThemeLojalitetViewProps) {
   const perks = config.perks ?? []
 
   return (
@@ -271,7 +253,11 @@ export function LunariaLojalitet({
       {plans.length > 0 ? (
         <div className={styles.lnPerks}>
           {plans.map((p) => (
-            <div key={p.id} className={styles.lnPerk} data-featured={p.featured ? 'true' : undefined}>
+            <div
+              key={p.id}
+              className={styles.lnPerk}
+              data-featured={p.featured ? 'true' : undefined}
+            >
               <p className={styles.lnPerkNo}>{p.name}</p>
               <p className={styles.lnPerkText}>
                 {formatPlanPrice(p.priceCents)} {loyaltyIntervalLabel(p.interval)}

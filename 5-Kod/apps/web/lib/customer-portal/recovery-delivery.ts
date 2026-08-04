@@ -3,6 +3,7 @@ import 'server-only'
 import { bookingContactDigest, generateBookingPin, normalizeBookingContact } from '@/lib/booking/verification'
 import { sendEmail } from '@/lib/notifications/email'
 import { sendGiadaMessage } from '@/lib/notifications/giada'
+import { esc } from '@/lib/notifications/templates'
 import {
   dispatchNotificationOutboxById,
   type ClaimedNotificationOutboxRow,
@@ -31,15 +32,6 @@ type RecoveryTarget = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
 }
 
 function parseTarget(data: unknown, row: ClaimedNotificationOutboxRow): RecoveryTarget | null {
@@ -176,7 +168,7 @@ export async function deliverPortalRecoveryOutbox(
   const sent = await sendEmail({
     to: normalized,
     subject: `Din kod för Mina bokningar hos ${target.tenantName}`,
-    html: `<p>Din kod för att komma åt dina bokningar hos ${escapeHtml(target.tenantName)} är:</p>`
+    html: `<p>Din kod för att komma åt dina bokningar hos ${esc(target.tenantName)} är:</p>`
       + `<p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p>`
       + '<p>Koden gäller i 5 minuter.</p>',
   })

@@ -6,9 +6,9 @@ import { SectionHeader } from '@/components/storefront/sections'
 import { BookCta } from '@/components/brand/BookCta'
 import { Reveal } from '@/components/storefront/Reveal'
 import { pageMetadata } from '@/components/storefront/seo'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { themePages } from '@/components/storefront/layouts/florist/layouts'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
+import { themePages } from '@/components/storefront/layouts/runtime'
 import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +23,7 @@ export default async function ServicesPage() {
   const { tenant, settings, location } = bundle
   if (settings.theme === 'freshcut') redirect('/#tjanster')
   // Section header varies per theme (data-driven, no longer hardcoded).
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+  const copy = await getTenantCopy(bundle)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)
   const [services, modules] = await Promise.all([
     getServices(tenant.id, tenant.slug),

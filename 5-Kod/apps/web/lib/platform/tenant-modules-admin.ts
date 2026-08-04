@@ -20,7 +20,6 @@ import { logPlatformAction } from './audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import {
   MODULE_STATES,
-  canTransitionModuleState,
   type ModuleState,
 } from '@/lib/tenant-modules'
 
@@ -88,8 +87,8 @@ export async function listTenantModules(tenantId: string): Promise<TenantModuleR
  * Set a module's state for a tenant (super-admin write). Existing rows are updated.
  * First activation inserts the DB-required `off` row before switching to `live`.
  * activated_at is stamped by the guard the first time state leaves 'off'.
- * Returning live to 'off' keeps the row + history —
- * build-once-never-delete; we never .delete().
+ * Returning live to 'off' keeps the row and activation history; this action never
+ * issues a row delete.
  *
  * Form fields: tenantId, moduleKey, state.
  */
@@ -135,9 +134,6 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
     if (insertError) return { error: GENERIC }
   }
 
-  if (!canTransitionModuleState(currentState, state, true)) {
-    return { error: 'Otillåten ändring av modul-läge.' }
-  }
   if (currentState !== state) {
     const { error } = await supabase
       .from('tenant_modules')

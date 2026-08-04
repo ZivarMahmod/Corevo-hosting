@@ -1,9 +1,7 @@
 // fix-35 — Cloudflare Workers Custom Domains client for the deploy SCRIPTS (.mjs).
 //
-// The .mjs sibling of lib/cloudflare/worker-domains.ts (which is server-only TS and
-// can't be imported by a plain `node scripts/*.mjs` run). Same endpoint + idempotent
-// PUT semantics; the build-tool scripts use the CLOUDFLARE_* env names that CI/wrangler
-// already set, not the runtime CF_* names.
+// Primary Cloudflare client for the deploy scripts. The scripts use the
+// CLOUDFLARE_* env names that CI/wrangler already set.
 //
 // Used by:
 //   add-domain.mjs          — live-attach <slug>.corevo.se on demand (no deploy)

@@ -6,19 +6,17 @@
 //    internal `/platform` route, via rewrite); `/kunder`, `/fakturering`,
 //    `/admin/*`, `/personal/*`, `/login` are served as-is. The bare `/platform*`
 //    prefix is redirected to `/` so it never appears in the URL.
-//  • TENANT host (frisorN.corevo.se) = storefront only: `(public)`, `/boka`,
+//  • TENANT host (frisorN.boka.corevo.se) = storefront only: `(public)`, `/boka`,
 //    `/konto`, `/registrera`, `/login`. Back-office paths are bounced to `/`.
 //
 // Tenant identity: the storefront resolves it from the HOST (the header set below);
 // the back-office resolves it from the logged-in ACCOUNT (JWT app_metadata) in the
 // DAL/layouts — never from the host. Data isolation is RLS + tenant_id (ADR 01 §2).
 //
-// goal-27 — on REAL *.corevo.se the back-office further splits into THREE doors by
-// host (decideBackofficeRoute): superbooking = platform/super-admin, booking = salon
-// admin (/admin), minbooking = staff (/personal). A surface that belongs to another
-// door redirects to that host (cookies are host-locked, so the user re-logs in there).
+// On real *.corevo.se, superbooking owns platform administration while booking
+// owns tenant admin and staff. Cross-surface requests move to the owning host.
 // This split is GATED to non-preview hosts: dev/*.localhost + *.workers.dev keep the
-// G12 single-host back-office (booking serves all three families) below, so the
+// G12 single-host back-office below, so the
 // existing e2e/backoffice-routing.spec.ts (all *.localhost) is unaffected.
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
@@ -26,15 +24,18 @@ import {
   getTenantFromHost,
   getPlatformHost,
   getSuperadminHost,
-  getStaffHost,
   isExternalHost,
   isPreviewHost,
 } from '@/lib/tenant'
 import { resolveCustomDomainSlug } from '@/lib/custom-domain'
 import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
-import { decideBackofficeRoute, type BackofficeHostKind } from '@/lib/auth/host-routing'
+import {
+  canonicalPlatformCustomerUrl,
+  decideBackofficeRoute,
+  isPrefix,
+  type BackofficeHostKind,
+} from '@/lib/auth/host-routing'
 import { PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
-import { canonicalPreviewPlatformLegacyUrl } from '@/lib/auth/platform-route-canonical'
 import {
   decideCustomerPortalHostRoute,
   isCustomerPortalRequestPath,
@@ -49,11 +50,7 @@ const DASHBOARD_ROUTE = '/platform'
 // the existing platform surfaces. NOTE: '/personal-plattform' is listed explicitly
 // — isPrefix only matches '/personal' as a whole segment ('/personal' or
 // '/personal/…'), so it never shadows the platform route.
-const BACKOFFICE_PREFIXES = [
-  '/admin',
-  '/personal',
-  ...PLATFORM_ROUTE_PREFIXES,
-]
+const BACKOFFICE_PREFIXES = ['/admin', '/personal', ...PLATFORM_ROUTE_PREFIXES]
 // Tenant-SCOPED back-office surfaces: each resolves exactly one tenant from the
 // logged-in account. A platform_admin has no single tenant to scope to, so these
 // would silently render/mutate whatever tenant the account is anchored to —
@@ -61,9 +58,6 @@ const BACKOFFICE_PREFIXES = [
 // (/platform, /kunder, /fakturering) are NOT here: a platform_admin SHOULD reach
 // them, and they're already flag-gated by requirePlatformAdmin() in the layout.
 const TENANT_SCOPED_BACKOFFICE = ['/admin', '/personal']
-
-const isPrefix = (path: string, prefixes: readonly string[]): boolean =>
-  prefixes.some((p) => path === p || path.startsWith(p + '/'))
 
 const hardenCustomerPortalResponse = (response: NextResponse): NextResponse => {
   response.headers.set('cache-control', 'no-store')
@@ -108,9 +102,11 @@ export async function middleware(request: NextRequest) {
     preview: previewHost,
   })
   if (portalRouteDecision === 'deny') {
-    return hardenCustomerPortalResponse(new NextResponse(null, {
-      status: 404,
-    }))
+    return hardenCustomerPortalResponse(
+      new NextResponse(null, {
+        status: 404,
+      }),
+    )
   }
 
   if (tenant.kind === 'customer_portal' || (previewHost && isCustomerPortalRequestPath(path))) {
@@ -118,9 +114,7 @@ export async function middleware(request: NextRequest) {
     portalHeaders.set('x-corevo-tenant-kind', 'customer_portal')
     portalHeaders.delete('x-corevo-tenant-slug')
     portalHeaders.delete('x-corevo-reserved-subdomain')
-    return hardenCustomerPortalResponse(
-      NextResponse.next({ request: { headers: portalHeaders } }),
-    )
+    return hardenCustomerPortalResponse(NextResponse.next({ request: { headers: portalHeaders } }))
   }
 
   // matcher runs for static files too so mina cannot bypass its asset allowlist.
@@ -135,8 +129,8 @@ export async function middleware(request: NextRequest) {
   //     'unknown' untouched. isExternalHost excludes *.workers.dev/localhost so the
   //     RPC never fires on staging. Custom-domain hosts are kind:'tenant', so they
   //     NEVER reach the isPlatformHost-gated VÅG 1 role→surface guard (step 4b).
-  //     DORMANT until a real external domain is DNS-routed (Zivar ops); demo.corevo.se
-  //     still classifies as a .corevo.se subdomain upstream and never reaches here.
+  //     DORMANT until a real external domain is DNS-routed (Zivar ops); the legacy
+  //     demo.corevo.se host still classifies upstream and never reaches here.
   if (tenant.kind === 'unknown' && isExternalHost(host)) {
     const slug = await resolveCustomDomainSlug(host)
     if (slug) tenant = { kind: 'tenant', slug }
@@ -154,15 +148,16 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-corevo-tenant-kind', tenant.kind)
   if (tenant.kind === 'tenant') requestHeaders.set('x-corevo-tenant-slug', tenant.slug)
   else requestHeaders.delete('x-corevo-tenant-slug')
-  if (tenant.kind === 'reserved') requestHeaders.set('x-corevo-reserved-subdomain', tenant.subdomain)
+  if (tenant.kind === 'reserved')
+    requestHeaders.set('x-corevo-reserved-subdomain', tenant.subdomain)
   else requestHeaders.delete('x-corevo-reserved-subdomain')
 
   // 2b. Preview-rutterna (/salong-preview/<slug>/…) renderar en tenants storefront ur
   //     SLUG i URL:en på admin-hosten. Sätt samma x-corevo-tenant-slug som en riktig
   //     tenant-host hade fått, så själv-hämtande storefront-komponenter (LocationHours,
   //     modulsektioner) resolvar RÄTT tenant via currentTenant() inne i previewen.
-  //     Ofarligt att sätta för oinloggade: rutten själv-gatar med requirePlatformAdmin
-  //     och headern gäller bara denna request (vars path ÄR preview-rutten).
+  //     Ofarligt att sätta för oinloggade: loadPreviewBundle gatar med requirePortal('admin')
+  //     och tenant-/partnergräns; headern gäller bara requesten vars path är preview-rutten.
   const previewSlug = /^\/salong-preview\/([a-z0-9-]+)/.exec(path)?.[1]
   if (previewSlug) requestHeaders.set('x-corevo-tenant-slug', previewSlug)
 
@@ -196,16 +191,19 @@ export async function middleware(request: NextRequest) {
     return persistOverride(carryAuthCookies(NextResponse.redirect(dest)))
   }
 
-  // The production superadmin host gets the permanent legacy redirect from
-  // next.config before middleware. Preview/dev deliberately shares the booking
-  // host, so mirror that 308 only for its platform resolution. Tenant/custom
-  // hosts never enter this branch and continue to bounce back-office paths.
-  const previewCanonicalUrl = canonicalPreviewPlatformLegacyUrl(new URL(request.url), {
+  // COMPAT: /salonger was published before /kunder became the canonical platform
+  // route. One middleware redirect avoids OpenNext's literal `:path*` config bug,
+  // preserves query + suffix, and never exposes the alias to tenant/custom hosts.
+  const canonicalCustomerUrl = canonicalPlatformCustomerUrl(new URL(request.url), {
+    hostKind:
+      isSuperHost || isPlatformHost || isStaffHost
+        ? (tenant.kind as BackofficeHostKind)
+        : null,
     preview: previewHost,
-    platform: isPlatformHost,
+    superadminHost: getSuperadminHost(),
   })
-  if (previewCanonicalUrl) {
-    return persistOverride(carryAuthCookies(NextResponse.redirect(previewCanonicalUrl, 308)))
+  if (canonicalCustomerUrl) {
+    return persistOverride(carryAuthCookies(NextResponse.redirect(canonicalCustomerUrl, 308)))
   }
 
   // 3c. Super-admin live storefront preview (Sida-fliken på /kunder/[id]) — same-origin
@@ -213,7 +211,7 @@ export async function middleware(request: NextRequest) {
   //     oberoende), så den måste serveras på admin-dörren (superbooking) utan att
   //     back-office-routern nedan bouncar den till `/` (den är ingen /kunder-path).
   //     EJ flagg-gatad (riktig admin-funktion, ej spike); rutten själv-gatar med
-  //     requirePlatformAdmin() → en oinloggad get 307:ar ändå till /login på sidnivå.
+  //     loadPreviewBundle() → en oinloggad request stoppas av requirePortal('admin').
   //     Före host-routningen så bouncen aldrig hinner före.
   if (isPrefix(path, ['/salong-preview'])) {
     response.headers.set('x-corevo-tenant-kind', tenant.kind)
@@ -232,7 +230,7 @@ export async function middleware(request: NextRequest) {
     rewriteTo = '/admin'
   }
 
-  // goal-27 — production 3-door split (REAL *.corevo.se only). The pure
+  // Production host split (real *.corevo.se only). The pure
   // decideBackofficeRoute owns the policy; this just translates its intent. Gated to
   // !previewHost so dev/*.localhost keeps the G12 single-host back-office (the else-if
   // below). Cross-door surfaces redirect to the owning host; the rest bounce home.
@@ -240,7 +238,7 @@ export async function middleware(request: NextRequest) {
     const decision = decideBackofficeRoute({
       hostKind: tenant.kind as BackofficeHostKind,
       path,
-      hosts: { superadmin: getSuperadminHost(), platform: getPlatformHost(), staff: getStaffHost() },
+      hosts: { superadmin: getSuperadminHost(), platform: getPlatformHost() },
     })
     if (decision.action === 'redirectHost') return crossHostBounce(decision.host, decision.to)
     if (decision.action === 'redirect') return bounce(decision.to)
@@ -310,7 +308,8 @@ export async function middleware(request: NextRequest) {
   // 7. Pass-through: mirror tenant headers on the response for observability.
   response.headers.set('x-corevo-tenant-kind', tenant.kind)
   if (tenant.kind === 'tenant') response.headers.set('x-corevo-tenant-slug', tenant.slug)
-  if (tenant.kind === 'reserved') response.headers.set('x-corevo-reserved-subdomain', tenant.subdomain)
+  if (tenant.kind === 'reserved')
+    response.headers.set('x-corevo-reserved-subdomain', tenant.subdomain)
   return persistOverride(response)
 }
 

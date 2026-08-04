@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatBloggLongDate } from '@/lib/storefront/blogg/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './aurora.module.css'
 
@@ -22,7 +23,7 @@ import styles from './aurora.module.css'
  *
  * Filen har inget galleri-band på hemmet (galleriet är en EGEN sida i .dc-filen) — och då
  * har inte mallen det heller. Att lägga till en sektion "för att syskonen har en" ÄR att
- * improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * improvisera bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * Modul-gatingen är plattformens och HELIG: favoriterna ritas bara när shopen har teasers,
  * väg-korten bara mot moduler som går att nå, presentkort-bandet bara när modulen är live.
@@ -126,7 +127,11 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
               <Link href={p.href} className={styles.auPath}>
                 <span
                   className={styles.auPathImg}
-                  style={p.img ? { backgroundImage: `url(${p.img})`, display: 'block' } : { display: 'block' }}
+                  style={
+                    p.img
+                      ? { backgroundImage: `url(${p.img})`, display: 'block' }
+                      : { display: 'block' }
+                  }
                 />
                 <span className={styles.auPathTitle} style={{ display: 'block' }}>
                   {p.title}
@@ -169,13 +174,11 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
                     style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                     aria-label={`${p.name} — visa buketten`}
                   >
-                    <span className={styles.auSrOnly}>{p.imageAlt ?? p.name}</span>
+                    <span className="sr-only">{p.imageAlt ?? p.name}</span>
                   </Link>
                   <div className={styles.auProdRow}>
                     <p className={styles.auProdName}>{p.name}</p>
-                    <p className={styles.auProdPrice}>
-                      {formatProductPrice(p)}
-                    </p>
+                    <p className={styles.auProdPrice}>{formatProductPrice(p)}</p>
                   </div>
                   {p.description ? <p className={styles.auProdDesc}>{p.description}</p> : null}
                   <Link href={`/shop/${p.id}`} className={styles.auLink}>
@@ -276,8 +279,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
           <h2 className={styles.auAboutTitle}>{content.aboutTitle}</h2>
           <p className={styles.auAboutText}>{content.aboutCopy}</p>
           <p className={styles.auAboutText}>
-            Kom förbi på en kaffe, boka en kurs, eller beställ online — det blir fint, det
-            lovar vi.
+            Kom förbi på en kaffe, boka en kurs, eller beställ online — det blir fint, det lovar vi.
           </p>
           <Link href="/om" className={styles.auAboutLink}>
             läs vår historia →
@@ -311,7 +313,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
                     <span>
                       {post.publishedAt ? (
                         <span className={styles.auPostDate} style={{ display: 'block' }}>
-                          {formatPostDate(post.publishedAt)}
+                          {formatBloggLongDate(post.publishedAt)}
                         </span>
                       ) : null}
                       <span className={styles.auPostTitle} style={{ display: 'block' }}>
@@ -351,11 +353,4 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
       </section>
     </div>
   )
-}
-
-/** Filens datumform på blogg-raderna ("2 juli 2026"). */
-function formatPostDate(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
 }

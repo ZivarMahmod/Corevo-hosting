@@ -3,7 +3,7 @@
 -- E2E-TEARDOWN — river fixturen och ALLT sviten skapade. Körs via scripts/e2e-db.mjs.
 --
 -- Kontraktet: efter det här ska databasen se EXAKT ut som före seeden. Sviten kör
--- endast mot det explicit guardade previewprojektet. Att städa efter sig är ändå
+-- endast mot det explicit guardade stagingprojektet. Att städa efter sig är ändå
 -- ett villkor, inte en artighet.
 --
 -- Vad som raderas, och varför just det:

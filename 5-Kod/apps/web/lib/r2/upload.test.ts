@@ -3,8 +3,7 @@ import {
   deleteByPublicUrl,
   deleteR2Keys,
   keyFromPublicUrl,
-  removedImageKeys,
-  pruneRemovedImages,
+  uploadErrorMessage,
   uploadImageAtKey,
 } from './upload'
 import { logger } from '@/lib/observability'
@@ -60,37 +59,7 @@ describe('keyFromPublicUrl', () => {
   })
 })
 
-describe('removedImageKeys (pure)', () => {
-  beforeEach(() => {
-    process.env.R2_PUBLIC_BASE_URL = BASE
-  })
-  afterEach(() => {
-    delete process.env.R2_PUBLIC_BASE_URL
-  })
-
-  it('returns the old key when a slot is replaced', () => {
-    expect(removedImageKeys([u('a/old.png')], [u('a/new.png')])).toEqual(['a/old.png'])
-  })
-  it('returns the key when a slot is cleared (new is null)', () => {
-    expect(removedImageKeys([u('a/x.png')], [null])).toEqual(['a/x.png'])
-  })
-  it('returns nothing when the URL is kept', () => {
-    expect(removedImageKeys([u('a/x.png')], [u('a/x.png')])).toEqual([])
-  })
-  it('drops only the gallery image that was removed', () => {
-    expect(
-      removedImageKeys([u('g/1.png'), u('g/2.png'), u('g/3.png')], [u('g/1.png'), u('g/3.png')]),
-    ).toEqual(['g/2.png'])
-  })
-  it('never deletes a foreign URL', () => {
-    expect(removedImageKeys(['https://evil.example/x.png'], [])).toEqual([])
-  })
-  it('de-duplicates repeated old URLs', () => {
-    expect(removedImageKeys([u('a/x.png'), u('a/x.png')], [])).toEqual(['a/x.png'])
-  })
-})
-
-describe('pruneRemovedImages / deleteByPublicUrl are best-effort (delete rejects)', () => {
+describe('deleteByPublicUrl is best-effort', () => {
   beforeEach(() => {
     process.env.R2_PUBLIC_BASE_URL = BASE
     deleteSpy.mockClear()
@@ -102,13 +71,9 @@ describe('pruneRemovedImages / deleteByPublicUrl are best-effort (delete rejects
 
   it('attempts the delete, logs, and does NOT throw when bucket.delete rejects', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-    await expect(pruneRemovedImages([u('a/old.png')], [null])).resolves.toBeUndefined()
+    await expect(deleteByPublicUrl(u('a/old.png'))).resolves.toBeUndefined()
     expect(deleteSpy).toHaveBeenCalledWith('a/old.png')
     expect(warn).toHaveBeenCalledWith('r2.delete_failed', expect.objectContaining({ key: 'a/old.png' }))
-  })
-  it('makes no delete call when nothing was removed', async () => {
-    await expect(pruneRemovedImages([u('a/x.png')], [u('a/x.png')])).resolves.toBeUndefined()
-    expect(deleteSpy).not.toHaveBeenCalled()
   })
   it('skips foreign URLs entirely (no delete attempted)', async () => {
     await expect(deleteByPublicUrl('https://evil.example/x.png')).resolves.toBeUndefined()
@@ -140,6 +105,17 @@ describe('lifecycle-aware R2 primitives', () => {
       expect.any(ArrayBuffer),
       { httpMetadata: { contentType: 'image/webp' } },
     )
+  })
+
+  it('rejects SVG before any bucket write', async () => {
+    const file = new File(['<svg/>'], 'unsafe.svg', { type: 'image/svg+xml' })
+
+    await expect(uploadImageAtKey(file, 'media/tenant-1/asset-1')).resolves.toEqual({
+      ok: false,
+      reason: 'bad_type',
+    })
+    expect(putSpy).not.toHaveBeenCalled()
+    expect(uploadErrorMessage('bad_type')).toBe('Bilden måste vara PNG, JPG, WEBP eller GIF.')
   })
 
   it('reports a failed delete so the DB job can be retried', async () => {

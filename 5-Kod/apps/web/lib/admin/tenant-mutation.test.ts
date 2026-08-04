@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import type { CurrentUser } from '@/lib/auth/session'
 import * as tenantModule from './tenant'
+
+const createClient = vi.hoisted(() => vi.fn())
+
+vi.mock('@/lib/supabase/server', () => ({ createClient }))
 
 type ActiveTenantGuard = (
   user: CurrentUser,
@@ -31,6 +33,12 @@ function tenantStatusClient(status: string | null, error: unknown = null) {
   const select = vi.fn(() => ({ eq }))
   const from = vi.fn(() => ({ select }))
   return { client: { from }, from, select, eq, maybeSingle }
+}
+
+function tenantReadQuery(data: unknown) {
+  const maybeSingle = vi.fn(async () => ({ data, error: null }))
+  const eq = vi.fn(() => ({ eq, maybeSingle }))
+  return { select: vi.fn(() => ({ eq })) }
 }
 
 describe('requireActiveTenantMutation', () => {
@@ -93,8 +101,27 @@ describe('requireActiveTenantMutation', () => {
 })
 
 describe('inactive tenant read context', () => {
-  it('does not erase the existing admin read context for a deleted tenant', () => {
-    const source = readFileSync(resolve(process.cwd(), 'lib/admin/tenant.ts'), 'utf8')
-    expect(source).not.toContain("if (tenant.status === 'deleted') return null")
+  it('preserves the existing admin read context for a deleted tenant', async () => {
+    const queries = {
+      tenants: tenantReadQuery({
+        id: 'tenant-1',
+        slug: 'tenant-one',
+        name: 'Tenant One',
+        status: 'deleted',
+        vertical_id: null,
+        stripe_charges_enabled: false,
+      }),
+      locations: tenantReadQuery(null),
+      tenant_settings: tenantReadQuery(null),
+    }
+    const from = vi.fn((table: keyof typeof queries) => queries[table])
+    createClient.mockResolvedValue({ from })
+
+    await expect(tenantModule.loadAdminTenantById('tenant-1')).resolves.toMatchObject({
+      id: 'tenant-1',
+      slug: 'tenant-one',
+      name: 'Tenant One',
+    })
+    expect(from).toHaveBeenCalledWith('tenants')
   })
 })

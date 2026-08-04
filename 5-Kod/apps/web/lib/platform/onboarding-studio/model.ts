@@ -5,10 +5,11 @@ import type { ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant, DEFAULT_BOOKING_VARIANT } from '@/lib/platform/booking-variant'
 import type { BookingProviderKind } from '@/lib/platform/booking-external-url'
 import { modulesForVertical, type VerticalPresetData } from '@/lib/platform/verticals-shared'
-import { COREVO_12_THEME_KEYS, isSelectableTheme } from '@/lib/platform/theme-palettes'
+import { COREVO_12_THEME_KEYS } from '@/lib/platform/theme-palettes'
+import { isSelectableCatalogTheme } from '@/lib/platform/theme-catalog'
 
 /** One onboarding service row (W4). `price` is the kr string the operator types (UI-
- *  friendly — no controlled-number fight); buildCreateTenantFormData converts it to
+ *  friendly — no controlled-number fight); buildTenantOnboardingFormData converts it to
  *  integer öre at the FormData boundary, the server re-validates (services.ts). */
 export type StudioService = { name: string; price: string }
 
@@ -84,7 +85,7 @@ export function applyBranch(cfg: StudioCfg, verticalKey: string, presets: Vertic
   // tema: branschens default om giltigt, annars första selectable bransch-mall,
   // annars nuvarande cfg-tema, annars plattformens första godkända tema.
   const theme = [v.defaultTemplate, ...branschTemplates.map((t) => t.key), cfg.theme, COREVO_12_THEME_KEYS[0]]
-    .find((candidate): candidate is string => !!candidate && isSelectableTheme(candidate))!
+    .find((candidate): candidate is string => !!candidate && isSelectableCatalogTheme(candidate))!
   const moduleStates: Record<string, ModuleState> = {}
   for (const m of modulesForVertical(presets, verticalKey)) {
     moduleStates[m.key] = m.defaultState
@@ -105,7 +106,7 @@ export function resolveModuleState(
   return picked ?? preset
 }
 
-/** name → a clean storefront slug (a–z, 0–9, dash) — mirrors CreateTenantForm.slugify. */
+/** name → a clean storefront slug (a–z, 0–9, dash). */
 export function studioSlugify(s: string): string {
   return s
     .toLowerCase()

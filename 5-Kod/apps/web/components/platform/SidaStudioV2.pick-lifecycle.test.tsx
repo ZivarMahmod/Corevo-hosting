@@ -4,7 +4,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SiteRevision, SiteSnapshot } from '@/lib/platform/site-revisions'
-import type { SiteEditorManifest } from './SidaStudioV2.manifest'
+import type { SiteEditorManifest } from '@/lib/platform/site-editor-manifest'
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),

@@ -22,7 +22,7 @@ import styles from './storefront.module.css'
  * Reduced motion: the stylesheet disables Ken-Burns + crossfade transition, and
  * we skip the auto-advance timer when the user prefers reduced motion.
  *
- * Images are plain <img> (remote-image config is frozen) with loading="eager"
+ * Images are plain <img> (remote sources are not configured for next/image) with loading="eager"
  * + fetchPriority on the first (LCP) image.
  */
 export function HeroCarousel({

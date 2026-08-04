@@ -19,12 +19,22 @@ const LIVE = {
 }
 const DEV = { ...LIVE, rootDomain: 'localhost:3000' }
 
-// ── live: subdomain → slug ──
-check('frisor1.corevo.se', getTenantFromHost('frisor1.corevo.se', LIVE), {
+// ── live: canonical boka branch + published root-zone compatibility → slug ──
+check('frisor1.boka.corevo.se', getTenantFromHost('frisor1.boka.corevo.se', {
+  ...LIVE,
+  tenantHostSuffix: 'boka.corevo.se',
+}), {
   kind: 'tenant',
   slug: 'frisor1',
 })
-check('frisor2.corevo.se', getTenantFromHost('frisor2.corevo.se', LIVE), {
+check('legacy frisor1.corevo.se', getTenantFromHost('frisor1.corevo.se', LIVE), {
+  kind: 'tenant',
+  slug: 'frisor1',
+})
+check('frisor2.boka.corevo.se', getTenantFromHost('frisor2.boka.corevo.se', {
+  ...LIVE,
+  tenantHostSuffix: 'boka.corevo.se',
+}), {
   kind: 'tenant',
   slug: 'frisor2',
 })
