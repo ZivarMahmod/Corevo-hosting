@@ -9,6 +9,8 @@ import { authorizedCronRequest } from '@/lib/security/cron-auth'
 export const dynamic = 'force-dynamic'
 
 const RECOVERY_BATCH_LIMIT = 5
+const DELIVERY_BATCH_LIMIT = 10
+const DELIVERY_CONCURRENCY = 5
 
 function deliverScheduledEmailOutbox(row: ClaimedNotificationOutboxRow) {
   return row.event_type === 'offert_reply'
@@ -22,12 +24,21 @@ async function run(req: Request): Promise<Response> {
   }
   try {
     const smsMode = parseSmsDeliveryMode(process.env.SMS_DELIVERY_MODE)
-    const email = await dispatchNotificationOutbox({
-      deliver: deliverScheduledEmailOutbox,
-    })
-    const sms = smsMode === 'off'
-      ? null
-      : await dispatchNotificationOutbox({ channel: 'sms', deliver: deliverClaimedSmsOutbox })
+    const [email, sms] = await Promise.all([
+      dispatchNotificationOutbox({
+        deliver: deliverScheduledEmailOutbox,
+        limit: DELIVERY_BATCH_LIMIT,
+        concurrency: DELIVERY_CONCURRENCY,
+      }),
+      smsMode === 'off'
+        ? null
+        : dispatchNotificationOutbox({
+            channel: 'sms',
+            deliver: deliverClaimedSmsOutbox,
+            limit: DELIVERY_BATCH_LIMIT,
+            concurrency: DELIVERY_CONCURRENCY,
+          }),
+    ])
     const result = sms
       ? {
           claimed: email.claimed + sms.claimed,

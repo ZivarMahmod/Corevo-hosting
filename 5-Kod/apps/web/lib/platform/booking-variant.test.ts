@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import * as bookingVariantModule from './booking-variant'
 import {
   isBookingVariant,
   readBookingVariant,
@@ -7,6 +6,8 @@ import {
   BOOKING_VARIANTS,
   BOOKING_VARIANT_LABELS,
   DEFAULT_BOOKING_VARIANT,
+  isBookingVerificationMode,
+  readBookingVerificationMode,
 } from './booking-variant'
 
 describe('isBookingVariant', () => {
@@ -121,12 +122,6 @@ describe('readBookingMode (M3 storefront seam: variant → BookingWizard mode)',
 
 describe('booking verification channel policy', () => {
   it('accepts three modes and defaults old tenants to SMS with e-mail fallback', () => {
-    const isBookingVerificationMode = bookingVariantModule.isBookingVerificationMode
-    const readBookingVerificationMode = bookingVariantModule.readBookingVerificationMode
-    expect(isBookingVerificationMode).toBeTypeOf('function')
-    expect(readBookingVerificationMode).toBeTypeOf('function')
-    if (!isBookingVerificationMode || !readBookingVerificationMode) return
-
     expect(isBookingVerificationMode('sms_only')).toBe(true)
     expect(isBookingVerificationMode('sms_with_email_fallback')).toBe(true)
     expect(isBookingVerificationMode('email_only')).toBe(true)
@@ -139,24 +134,15 @@ describe('booking verification channel policy', () => {
     expect(readBookingVerificationMode(null)).toBe('sms_with_email_fallback')
   })
 
-  it('activates booking PIN only for the passwordless tenant mode', () => {
-    expect(bookingVariantModule.readActiveBookingVerificationMode({
-      customer_portal: { mode: 'passwordless_tenant' },
-      booking: { verificationMode: 'email_only' },
-    })).toBe('email_only')
-    expect(bookingVariantModule.readActiveBookingVerificationMode({
-      customer_portal: { mode: 'passwordless_tenant' },
-      booking: {},
-    })).toBe('sms_with_email_fallback')
-
-    for (const mode of ['legacy_account', 'off', 'global_account', 'unknown']) {
-      expect(bookingVariantModule.readActiveBookingVerificationMode({
+  it('keeps booking PIN policy independent from the customer portal mode', () => {
+    for (const mode of ['passwordless_tenant', 'legacy_account', 'off', 'global_account', 'unknown']) {
+      expect(readBookingVerificationMode({
         customer_portal: { mode },
         booking: { verificationMode: 'email_only' },
-      })).toBeNull()
+      })).toBe('email_only')
     }
-    expect(bookingVariantModule.readActiveBookingVerificationMode({
+    expect(readBookingVerificationMode({
       booking: { verificationMode: 'email_only' },
-    })).toBeNull()
+    })).toBe('email_only')
   })
 })

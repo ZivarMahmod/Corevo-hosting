@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   legacyTenantStorefrontHost,
   normalizeTenantStorefrontOrigin,
@@ -6,6 +6,8 @@ import {
   tenantStorefrontHost,
   tenantStorefrontUrl,
 } from './storefront-url'
+
+afterEach(() => vi.unstubAllEnvs())
 
 describe('canonical tenant storefront origin', () => {
   it('builds the first-level tenant host as the standard production origin', () => {
@@ -36,6 +38,12 @@ describe('canonical tenant storefront origin', () => {
     expect(tenantStorefrontAppUrl('freshcut', null, 'corevo.se')).toBe(
       'https://freshcut.boka.corevo.se',
     )
+  })
+
+  it('uses the configured tenant branch consistently at runtime', () => {
+    vi.stubEnv('NEXT_PUBLIC_TENANT_HOST_SUFFIX', 'book.example.com')
+    expect(tenantStorefrontUrl('freshcut')).toBe('https://freshcut.book.example.com')
+    expect(tenantStorefrontHost('freshcut')).toBe('freshcut.book.example.com')
   })
 
   it('keeps the old root-zone host explicit instead of treating it as canonical', () => {

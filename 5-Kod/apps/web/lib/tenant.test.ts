@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { getTenantFromHost, isExternalHost, isPreviewHost, RESERVED_SUBDOMAINS } from './tenant'
 
 // Explicit opts so these don't depend on NEXT_PUBLIC_* env in the test runner.
@@ -9,6 +9,8 @@ const OPTS = {
   customerPortalHost: 'mina.corevo.se',
   tenantHostSuffix: 'boka.corevo.se',
 }
+
+afterEach(() => vi.unstubAllEnvs())
 
 describe('getTenantFromHost — host suffix classification', () => {
   it('accepts an already-published root-zone tenant host as legacy input', () => {
@@ -102,6 +104,14 @@ describe('getTenantFromHost — host suffix classification', () => {
     expect(
       getTenantFromHost('demo.book.example.com', { ...OPTS, tenantHostSuffix: 'book.example.com' }),
     ).toEqual({
+      kind: 'tenant',
+      slug: 'demo',
+    })
+  })
+
+  it('uses the shared storefront suffix owner when no explicit option is supplied', () => {
+    vi.stubEnv('NEXT_PUBLIC_TENANT_HOST_SUFFIX', 'book.example.com')
+    expect(getTenantFromHost('demo.book.example.com', { ...OPTS, tenantHostSuffix: undefined })).toEqual({
       kind: 'tenant',
       slug: 'demo',
     })

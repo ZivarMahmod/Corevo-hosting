@@ -31,7 +31,7 @@ import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { ThemeGallery } from '@/components/platform/ThemeGallery'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
-import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
+import { tenantHostSuffix, tenantStorefrontHost } from '@/lib/storefront-url'
 import type { IconName } from '@/lib/ui-icons'
 
 /**
@@ -241,7 +241,7 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
                 placeItems: 'center',
               }}
             >
-              .{TENANT_HOST_SUFFIX}
+              .{tenantHostSuffix()}
             </span>
           </div>
           {reserved ? (

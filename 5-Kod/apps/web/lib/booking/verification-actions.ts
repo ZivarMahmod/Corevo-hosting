@@ -16,7 +16,7 @@ import {
   type BookingContactMode,
 } from '@/lib/notifications/giada'
 import {
-  readActiveBookingVerificationMode,
+  readBookingVerificationMode,
   type BookingVerificationMode,
 } from '@/lib/platform/booking-variant'
 import {
@@ -106,7 +106,6 @@ export type VerifyBookingResult =
 type RpcError = { code?: string; message?: string }
 type StartVerificationRow = {
   challenge_id: string
-  hold_id: string
   pin_outbox_id: string
   expires_at: string
   resend_after: string
@@ -179,7 +178,7 @@ type FinalizeVerificationRpc = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function invalidContext(): Extract<BookingVerificationStartResult, { ok: false }> {
+function invalidContext(): { ok: false; reason: 'invalid'; message: string } {
   return {
     ok: false,
     reason: 'invalid',
@@ -228,7 +227,7 @@ async function getTenantBookingVerificationMode(tenantId: string): Promise<Booki
     .select('settings')
     .eq('tenant_id', tenantId)
     .maybeSingle()
-  return error ? null : readActiveBookingVerificationMode(data?.settings)
+  return error ? null : readBookingVerificationMode(data?.settings)
 }
 
 export async function getBookingContactModeAction(): Promise<{ mode: BookingContactAvailability }> {
@@ -286,8 +285,10 @@ async function startBookingVerificationInternal(
   const pin = generateBookingPin()
   try {
     sessionToken = previous?.sessionToken ?? crypto.randomUUID()
-    contactDigest = await bookingContactDigest(channel, contact)
-    pinDigest = await bookingPinDigest(sessionToken, pin)
+    ;[contactDigest, pinDigest] = await Promise.all([
+      bookingContactDigest(channel, contact),
+      bookingPinDigest(sessionToken, pin),
+    ])
   } catch {
     return { ok: false, reason: 'error', message: 'Verifieringen är inte tillgänglig just nu.' }
   }
@@ -463,7 +464,7 @@ export async function cancelBookingVerification(
 
 export async function verifyAndCreateBooking(input: VerifyBookingInput): Promise<VerifyBookingResult> {
   const ctx = await getPublicBookingContext()
-  if (!ctx) return { ...invalidContext(), reason: 'invalid' }
+  if (!ctx) return invalidContext()
   if (!(await publicBookingIsLive(ctx))) {
     return { ok: false, reason: 'invalid', message: 'Onlinebokningen är inte öppen just nu.' }
   }
@@ -484,8 +485,10 @@ export async function verifyAndCreateBooking(input: VerifyBookingInput): Promise
   let contactDigest: string
   let pinDigest: string
   try {
-    contactDigest = await bookingContactDigest(input.channel, contact)
-    pinDigest = await bookingPinDigest(input.sessionToken, input.pin)
+    ;[contactDigest, pinDigest] = await Promise.all([
+      bookingContactDigest(input.channel, contact),
+      bookingPinDigest(input.sessionToken, input.pin),
+    ])
   } catch {
     return { ok: false, reason: 'error', message: 'Verifieringen är inte tillgänglig just nu.' }
   }

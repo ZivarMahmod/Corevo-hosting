@@ -511,9 +511,19 @@ select
   )
   and not exists (
     select 1 from public.notifications_outbox
-    where chosen_channel = 'push' and status in ('routing', 'queued', 'attempting')
+    where chosen_channel = 'push'
+      and status in ('routing', 'queued', 'attempting', 'delivery_started')
+  )
+  and not exists (
+    select 1 from public.notifications_outbox
+    where chosen_channel in ('email', 'sms')
+      and attempt_count >= max_attempts
+      and (
+        status = 'queued'
+        or (status = 'attempting' and (lease_expires_at is null or lease_expires_at <= now()))
+      )
   ) as passed,
-  'no active push preference, subscription, or claimable outbox row' as evidence;
+  'no active push preference, subscription, active or uncertain push row, or exhausted nonterminal fallback' as evidence;
 
 select
   '20260804140000' as version,

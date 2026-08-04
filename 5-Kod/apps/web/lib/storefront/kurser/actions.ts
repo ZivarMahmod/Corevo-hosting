@@ -103,7 +103,7 @@ export async function submitEventRegistration(
   // f. Läs eventet: rätt tenant, open, i framtiden. Anon FÅR läsa tenant_events.
   const { data: event } = await supabase
     .from('tenant_events')
-    .select('id, title, starts_at, capacity, price_cents, status')
+    .select('id, title, starts_at, price_cents, status')
     .eq('tenant_id', ctx.id) // app-layer tenant isolation
     .eq('id', eventId)
     .maybeSingle()

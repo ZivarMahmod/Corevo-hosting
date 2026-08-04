@@ -5,7 +5,7 @@
  * the request host. `tenantStorefrontAppUrl` is the explicit localhost seam for
  * back-office preview links; canonical display never changes with the dev host.
  */
-export const TENANT_HOST_SUFFIX = 'boka.corevo.se'
+const DEFAULT_TENANT_HOST_SUFFIX = 'boka.corevo.se'
 const LEGACY_TENANT_HOST_SUFFIX = 'corevo.se'
 
 function cleanHost(value?: string | null): string | null {
@@ -18,6 +18,11 @@ function cleanSlug(value?: string | null): string | null {
   return slug || null
 }
 
+/** Runtime owner for the dedicated tenant branch. */
+export function tenantHostSuffix(): string {
+  return cleanHost(process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX) ?? DEFAULT_TENANT_HOST_SUFFIX
+}
+
 export function tenantStorefrontUrl(
   slug?: string | null,
   customDomain?: string | null,
@@ -25,7 +30,7 @@ export function tenantStorefrontUrl(
   const customHost = cleanHost(customDomain)
   if (customHost) return `https://${customHost}`
   const clean = cleanSlug(slug)
-  return clean ? `https://${clean}.${TENANT_HOST_SUFFIX}` : null
+  return clean ? `https://${clean}.${tenantHostSuffix()}` : null
 }
 
 /** Bare canonical host for display, e.g. "freshcut.boka.corevo.se". */

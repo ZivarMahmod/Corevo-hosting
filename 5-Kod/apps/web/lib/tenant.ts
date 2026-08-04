@@ -19,6 +19,8 @@
 // 'superbooking' host that carries it — they never collide because the host-equality
 // check below fires before classify() ever sees the reserved list.
 
+import { tenantHostSuffix } from './storefront-url'
+
 export type TenantResolution =
   | { kind: 'tenant'; slug: string }
   | { kind: 'platform' }
@@ -75,12 +77,6 @@ const DEFAULT_PLATFORM = 'booking.corevo.se'
 const DEFAULT_SUPERADMIN = 'superbooking.corevo.se'
 const LEGACY_STAFF_HOST = 'minbooking.corevo.se'
 const DEFAULT_CUSTOMER_PORTAL = 'mina.corevo.se'
-// goal-28 — salon storefronts live on a DEDICATED wildcard branch so a blunt
-// *.corevo.se route never has to exist (it would hijack the POS subdomains on this
-// shared zone). The suffix is read from env (NEXT_PUBLIC_TENANT_HOST_SUFFIX), never
-// hardcoded, so the branch can move without a code change.
-const DEFAULT_TENANT_SUFFIX = 'boka.corevo.se'
-
 // READ AT CALL TIME, not module load. On the OpenNext/Workers adapter, `vars`
 // are injected into process.env per request — NOT necessarily when this module
 // is first evaluated. Reading these as top-level consts made
@@ -99,9 +95,6 @@ const envPlatform = (): string => process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAU
 const envSuperadmin = (): string => process.env.NEXT_PUBLIC_SUPERADMIN_HOST ?? DEFAULT_SUPERADMIN
 const envCustomerPortal = (): string =>
   process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_HOST ?? DEFAULT_CUSTOMER_PORTAL
-const envTenantSuffix = (): string =>
-  process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX ?? DEFAULT_TENANT_SUFFIX
-
 // Back-office hosts are read at call time. Middleware uses these exports for
 // cross-host redirects without duplicating environment access.
 export const getPlatformHost = (): string => envPlatform()
@@ -166,7 +159,7 @@ export function getTenantFromHost(
   const platformHost = opts.platformHost ?? envPlatform()
   const superadminHost = opts.superadminHost ?? envSuperadmin()
   const customerPortalHost = opts.customerPortalHost ?? envCustomerPortal()
-  const tenantHostSuffix = opts.tenantHostSuffix ?? envTenantSuffix()
+  const tenantSuffixOption = opts.tenantHostSuffix ?? tenantHostSuffix()
 
   const classify = (raw: string): TenantResolution => {
     const slug = raw.trim().toLowerCase()
@@ -218,7 +211,7 @@ export function getTenantFromHost(
   // is NOT a tenant: it's reserved so the generic path never resolves it to a 'boka'
   // tenant. POS protection is intact — this only matches the boka branch, never a
   // bare POS subdomain.
-  const tenantSuffix = stripPort(tenantHostSuffix).toLowerCase()
+  const tenantSuffix = stripPort(tenantSuffixOption).toLowerCase()
   if (tenantSuffix) {
     const tenantSuffixDot = '.' + tenantSuffix
     if (hostname.endsWith(tenantSuffixDot)) {

@@ -1,20 +1,61 @@
 const SCHEDULER_NAME = 'cloudflare-reminders-primary'
-const ROUTE_URLS = [
-  'https://booking.corevo.se/api/cron/pending-expiry',
-  'https://booking.corevo.se/api/cron/reminders',
-  'https://booking.corevo.se/api/cron/notifications',
-  'https://booking.corevo.se/api/cron/payment-refunds',
-  'https://booking.corevo.se/api/cron/media-cleanup',
+const DEFAULT_ROUTE_TIMEOUT_MS = 60_000
+const ROUTE_PATHS = [
+  '/api/cron/pending-expiry',
+  '/api/cron/reminders',
+  '/api/cron/notifications',
+  '/api/cron/payment-refunds',
+  '/api/cron/media-cleanup',
 ]
 
 function required(value) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
 }
 
-async function recordHeartbeat({ env, fetchImpl, runId, phase, errorCode, observedAt }) {
-  const response = await fetchImpl(new Request(
-    `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/record_scheduler_heartbeat`,
-    {
+function schedulerOrigin(value) {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && url.origin === value.replace(/\/$/, '') ? url.origin : null
+  } catch {
+    return null
+  }
+}
+
+async function fetchWithTimeout({ fetchImpl, request, timeoutMs, timeoutError }) {
+  const controller = new AbortController()
+  let timeoutId
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort()
+      reject(new Error(timeoutError))
+    }, timeoutMs)
+  })
+  try {
+    return await Promise.race([
+      fetchImpl(new Request(request, { signal: controller.signal })),
+      timeout,
+    ])
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+async function runRoute({ appFetch, cronSecret, routeTimeoutMs, url }) {
+  return fetchWithTimeout({
+    fetchImpl: appFetch,
+    request: new Request(url, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${cronSecret}` },
+    }),
+    timeoutMs: routeTimeoutMs,
+    timeoutError: 'primary_scheduler_route_timeout',
+  })
+}
+
+async function recordHeartbeat({ env, fetchImpl, runId, phase, errorCode, observedAt, timeoutMs }) {
+  const response = await fetchWithTimeout({
+    fetchImpl,
+    request: new Request(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/record_scheduler_heartbeat`, {
       method: 'POST',
       headers: {
         apikey: env.SUPABASE_SERVICE_ROLE_KEY,
@@ -28,8 +69,10 @@ async function recordHeartbeat({ env, fetchImpl, runId, phase, errorCode, observ
         p_error_code: errorCode ?? null,
         p_observed_at: observedAt,
       }),
-    },
-  ))
+    }),
+    timeoutMs,
+    timeoutError: 'primary_scheduler_heartbeat_timeout',
+  })
   if (!response.ok) throw new Error('primary_scheduler_heartbeat_failed')
 }
 
@@ -39,13 +82,18 @@ export async function runPrimaryScheduler({
   fetchImpl = fetch,
   runId = crypto.randomUUID(),
   now = () => new Date(),
+  routeTimeoutMs = DEFAULT_ROUTE_TIMEOUT_MS,
 }) {
   const cronSecret = required(env?.CRON_SECRET)
   const supabaseUrl = required(env?.NEXT_PUBLIC_SUPABASE_URL)
   const serviceRole = required(env?.SUPABASE_SERVICE_ROLE_KEY)
-  if (!cronSecret || !supabaseUrl || !serviceRole) {
+  const siteOrigin = schedulerOrigin(required(env?.NEXT_PUBLIC_SITE_URL))
+  if (!cronSecret || !supabaseUrl || !serviceRole || !siteOrigin) {
     throw new Error('primary_scheduler_configuration_missing')
   }
+  const safeRouteTimeoutMs = Number.isFinite(routeTimeoutMs) && routeTimeoutMs > 0
+    ? routeTimeoutMs
+    : DEFAULT_ROUTE_TIMEOUT_MS
   const safeEnv = {
     ...env,
     CRON_SECRET: cronSecret,
@@ -60,16 +108,19 @@ export async function runPrimaryScheduler({
     phase: 'started',
     errorCode: null,
     observedAt: startedAt,
+    timeoutMs: safeRouteTimeoutMs,
   })
 
   try {
     let routeFailed = false
-    for (const url of ROUTE_URLS) {
+    for (const path of ROUTE_PATHS) {
       try {
-        const response = await appFetch(new Request(url, {
-          method: 'POST',
-          headers: { authorization: `Bearer ${cronSecret}` },
-        }))
+        const response = await runRoute({
+          appFetch,
+          cronSecret,
+          routeTimeoutMs: safeRouteTimeoutMs,
+          url: new URL(path, siteOrigin),
+        })
         routeFailed ||= !response.ok
       } catch {
         routeFailed = true
@@ -83,6 +134,7 @@ export async function runPrimaryScheduler({
       phase: 'succeeded',
       errorCode: null,
       observedAt: now().toISOString(),
+      timeoutMs: safeRouteTimeoutMs,
     })
   } catch (error) {
     try {
@@ -95,6 +147,7 @@ export async function runPrimaryScheduler({
           ? 'route_failed'
           : 'scheduler_failed',
         observedAt: now().toISOString(),
+        timeoutMs: safeRouteTimeoutMs,
       })
     } catch {
       // The missing success heartbeat is itself observable by the independent

@@ -78,7 +78,9 @@ describe('notification outbox cron', () => {
       recovery: { claimed: 0, sent: 0, simulated: 0, skipped: 0, retried: 0, failed: 0, stale: 0 },
     })
     expect(mocks.dispatchPortalRecoveryOutbox).toHaveBeenCalledWith(5)
-    const [[{ deliver }]] = mocks.dispatchNotificationOutbox.mock.calls
+    const [[{ deliver, limit, concurrency }]] = mocks.dispatchNotificationOutbox.mock.calls
+    expect(limit).toBe(10)
+    expect(concurrency).toBe(5)
     await deliver({ event_type: 'offert_reply' })
     await deliver({ event_type: 'booking_confirmation' })
     expect(mocks.deliverImmediateOffertOutbox).toHaveBeenCalledWith({ event_type: 'offert_reply' })
@@ -96,10 +98,14 @@ describe('notification outbox cron', () => {
     expect(response.status).toBe(200)
     expect(mocks.dispatchNotificationOutbox).toHaveBeenNthCalledWith(1, {
       deliver: expect.any(Function),
+      limit: 10,
+      concurrency: 5,
     })
     expect(mocks.dispatchNotificationOutbox).toHaveBeenNthCalledWith(2, {
       channel: 'sms',
       deliver: mocks.deliverClaimedSmsOutbox,
+      limit: 10,
+      concurrency: 5,
     })
     expect(mocks.dispatchPortalRecoveryOutbox).toHaveBeenCalledWith(5)
   })

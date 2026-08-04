@@ -57,7 +57,7 @@ export async function startBookingCheckout(
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, price_cents, status, services(name)')
+    .select('price_cents, services(name)')
     .eq('id', bookingId)
     .eq('tenant_id', ctx.tenantId)
     .maybeSingle()

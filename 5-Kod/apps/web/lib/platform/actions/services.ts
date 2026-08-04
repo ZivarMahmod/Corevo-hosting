@@ -221,7 +221,7 @@ export async function deleteTenantService(_p: ActionState, fd: FormData): Promis
 /**
  * Set which staff can perform a service (staff_services, existing 0001 join). REPLACE
  * semantics: the submitted `staffId` set becomes the whole set for this service. Booking
- * uses this to fence which behandlare are offered (boka/actions.ts). Scoped to the tenant
+ * uses this to fence which behandlare are offered. Scoped to the tenant
  * on every write; each staff_id is verified to belong to the tenant before insert.
  */
 export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<ActionState> {

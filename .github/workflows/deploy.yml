@@ -158,23 +158,26 @@ jobs:
             exit 1
           }
 
-          run_id=$(gh api \
+          run_ids=$(gh api \
             --method GET \
             "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
             -f head_sha="$GITHUB_SHA" \
             -f per_page=100 \
-            --jq '[.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success")] | sort_by(.run_attempt) | last | .id // empty')
+            --jq '.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success" and .event == "workflow_dispatch") | .id')
+
+          run_id=""
+          for candidate_run_id in $run_ids; do
+            e2e_count=$(gh api \
+              --method GET \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/jobs?filter=latest&per_page=100" \
+              --jq '[.jobs[] | select(.name == "playwright e2e (staging)" and .conclusion == "success")] | length')
+            if [ "$e2e_count" -eq 1 ]; then
+              run_id="$candidate_run_id"
+              break
+            fi
+          done
           [ -n "$run_id" ] || {
             echo "::error::No successful main CI with all configured release gates exists for $GITHUB_SHA"
-            exit 1
-          }
-
-          e2e_count=$(gh api \
-            --method GET \
-            "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?filter=latest&per_page=100" \
-            --jq '[.jobs[] | select(.name == "playwright e2e (staging)" and .conclusion == "success")] | length')
-          [ "$e2e_count" -eq 1 ] || {
-            echo "::error::Exact-SHA CI run $run_id lacks a successful isolated staging E2E job."
             exit 1
           }
 

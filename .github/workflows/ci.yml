@@ -1,14 +1,28 @@
 name: CI
 
 # PR gate (G11). lint + typecheck + unit + contract acceptance + build always block the PR.
-# Full Playwright E2E runs only on trusted main pushes against seeded, isolated
-# STAGING. E2E_ENABLED=true activates it after the staging environment exists;
-# pull requests never receive the mutating staging credentials.
+# Full Playwright E2E runs only through an approved manual exact-SHA run against
+# seeded, isolated STAGING. Ordinary pushes and pull requests never receive the
+# mutating staging credentials.
 
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_isolated_e2e:
+        description: Run credentialed isolated-staging E2E for this exact main SHA
+        required: true
+        type: boolean
+        default: false
+      candidate_sha:
+        description: Exact main commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -93,6 +107,8 @@ jobs:
             -c "alter table public.tenants disable trigger trg_tenant_launch_readiness; alter table public.staff disable trigger trg_staff_activation_readiness; alter table public.bookings disable trigger trg_booking_resource_fence"
           bash supabase/tests/customer_portal_cancellation_refunds_0121_concurrency_test.sh "$db_container"
           bash supabase/tests/customer_portal_contact_change_0124_concurrency_test.sh "$db_container"
+          bash supabase/tests/notification_delivery_1230_migration_test.sh "$db_container"
+          bash supabase/tests/customer_portal_mode_1400_migration_test.sh "$db_container"
           docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
             -c "alter table public.bookings enable trigger trg_booking_resource_fence; alter table public.staff enable trigger trg_staff_activation_readiness; alter table public.tenants enable trigger trg_tenant_launch_readiness"
 
@@ -128,8 +144,23 @@ jobs:
           apps/web/scripts/e2e-db.node-test.mjs
           apps/web/scripts/primary-scheduler.test.mjs
           apps/web/scripts/primary-scheduler-config.test.mjs
-      - run: pnpm test:goal93:contract
+      # This contract has no staging credentials and must stay positively green;
+      # do not let the separate missing-credentials proof hide a regression here.
+      - name: Verify Goal 93 acceptance contract
         if: ${{ !cancelled() }}
+        run: pnpm test:goal93:contract
+      # Credentials are deliberately absent from ordinary CI. This proves the
+      # acceptance probes fail closed; a green acceptance run belongs only to
+      # the separately approved isolated-staging gate.
+      - name: Verify acceptance contracts fail closed without staging credentials
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          output="$(pnpm test:acceptance:contract 2>&1)" && exit 1
+          printf '%s\n' "$output"
+          grep -F 'FAIL 03-P00 expected=ACCEPT_BASE_URL,ACCEPT_ADMIN_EMAIL,ACCEPT_ADMIN_PASSWORD,ACCEPT_THEME actual=missing:' <<< "$output"
+          grep -F 'FAIL 04-P00 expected=ACCEPT_BASE_URL,ACCEPT_ADMIN_EMAIL,ACCEPT_ADMIN_PASSWORD actual=missing:' <<< "$output"
+          grep -F 'FAIL 06-P00 expected=ACCEPT_BASE_URL,ACCEPT_STAFF_EMAIL,ACCEPT_STAFF_PASSWORD actual=missing:' <<< "$output"
       # Bransch-vakten (goal-61): failar på NYA hårdkodade bransch-ord (salong/frisör/
       # klippning …) i user-facing strängar. Corevo är multi-bransch — texten ska komma
       # ur terminologi-systemet eller bransch-lagret (bransch-copy.ts), aldrig ur koden.
@@ -204,8 +235,10 @@ jobs:
     timeout-minutes: 30
     needs: [database, quality]
     if: >-
-      github.event_name == 'push' &&
+      github.event_name == 'workflow_dispatch' &&
+      inputs.run_isolated_e2e == true &&
       github.ref == 'refs/heads/main' &&
+      inputs.candidate_sha == github.sha &&
       vars.E2E_ENABLED == 'true'
     environment: staging
     concurrency:
@@ -308,4 +341,4 @@ jobs:
           [ "${{ needs.database.result }}" = "success" ]
           [ "${{ needs.quality.result }}" = "success" ]
           [ "${{ needs.worker-bundle.result }}" = "success" ]
-          [ "${{ needs.e2e.result }}" = "success" ] || { [ "${{ vars.E2E_ENABLED }}" != "true" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; } || { [ "${{ github.event_name }}" != "push" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; }
+          [ "${{ needs.e2e.result }}" = "success" ] || { [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; } || { [ "${{ inputs.run_isolated_e2e }}" != "true" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; }

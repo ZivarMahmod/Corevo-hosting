@@ -301,6 +301,8 @@ describe('shared storefront shell', () => {
 
     expect(elements(tree, BookingProvider)).toHaveLength(0)
     expect(elements(tree, InlineBooking)).toHaveLength(0)
+    expect(reads.locations).not.toHaveBeenCalled()
+    expect(reads.bookingPrefs).not.toHaveBeenCalled()
     expect(elements(tree, 'p')).toContain(child)
   })
 })

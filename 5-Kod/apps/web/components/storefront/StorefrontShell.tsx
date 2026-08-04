@@ -115,8 +115,7 @@ export async function StorefrontShell(props: StorefrontShellProps) {
     copy,
     moduleStates,
     allWizardServices,
-    wizardLocations,
-    bookingPrefs,
+    bookingData,
     staffNoun,
     rawPrimaryCta,
     teamCount,
@@ -125,8 +124,9 @@ export async function StorefrontShell(props: StorefrontShellProps) {
     getTenantCopy(bundle, surface === 'preview' ? theme : null, copyMode),
     getTenantModuleStates(tenant.id, tenant.slug),
     getWizardServices(tenant.id, tenant.slug),
-    getWizardLocations(tenant.id, tenant.slug),
-    getBookingPrefs(tenant.id, tenant.slug),
+    embeddedBooking
+      ? Promise.all([getWizardLocations(tenant.id, tenant.slug), getBookingPrefs(tenant.id, tenant.slug)])
+      : null,
     resolveStaffNoun(tenant.vertical_id),
     resolvePrimaryCta(tenant.vertical_id),
     countTeamMembers(tenant.id, tenant.slug),
@@ -189,13 +189,13 @@ export async function StorefrontShell(props: StorefrontShellProps) {
       {embeddedBooking && view.inlineBooking.mounted ? (
         <InlineBooking
           services={view.wizardServices}
-          locations={wizardLocations}
+          locations={bookingData![0]}
           tenantName={tenant.name}
           staffNoun={staffNoun}
           bokaCta={bokning.cta}
           bokaOnline={bokning.online}
-          pickerMode={bookingPrefs.pickerMode}
-          staffAvatarMode={bookingPrefs.staffAvatarMode}
+          pickerMode={bookingData![1].pickerMode}
+          staffAvatarMode={bookingData![1].staffAvatarMode}
           countryCode={settings.countryCode}
           locale={settings.locale}
           currency={settings.currency}
@@ -255,13 +255,13 @@ export async function StorefrontShell(props: StorefrontShellProps) {
           externalUrl={settings.bookingExternalUrl}
           externalCtaUrls={settings.bookingExternalCtaUrls}
           services={view.wizardServices}
-          locations={wizardLocations}
+          locations={bookingData![0]}
           tenantName={tenant.name}
           staffNoun={staffNoun}
           bokaCta={bokning.cta}
           variant={settings.bookingVariant}
-          pickerMode={bookingPrefs.pickerMode}
-          staffAvatarMode={bookingPrefs.staffAvatarMode}
+          pickerMode={bookingData![1].pickerMode}
+          staffAvatarMode={bookingData![1].staffAvatarMode}
           countryCode={settings.countryCode}
           locale={settings.locale}
           currency={settings.currency}

@@ -197,6 +197,7 @@ export async function dispatchNotificationOutbox(options: {
   channel?: 'sms'
   outboxId?: string
   limit?: number
+  concurrency?: number
   leaseSeconds?: number
   now?: Date
 } = {}): Promise<OutboxDispatchRun> {
@@ -204,6 +205,8 @@ export async function dispatchNotificationOutbox(options: {
 
   const admin = createServiceClient()
   if (!admin) throw new Error('outbox_service_role_unavailable')
+  // Capture the narrowed client for nested dispatch callbacks.
+  const service = admin
 
   const now = options.now ?? new Date()
   const leaseToken = crypto.randomUUID()
@@ -236,7 +239,7 @@ export async function dispatchNotificationOutbox(options: {
     const claimRpc = options.channel === 'sms'
       ? 'claim_sms_notification_outbox'
       : 'claim_notification_outbox'
-    const result = await admin.rpc(claimRpc, {
+    const result = await service.rpc(claimRpc, {
       p_lease_token: leaseToken,
       p_now: now.toISOString(),
       p_lease_seconds: options.leaseSeconds ?? 120,
@@ -268,7 +271,7 @@ export async function dispatchNotificationOutbox(options: {
       logger.warn('outbox.claim_invalid', { error: 'claim_identity_invalid' })
       continue
     }
-    const { data: failed, error: failError } = await admin.rpc(
+    const { data: failed, error: failError } = await service.rpc(
       'ack_notification_outbox',
       {
         p_id: identity.id,
@@ -289,19 +292,19 @@ export async function dispatchNotificationOutbox(options: {
     })
   }
 
-  for (const row of rows) {
+  async function dispatch(row: ClaimedNotificationOutboxRow): Promise<void> {
     // CAS:a raden till ett icke-återclaimbart läge precis före provideranropet.
     // Om en lång batch har tappat sin lease blir detta false och ingen transport
     // sker. Efter true prioriterar vi at-most-once: krasch/ackfel kräver manuell
     // avstämning i stället för att ett kundmeddelande automatiskt skickas igen.
-    const { data: started, error: startError } = await admin.rpc(
+    const { data: started, error: startError } = await service.rpc(
       'begin_notification_delivery',
       { p_id: row.id, p_lease_token: row.lease_token },
     )
     if (startError || !started) {
       run.stale += 1
       logger.warn('outbox.begin_failed', { id: row.id, error: 'delivery_begin_stale' })
-      continue
+      return
     }
 
     let result: NotificationDeliveryResult
@@ -315,7 +318,7 @@ export async function dispatchNotificationOutbox(options: {
     }
 
     if (result.status === 'retry') {
-      const { data: retryStatus, error: retryError } = await admin.rpc(
+      const { data: retryStatus, error: retryError } = await service.rpc(
         'retry_notification_outbox',
         {
           p_id: row.id,
@@ -327,7 +330,7 @@ export async function dispatchNotificationOutbox(options: {
       if (retryError || !retryStatus) run.stale += 1
       else if (retryStatus === 'failed') run.failed += 1
       else run.retried += 1
-      continue
+      return
     }
 
     const reason = result.status === 'skipped'
@@ -338,7 +341,7 @@ export async function dispatchNotificationOutbox(options: {
     const accepted = result.status === 'sent'
       || result.status === 'delivered'
       || result.status === 'simulated'
-    const { data: acknowledged, error: ackError } = await admin.rpc(
+    const { data: acknowledged, error: ackError } = await service.rpc(
       'ack_notification_outbox',
       {
         p_id: row.id,
@@ -366,13 +369,23 @@ export async function dispatchNotificationOutbox(options: {
         outcome: result.status,
         error: 'delivery_ack_failed',
       })
-      continue
+      return
     }
     if (result.status === 'simulated') run.simulated += 1
     else if (result.status === 'skipped') run.skipped += 1
     else if (result.status === 'failed') run.failed += 1
     else run.sent += 1
   }
+
+  const concurrency = Math.max(1, Math.min(options.concurrency ?? 1, rows.length))
+  let nextRow = 0
+  await Promise.all(Array.from({ length: concurrency }, async () => {
+    while (nextRow < rows.length) {
+      const row = rows[nextRow]
+      nextRow += 1
+      if (row) await dispatch(row)
+    }
+  }))
 
   logger.info('outbox.dispatch', run)
   return run

@@ -39,6 +39,15 @@ de faktiskt provar och `lib/` importerar inte UI.
 Kör hela lokala gaten efter sista ändringen. Dokumentera externa risker i
 `HANDOFF.md` som ej verifierade, inte som gröna.
 
+### U5: Stäng bekräftade releasefel utan nya lager
+
+- Publik bokning läser sin egen verifieringspolicy oberoende av portal-läge.
+- Push-fallback återställs till ett claimbart försökstillstånd.
+- Scheduler-routes har en timeout och notifieringsdräneringen är tidsbegränsad.
+- CI kör alla kvarvarande acceptanskontrakt; saknade `ACCEPT_*` ska ge rött, inte
+  ett falskt grönt resultat.
+- GitHub-nödrälsen dränerar notifieringskön när primärschedulern inte är bevisad.
+
 ## Definition of done
 
 - Lokala kontroller är gröna på den aktuella arbetsytan.
@@ -47,3 +56,6 @@ Kör hela lokala gaten efter sista ändringen. Dokumentera externa risker i
   reconcilerade. Remote publicering väntar på uttryckligt godkännande.
 - Statusen är lokalt deploybar men inte produktions-GO tills staging,
   migrationsruntime, browseracceptans och providerdrift har verkliga bevis.
+- En separat `CREATE INDEX CONCURRENTLY` för e-postkön avgörs först av staging-
+  `EXPLAIN` mot verkligt SMS-backlog; den ska inte gissas in i den transaktionella
+  releasekedjan.

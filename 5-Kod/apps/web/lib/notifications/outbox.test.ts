@@ -85,6 +85,37 @@ describe('durable notification outbox', () => {
     })
   })
 
+  it('bounds parallel provider work to the requested concurrency', async () => {
+    const second = {
+      ...claimed,
+      id: '10000000-0000-0000-0000-000000000002',
+      event_key: 'booking:30000000-0000-0000-0000-000000000002:confirmation',
+      lease_token: '40000000-0000-0000-0000-000000000002',
+    }
+    const third = {
+      ...claimed,
+      id: '10000000-0000-0000-0000-000000000003',
+      event_key: 'booking:30000000-0000-0000-0000-000000000003:confirmation',
+      lease_token: '40000000-0000-0000-0000-000000000003',
+    }
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === 'claim_notification_outbox') return { data: [claimed, second, third], error: null }
+      return { data: true, error: null }
+    })
+    const resolvers: Array<(result: { status: 'sent'; providerRef: string }) => void> = []
+    const deliver = vi.fn(() => new Promise<{ status: 'sent'; providerRef: string }>((resolve) => {
+      resolvers.push(resolve)
+    }))
+
+    const run = dispatchNotificationOutbox({ deliver, concurrency: 2 })
+    await vi.waitFor(() => expect(deliver).toHaveBeenCalledTimes(2))
+    resolvers[0]!({ status: 'sent', providerRef: 'provider-0' })
+    await vi.waitFor(() => expect(deliver).toHaveBeenCalledTimes(3))
+    resolvers.slice(1).forEach((resolve, index) => resolve({ status: 'sent', providerRef: `provider-${index + 1}` }))
+
+    await expect(run).resolves.toMatchObject({ claimed: 3, sent: 3 })
+  })
+
   it('claims exactly one returned outbox id for immediate delivery', async () => {
     mocks.rpc
       .mockResolvedValueOnce({ data: [claimed], error: null })
