@@ -8,9 +8,11 @@ produktarkitekturen i
 
 - Branch: `codex/restore-four-state-module-lifecycle` (namnet är historiskt).
 - Bas före den lokala cutovern: `44dab3a66eb00847dcc90f3ac83d1bfa34db0508`.
-- Cutovern är committad som `550add1c`; aktuella lokala reviewfixar är ännu
-  ocommittade och får inte blandas med annat arbete utan uttryckligt uppdrag.
+- Cutovern är committad som `550add1c`; den verifierade runtimekandidaten är
+  `9163414f` ovanpå den. Efterföljande commits får endast bära releasebevis och
+  ändrar inte runtimekoden. Ingen kandidat är pushad.
 - Ingen push, deploy, produktionsmigration, DNS- eller tunneländring har gjorts.
+  GitHubs branch- och miljöskydd har däremot konfigurerats med operatörsgodkännande.
 - Den samlade lokala kodgaten är grön efter aktuella reviewfixar. Acceptance-
   hemligheter och miljöbevis saknas fortfarande, så externt releasebeslut är **NO-GO**.
 
@@ -83,15 +85,14 @@ eller remote branch. Det kräver uttryckligt operatörsgodkännande.
 ## Färsk extern read-only-audit
 
 - `origin/main` och senaste lyckade produktionsdeployen (`30847615398`) är
-  `44dab3a`; den lokala cutovern `550add1c` och den ocommittade reviewdiffen
-  finns alltså inte som en publicerbar kandidat-SHA.
-- Git-indexet är bara delvis förberett: de två nya SQL-sviterna är staged, medan
-  aktuell version av 1400-sviten och resten av kandidatarbetet är unstaged. En
-  commit måste därför först reconcilera indexet mot den verifierade worktree-diffen.
-- GitHub-miljöerna `staging` och `production` finns, men båda saknar
-  protection rules. De är inte bevisade godkännandegrindar.
-- Branch `main` saknar också GitHub branch protection. En push kan därför inte
-  betraktas som en granskad eller spärrad releaseväg i nuvarande remote-konfiguration.
+  fortfarande `44dab3a`; den lokala kandidaten `9163414f` finns ännu inte remote.
+- `main` är nu skyddad med uppdaterad-branch-krav, adminenforcement, avstängd
+  force-push/radering och de fyra CI-releasekontrollerna. Enda repokollaboratören
+  är Zivar, så det finns ingen extern PR-granskare att kräva utan att blockera
+  arbetet.
+- GitHub-miljöerna `staging` och `production` kräver nu Zivars manuella godkännande
+  och får bara deployas från skyddad branch. Självgodkännande är tillåtet eftersom
+  kontot är ensam operatör; lägg till en andra granskare när ett sådant konto finns.
 - `staging` har inga miljöscopade vars eller secrets. Repo-variablerna saknar
   även `E2E_ENABLED`, staging-allowlist och staging-readinessflagga, så den
   credentialed E2E-rutten kan inte starta förrän den är uttryckligen konfigurerad.
@@ -102,51 +103,46 @@ eller remote branch. Det kräver uttryckligt operatörsgodkännande.
 
 ## Releaseblockerare
 
-1. Kandidaten saknar en godkänd lokal commit och därmed en exakt SHA för den
-   manuella staging-E2E:n. Reconcilera och commit:a endast efter uttryckligt
-   godkännande av den aktuella diffen.
-2. GitHub `main`, `staging` och `production` saknar skyddsregler. Konfigurera
-   branch review/statusgrindar och namngivna miljögodkännare innan credentialed
-   E2E, stagingmigration eller production kan räknas som kontrollerad drift.
-3. Efter uttryckligt staginggodkännande: staging saknar fortfarande vars/secrets.
+1. Den godkända branch-toppen måste pushas som exakt SHA innan den kan köras av
+   GitHub eller staging. SHA:n ska låsas i staging-recordet vid publicering;
+   `9163414f` är runtimecommitten, inte ett substitut för den faktiska toppen.
+2. Efter uttryckligt staginggodkännande: staging saknar fortfarande vars/secrets.
    Sätt den isolerade projektreferensen, dess separata nycklar och både staging-
    och produktionsreferens för workflowets hårda spärr; använd aldrig
    produktionsreferensen i staging.
-4. Efter uttryckligt staginggodkännande: kör alla 167 migrationer, SQL/RLS-sviter
+3. Efter uttryckligt staginggodkännande: kör alla 167 migrationer, SQL/RLS-sviter
    och samtidighetstester i en disponibel
    databas och därefter i isolerad staging. Observera låstid för indexet i
    `20260804150000`.
-5. Efter uttryckligt staginggodkännande: kör autentiserad browseracceptans med
+4. Efter uttryckligt staginggodkännande: kör autentiserad browseracceptans med
    seedad tenant: bokning, avbokning,
    offert, customer portal, admin och providerflöden. Verifiera sedan mobil/design.
-6. Senast lästa deklarerade `PROD_DB_MIGRATION` är `20260803095219`; repots
+5. Senast lästa deklarerade `PROD_DB_MIGRATION` är `20260803095219`; repots
    checkpoint är `20260803191057`. Båda ligger före denna kandidats krav
    `20260804150000`. Produktionsgrinden ska fortsätta neka tills den verkliga
    migrationshistoriken och fingerprint är verifierade.
-7. Omverifiera staging/prod-hostarnas TLS, scheduler-heartbeat och providerdrift
+6. Omverifiera staging/prod-hostarnas TLS, scheduler-heartbeat och providerdrift
    först efter staging. Ingen av dessa är lokalt bevisad.
-8. Acceptance-gaten saknar lokalt/staging `ACCEPT_*`-hemligheter och misslyckas nu
+7. Acceptance-gaten saknar lokalt/staging `ACCEPT_*`-hemligheter och misslyckas nu
    korrekt i stället för att ge falskt grönt. Den credentialed E2E-körningen måste
    startas manuellt för exakt `main`-SHA i den skyddade stagingmiljön efter uttryckligt
    godkännande.
-9. Verifiera e-post-claimens query plan mot SMS-backlog i staging innan en separat
+8. Verifiera e-post-claimens query plan mot SMS-backlog i staging innan en separat
    concurrent partial index-migration eventuellt beslutas.
 
 ## Nästa säkra ordning
 
-1. Efter uttryckligt godkännande: reconcilera den aktuella diffen till en lokal
-   commit. Publicera inte den utan ett separat godkännande.
-2. Efter uttryckligt godkännande: skydda GitHub-miljöerna och konfigurera den
-   isolerade staginggrinden med namngivna ägare, secrets, allowlist och
+1. Efter uttryckligt godkännande: publicera den dåvarande låsta branch-SHA:n och
+   konfigurera den isolerade staginggrinden med namngivna ägare, secrets, allowlist och
    checkpoint-record. Skriv aldrig hemligheter i repot.
-3. Efter uttryckligt staginggodkännande: publicera exakt den godkända SHA:n och kör
+2. Efter uttryckligt staginggodkännande: kör
    exakt samma SHA i isolerad staging:
    backup/PITR-kontroll, migrationer,
    audit SQL, seedad E2E, browseracceptans och teardown.
-4. Efter uttryckligt staginggodkännande: åtgärda varje stagingavvikelse med en
+3. Efter uttryckligt staginggodkännande: åtgärda varje stagingavvikelse med en
    framåtriktad migration eller en ändring i
    dess befintliga ägare; bygg inga parallella ersättningslager.
-5. Ta separat GO-beslut för produktionsmigration och deploy först efter grön
+4. Ta separat GO-beslut för produktionsmigration och deploy först efter grön
    staging och en ny signerad produktionscheckpoint.
 
 ## Källor som gäller
