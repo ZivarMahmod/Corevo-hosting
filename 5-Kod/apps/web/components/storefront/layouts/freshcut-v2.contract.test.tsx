@@ -7,7 +7,7 @@ import type { Service } from '@/lib/tenant-data'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import { THEME_LOADS_LAYOUT_MODULES, THEME_OWNS_MODULES } from './runtime'
-import { freshCutNavigationLinks } from './FreshCutChrome'
+import { FreshCutFooter, freshCutNavigationLinks } from './FreshCutChrome'
 import { FreshCutLayout } from './FreshCutLayout'
 
 const EXTERNAL_URL = 'https://www.bokadirekt.se/places/freshcut-123'
@@ -171,6 +171,22 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).toContain('href="https://www.bokadirekt.se/places/freshcut-hero"')
     expect(html).toContain('href="https://www.bokadirekt.se/places/freshcut-service-1"')
     expect(html).toContain(`href="${EXTERNAL_URL}"`)
+  })
+
+  it('does not present Corevo as FreshCuts booking engine', () => {
+    const html = renderToStaticMarkup(
+      <FreshCutFooter
+        tenant={{ id: 'tenant-freshcut', name: 'FreshCut', slug: 'freshcut' }}
+        tagline=""
+        location={null}
+        contact={{ email: null, phone: null }}
+        social={{ instagram: null, facebook: null, tiktok: null }}
+        links={[]}
+      />,
+    )
+
+    expect(html).toContain('Webb via Corevo')
+    expect(html).not.toContain('bokning via Corevo')
   })
 
   it('shows a booking button on every service', () => {

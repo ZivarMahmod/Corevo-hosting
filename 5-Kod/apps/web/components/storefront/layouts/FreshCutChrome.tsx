@@ -92,7 +92,7 @@ export function FreshCutFooter(p: ThemeFooterProps) {
         {wordmark(p.tenant.name)}
       </Link>
       <p>© {new Date().getFullYear()} {p.tenant.name}</p>
-      <p>Webb & bokning via Corevo</p>
+      <p>Webb via Corevo</p>
     </footer>
   )
 }
