@@ -1,9 +1,40 @@
 -- Read-only production audit for migration effects that were applied outside the
--- normal Supabase CLI history. This file must never mutate schema, data, grants,
--- policies, or migration history.
+-- normal Supabase CLI history. This file must never mutate persistent schema, data,
+-- grants, policies, or migration history.
 --
 -- Run from 5-Kod/:
 --   supabase db query --linked --file scripts/sql/audit-production-migration-effects.sql
+
+-- pg_cron is intentionally absent in local/disposable databases. Keep the audit's
+-- schedule check in this session so its cron.job query is never planned there.
+do $$
+begin
+  perform set_config('corevo.audit_cron_sweeps_ok', 'false', false);
+  if to_regclass('cron.job') is not null then
+    perform set_config(
+      'corevo.audit_cron_sweeps_ok',
+      (
+        not exists (
+          select required.jobname, required.schedule
+          from (values
+            ('corevo-expire-pending-bookings', '*/15 * * * *'),
+            ('corevo-prune-shop-reserves', '*/15 * * * *'),
+            ('corevo-prune-slot-holds', '*/15 * * * *'),
+            ('corevo-prune-contact-messages', '10 4 * * *')
+          ) required(jobname, schedule)
+          where not exists (
+            select 1 from cron.job j
+            where j.jobname = required.jobname
+              and j.schedule = required.schedule
+              and j.active = true
+          )
+        )
+      )::text,
+      false
+    );
+  end if;
+end
+$$;
 
 with checks(version, check_name, passed, evidence) as (
   values
@@ -380,22 +411,7 @@ with checks(version, check_name, passed, evidence) as (
     (
       '0090',
       'database cron sweeps',
-      to_regclass('cron.job') is not null
-      and not exists (
-        select required.jobname, required.schedule
-        from (values
-          ('corevo-expire-pending-bookings', '*/15 * * * *'),
-          ('corevo-prune-shop-reserves', '*/15 * * * *'),
-          ('corevo-prune-slot-holds', '*/15 * * * *'),
-          ('corevo-prune-contact-messages', '10 4 * * *')
-        ) required(jobname, schedule)
-        where not exists (
-          select 1 from cron.job j
-          where j.jobname = required.jobname
-            and j.schedule = required.schedule
-            and j.active = true
-        )
-      ),
+      current_setting('corevo.audit_cron_sweeps_ok', true) = 'true',
       'four active named pg_cron jobs with expected schedules'
     ),
     (
