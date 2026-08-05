@@ -1,14 +1,11 @@
-import { signOut } from '@/app/(auth)/actions'
-import { Icon } from './ui/Icon'
+import { signOut } from '@/lib/auth/actions'
 
-/** Server-action logout button (no client JS needed).
- *  `compact` → icon-only door glyph for the sidebar footer (handoff chrome);
- *  default → text button for /konto or the superadmin account menu. */
-export function SignOutButton({ compact = false }: { compact?: boolean }) {
+/** Server-action logout button (no client JS needed). */
+export function SignOutButton() {
   return (
     <form action={signOut}>
       <button type="submit" className="portal-signout" aria-label="Logga ut" title="Logga ut">
-        {compact ? <Icon name="logout" size={18} /> : 'Logga ut'}
+        Logga ut
       </button>
     </form>
   )

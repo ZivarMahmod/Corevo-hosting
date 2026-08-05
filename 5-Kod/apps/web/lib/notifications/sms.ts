@@ -13,7 +13,7 @@ const CALLBACK_USERNAME = 'corevo'
 const PROVIDER_ID = /^s[a-f0-9]{32}$/
 const PROVIDER_TIMEOUT_MS = 8_000
 
-export type SmsResult =
+type SmsResult =
   | {
       ok: true
       mode: 'dry_run' | 'live'
@@ -47,7 +47,7 @@ export type SmsResult =
         | `http_${number}`
     }
 
-export type SendSmsArgs = {
+type SendSmsArgs = {
   to: string
   body: string
   from?: string
@@ -307,13 +307,9 @@ async function sendSmsWithTransport(
   }
 }
 
-export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
-  return sendSmsWithTransport(args)
-}
-
-/** Typad U1-adapter. U4 kopplar den till en explicit SMS-worker; cron gör det inte här. */
+/** SMS-transporten som den claimade outbox-workern använder. */
 export async function deliverSmsOutbox(
-  args: SendSmsArgs & { tenantId: string },
+  args: Omit<SendSmsArgs, 'allowProviderDryRun'> & { tenantId: string },
 ): Promise<NotificationDeliveryResult> {
   const result = await sendSmsWithTransport(
     { ...args, allowProviderDryRun: true },
@@ -378,13 +374,4 @@ export async function deliverClaimedSmsOutbox(
     from: prepared.from,
     tenantSmsEnabled,
   })
-}
-
-export function parseGuestPhone(note: string | null | undefined): string | null {
-  if (!note) return null
-  const after = /<[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+>\s*(.*)$/.exec(note)?.[1]
-  if (!after) return null
-  const phone = after.split(/\s+[—-]\s+/)[0]?.trim()
-  if (!phone) return null
-  return (phone.match(/\d/g)?.length ?? 0) >= 4 ? phone : null
 }

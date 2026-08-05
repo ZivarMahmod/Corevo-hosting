@@ -2,10 +2,8 @@
 
 // goal-61 — KVITTOT efter "lägg i varukorgen".
 //
-// Ersätter den tunna textremsan under köpknappen. Anatomin (ikon · titel + stäng ·
-// varunamn · pris · väg vidare) är lånad ur uiverse-kortet i
-// 4-Dokument-Underlag/uiverse-komponentbibliotek.md — formen kommer från mallens
-// --sf-*-tokens, inte från uiverse-CSS:en.
+// Varukorgsnotis med ikon, titel, varunamn, pris och väg vidare. Formen kommer
+// från mallens --sf-*-tokens.
 //
 // Portal till <body>: produktkort lyfter sig med transform på hover, och en transform
 // skapar ett nytt containing block — ett fixed-kvitto inuti kortet hade klippts.

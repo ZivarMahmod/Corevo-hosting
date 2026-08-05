@@ -2,14 +2,11 @@ import 'server-only'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
 
-// Service-role client for the ONE platform operation RLS can't do: creating an
-// auth user (salon_admin invite via auth.admin.*). Everything else goes through
-// the authed platform_admin cookie client + RLS bypass — NOT this. The key is
-// server-only and must never reach the browser.
+// Service-role client for tightly scoped server operations that RLS must not
+// expose to a browser session. Ordinary CRUD uses the authenticated client.
 //
 // Graceful degrade: SUPABASE_SERVICE_ROLE_KEY is empty in local/dev (mirrors the
-// R2 pattern), so this returns null and the create-tenant flow skips the invite
-// with a clear message instead of throwing.
+// R2 pattern), so this returns null and callers fail closed or degrade explicitly.
 
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL

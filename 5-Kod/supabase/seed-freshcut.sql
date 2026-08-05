@@ -1,12 +1,11 @@
--- seed-freshcut.sql — VÅG 3 FreshCut baseline reconcile (goal-15).
+-- seed-freshcut.sql — FreshCut baseline reconcile.
 --
 -- IDEMPOTENT: re-running converges to the same state (UPDATE-in-place + UPSERT on
 -- fixed seed ids; primary location resolved dynamically). NEVER deletes a booking.
--- Run as a DATA script (mcp execute_sql / psql), NOT a migration. The destructive
--- purge (4 junk tenants + FreshCut's test bookings/customers) runs SEPARATELY and
--- BEFORE this, from a postgres owner session — see docs/ops/vag3-rollback.md.
+-- Run as a DATA script (mcp execute_sql / psql), NOT a migration. Any destructive
+-- purge must run separately from an explicitly reviewed owner session.
 --
--- Source: 2-Byggplan/goals/freshcut-seed-data.md. REAL data: name, address, phone,
+-- REAL data: name, address, phone,
 -- 7 services (real öre + durations), real opening hours, real taglines. The salvia
 -- THEME drives colours + default imagery (branding cleared — 'temat ska driva', the
 -- documented 'ser likadant ut' trap). PLACEHOLDER: staff names, hero/about copy.
@@ -37,7 +36,7 @@ begin
    where id = v_location and tenant_id = v_tenant;
 
   -- 2) Services — UPSERT the 7 brief rows on fixed ids (reuse the 3 existing, add 4),
-  --    then DEACTIVATE any other freshcut service not in the set (build-once-never-
+  --    then DEACTIVATE any other freshcut service not in the set (historikbevarande soft-
   --    delete: a service with history is hidden, never DELETEd).
   insert into public.services (id, tenant_id, location_id, name, category, duration_min, price_cents, active) values
     ('55555555-0000-0000-0000-000000000001', v_tenant, v_location, 'Herrklippning',                                       'Hår och skägg', 30, 36900, true),

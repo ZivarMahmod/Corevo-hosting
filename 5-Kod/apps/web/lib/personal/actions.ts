@@ -11,7 +11,7 @@ import {
   type CustomerCard,
   type CustomerNotes,
 } from './customer'
-import { createAdminServiceClient } from '@/lib/admin/service'
+import { createServiceClient } from '@/lib/platform/service'
 import { requireActiveTenantMutation } from '@/lib/admin/tenant'
 import {
   notificationQueueMessage,
@@ -82,7 +82,7 @@ export async function setBookingStatus(
     return { error: 'Besöket har inte nått sin sluttid än.' }
   }
 
-  const writer = createAdminServiceClient()
+  const writer = createServiceClient()
   if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu.' }
   const { data: updated, error } = await writer
     .from('bookings')
@@ -223,7 +223,7 @@ export async function rebookOwnBooking(
   if (!startUtc) return { error: 'Ogiltig tid.' }
   const endUtc = new Date(startUtc.getTime() + durationMs)
 
-  const writer = createAdminServiceClient()
+  const writer = createServiceClient()
   if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu.' }
   const { data: updated, error } = await writer
     .from('bookings')
@@ -271,8 +271,7 @@ export async function cancelOwnBooking(
   if (staff.length === 0) return { error: NO_PROFILE }
   const myStaffIds = staff.map((s) => s.id)
 
-  const supabase = await createClient()
-  const writer = createAdminServiceClient()
+  const writer = createServiceClient()
   if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu.' }
   const nowIso = new Date().toISOString()
   const cancelledAt = new Date().toISOString()

@@ -81,7 +81,7 @@ function parseQueuedRecovery(
   return { outcome: 'accepted', outboxId: row.outbox_id }
 }
 
-async function start(input: {
+export async function startPortalRecovery(input: {
   tenantSlug: string
   lookup: string
   ip: string
@@ -130,14 +130,6 @@ async function start(input: {
   } catch {
     return { state: 'unavailable' }
   }
-}
-
-export function startPortalRecovery(input: {
-  tenantSlug: string
-  lookup: string
-  ip: string
-}): Promise<RecoveryStartResult> {
-  return start(input)
 }
 
 export async function resendPortalRecovery(input: {

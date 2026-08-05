@@ -1,11 +1,13 @@
-import {
-  Badge,
-  Icon,
-  Stat,
-  type BadgeTone,
-} from '@/components/portal/ui'
+import { Badge, Icon, Stat, type BadgeTone } from '@/components/portal/ui'
 import { PlatformPiiReveal } from './PlatformPiiReveal'
-import type { TenantCustomersData, TenantCustomer, CustomerBooking, CustomerInquiry } from '@/lib/platform/tenant-customers'
+import type {
+  TenantCustomersData,
+  TenantCustomer,
+  CustomerBooking,
+  CustomerInquiry,
+} from '@/lib/platform/tenant-customers'
+import { OFFERT_STATUS_LABELS } from '@/lib/admin/offert/types'
+import { bookingStatusLabel } from '@/lib/booking/confirmation-status'
 import styles from './platform.module.css'
 
 /**
@@ -17,21 +19,23 @@ import styles from './platform.module.css'
  * delad PiiReveal. Ingen fabricerad data — allt härlett ur customers/bookings/offert.
  */
 
-const kr = new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 })
-const dateFmt = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Stockholm' })
+const kr = new Intl.NumberFormat('sv-SE', {
+  style: 'currency',
+  currency: 'SEK',
+  maximumFractionDigits: 0,
+})
+const dateFmt = new Intl.DateTimeFormat('sv-SE', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'Europe/Stockholm',
+})
 function fmtDate(iso: string | null): string {
   if (!iso) return '—'
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? '—' : dateFmt.format(d)
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Väntar',
-  confirmed: 'Bekräftad',
-  completed: 'Genomförd',
-  cancelled: 'Avbokad',
-  no_show: 'Utebliven',
-}
 const STATUS_TONE: Record<string, BadgeTone> = {
   pending: 'warning',
   confirmed: 'info',
@@ -39,15 +43,6 @@ const STATUS_TONE: Record<string, BadgeTone> = {
   cancelled: 'neutral',
   no_show: 'danger',
 }
-const INQUIRY_STATUS: Record<string, string> = {
-  new: 'Ny',
-  reviewing: 'Granskas',
-  quoted: 'Offererad',
-  accepted: 'Accepterad',
-  declined: 'Avböjd',
-  closed: 'Stängd',
-}
-
 export function TenantCustomers({ data }: { data: TenantCustomersData }) {
   const { customers, summary, unlinkedInquiries } = data
   return (
@@ -70,13 +65,15 @@ export function TenantCustomers({ data }: { data: TenantCustomersData }) {
 
       {unlinkedInquiries.length > 0 ? (
         <div className={styles.svcGroup}>
-          <p className={styles.svcGroupTitle}>Förfrågningar utan kopplad kund · {unlinkedInquiries.length}</p>
+          <p className={styles.svcGroupTitle}>
+            Förfrågningar utan kopplad kund · {unlinkedInquiries.length}
+          </p>
           {unlinkedInquiries.map((q) => (
             <div key={q.id} className={styles.svcRow} style={{ padding: '10px 14px' }}>
               <div className={styles.svcSumName}>
                 {q.subject || 'Förfrågan'}
                 <Badge tone="neutral" dot={false}>
-                  {INQUIRY_STATUS[q.status] ?? q.status}
+                  {(OFFERT_STATUS_LABELS as Record<string, string>)[q.status] ?? q.status}
                 </Badge>
               </div>
               <div className={styles.svcSumMeta}>
@@ -91,16 +88,16 @@ export function TenantCustomers({ data }: { data: TenantCustomersData }) {
 }
 
 function CustomerRow({ c }: { c: TenantCustomer }) {
-  const contact = [c.maskedEmail, c.maskedPhone]
-    .filter((value) => value !== '—')
-    .join(' · ') || '—'
+  const contact = [c.maskedEmail, c.maskedPhone].filter((value) => value !== '—').join(' · ') || '—'
   const meta = [
     `${c.total} bokning${c.total === 1 ? '' : 'ar'}`,
     `${c.completed} genomförda`,
     c.upcoming > 0 ? `${c.upcoming} kommande` : null,
     c.lastVisit ? `senast ${fmtDate(c.lastVisit)}` : null,
     c.cancelled + c.noShow > 0 ? `${c.cancelled + c.noShow} av/uteblivna` : null,
-    c.inquiries.length > 0 ? `${c.inquiries.length} förfrågning${c.inquiries.length === 1 ? '' : 'ar'}` : null,
+    c.inquiries.length > 0
+      ? `${c.inquiries.length} förfrågning${c.inquiries.length === 1 ? '' : 'ar'}`
+      : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -188,7 +185,7 @@ function BookingRowView({ b }: { b: CustomerBooking }) {
       <td>{b.staffTitle}</td>
       <td>
         <Badge tone={STATUS_TONE[b.status] ?? 'neutral'} dot={false}>
-          {STATUS_LABEL[b.status] ?? b.status}
+          {bookingStatusLabel(b.status)}
         </Badge>
       </td>
       <td data-last="">{b.priceCents != null ? kr.format(b.priceCents / 100) : '—'}</td>
@@ -200,7 +197,7 @@ function InquiryRow({ q }: { q: CustomerInquiry }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
       <Badge tone="neutral" dot={false}>
-        {INQUIRY_STATUS[q.status] ?? q.status}
+        {(OFFERT_STATUS_LABELS as Record<string, string>)[q.status] ?? q.status}
       </Badge>
       <span style={{ flex: 1, minWidth: 0, fontSize: 13 }}>{q.subject || 'Förfrågan'}</span>
       <span className={styles.svcSumMeta} style={{ marginTop: 0, whiteSpace: 'nowrap' }}>

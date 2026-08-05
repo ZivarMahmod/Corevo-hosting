@@ -3,25 +3,19 @@ import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
 import { getCustomerId } from '@/lib/kund/customer'
 import { getMyOrders, type KundOrder } from '@/lib/kund/shop-orders'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatShopPrice, PUBLIC_ORDER_STATUS_LABELS } from '@/lib/storefront/shop/types'
 import styles from '@/components/kund/kund.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Mina beställningar' }
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Mottagen',
-  confirmed: 'Bekräftad',
-  ready: 'Klar att hämta',
-  completed: 'Slutförd',
-  cancelled: 'Avbruten',
-}
-
 function summary(o: KundOrder): string {
   const first = o.items[0]
   if (!first) return '—'
   const more = o.items.length - 1
-  return more > 0 ? `${first.productName} + ${more} till` : `${first.productName} × ${first.quantity}`
+  return more > 0
+    ? `${first.productName} + ${more} till`
+    : `${first.productName} × ${first.quantity}`
 }
 
 function OrderRow({ o }: { o: KundOrder }) {
@@ -34,7 +28,7 @@ function OrderRow({ o }: { o: KundOrder }) {
         </span>
         <span className={styles.meta}>
           <span>{formatShopPrice(o.totalCents, o.currency)}</span>
-          <span className={styles.badge}>{STATUS_LABEL[o.status] ?? o.status}</span>
+          <span className={styles.badge}>{PUBLIC_ORDER_STATUS_LABELS[o.status] ?? o.status}</span>
         </span>
       </Link>
     </li>
@@ -61,19 +55,31 @@ export default async function OrdersPage() {
           {active.length > 0 ? (
             <>
               <h2>Pågående</h2>
-              <ul className={styles.list}>{active.map((o) => <OrderRow key={o.id} o={o} />)}</ul>
+              <ul className={styles.list}>
+                {active.map((o) => (
+                  <OrderRow key={o.id} o={o} />
+                ))}
+              </ul>
             </>
           ) : null}
           {completed.length > 0 ? (
             <>
               <h2>Tidigare</h2>
-              <ul className={styles.list}>{completed.map((o) => <OrderRow key={o.id} o={o} />)}</ul>
+              <ul className={styles.list}>
+                {completed.map((o) => (
+                  <OrderRow key={o.id} o={o} />
+                ))}
+              </ul>
             </>
           ) : null}
           {cancelled.length > 0 ? (
             <>
               <h2>Avbrutna</h2>
-              <ul className={styles.list}>{cancelled.map((o) => <OrderRow key={o.id} o={o} />)}</ul>
+              <ul className={styles.list}>
+                {cancelled.map((o) => (
+                  <OrderRow key={o.id} o={o} />
+                ))}
+              </ul>
             </>
           ) : null}
         </>

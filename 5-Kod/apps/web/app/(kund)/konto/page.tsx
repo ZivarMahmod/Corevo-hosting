@@ -13,11 +13,10 @@ import { UsualCard } from '@/components/kund/UsualCard'
 import { AccountBookings } from '@/components/kund/AccountBookings'
 import { AccountHistory } from '@/components/kund/AccountHistory'
 import { AccountPrivacy, type NameMode } from '@/components/kund/AccountPrivacy'
-import { PushOptIn } from '@/components/kund/PushOptIn'
 import { FavoritesList } from '@/components/kund/FavoritesList'
 import { getMyOrders, type KundOrder } from '@/lib/kund/shop-orders'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatShopPrice, PUBLIC_ORDER_STATUS_LABELS } from '@/lib/storefront/shop/types'
 import { cleanTerminology, type Terminology } from '@/lib/platform/verticals-shared'
 import account from '@/components/kund/account.module.css'
 import kund from '@/components/kund/kund.module.css'
@@ -25,20 +24,13 @@ import kund from '@/components/kund/kund.module.css'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Mina sidor' }
 
-// Samma etiketter som /konto/bestallningar (kund-order-FSM:ens kundvända lägen).
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  pending: 'Mottagen',
-  confirmed: 'Bekräftad',
-  ready: 'Klar att hämta',
-  completed: 'Slutförd',
-  cancelled: 'Avbruten',
-}
-
 function orderSummary(o: KundOrder): string {
   const first = o.items[0]
   if (!first) return '—'
   const more = o.items.length - 1
-  return more > 0 ? `${first.productName} + ${more} till` : `${first.productName} × ${first.quantity}`
+  return more > 0
+    ? `${first.productName} + ${more} till`
+    : `${first.productName} × ${first.quantity}`
 }
 
 export default async function KontoPage() {
@@ -52,7 +44,8 @@ export default async function KontoPage() {
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
-  const fullName = ((authUser?.user_metadata ?? {}) as { full_name?: string }).full_name?.trim() || null
+  const fullName =
+    ((authUser?.user_metadata ?? {}) as { full_name?: string }).full_name?.trim() || null
   const firstName = fullName ? fullName.split(/\s+/)[0]! : null
 
   // Durable customer id (favorites + loyalty ledger key on it). null for a
@@ -97,21 +90,24 @@ export default async function KontoPage() {
     ? isModuleLive(await getTenantModuleStates(tenantId, tenantSlug), 'shop')
     : false
   const recentOrders: KundOrder[] = shopLive
-    ? await getMyOrders(customerId).then(({ active, completed }) => [...active, ...completed].slice(0, 3))
+    ? await getMyOrders(customerId).then(({ active, completed }) =>
+        [...active, ...completed].slice(0, 3),
+      )
     : []
 
-  const [{ upcoming, past }, loyalty, favorites, staffFavorite, pointsPerVisit] = await Promise.all([
-    getMyBookings(user.id, tenantId),
-    getLoyaltyView(user.id, tenantId, customerId),
-    getMyFavorites(customerId),
-    getCustomerStaffFavorite(customerId),
-    getCustomerLoyaltyPointsPerVisit(customerId),
-  ])
+  const [{ upcoming, past }, loyalty, favorites, staffFavorite, pointsPerVisit] = await Promise.all(
+    [
+      getMyBookings(user.id, tenantId),
+      getLoyaltyView(user.id, tenantId, customerId),
+      getMyFavorites(customerId),
+      getCustomerStaffFavorite(customerId),
+      getCustomerLoyaltyPointsPerVisit(customerId),
+    ],
+  )
 
   // The customer's OWN display-name choice (readable under customers_rls own-row
   // branch). Reflected READ-ONLY in the Integritet panel — there is no customer-
-  // callable save action in the frozen lib, so we never render a saving control
-  // (see AccountPrivacy's persistence FLAG).
+  // callable save action, so the panel renders the stored value read-only.
   let nameMode: NameMode = 'full'
   let displayName: string | null = null
   let phone: string | null = null
@@ -143,10 +139,6 @@ export default async function KontoPage() {
     <div className={account.page}>
       <IdentityHero firstName={firstName} next={next} />
 
-      {/* Plan 015: push-nudgen — renderar sig själv bara när push är möjligt
-          (VAPID byggd, webbläsarstöd, ej redan prenumererad). */}
-      <PushOptIn />
-
       {/* Butik-vinkel (körning 9): "Mina beställningar" som eget kort HÖGT upp när
           shop-modulen är live. Ej live → kortet finns inte alls (dagens ordning). */}
       {shopLive ? (
@@ -168,7 +160,9 @@ export default async function KontoPage() {
                       </span>
                       <span className={kund.meta}>
                         <span>{formatShopPrice(o.totalCents, o.currency)}</span>
-                        <span className={kund.badge}>{ORDER_STATUS_LABEL[o.status] ?? o.status}</span>
+                        <span className={kund.badge}>
+                          {PUBLIC_ORDER_STATUS_LABELS[o.status] ?? o.status}
+                        </span>
                       </span>
                     </Link>
                   </li>
@@ -176,7 +170,10 @@ export default async function KontoPage() {
               </ul>
             )}
             <p style={{ margin: '12px 0 0' }}>
-              <Link href="/konto/bestallningar" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+              <Link
+                href="/konto/bestallningar"
+                style={{ color: 'var(--color-primary)', fontWeight: 600 }}
+              >
                 Alla beställningar →
               </Link>
             </p>
@@ -216,8 +213,19 @@ export default async function KontoPage() {
         displayName={displayName}
       />
 
-      <p style={{ textAlign: 'center', margin: 0, display: 'flex', gap: 20, justifyContent: 'center' }}>
-        <Link href="/konto/bestallningar" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+      <p
+        style={{
+          textAlign: 'center',
+          margin: 0,
+          display: 'flex',
+          gap: 20,
+          justifyContent: 'center',
+        }}
+      >
+        <Link
+          href="/konto/bestallningar"
+          style={{ color: 'var(--color-primary)', fontWeight: 600 }}
+        >
           Mina beställningar →
         </Link>
         <Link href="/konto/profil" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>

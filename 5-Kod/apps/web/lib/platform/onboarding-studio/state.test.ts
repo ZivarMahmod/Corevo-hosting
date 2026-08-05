@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { initStudioCfg, applyBranch } from './model'
-import { makeStudioReducer, buildCreateTenantFormData } from './state'
+import { makeStudioReducer, buildTenantOnboardingFormData } from './state'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 
 // Same minimal real-shaped presets as model.test.ts (VerticalPreset has only
@@ -92,10 +92,10 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
   })
 })
 
-describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', () => {
+describe('buildTenantOnboardingFormData — the Lansera FormData contract (§6)', () => {
   it('emits the required name + slug and the chosen theme', () => {
     const cfg = { ...initStudioCfg('salvia'), name: 'Klippoteket', slug: 'klippoteket' }
-    const fd = buildCreateTenantFormData(cfg)
+    const fd = buildTenantOnboardingFormData(cfg)
     expect(fd.get('name')).toBe('Klippoteket')
     expect(fd.get('slug')).toBe('klippoteket')
     expect(fd.get('theme')).toBe('salvia')
@@ -106,7 +106,7 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
 
   it('emits the operator-picked booking_variant (W3 — no longer hardcoded)', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setVariant', variant: 'compact' })
-    expect(buildCreateTenantFormData(cfg).get('booking_variant')).toBe('compact')
+    expect(buildTenantOnboardingFormData(cfg).get('booking_variant')).toBe('compact')
   })
 
   it('emits the external provider and URL without changing the module choice', () => {
@@ -116,7 +116,7 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
       bookingExternalUrl: 'https://www.bokadirekt.se/test',
       moduleStates: { booking: 'live' as const },
     }
-    const fd = buildCreateTenantFormData(cfg)
+    const fd = buildTenantOnboardingFormData(cfg)
     expect(fd.get('booking_provider')).toBe('external')
     expect(fd.get('booking_external_url')).toBe('https://www.bokadirekt.se/test')
     expect(JSON.parse(String(fd.get('modules'))).booking).toBe('live')
@@ -131,7 +131,7 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
         { name: ' Färg ', price: '12,50' }, // trimmed + comma decimal → öre
       ],
     })
-    const services = JSON.parse(String(buildCreateTenantFormData(cfg).get('services')))
+    const services = JSON.parse(String(buildTenantOnboardingFormData(cfg).get('services')))
     expect(services).toEqual([
       { name: 'Klippning', price_cents: 35000 },
       { name: 'Färg', price_cents: 1250 },
@@ -139,13 +139,13 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
   })
 
   it('emits an empty services array by default', () => {
-    expect(buildCreateTenantFormData(initStudioCfg('salvia')).get('services')).toBe('[]')
+    expect(buildTenantOnboardingFormData(initStudioCfg('salvia')).get('services')).toBe('[]')
   })
 
   it('emits hero_title + hero_lede from the cfg (W5)', () => {
     let cfg = reducer(initStudioCfg('salvia'), { type: 'setHeroTitle', value: 'Min rubrik' })
     cfg = reducer(cfg, { type: 'setHeroLede', value: 'Min ingress' })
-    const fd = buildCreateTenantFormData(cfg)
+    const fd = buildTenantOnboardingFormData(cfg)
     expect(fd.get('hero_title')).toBe('Min rubrik')
     expect(fd.get('hero_lede')).toBe('Min ingress')
   })
@@ -156,41 +156,36 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
       key: 'booking',
       state: 'off',
     })
-    const fd = buildCreateTenantFormData(cfg)
+    const fd = buildTenantOnboardingFormData(cfg)
     const modules = JSON.parse(String(fd.get('modules'))) as Record<string, string>
     expect(modules.booking).toBe('off')
     expect(modules.lojalitet).toBe('live')
   })
 
   it('does not invent an unset booking module in the modules JSON', () => {
-    const modules = JSON.parse(String(buildCreateTenantFormData(initStudioCfg('salvia')).get('modules'))) as Record<string, string>
+    const modules = JSON.parse(String(buildTenantOnboardingFormData(initStudioCfg('salvia')).get('modules'))) as Record<string, string>
     expect(modules.booking).toBeUndefined()
   })
 
   it('keeps booking off when explicitly off', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setModule', key: 'booking', state: 'off' })
-    const fd = buildCreateTenantFormData(cfg)
+    const fd = buildTenantOnboardingFormData(cfg)
     const modules = JSON.parse(String(fd.get('modules'))) as Record<string, string>
     expect(modules.booking).toBe('off')
   })
 
   it('omits color_accent when no accent is picked, includes it when set', () => {
-    const noAccent = buildCreateTenantFormData(initStudioCfg('salvia'))
+    const noAccent = buildTenantOnboardingFormData(initStudioCfg('salvia'))
     expect(noAccent.has('color_accent')).toBe(false)
 
-    const withAccent = buildCreateTenantFormData({ ...initStudioCfg('salvia'), accent: '#5E7361' })
+    const withAccent = buildTenantOnboardingFormData({ ...initStudioCfg('salvia'), accent: '#5E7361' })
     expect(withAccent.get('color_accent')).toBe('#5E7361')
   })
 
-  it('includes the fixed owner_role hidden field', () => {
-    const fd = buildCreateTenantFormData(initStudioCfg('salvia'))
-    expect(fd.get('owner_role')).toBe('salon_admin')
-  })
-
   it('emits vertical_id always (empty string when no bransch picked)', () => {
-    const fd = buildCreateTenantFormData(initStudioCfg('salvia'))
+    const fd = buildTenantOnboardingFormData(initStudioCfg('salvia'))
     expect(fd.get('vertical_id')).toBe('')
-    const fd2 = buildCreateTenantFormData({ ...initStudioCfg('salvia'), branch: 'frisor' })
+    const fd2 = buildTenantOnboardingFormData({ ...initStudioCfg('salvia'), branch: 'frisor' })
     expect(fd2.get('vertical_id')).toBe('frisor')
   })
 })

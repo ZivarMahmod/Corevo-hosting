@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { Database } from '@corevo/db'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { loadLocationAvailability } from './location-rules'
 
 type Result = { data: unknown; error: { message: string } | null }
@@ -16,7 +18,7 @@ function clientWith(results: Result[]) {
       }
       return chain
     }),
-  }
+  } as unknown as SupabaseClient<Database>
 }
 
 const LOCATION = {

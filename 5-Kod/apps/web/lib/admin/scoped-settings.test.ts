@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { mergeScopedSettings, parseSettingsScope } from './scoped-settings'
+import {
+  mergeScopedSettings,
+  parseCancellationCutoffHours,
+  parseSettingsScope,
+} from './scoped-settings'
 
 const existing = {
   layout: { theme: 'saved' },
   cancellation_cutoff_hours: 24,
-  customer_accounts_enabled: true,
+  customer_portal: { mode: 'legacy_account' },
   booking: {
     verificationMode: 'email_only',
     external_url: 'https://www.bokadirekt.se/places/saved',
@@ -15,6 +19,14 @@ const existing = {
 }
 
 describe('mergeScopedSettings', () => {
+  it('accepts only whole cancellation hours from zero through 8760', () => {
+    expect(parseCancellationCutoffHours('')).toBe(24)
+    expect(parseCancellationCutoffHours('0')).toBe(0)
+    expect(parseCancellationCutoffHours('8760')).toBe(8760)
+    expect(parseCancellationCutoffHours('1.5')).toBeNull()
+    expect(parseCancellationCutoffHours('8761')).toBeNull()
+  })
+
   it('rejects an unknown mutation scope instead of widening it to all settings', () => {
     expect(parseSettingsScope('booking')).toBe('booking')
     expect(parseSettingsScope('all')).toBe('all')
@@ -26,12 +38,10 @@ describe('mergeScopedSettings', () => {
     expect(
       mergeScopedSettings(existing, 'booking', {
         cancellationHours: 12,
-        customerAccountsEnabled: false,
       }),
     ).toEqual({
       ...existing,
       cancellation_cutoff_hours: 12,
-      customer_accounts_enabled: false,
     })
   })
 

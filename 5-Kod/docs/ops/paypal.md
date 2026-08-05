@@ -89,7 +89,7 @@ Krav: `tenant_settings.payments_enabled = true` **och** `tenants.stripe_charges_
 | **Kort** | Fungerar direkt när Stripe-kontot är godkänt. |
 | **Swish** | Måste aktiveras i **kundens** Stripe Dashboard (Settings → Payment methods → Swish). Endast SEK. |
 | **Klarna** | Aktiveras i kundens Stripe Dashboard (Payment methods → Klarna). |
-| **Apple Pay** | Ingen egen `payment_method_type` — rider på `card`. Krävs: **domänverifiering** i kundens Stripe Dashboard (Settings → Payment methods → Apple Pay → Add domain) för varje domän kassan körs på (t.ex. `<slug>.corevo.se` **och** kundens egna domän). Utan verifierad domän visar Stripe helt enkelt inte Apple Pay-knappen — kassan kraschar inte, valet blir bara ett vanligt kortköp. |
+| **Apple Pay** | Ingen egen `payment_method_type` — rider på `card`. Krävs: **domänverifiering** i kundens Stripe Dashboard (Settings → Payment methods → Apple Pay → Add domain) för varje domän kassan körs på (t.ex. `<slug>.boka.corevo.se` och en verifierad egen domän). Utan verifierad domän visar Stripe helt enkelt inte Apple Pay-knappen — kassan kraschar inte, valet blir bara ett vanligt kortköp. |
 
 Ett betalsätt som kunden slår på men inte aktiverat i Stripe → Stripe avvisar
 Checkout-sessionen → kassan visar "Kunde inte starta betalning. Försök igen." Kontrollera

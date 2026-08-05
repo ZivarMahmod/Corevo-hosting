@@ -3,27 +3,24 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(
-  resolve(import.meta.dirname, '../../../../supabase/migrations/0121_customer_portal_cancellation_refunds.sql'),
+  resolve(
+    import.meta.dirname,
+    '../../../../supabase/migrations/0121_customer_portal_cancellation_refunds.sql',
+  ),
   'utf8',
 ).toLowerCase()
 const runtimeSql = readFileSync(
-  resolve(import.meta.dirname, '../../../../supabase/tests/customer_portal_cancellation_refunds_0121_test.sql'),
+  resolve(
+    import.meta.dirname,
+    '../../../../supabase/tests/customer_portal_cancellation_refunds_0121_test.sql',
+  ),
   'utf8',
 ).toLowerCase()
 const concurrencyShell = readFileSync(
-  resolve(import.meta.dirname, '../../../../supabase/tests/customer_portal_cancellation_refunds_0121_concurrency_test.sh'),
-  'utf8',
-).toLowerCase()
-const checkoutAction = readFileSync(
-  resolve(import.meta.dirname, '../../app/boka/actions.ts'),
-  'utf8',
-).toLowerCase()
-const shopCheckoutAction = readFileSync(
-  resolve(import.meta.dirname, '../../app/butik/actions.ts'),
-  'utf8',
-).toLowerCase()
-const webhook = readFileSync(
-  resolve(import.meta.dirname, '../../app/api/stripe/webhook/route.ts'),
+  resolve(
+    import.meta.dirname,
+    '../../../../supabase/tests/customer_portal_cancellation_refunds_0121_concurrency_test.sh',
+  ),
   'utf8',
 ).toLowerCase()
 const cronWorkflow = readFileSync(
@@ -77,15 +74,21 @@ describe('customer portal cancellation refund rail migration', () => {
     expect(migration).toContain('p.booking_id is not null')
     expect(migration).toContain('p.stripe_connected_account_id is null')
     expect(migration).toContain('payments_succeeded_booking_account_required')
-    expect(migration).toMatch(/check \([\s\S]*?booking_id is null[\s\S]*?status <> 'succeeded'[\s\S]*?stripe_connected_account_id is not null[\s\S]*?\)[\s\S]*?validate constraint payments_succeeded_booking_account_required/)
+    expect(migration).toMatch(
+      /check \([\s\S]*?booking_id is null[\s\S]*?status <> 'succeeded'[\s\S]*?stripe_connected_account_id is not null[\s\S]*?\)[\s\S]*?validate constraint payments_succeeded_booking_account_required/,
+    )
     expect(runtimeSql).toContain('refund_succeeded_snapshot_constraint_invalid')
   })
 
   it('fails closed on duplicate account-scoped payment intents and permanently enforces identity', () => {
     expect(migration).toContain('legacy_payment_intent_duplicate')
-    expect(migration).toMatch(/group by p\.stripe_connected_account_id, p\.stripe_payment_intent_id[\s\S]*?having count\(\*\) > 1/)
+    expect(migration).toMatch(
+      /group by p\.stripe_connected_account_id, p\.stripe_payment_intent_id[\s\S]*?having count\(\*\) > 1/,
+    )
     expect(migration).toContain('payments_account_payment_intent_key')
-    expect(migration).toMatch(/unique index[\s\S]*?on public\.payments \(stripe_connected_account_id, stripe_payment_intent_id\)[\s\S]*?where stripe_connected_account_id is not null[\s\S]*?and stripe_payment_intent_id is not null/)
+    expect(migration).toMatch(
+      /unique index[\s\S]*?on public\.payments \(stripe_connected_account_id, stripe_payment_intent_id\)[\s\S]*?where stripe_connected_account_id is not null[\s\S]*?and stripe_payment_intent_id is not null/,
+    )
     expect(runtimeSql).toContain('refund_duplicate_payment_intent_constraint_invalid')
     const refundWebhook = migration.match(
       /create or replace function public\.record_payment_refund_webhook[\s\S]*?\n\$\$;/,
@@ -100,8 +103,12 @@ describe('customer portal cancellation refund rail migration', () => {
     expect(migration).toContain('create trigger trg_guard_settled_payment_identity')
     expect(migration).toContain('create or replace function private.guard_settled_payment_identity')
     expect(migration).toContain("old.status in ('succeeded', 'refunded')")
-    expect(migration).toContain('new.stripe_connected_account_id is distinct from old.stripe_connected_account_id')
-    expect(migration).toContain('new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id')
+    expect(migration).toContain(
+      'new.stripe_connected_account_id is distinct from old.stripe_connected_account_id',
+    )
+    expect(migration).toContain(
+      'new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id',
+    )
     expect(migration).toContain("raise exception 'payment_provider_identity_immutable'")
     expect(runtimeSql).toContain('refund_settled_account_immutable_invalid')
     expect(runtimeSql).toContain('refund_settled_payment_intent_immutable_invalid')
@@ -119,13 +126,17 @@ describe('customer portal cancellation refund rail migration', () => {
 
   it('finalizes customer rebooking atomically with a durable old-to-new carry map', () => {
     expect(migration).toContain('create table private.customer_booking_rebooks')
-    expect(migration).toContain('create or replace function public.finalize_customer_booking_rebook')
+    expect(migration).toContain(
+      'create or replace function public.finalize_customer_booking_rebook',
+    )
     expect(migration).toContain("raise exception 'rebook_payment_not_settled'")
     expect(migration).toContain("raise exception 'rebook_refund_state_conflict'")
     expect(migration).toContain('update public.payments p')
     expect(migration).toContain('set booking_id = p_new_booking')
     expect(migration).toContain('insert into private.customer_booking_rebooks')
-    expect(migration).toContain('create or replace function public.compensate_customer_booking_rebook')
+    expect(migration).toContain(
+      'create or replace function public.compensate_customer_booking_rebook',
+    )
     expect(migration).toContain("'outcome', 'preserved_finalized'")
     expect(migration).toContain("'outcome', 'compensated'")
     expect(migration).toContain("'outcome', 'not_safe'")
@@ -146,7 +157,6 @@ describe('customer portal cancellation refund rail migration', () => {
     expect(settleOrder).toContain("v_payment.status in ('pending', 'failed')")
     expect(settleOrder).toContain("v_payment.status = 'succeeded'")
     expect(settleOrder).toContain("raise exception 'payment_provider_identity_conflict'")
-    expect(shopCheckoutAction).toContain('idempotencykey: `shop_checkout_${orderid}`')
     expect(runtimeSql).toContain('refund_shop_new_snapshot_invalid')
     expect(runtimeSql).toContain('refund_shop_exact_replay_invalid')
     expect(runtimeSql).toContain('refund_shop_second_payment_intent_invalid')
@@ -182,30 +192,17 @@ describe('customer portal cancellation refund rail migration', () => {
       expect(definition).toContain('security definer')
       expect(definition).toContain("set search_path = ''")
       expect(migration).toMatch(
-        new RegExp(`revoke all on function public\\.${rpc}\\([\\s\\S]*?from public, anon, authenticated, service_role`),
+        new RegExp(
+          `revoke all on function public\\.${rpc}\\([\\s\\S]*?from public, anon, authenticated, service_role`,
+        ),
       )
       expect(migration).toMatch(
         new RegExp(`grant execute on function public\\.${rpc}\\([\\s\\S]*?to service_role`),
       )
     }
-    expect(migration).not.toMatch(/grant execute on function public\.(?:claim|begin|retry|complete|review|record)_payment_refund[\s\S]*?to (?:anon|authenticated)/)
-  })
-
-  it('serializes cancellation idempotency before mutation and binds conflicts to entity and customer', () => {
-    const cancel = migration.match(
-      /create function public\.customer_portal_cancel_booking[\s\S]*?\n\$\$;/,
-    )?.[0]
-    expect(cancel).toBeTruthy()
-    expect(cancel).toContain('pg_advisory_xact_lock')
-    expect(cancel!.indexOf('pg_advisory_xact_lock')).toBeLessThan(cancel!.indexOf('update public.bookings'))
-    expect(cancel).toContain('v_audit.entity_public_id = p_booking_public_id')
-    expect(cancel).toContain('v_audit.customer_id = v_session.customer_id')
-    expect(cancel).toContain("'idempotency_conflict'")
-    expect(cancel).toMatch(/v_booking\.status = 'cancelled'[\s\S]*?insert into private\.customer_portal_audit/)
-    expect(cancel).toContain('for update')
-    expect(cancel).toContain('private.enqueue_booking_payment_refund')
-    expect(cancel).toContain('insert into private.customer_portal_audit')
-    expect(cancel).not.toContain('on conflict (tenant_id, event_type, idempotency_key)')
+    expect(migration).not.toMatch(
+      /grant execute on function public\.(?:claim|begin|retry|complete|review|record)_payment_refund[\s\S]*?to (?:anon|authenticated)/,
+    )
   })
 
   it('queues late-success refunds in the payment settlement transaction', () => {
@@ -229,12 +226,10 @@ describe('customer portal cancellation refund rail migration', () => {
     expect(prepare).toContain('insert into public.payments')
     expect(prepare).toContain("v_existing.status = 'pending'")
     expect(prepare).toContain('v_existing.stripe_checkout_session_id = p_checkout_session')
-    expect(checkoutAction).toMatch(/admin\.rpc\(\s*'prepare_booking_checkout_payment'/)
-    expect(checkoutAction).not.toContain("from('payments').upsert")
-    expect(checkoutAction).toContain('idempotencykey: `booking_checkout_${bookingid}`')
-    expect(webhook).toContain('p_connected_account: account')
     expect(migration).toContain("raise exception 'payment_provider_identity_conflict'")
-    expect(migration).toMatch(/v_payment\.status = 'succeeded'[\s\S]*?stripe_payment_intent_id is distinct from p_payment_intent/)
+    expect(migration).toMatch(
+      /v_payment\.status = 'succeeded'[\s\S]*?stripe_payment_intent_id is distinct from p_payment_intent/,
+    )
   })
 
   it('claims exact ids, terminalizes exhausted leases and blocks booking restoration', () => {
@@ -244,7 +239,9 @@ describe('customer portal cancellation refund rail migration', () => {
     expect(exactClaim).toContain('j.id = p_id')
     expect(exactClaim).not.toContain('claim_payment_refund_jobs(')
     expect(migration).toContain("last_error_code = 'retry_limit_reached'")
-    expect(migration).toMatch(/status = 'attempting'[\s\S]*?attempt_count >= j\.max_attempts[\s\S]*?status = 'review_required'/)
+    expect(migration).toMatch(
+      /status = 'attempting'[\s\S]*?attempt_count >= j\.max_attempts[\s\S]*?status = 'review_required'/,
+    )
     expect(migration).toContain('create trigger trg_guard_booking_refund_restoration')
     expect(migration).toContain("raise exception 'booking_refund_pending_or_completed'")
   })
@@ -259,7 +256,8 @@ describe('customer portal cancellation refund rail migration', () => {
       'refund_idempotency_conflict_invalid',
       'refund_exactly_once_invalid',
       'refund_grant_invalid',
-    ]) expect(runtimeSql).toContain(marker)
+    ])
+      expect(runtimeSql).toContain(marker)
   })
 
   it('keeps a durable scheduled backup for the immediate exact-job accelerator', () => {

@@ -1,17 +1,13 @@
-import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant } from '@/lib/tenant-data'
-import { pickNav, pickTemplate } from '@/components/brand/variants'
-import { Footer } from '@/components/brand/Footer'
+import { StorefrontShell } from '@/components/storefront/StorefrontShell'
 import { createServiceClient } from '@/lib/platform/service'
 import { verifyCancelToken } from '@/lib/booking/cancel-token'
 import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund/settings'
 import { cancelByToken } from '../actions'
 import { SubmitCancelButton } from './SubmitCancelButton'
-import storefront from '@/components/storefront/storefront.module.css'
 import '../../ticket.css'
 
 // Public guest self-service cancel page (NOTIF-GUEST). Authorisation = the HMAC
@@ -20,9 +16,8 @@ import '../../ticket.css'
 // Exposed data is the same safe summary the confirmation page shows — salong,
 // tjänst, tid — no other PII, and never another booking.
 //
-// Chrome: app/avboka/ has no layout (one isn't in revir to create), so this page
-// renders the full salon shell itself — mirroring app/boka/layout.tsx (currentTenant
-// + injectTenantTokens + Nav/Footer) so a shared/refreshed link is never stripped.
+// Chrome: app/avboka/ has no layout, so the page delegates directly to the same
+// StorefrontShell as every other public tenant page.
 //
 // Look: biljett/stub-systemet ur design-paketet (README §Avboka) — mono-eyebrow,
 // display-H1, stub med dashed rader, utfallstexter. Stilar i app/ticket.css.
@@ -32,39 +27,6 @@ export const metadata: Metadata = { title: 'Avboka tid' }
 
 type DoneCode = 'ok' | 'already' | 'too_late' | 'error'
 type Outcome = 'ready' | 'done' | 'already' | 'too_late' | 'error'
-
-function Shell({
-  children,
-  tenant,
-  settings,
-  customerAccountsEnabled,
-}: {
-  children: React.ReactNode
-  tenant: { id: string; name: string; slug: string }
-  settings: NonNullable<Awaited<ReturnType<typeof currentTenant>>>['settings']
-  customerAccountsEnabled: boolean
-}) {
-  const Nav = pickNav(settings.layout.nav_variant)
-  const template = pickTemplate(settings.layout.nav_variant)
-  const brandProps = {
-    tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
-    branding: settings.branding,
-  }
-  return (
-    <div
-      className={`tenant-root ${storefront.tplRoot}`}
-      data-world="storefront"
-      data-theme={settings.theme}
-      data-tenant={tenant.id}
-      data-template={template}
-      style={injectTenantTokens(settings.branding) as CSSProperties}
-    >
-      <Nav {...brandProps} customerAccountsEnabled={customerAccountsEnabled} />
-      <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
-      <Footer tenant={{ name: tenant.name }} />
-    </div>
-  )
-}
 
 /** Neutral message inside the salon shell (or a bare section if no tenant chrome). */
 async function Message({ title, body }: { title: string; body: string }) {
@@ -83,13 +45,9 @@ async function Message({ title, body }: { title: string; body: string }) {
   )
   if (!bundle) return inner
   return (
-    <Shell
-      tenant={{ id: bundle.tenant.id, name: bundle.tenant.name, slug: bundle.tenant.slug }}
-      settings={bundle.settings}
-      customerAccountsEnabled={bundle.settings.customerAccountsEnabled}
-    >
+    <StorefrontShell bundle={bundle} surface="public" embeddedBooking={false}>
       {inner}
-    </Shell>
+    </StorefrontShell>
   )
 }
 
@@ -232,12 +190,8 @@ export default async function AvbokaPage({
 
   if (!bundle) return body
   return (
-    <Shell
-      tenant={{ id: bundle.tenant.id, name: bundle.tenant.name, slug: bundle.tenant.slug }}
-      settings={bundle.settings}
-      customerAccountsEnabled={bundle.settings.customerAccountsEnabled}
-    >
+    <StorefrontShell bundle={bundle} surface="public" embeddedBooking={false}>
       {body}
-    </Shell>
+    </StorefrontShell>
   )
 }

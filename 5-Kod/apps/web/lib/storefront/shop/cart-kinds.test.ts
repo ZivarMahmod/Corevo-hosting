@@ -8,11 +8,7 @@ import {
   setCartQty,
   type CartLine,
 } from './types'
-import {
-  parsePresentkortConfig,
-  isAllowedGiftAmount,
-  giftDeliveryModes,
-} from '../presentkort/types'
+import { parsePresentkortConfig } from '../presentkort/types'
 import { parseKurserConfig } from '../kurser/types'
 
 // KORGEN BÄR MER ÄN PRODUKTER (goal-64).
@@ -24,10 +20,8 @@ import { parseKurserConfig } from '../kurser/types'
 //   2. KONTRAKTET MOT SERVERN — en korgrad skickar ett VAL (variant / belopp / tillfälle),
 //      ALDRIG ett pris. Skulle någon manipulera localStorage vinner de ingenting.
 //
-// Det som INTE kan bevisas här är DB-vakterna (beloppet mot kundens lista, kursplatsens
-// hold, en-gångs-utfärdandet) — de bor i migration 0059 som SQL och kan bara bevisas mot
-// en riktig Postgres. Deras kontrakt speglas dock av de rena funktionerna nedan
-// (isAllowedGiftAmount ÄR samma regel som RPC:ns), och de testas som sådana.
+// DB-vakterna för belopp, kursplats och engångsutfärdande bor i migration 0059 och
+// verifieras mot riktig Postgres, inte genom en parallell klientkopia av SQL-regeln.
 
 const product = (over: Partial<CartLine> = {}): Omit<CartLine, 'quantity'> => ({
   variantId: 'var-1',
@@ -102,15 +96,6 @@ describe('presentkort i korgen', () => {
     expect(lines).toHaveLength(2)
   })
 
-  it('ett belopp utanför kundens lista avvisas (samma regel som RPC:n)', () => {
-    const config = parsePresentkortConfig({ amounts: [300, 500, 750, 1000] })
-    expect(isAllowedGiftAmount(config, 500)).toBe(true)
-    expect(isAllowedGiftAmount(config, 1)).toBe(false) // klienten hittade på ett belopp
-    expect(isAllowedGiftAmount(config, 600)).toBe(false) // en annan kunds belopp
-    expect(isAllowedGiftAmount(config, -500)).toBe(false)
-    expect(isAllowedGiftAmount(config, 0)).toBe(false)
-  })
-
   it('beloppen är KUNDENS — tre kunder, tre listor', () => {
     expect(parsePresentkortConfig({ amounts: [300, 500, 750, 1000] }).amountPresets).toEqual([
       300, 500, 750, 1000,
@@ -123,10 +108,9 @@ describe('presentkort i korgen', () => {
     ])
   })
 
-  it('TOM lista = inga belopp (ingen smyg-default) → inget belopp är giltigt', () => {
+  it('TOM lista = inga belopp (ingen smyg-default)', () => {
     const config = parsePresentkortConfig({ amounts: [] })
     expect(config.amountPresets).toEqual([])
-    expect(isAllowedGiftAmount(config, 500)).toBe(false)
   })
 
   it('saknad nyckel → 0036:s default (befintliga kunder tappar inga belopp)', () => {
@@ -145,8 +129,8 @@ describe('presentkort i korgen', () => {
       'digital',
       'in_store',
     ])
-    expect(giftDeliveryModes(parsePresentkortConfig({ fulfilment: 'physical' }))).toEqual(['in_store'])
-    expect(giftDeliveryModes(parsePresentkortConfig({ fulfilment: 'digital' }))).toEqual(['digital'])
+    expect(parsePresentkortConfig({ fulfilment: 'physical' }).deliveryModes).toEqual(['in_store'])
+    expect(parsePresentkortConfig({ fulfilment: 'digital' }).deliveryModes).toEqual(['digital'])
   })
 })
 

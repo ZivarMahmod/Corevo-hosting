@@ -9,16 +9,16 @@ export function parseSmsDeliveryMode(value: string | undefined): SmsDeliveryMode
   return value === 'dry_run' || value === 'live' ? value : 'off'
 }
 
-// Owner-controlled notification settings (M9). There is no dedicated column this
-// wave (schema is shared/frozen), so — exactly like lib/kund/settings.ts'
+// Owner-controlled notification settings (M9). There is no dedicated column, so —
+// exactly like lib/kund/settings.ts'
 // getCancellationCutoffHours — these live in `tenant_settings.settings` (jsonb)
 // and are read app-side with safe defaults.
 //
 // Read-only here. These are EXPORTED so senders / call sites can consult them, but
 // they are deliberately NOT wired into the send path: the existing senders take
 // (to, data) with no tenantId/client, and adding a settings lookup there would
-// force a signature change + caller edits (out of revir). The orchestrator wires
-// the consult at the call sites. See docs/notifications-architecture.md.
+// force a signature change + caller edits. The orchestrator wires the consult at
+// the call sites.
 
 /** Toggle map under `settings.notifications`. All channels default to ON. */
 export type NotificationPrefs = {
@@ -95,29 +95,4 @@ export async function getSmsEnabled(
 
   const settings = (data?.settings ?? {}) as Record<string, unknown>
   return settings.sms_enabled === true
-}
-
-/**
- * The tenant's Google-review URL (e.g. a Google Place review link), or null if
- * the owner hasn't set one. Read from `tenant_settings.settings.google_review_url`.
- * A null result means the review nudge is a graceful no-op (see google-review.ts).
- */
-export async function getGoogleReviewUrl(
-  supabase: SupabaseClient<Database>,
-  tenantId: string,
-): Promise<string | null> {
-  if (!tenantId) return null
-
-  const { data } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
-
-  const settings = (data?.settings ?? {}) as Record<string, unknown>
-  const raw = settings.google_review_url
-  if (typeof raw !== 'string') return null
-  const url = raw.trim()
-  if (!url || !/^https?:\/\//i.test(url)) return null
-  return url
 }

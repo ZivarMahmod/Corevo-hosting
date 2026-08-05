@@ -53,7 +53,7 @@ export type StaffChip = {
 }
 
 // Avatar-färg härledd ur en fast back-office-palett (forest/grön/guld-toner ur
-// --c-*-familjen). INGEN färgkolumn finns på staff (frozen types) — detta är ren
+// --c-*-familjen). INGEN färgkolumn finns på staff — detta är ren
 // presentation, indexerad på medarbetarens position, aldrig sparad data.
 const AVATAR_COLORS = ['var(--c-forest)', 'var(--c-success)', 'var(--c-gold-600)']
 const HHMM = /^\d{1,2}:\d{2}$/

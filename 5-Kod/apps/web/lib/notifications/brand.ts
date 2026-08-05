@@ -4,12 +4,10 @@ import type { Database } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { buildFrom } from './email'
 import type { EmailBrandFields } from './templates'
-import { THEME_CONTENT } from '@/components/storefront/theme-content'
-import type { StorefrontTheme } from '@/lib/tenant-data'
 
 // Per-salon email brand resolution (goal-14). The customer should feel the email
 // comes FROM the salon: its name as the From display, its accent/logo on the
-// template, its slogan (the theme tagline) in the footer, and — crucially — its
+// template, its saved slogan in the footer, and — crucially — its
 // own inbox as Reply-To so a reply never lands on booking@corevo.se.
 //
 // Split in two on purpose (testability): resolveEmailBrand() is PURE (no I/O, no
@@ -24,12 +22,7 @@ export type EmailBrand = EmailBrandFields & {
 }
 
 type ContactLike = { email?: unknown } | null | undefined
-
-/** Theme tagline used as the email slogan; unknown/missing theme → leander default. */
-function themeTagline(theme: unknown): string {
-  const map = THEME_CONTENT as Record<string, { tagline: string }>
-  return (map[theme as StorefrontTheme] ?? THEME_CONTENT.leander).tagline
-}
+type CopyLike = { tagline?: unknown } | null | undefined
 
 /**
  * PURE brand resolver. Maps salon name + branding + contact + theme into the email
@@ -41,17 +34,18 @@ export function resolveEmailBrand(input: {
   tenantName?: string | null
   branding?: TenantBranding | null
   contact?: ContactLike
-  theme?: unknown
+  slogan?: unknown
 }): EmailBrand {
   const b = input.branding ?? {}
   const email = typeof input.contact?.email === 'string' ? input.contact.email.trim() : ''
+  const slogan = typeof input.slogan === 'string' ? input.slogan.trim() : ''
   const accent = (b.color_accent ?? b.color_primary) || undefined
   return {
     from: buildFrom(input.tenantName),
     replyTo: email || undefined,
     accentColor: accent,
     logoUrl: b.logo_url ?? null,
-    slogan: themeTagline(input.theme),
+    slogan: slogan || null,
   }
 }
 
@@ -75,7 +69,8 @@ export async function loadEmailBrand(
     const branding = (data?.branding ?? {}) as TenantBranding
     const settings = (data?.settings ?? {}) as Record<string, unknown>
     const contact = (settings.contact ?? null) as ContactLike
-    return resolveEmailBrand({ tenantName, branding, contact, theme: settings.theme })
+    const copy = (settings.copy ?? null) as CopyLike
+    return resolveEmailBrand({ tenantName, branding, contact, slogan: copy?.tagline })
   } catch {
     return resolveEmailBrand({ tenantName })
   }

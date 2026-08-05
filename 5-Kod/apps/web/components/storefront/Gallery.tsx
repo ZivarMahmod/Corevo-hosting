@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { StorePhoto } from './images'
+import { trapTab } from '@/components/portal/ui/focus'
+import type { StorePhoto } from '@/lib/storefront/images'
 import { unsplashSrcSet } from './img'
 import styles from './storefront.module.css'
 
@@ -63,22 +64,8 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
         move(-1)
         return
       }
-      if (e.key !== 'Tab') return
       const dialog = dialogRef.current
-      if (!dialog) return
-      const focusables = dialog.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      if (focusables.length === 0) return
-      const first = focusables[0]!
-      const last = focusables[focusables.length - 1]!
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      if (dialog) trapTab(e, dialog)
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)

@@ -4,7 +4,9 @@ import {
   portalHomeFor,
   backofficeHostKindForRole,
   isActiveLoginAccount,
+  loginDestinationForHost,
   loginAccessForHost,
+  resolveLoginHostKind,
 } from './roles'
 
 // Real seeded DB role levels are {2,3,6,8}. The portal thresholds must stay pinned
@@ -34,12 +36,10 @@ describe('role thresholds (pinned to real DB levels {2,3,6,8})', () => {
   })
 
   it('routes a verified partner operator to the isolated platform home', () => {
-    expect(
-      portalHomeFor({ roleLevel: 7, platformAdmin: false, partnerAdmin: true }),
-    ).toBe('/')
-    expect(
-      portalHomeFor({ roleLevel: 7, platformAdmin: false, partnerAdmin: false }),
-    ).toBe('/admin')
+    expect(portalHomeFor({ roleLevel: 7, platformAdmin: false, partnerAdmin: true })).toBe('/')
+    expect(portalHomeFor({ roleLevel: 7, platformAdmin: false, partnerAdmin: false })).toBe(
+      '/admin',
+    )
   })
 })
 
@@ -54,8 +54,7 @@ describe('goal-27 backofficeHostKindForRole — door isolation (one door per rol
   })
 
   it('the platform_admin FLAG forces the superadmin door regardless of level', () => {
-    // A super-admin (godmode) credential is only ever valid on superbooking, never
-    // on booking/minbooking — even if its numeric level were low.
+    // A super-admin credential is only valid on superbooking, never booking.
     expect(backofficeHostKindForRole({ roleLevel: 0, platformAdmin: true })).toBe('superadmin')
     expect(backofficeHostKindForRole({ roleLevel: 6, platformAdmin: true })).toBe('superadmin')
   })
@@ -71,12 +70,33 @@ describe('goal-27 backofficeHostKindForRole — door isolation (one door per rol
 })
 
 describe('pilot login host fence', () => {
+  it('classifies the request door once', () => {
+    expect(resolveLoginHostKind({ kind: 'superadmin' }, false)).toBe('superadmin')
+    expect(resolveLoginHostKind({ kind: 'platform' }, false)).toBe('platform')
+    expect(resolveLoginHostKind({ kind: 'staff_portal' }, false)).toBe('staff_portal')
+    expect(resolveLoginHostKind({ kind: 'tenant', slug: 'active' }, true)).toBe('tenant')
+    expect(resolveLoginHostKind({ kind: 'tenant', slug: 'inactive' }, false)).toBe('other')
+  })
+
   it('rechecks profile and staff activation instead of trusting a stale JWT', () => {
-    expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 2, activeStaff: false })).toBe(true)
-    expect(isActiveLoginAccount({ profileStatus: 'inactive', roleLevel: 2, activeStaff: false })).toBe(false)
-    expect(isActiveLoginAccount({ profileStatus: 'pending_claim', roleLevel: 2, activeStaff: false })).toBe(false)
-    expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: false })).toBe(false)
-    expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: true })).toBe(true)
+    expect(
+      isActiveLoginAccount({ profileStatus: 'active', roleLevel: 1, activeStaff: false }),
+    ).toBe(false)
+    expect(
+      isActiveLoginAccount({ profileStatus: 'active', roleLevel: 2, activeStaff: false }),
+    ).toBe(true)
+    expect(
+      isActiveLoginAccount({ profileStatus: 'inactive', roleLevel: 2, activeStaff: false }),
+    ).toBe(false)
+    expect(
+      isActiveLoginAccount({ profileStatus: 'pending_claim', roleLevel: 2, activeStaff: false }),
+    ).toBe(false)
+    expect(
+      isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: false }),
+    ).toBe(false)
+    expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: true })).toBe(
+      true,
+    )
   })
 
   it('uses the superadmin door for a scoped partner without granting godmode', () => {
@@ -89,7 +109,7 @@ describe('pilot login host fence', () => {
     ).toBe('superadmin')
   })
 
-  it('allows staff on booking and on the explicit minbooking legacy door only', () => {
+  it('allows staff on booking and the published minbooking compatibility host', () => {
     expect(
       loginAccessForHost({
         roleLevel: 3,
@@ -98,7 +118,7 @@ describe('pilot login host fence', () => {
         hostKind: 'platform',
         hostTenantId: null,
       }),
-    ).toEqual({ allowed: true, legacyStaff: false })
+    ).toEqual({ allowed: true })
     expect(
       loginAccessForHost({
         roleLevel: 3,
@@ -107,10 +127,10 @@ describe('pilot login host fence', () => {
         hostKind: 'staff_portal',
         hostTenantId: null,
       }),
-    ).toEqual({ allowed: true, legacyStaff: true })
+    ).toEqual({ allowed: true })
   })
 
-  it('never lets an owner or platform admin establish a minbooking session', () => {
+  it('never lets an owner or platform operator establish a minbooking session', () => {
     expect(
       loginAccessForHost({
         roleLevel: 6,
@@ -129,6 +149,19 @@ describe('pilot login host fence', () => {
         hostTenantId: null,
       }).allowed,
     ).toBe(false)
+  })
+
+  it('keeps a staff login on /personal when a legacy next target crosses host boundaries', () => {
+    expect(
+      loginDestinationForHost({
+        home: '/personal',
+        next: '/admin',
+        hostKind: 'staff_portal',
+      }),
+    ).toBe('/personal')
+    expect(
+      loginDestinationForHost({ home: '/admin', next: '/admin/bokningar', hostKind: 'platform' }),
+    ).toBe('/admin/bokningar')
   })
 
   it('allows a customer only on the matching tenant host', () => {

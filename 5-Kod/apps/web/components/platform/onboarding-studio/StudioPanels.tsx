@@ -1,30 +1,24 @@
 'use client'
 
-// Onboarding-studio (goal-48) — the 12 step PANELS + the PANEL_BY_STEP registry.
+// Onboarding-studions sju paneler och PANEL_BY_STEP-registret.
 //
 // Ported from the design source (4-Dokument-Underlag/01-acceptans/super-admin/
 // studio.jsx PanelBranch…PanelLive) per W1 build-contract §5, but driven by the REAL
 // presets + the pure StudioAction dispatch (state.ts) and the shared Field/
-// ModuleStatePills (controls.tsx). DESIGN = LAG for the shell chrome (exact px/hex/
-// copy); the bodies reuse real controls and honor the §9 honesty markers:
-//   • REAL panels   : branch, namn, tema, modval, brand(accent+tagline), agare
-//   • PARTIAL panels : brand-logo (placeholder box), text (only Företagsnamn wired)
-//   • DEFERRED stubs : modplace (W5), modconf (display-only), tjanster (W3) — honest
-//                      empty states, NO fake drag/list/toggle, NO fake DB-task theatre
-//   • DISPLAY-only   : granska (derived checklist from REAL cfg), live (real Lansera
-//                      → onLaunch; the real ActionState is surfaced by the parent)
+// ModuleStatePills (controls.tsx). Designpaketet styr skalet; panelerna använder
+// verkliga val och `live` skickar det enda Lansera-anropet via onLaunch.
 //
 // The registry is keyed by StepId and internal to this file + PanelHost (nothing else
 // imports it), so it carries the two extra callbacks the special panels need.
 import type { FC, ReactNode, CSSProperties } from 'react'
-import { Badge, Button, Card, Icon, type IconName } from '@/components/portal/ui'
+import { Badge, Button, Card, Icon } from '@/components/portal/ui'
 import { Field, ModuleStatePills } from './controls'
 import type { PanelProps } from '@/lib/platform/onboarding-studio/state'
 import { type StepId } from '@/lib/platform/onboarding-studio/phases'
-import { resolveModuleState, type StudioService } from '@/lib/platform/onboarding-studio/model'
-import { modulesForVertical, termPlural, type TemplateOption } from '@/lib/platform/verticals-shared'
+import { resolveModuleState } from '@/lib/platform/onboarding-studio/model'
+import { modulesForVertical } from '@/lib/platform/verticals-shared'
 import { isReservedSlug } from '@/lib/platform/slug'
-import { isSlugTaken } from '@/lib/platform/actions'
+import { isSlugTaken } from '@/lib/platform/actions/tenants'
 import { useEffect, useState } from 'react'
 import {
   BOOKING_VARIANTS,
@@ -37,19 +31,17 @@ import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { ThemeGallery } from '@/components/platform/ThemeGallery'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
-import { TENANT_HOST_SUFFIX, tenantStorefrontHost } from '@/lib/storefront-url'
+import { tenantHostSuffix, tenantStorefrontHost } from '@/lib/storefront-url'
+import type { IconName } from '@/lib/ui-icons'
 
 /**
- * The prop bag every panel in the registry receives. Extends the frozen PanelProps
- * (cfg/dispatch/presets) with the two callbacks the special panels need:
- *   • onNext   — kept in the contract for panels that want an in-body advance
- *                (currently unused — granska merged into live 2026-07-11).
- *   • onLaunch — the live panel's gold Lansera button → the single createTenant submit.
+ * The prop bag every panel in the registry receives. Extends PanelProps
+ * (cfg/dispatch/presets) with the callback the live panel needs:
+ *   • onLaunch — the gold Lansera button → the single createTenant submit.
  * Simple panels ignore both (they're typed `FC<PanelProps>` and slot in fine under
  * parameter contravariance).
  */
 export type StudioPanelProps = PanelProps & {
-  onNext: () => void
   onLaunch: () => void
 }
 
@@ -68,15 +60,12 @@ const groupEyebrow: CSSProperties = {
   fontFamily: 'var(--font-ui)',
 }
 
-/** Svenska hint per modul-läge (presentational; mirrors CreateTenantForm). */
+/** Svenska hint per modul-läge. */
 const MODULE_STATE_HINTS: Record<ModuleState, string> = {
   off: 'Av och dold för kunden.',
   live: 'På och synlig för kunden.',
 }
 
-
-/** The brand-panel accent swatches (verbatim from studio.jsx:268 — 7 accents). */
-const BRAND_ACCENTS = ['#5E7361', '#7E6E92', '#C8743C', '#B0693F', '#3A3733', '#A8455B', '#3E6B8C']
 
 /* ════════════════════════════ panel scaffold ════════════════════════════ */
 
@@ -92,31 +81,6 @@ function Panel({ title, sub, children }: { title: string; sub?: ReactNode; child
         {sub ? <p style={{ fontSize: 13, color: 'var(--c-ink-2)', margin: '6px 0 0', lineHeight: 1.5 }}>{sub}</p> : null}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>{children}</div>
-    </div>
-  )
-}
-
-/** Honest deferred-state block (§9): a dashed card that READS as "not built yet" —
- *  never a fake list/drag/toggle. Used by the W-later panels. */
-function DeferredStub({ icon, children }: { icon: IconName; children: ReactNode }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center',
-        gap: 12,
-        padding: '40px 24px',
-        border: '1px dashed var(--c-line-strong)',
-        borderRadius: 12,
-        background: 'var(--c-paper-2)',
-      }}
-    >
-      <span style={{ color: 'var(--c-ink-3)' }}>
-        <Icon name={icon} size={26} />
-      </span>
-      <div style={{ fontSize: 13, color: 'var(--c-ink-2)', lineHeight: 1.5, maxWidth: 290 }}>{children}</div>
     </div>
   )
 }
@@ -277,7 +241,7 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
                 placeItems: 'center',
               }}
             >
-              .{TENANT_HOST_SUFFIX}
+              .{tenantHostSuffix()}
             </span>
           </div>
           {reserved ? (
@@ -574,7 +538,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
   ]
   // Mirror createTenant's owner/name/slug requirements + a theme so the gold button
   // never fires a guaranteed-fail submit. Unset booking
-  // floors to live in buildCreateTenantFormData, so we don't depend on the catalog read
+  // floors to live in buildTenantOnboardingFormData, so we don't depend on the catalog read
   // (which fail-softs to [] and would otherwise permanently disable Lansera).
   // Tjänststeget togs bort 2026-07-11 (onboardingen ska vara superlätt att komma
   // igång — tjänster läggs i kundens admin EFTER lansering). Grinden krävde ändå
@@ -680,7 +644,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
 /**
  * step id → panel component. Internal to this file + PanelHost (nothing else imports
  * it). Simple panels are typed `FC<PanelProps>` and slot in under parameter
- * contravariance; granska/live take the extra onNext/onLaunch via StudioPanelProps.
+ * contravariance; live takes the extra onLaunch callback via StudioPanelProps.
  */
 export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
   branch: PanelBranch,

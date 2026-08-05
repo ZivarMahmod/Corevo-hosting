@@ -1,13 +1,22 @@
-import { dispatchNotificationOutbox } from '@/lib/notifications/outbox'
+import { dispatchNotificationOutbox, type ClaimedNotificationOutboxRow } from '@/lib/notifications/outbox'
 import { dispatchPortalRecoveryOutbox } from '@/lib/customer-portal/recovery-delivery'
+import { deliverImmediateOffertOutbox } from '@/lib/admin/offert/reply-delivery'
+import { deliverImmediateBookingOutbox } from '@/lib/notifications/booking-immediate'
 import { deliverClaimedSmsOutbox } from '@/lib/notifications/sms'
 import { parseSmsDeliveryMode } from '@/lib/notifications/settings'
 import { authorizedCronRequest } from '@/lib/security/cron-auth'
-import { after } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 const RECOVERY_BATCH_LIMIT = 5
+const DELIVERY_BATCH_LIMIT = 10
+const DELIVERY_CONCURRENCY = 5
+
+function deliverScheduledEmailOutbox(row: ClaimedNotificationOutboxRow) {
+  return row.event_type === 'offert_reply'
+    ? deliverImmediateOffertOutbox(row)
+    : deliverImmediateBookingOutbox(row)
+}
 
 async function run(req: Request): Promise<Response> {
   if (!(await authorizedCronRequest(req))) {
@@ -15,27 +24,39 @@ async function run(req: Request): Promise<Response> {
   }
   try {
     const smsMode = parseSmsDeliveryMode(process.env.SMS_DELIVERY_MODE)
-    const result = await dispatchNotificationOutbox(smsMode === 'off'
-      ? {}
-      : { channel: 'sms', deliver: deliverClaimedSmsOutbox })
-
-    let recoveryScheduled = true
-    try {
-      after(async () => {
-        try {
-          await dispatchPortalRecoveryOutbox(RECOVERY_BATCH_LIMIT)
-        } catch {
-          // The durable recovery outbox remains queued for the next cron run.
+    const [email, sms] = await Promise.all([
+      dispatchNotificationOutbox({
+        deliver: deliverScheduledEmailOutbox,
+        limit: DELIVERY_BATCH_LIMIT,
+        concurrency: DELIVERY_CONCURRENCY,
+      }),
+      smsMode === 'off'
+        ? null
+        : dispatchNotificationOutbox({
+            channel: 'sms',
+            deliver: deliverClaimedSmsOutbox,
+            limit: DELIVERY_BATCH_LIMIT,
+            concurrency: DELIVERY_CONCURRENCY,
+          }),
+    ])
+    const result = sms
+      ? {
+          claimed: email.claimed + sms.claimed,
+          sent: email.sent + sms.sent,
+          simulated: email.simulated + sms.simulated,
+          skipped: email.skipped + sms.skipped,
+          retried: email.retried + sms.retried,
+          failed: email.failed + sms.failed,
+          stale: email.stale + sms.stale,
         }
-      })
-    } catch {
-      recoveryScheduled = false
-    }
+      : email
+
+    const recovery = await dispatchPortalRecoveryOutbox(RECOVERY_BATCH_LIMIT)
 
     return Response.json({
       ok: true,
       ...result,
-      recovery: { scheduled: recoveryScheduled, limit: RECOVERY_BATCH_LIMIT },
+      recovery,
     })
   } catch {
     return Response.json({ error: 'cron_failed' }, { status: 500 })

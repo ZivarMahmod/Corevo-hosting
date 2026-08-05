@@ -17,49 +17,10 @@
 
 /* ---- status-band (identiskt kontrakt med shop/blogg) ---- */
 
-.notice {
-  margin-top: 8px;
-  padding: 12px 16px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: var(--sf-notice-ink, var(--color-fg, #232520));
-  background: var(--sf-notice-bg, color-mix(in srgb, var(--color-accent, #c8a24a) 14%, transparent));
-  border: 1px solid
-    var(--sf-notice-border, color-mix(in srgb, var(--color-accent, #c8a24a) 30%, transparent));
-  border-left-width: 4px;
-  border-radius: var(--sf-notice-radius, var(--sf-radius, 4px));
-}
-
 /* ---- belopps-chips (presentkort) ---- */
-
-.chips {
-  list-style: none;
-  margin: 28px 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
 
 /* min-height 44 = touch-golvet (chipsen är inte klickbara idag, men de får aldrig
  * vara mindre än en yta som senare BLIR det). Full --color-fg = 15.2:1. */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 10px 20px;
-  font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  color: var(--color-fg, #232520);
-  background: var(--sf-card-bg, color-mix(in srgb, var(--color-fg, #232520) 4%, transparent));
-  border: 1px solid
-    var(--sf-card-border, color-mix(in srgb, var(--color-fg, #232520) 14%, transparent));
-  border-radius: var(--sf-chip-radius, calc(var(--sf-radius, 4px) * 2));
-}
 
 /* ---- stämpelkort (lojalitet) ---- */
 
@@ -161,20 +122,8 @@
 /* Lojalitetens "Bli medlem": rälsen finns inte, så ytan är ärligt otillgänglig.
  * ALDRIG via opacity — det hade tagit texten till ~3:1. Egen, MÄTT ink i stället:
  * fg 72% över en 6%-platta = 5.77:1 (WCAG-luminans, räknat). */
-.ctaInert {
-  cursor: not-allowed;
-  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
-  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
-  border-color: var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 18%, transparent));
-  transform: none;
-}
 
 /* Ett inert element får inte låtsas svara på hover — det vore en lögn. */
-.ctaInert:hover,
-.ctaInert:active {
-  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
-  transform: none;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .cta {

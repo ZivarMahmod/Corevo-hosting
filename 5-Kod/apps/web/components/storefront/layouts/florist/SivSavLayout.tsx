@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './sivsav.module.css'
 
@@ -21,7 +22,7 @@ import styles from './sivsav.module.css'
  * Filen har varken galleri-band, presentkorts-rad eller kurs-band på hemmet — och då har
  * inte mallen det heller. De modulerna nås via nav och sidfot, precis som i filen. Att
  * lägga till en sektion "för att syskonmallarna har en" ÄR att improvisera bort mallen
- * (CLAUDE.md § DESIGN-TROHET).
+ * (se AGENTS.md:s UI-acceptansregel).
  *
  * MODUL-GATINGEN är plattformens och HELIG: buketterna ritas bara när shopen har teasers,
  * journalen bara när bloggen har inlägg, och "Se buketterna" pekar på /tjanster när shopen
@@ -78,7 +79,11 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
                 {shopReachable ? 'Se buketterna' : 'Se vad vi gör'}
               </Link>
               {/* "Boka en tid →" är en HANDLING → plattformens boknings-drawer. */}
-              <BookCta enabled={bookingReachable} className={styles.ssUnderline} label="Boka en tid →" />
+              <BookCta
+                enabled={bookingReachable}
+                className={styles.ssUnderline}
+                label="Boka en tid →"
+              />
             </div>
           </Reveal>
           <Reveal delay={140}>
@@ -118,15 +123,13 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                       aria-label={`${p.name} — visa buketten`}
                     >
-                      <span className={styles.ssSrOnly}>{p.imageAlt ?? p.name}</span>
+                      <span className="sr-only">{p.imageAlt ?? p.name}</span>
                     </Link>
                     <div className={styles.ssProductRow}>
                       <h3 className={styles.ssProductName}>
                         <Link href={`/shop/${p.id}`}>{p.name}</Link>
                       </h3>
-                      <span className={styles.ssProductPrice}>
-                        {formatProductPrice(p)}
-                      </span>
+                      <span className={styles.ssProductPrice}>{formatProductPrice(p)}</span>
                     </div>
                     {p.description ? <p className={styles.ssProductDesc}>{p.description}</p> : null}
                     {/* Filens "Lägg i korg" på hemmet. Teaser-propen bär ingen ShopConfig
@@ -156,7 +159,10 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
                 Läs mer om oss →
               </Link>
             </div>
-            <div className={styles.ssAboutPhoto} style={{ backgroundImage: `url(${aboutPhoto})` }} />
+            <div
+              className={styles.ssAboutPhoto}
+              style={{ backgroundImage: `url(${aboutPhoto})` }}
+            />
           </Reveal>
         </section>
 
@@ -173,15 +179,22 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
               {posts.map((b, i) => (
                 <li key={b.id}>
                   <Reveal delay={i * 90}>
-                    <Link href={b.slug ? `/blogg/${b.slug}` : '/blogg'} className={styles.ssJournalCard}>
+                    <Link
+                      href={b.slug ? `/blogg/${b.slug}` : '/blogg'}
+                      className={styles.ssJournalCard}
+                    >
                       <div
                         className={styles.ssJournalImg}
                         style={
-                          b.coverImageUrl ? { backgroundImage: `url(${b.coverImageUrl})` } : undefined
+                          b.coverImageUrl
+                            ? { backgroundImage: `url(${b.coverImageUrl})` }
+                            : undefined
                         }
                       />
                       {b.publishedAt ? (
-                        <p className={styles.ssJournalDate}>{formatPostDate(b.publishedAt)}</p>
+                        <p className={styles.ssJournalDate}>
+                          {formatBloggShortDate(b.publishedAt)}
+                        </p>
                       ) : null}
                       <h3 className={styles.ssJournalTitle}>{b.title}</h3>
                     </Link>
@@ -194,11 +207,4 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
       </div>
     </div>
   )
-}
-
-/** Filens datumformat på hemmet är kort ("4 juli") — inte modulens långa. */
-function formatPostDate(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
 }

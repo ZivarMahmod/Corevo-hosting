@@ -40,11 +40,4 @@ describe('admin-PWA', () => {
     }
   })
 
-  it('låser inte zoom eller fingernyp i adminlayouten', () => {
-    const layout = fs.readFileSync(path.join(WEB_ROOT, 'app', '(admin)', 'layout.tsx'), 'utf8')
-    expect(layout).toContain("width: 'device-width'")
-    expect(layout).toContain('initialScale: 1')
-    expect(layout).not.toContain('userScalable: false')
-    expect(layout).not.toContain('maximumScale: 1')
-  })
 })

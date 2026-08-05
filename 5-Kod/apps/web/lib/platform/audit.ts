@@ -56,7 +56,6 @@ export type PlatformAuditAction =
   | 'tenant.site_revision_restore'
   | 'tenant.contact' // super-admin edits a tenant's public contact (settings.contact email/phone + primär location-adress) on /kunder/[id]
   | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)
-  | 'platform.role_permissions_save' // goal-21: edit the global RBAC permission matrix
   | 'domain.add' // goal-23: provision a custom hostname + tenant_domains row
   | 'domain.verify' // goal-23: poll CF DCV status → mark tenant_domains.verified
   | 'domain.remove' // goal-23: delete custom hostname + tenant_domains row
@@ -92,8 +91,8 @@ export type AuditRow = Database['public']['Tables']['audit_log']['Row']
 
 // ── Cross-tenant audit stream (Drift & logg §2.3) ───────────────────────────────
 // Same RLS-bypass seam as the rest of lib/platform/*: the platform_admin JWT lets
-// audit_log return rows for EVERY tenant. Read-only — never mutates the log
-// (build-once-never-delete). The action keys are dotted enums (e.g.
+// audit_log return rows for EVERY tenant. This reader never mutates the append-only
+// audit log. The action keys are dotted enums (e.g.
 // 'tenant.suspend', 'booking.status.pending'); the view maps them to a human label
 // + icon + tone. We classify the actor + tone here so the (read) and the (render)
 // don't both have to know the action vocabulary.

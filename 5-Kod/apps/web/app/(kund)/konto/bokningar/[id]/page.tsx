@@ -5,7 +5,8 @@ import { requirePortal } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
 import { getMyBooking } from '@/lib/kund/bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund/settings'
-import { formatSlot, formatPrice, statusLabel } from '@/lib/kund/format'
+import { formatSlot, formatPrice } from '@/lib/kund/format'
+import { bookingStatusLabel } from '@/lib/booking/confirmation-status'
 import { CancelButton } from '@/components/kund/CancelButton'
 import { RebookPanel } from '@/components/kund/RebookPanel'
 import styles from '@/components/kund/kund.module.css'
@@ -45,7 +46,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         </div>
         <div className={styles.detailRow}>
           <span className={styles.detailLabel}>Status</span>
-          <span>{statusLabel(booking.status)}</span>
+          <span>{bookingStatusLabel(booking.status)}</span>
         </div>
         <div className={styles.detailRow}>
           <span className={styles.detailLabel}>Pris</span>

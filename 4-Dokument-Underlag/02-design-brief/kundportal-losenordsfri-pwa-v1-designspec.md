@@ -68,7 +68,7 @@ Claude Design får fatta visuella detaljbeslut inom tokens och kontrakt nedan, m
 - kvitto och betalningshistorik;
 - riktig native-app.
 
-Inaktivt betyder: ingen synlig knapp, tom meny, `kommer snart`-ruta eller halvaktiv route i lanseringsytan. Befintlig kod för funktionerna ska bevaras och avgränsas, inte raderas.
+Inaktivt betyder: ingen synlig knapp, tom meny, `kommer snart`-ruta eller halvaktiv route i lanseringsytan. Kod utan aktivt produkt- eller kompatibilitetskontrakt tas bort; verklig legacy-kompatibilitet avgränsas bara tills berörda tenants har migrerats.
 
 ## 4. Förhållande till befintlig designkanon
 
@@ -981,7 +981,7 @@ Designpaketet under `4-Dokument-Underlag/01-acceptans/kundportal-losenordsfri-pw
 6. `TOKENS.md` — exakta färger, typsnitt, spacing, radier, shadows, breakpoints och fokusvärden;
 7. `COMPONENTS.md` — exakt komponentanatomi, variants och interaktioner;
 8. `COPY.md` — all svensk UI-text och feltext;
-9. `FEATURE-MATRIX.md` — varje funktion markerad `NU`, `FÖRBEREDD/DOLD` eller `LEGACY/BEVARAD` och spårad till briefavsnitt;
+9. `FEATURE-MATRIX.md` — varje funktion markerad `NU`, `FÖRBEREDD/DOLD` eller tidsbegränsad `LEGACY/BEVARAD`-kompatibilitet och spårad till briefavsnitt;
 10. `ACCEPTANCE-MATRIX.md` — unika krav-ID:n, berörd prototyp/state, exakt kontrollmetod och resultatkolumn för oberoende granskning;
 11. inga externa imports, CDN:er, bilder, scripts eller resurser som riskerar att försvinna. HTML-prototyperna ska vara självbärande med inline CSS/JS eller relativa filer i samma paket. Typsnitt får i prototypen använda dokumenterad lokal font-stack utan nätverksanrop; produktionen ska självhosta kanoniska fonter via befintlig Next-fontlösning;
 12. inga produktionscredentials, riktiga kunduppgifter eller verkliga bokningar.

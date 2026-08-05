@@ -1,14 +1,28 @@
 name: CI
 
 # PR gate (G11). lint + typecheck + unit + contract acceptance + build always block the PR.
-# Full Playwright E2E runs against a seeded STAGING Supabase and is gated on the
-# repo variable E2E_ENABLED=true (set it once staging secrets exist) so that an
-# unconfigured repo skips E2E instead of red-washing every PR.
+# Full Playwright E2E runs only through an approved manual exact-SHA run against
+# seeded, isolated STAGING. Ordinary pushes and pull requests never receive the
+# mutating staging credentials.
 
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_isolated_e2e:
+        description: Run credentialed isolated-staging E2E for this exact main SHA
+        required: true
+        type: boolean
+        default: false
+      candidate_sha:
+        description: Exact main commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -31,7 +45,7 @@ jobs:
       - name: Verify migration and SQL test inventory
         run: >-
           node scripts/verify-database-release.mjs
-          --expected-latest 20260803191057
+          --expected-latest 20260804150000
           --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121,0122,0123,0124,0125,0126,0127,0128,0129,0130,0131,0132,0133,0134,0135,0136
       # Local disposable stack: migrations + seed are applied before the SQL
       # suites run. No production/staging credentials or data are used.
@@ -41,7 +55,7 @@ jobs:
         run: |
           supabase migration list --local > "$RUNNER_TEMP/local-migrations.txt"
           node scripts/verify-database-release.mjs \
-            --expected-latest 20260803191057 \
+            --expected-latest 20260804150000 \
             --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121,0122,0123,0124,0125,0126,0127,0128,0129,0130,0131,0132,0133,0134,0135,0136 \
             --history-file "$RUNNER_TEMP/local-migrations.txt" \
             --history-side remote
@@ -93,6 +107,8 @@ jobs:
             -c "alter table public.tenants disable trigger trg_tenant_launch_readiness; alter table public.staff disable trigger trg_staff_activation_readiness; alter table public.bookings disable trigger trg_booking_resource_fence"
           bash supabase/tests/customer_portal_cancellation_refunds_0121_concurrency_test.sh "$db_container"
           bash supabase/tests/customer_portal_contact_change_0124_concurrency_test.sh "$db_container"
+          bash supabase/tests/notification_delivery_1230_migration_test.sh "$db_container"
+          bash supabase/tests/customer_portal_mode_1400_migration_test.sh "$db_container"
           docker exec "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
             -c "alter table public.bookings enable trigger trg_booking_resource_fence; alter table public.staff enable trigger trg_staff_activation_readiness; alter table public.tenants enable trigger trg_tenant_launch_readiness"
 
@@ -125,22 +141,26 @@ jobs:
           node --test
           scripts/verify-database-release.test.mjs
           scripts/check-worker-bundle.test.mjs
+          apps/web/scripts/e2e-db.node-test.mjs
           apps/web/scripts/primary-scheduler.test.mjs
           apps/web/scripts/primary-scheduler-config.test.mjs
-      - run: pnpm test:acceptance:contract
+      # This contract has no staging credentials and must stay positively green;
+      # do not let the separate missing-credentials proof hide a regression here.
+      - name: Verify Goal 93 acceptance contract
         if: ${{ !cancelled() }}
-      # Bransch-vakten (goal-61): failar på NYA hårdkodade bransch-ord (salong/frisör/
-      # klippning …) i user-facing strängar. Corevo är multi-bransch — texten ska komma
-      # ur terminologi-systemet eller bransch-lagret (bransch-copy.ts), aldrig ur koden.
-      # Baseline = scripts/vakt-bransch-baseline.json (58 kända, sanna träffar).
-      - run: pnpm --filter web vakt
+        run: pnpm test:goal93:contract
+      # Credentials are deliberately absent from ordinary CI. This proves the
+      # acceptance probes fail closed; a green acceptance run belongs only to
+      # the separately approved isolated-staging gate.
+      - name: Verify acceptance contracts fail closed without staging credentials
         if: ${{ !cancelled() }}
-      # Kontrast-vakten (goal-62 B3): failar när en malls palett ger osynlig text —
-      # knapptext som inte klarar sin egen fyllning, eller brödtext som inte klarar
-      # mallens ytor (WCAG 4.5:1). Räknar på tokens, ingen browser. Det fulla sveppet
-      # (20 mallar × 5 sidor i riktig webbläsare) körs lokalt: pnpm --filter web kontrast.
-      - run: pnpm --filter web vakt:kontrast
-        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          output="$(pnpm test:acceptance:contract 2>&1)" && exit 1
+          printf '%s\n' "$output"
+          grep -F 'FAIL 03-P00 expected=ACCEPT_BASE_URL,ACCEPT_ADMIN_EMAIL,ACCEPT_ADMIN_PASSWORD,ACCEPT_THEME actual=missing:' <<< "$output"
+          grep -F 'FAIL 04-P00 expected=ACCEPT_BASE_URL,ACCEPT_ADMIN_EMAIL,ACCEPT_ADMIN_PASSWORD actual=missing:' <<< "$output"
+          grep -F 'FAIL 06-P00 expected=ACCEPT_BASE_URL,ACCEPT_STAFF_EMAIL,ACCEPT_STAFF_PASSWORD actual=missing:' <<< "$output"
       # next build inlines NEXT_PUBLIC_* at BUILD time (live-blocker #1) — set the
       # production-shaped values so a wrong-host default ("salongen inte tillgänglig")
       # can never ship. Supabase publishable values are safe to expose to the client.
@@ -200,8 +220,24 @@ jobs:
   e2e:
     name: playwright e2e (staging)
     runs-on: ubuntu-latest
-    needs: quality
-    if: vars.E2E_ENABLED == 'true'
+    timeout-minutes: 30
+    needs: [database, quality]
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.run_isolated_e2e == true &&
+      github.ref == 'refs/heads/main' &&
+      inputs.candidate_sha == github.sha &&
+      vars.E2E_ENABLED == 'true'
+    environment: staging
+    concurrency:
+      group: corevo-isolated-staging-e2e
+      cancel-in-progress: false
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+      E2E_SUPABASE_PROJECT_REF: ${{ secrets.STAGING_SUPABASE_PROJECT_REF }}
+      E2E_ALLOWED_SUPABASE_PROJECT_REF: ${{ vars.E2E_ALLOWED_SUPABASE_PROJECT_REF }}
+      PRODUCTION_SUPABASE_PROJECT_REF: ${{ vars.PRODUCTION_SUPABASE_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -213,7 +249,38 @@ jobs:
           cache: pnpm
           cache-dependency-path: 5-Kod/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
       - run: pnpm exec playwright install --with-deps chromium
+      - name: Reject an unapproved database target
+        shell: bash
+        run: |
+          [ -n "$E2E_SUPABASE_PROJECT_REF" ]
+          [ -n "$E2E_ALLOWED_SUPABASE_PROJECT_REF" ]
+          [ -n "$PRODUCTION_SUPABASE_PROJECT_REF" ]
+          [ "$E2E_SUPABASE_PROJECT_REF" = "$E2E_ALLOWED_SUPABASE_PROJECT_REF" ]
+          [ "$E2E_SUPABASE_PROJECT_REF" != "$PRODUCTION_SUPABASE_PROJECT_REF" ]
+      - name: Link explicit isolated staging project
+        run: supabase link --project-ref "$E2E_SUPABASE_PROJECT_REF"
+      - name: Verify staging migration parity
+        run: |
+          supabase migration list --linked > "$RUNNER_TEMP/staging-migrations.txt"
+          node scripts/verify-database-release.mjs \
+            --history-file "$RUNNER_TEMP/staging-migrations.txt" \
+            --history-side remote
+      - name: Remove residue from an interrupted E2E run
+        run: node apps/web/scripts/e2e-db.mjs teardown
+      - name: Verify clean database before seed
+        run: node apps/web/scripts/e2e-db.mjs verify
+      - name: Generate masked one-run password
+        shell: bash
+        run: |
+          password="$(node -e "process.stdout.write('E2e!' + require('node:crypto').randomBytes(24).toString('base64url'))")"
+          echo "::add-mask::$password"
+          printf 'E2E_PASSWORD=%s\n' "$password" >> "$GITHUB_ENV"
+      - name: Seed isolated E2E fixture
+        run: node apps/web/scripts/e2e-db.mjs seed
       # Build with STAGING env, then Playwright starts `next start` and runs the
       # full suite (incl. @mutating) against the seeded staging Supabase.
       - run: pnpm build
@@ -223,7 +290,8 @@ jobs:
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
-      - run: pnpm test:e2e
+      - name: Run serial Playwright E2E
+        run: pnpm test:e2e
         env:
           E2E_WEBSERVER_CMD: pnpm --filter @corevo/web start
           # Runtime secrets the started app reads server-side.
@@ -232,6 +300,12 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
           NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+      - name: Teardown isolated E2E fixture
+        if: ${{ always() }}
+        run: node apps/web/scripts/e2e-db.mjs teardown
+      - name: Verify final clean database
+        if: ${{ always() }}
+        run: node apps/web/scripts/e2e-db.mjs verify
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
@@ -255,4 +329,4 @@ jobs:
           [ "${{ needs.database.result }}" = "success" ]
           [ "${{ needs.quality.result }}" = "success" ]
           [ "${{ needs.worker-bundle.result }}" = "success" ]
-          [ "${{ needs.e2e.result }}" = "success" ] || { [ "${{ vars.E2E_ENABLED }}" != "true" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; }
+          [ "${{ needs.e2e.result }}" = "success" ] || { [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; } || { [ "${{ inputs.run_isolated_e2e }}" != "true" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; }

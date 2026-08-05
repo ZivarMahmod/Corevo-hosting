@@ -19,9 +19,10 @@ import { listLocationOpeningHours } from '@/lib/admin/schedule-data'
 import { savePlatformLocationBookingSettings } from '@/lib/platform/actions/location-hours'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { CustomerAccountsCard } from '@/components/platform/CustomerAccountsCard'
+import { readCustomerPortalMode } from '@/lib/customer-portal/mode'
 import { TenantLegalCard } from '@/components/platform/TenantLegalCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig, moduleAdminState } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders, listShippingOptions } from '@/lib/admin/shop/data'
 import { shopRailsStatus } from '@/lib/storefront/shop/checkout-options'
 import { parsePaymentMethods } from '@/lib/storefront/shop/types'
@@ -43,11 +44,10 @@ import { BloggAdmin } from '@/components/admin/BloggAdmin'
 import { KursAdmin } from '@/components/admin/KursAdmin'
 import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { OffertInbox } from '@/components/admin/OffertInbox'
-import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
 import { SidaStudioV2Lazy } from '@/components/platform/SidaStudioV2Lazy'
-import { getVerticalCopy } from '@/components/storefront/vertical-copy'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
+import { getVerticalCopy } from '@/lib/storefront/vertical-copy'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import { buildSiteEditorManifest, type EditorManifestKind } from '@/lib/platform/site-editor-manifest'
 import {
   buildSiteSnapshot,
@@ -65,10 +65,8 @@ import {
   DEFAULT_STOREFRONT_THEME,
   type StorefrontTheme,
 } from '@/lib/tenant-data'
-import {
-  TenantDetailTabs,
-  type TenantTabKey,
-} from '@/components/platform/TenantDetailTabs'
+import { TenantDetailTabs } from '@/components/platform/TenantDetailTabs'
+import type { TenantTabKey } from '@/components/platform/TenantDetailTabs.tabs'
 import {
   TenantHeaderActions,
   TenantDangerCard,
@@ -82,7 +80,6 @@ import {
   Icon,
   Stat,
   type BadgeTone,
-  type IconName,
 } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
@@ -95,6 +92,8 @@ import {
   normalizeBookingProvider,
 } from '@/lib/platform/booking-external-url'
 import { bookingCtaSlots } from '@/lib/platform/booking-cta-slots'
+import type { IconName } from '@/lib/ui-icons'
+import { parseTenantLegal } from '@/lib/tenant-region'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Kund' }
@@ -193,7 +192,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // Lojalitet (goal-64): klubbens nivåer fylls här. Fliken visas bara när modulen är på —
   // och /klubb finns bara då, så en nivå utan modul vore en rad ingen kan se.
   const lojalitetOn = isModuleActivated(moduleStates, 'lojalitet')
-  const moduleReadOnly = (_key: string) => false
   const needAssets = shopOn || bloggOn || mediaOn || galleriOn
   const mediaQuotaCfg = moduleAdminConfig(moduleStates, 'media_library')
   const mediaQuota =
@@ -304,16 +302,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
   // Kund-överblick (Översikt): presentation data comes from the existing reads;
   // launch readiness comes only from the DB RPC used by the activation trigger.
-  // goal-72 1c: juridikfälten (settings.legal) — samma parse-regler som lib/tenant-data.
-  const rawLegal = (rawSettings.legal ?? {}) as Record<string, unknown>
-  const tenantLegal = {
-    orgNr: typeof rawLegal.org_nr === 'string' && rawLegal.org_nr.trim() ? rawLegal.org_nr.trim() : null,
-    vatRate: (() => {
-      const v = rawLegal.vat_rate
-      const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
-      return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null
-    })(),
-  }
+  const tenantLegal = parseTenantLegal(rawSettings)
   // Bransch läses ur SANNINGSKÄLLAN tenants.vertical_id (styr admin-terminologin,
   // 0026) — inte settings.vertical-jsonben som kunde glida isär (rapport 02 §1.7).
   const vertical =
@@ -454,15 +443,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
                     {(salonAdmin.fullName || salonAdmin.email).charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    {/* #10 — owner name from users.full_name; honest owner label
-                        label when no name was captured (never a fabricated name). */}
                     <div className={styles.ownerName}>{salonAdmin.fullName || 'Företagsägare'}</div>
                     <div className={styles.ownerRole}>{salonAdmin.status === 'active' ? 'Aktivt konto' : 'Inbjuden'}</div>
                   </div>
                 </div>
                 <div className={styles.kvList}>
-                  {/* #11 — the owner's role is always salon_admin; show it whenever an
-                      owner exists (not gated on a captured name). */}
                   <KV label="Roll" value="Administratör (ägare)" />
                   <KV label="E-post" value={salonAdmin.email} />
                 </div>
@@ -572,14 +557,12 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <p className={styles.noteText}>
             Kundens kurser &amp; event — tillfällen med datum, platser och avgift.
           </p>
-          <ModuleWriteBoundary readOnly={moduleReadOnly('kurser')}>
             <KursAdmin
               tenantId={tenant.id}
               events={tenantEvents}
               registrations={eventRegistrations}
               tenantName={tenant.name}
             />
-          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -593,11 +576,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             Kundens klubb — nivåerna som visas på /klubb. Namn, pris, intervall och förmåner.
             Inga nivåer är helt OK: klubben visar då bara programmet (poäng eller stämpelkort).
           </p>
-          <ModuleWriteBoundary readOnly={moduleReadOnly('lojalitet')}>
             <Card>
               <LoyaltyPlansCard tenantId={tenant.id} plans={loyaltyPlans} />
             </Card>
-          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -610,11 +591,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             Kundens galleri — bilderna på /galleri. Välj foton ur kundens bildbibliotek och
             sätt bildtext, tagg, år och bildformat. Ordningen styr rutnätet.
           </p>
-          <ModuleWriteBoundary readOnly={moduleReadOnly('galleri')}>
             <Card>
               <GalleriCard tenantId={tenant.id} items={galleryItems} assets={mediaAssets} />
             </Card>
-          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -624,7 +603,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <p className={styles.noteText}>
             Kundens webshop — samma verktyg som i kundens egen admin.
           </p>
-          <ModuleWriteBoundary readOnly={moduleReadOnly('shop')}>
             <ShopAdmin
               tenantId={tenant.id}
               products={shopProducts}
@@ -637,7 +615,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               stripeReady={shopRails.stripeReady}
               paypalReady={shopRails.paypalReady}
             />
-          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -647,7 +624,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <p className={styles.noteText}>
             Kundens blogg — skriv, publicera och avpublicera inlägg åt kunden.
           </p>
-          <ModuleWriteBoundary readOnly={moduleReadOnly('blogg')}>
             <BloggAdmin
               tenantId={tenant.id}
               posts={blogPosts}
@@ -655,7 +631,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               layoutVariant={bloggLayout}
               assets={mediaAssets}
             />
-          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -668,12 +643,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           {/* goal-64: förfrågningstyperna (chipsen mallen ritar överst i formuläret).
               Storefronten läste redan config.subjects — men ingen yta kunde SKRIVA
               listan. Här äger kunden sina egna typer. */}
-          <ModuleWriteBoundary readOnly={moduleReadOnly('offert')}>
             <Card>
               <OffertSubjectsCard tenantId={tenant.id} subjects={offertSubjects} />
             </Card>
             <OffertInbox tenantId={tenant.id} tenantName={tenant.name} requests={offertRequests} />
-          </ModuleWriteBoundary>
         </div>
       ),
     }),
@@ -696,14 +669,12 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
                 Kundens bildbibliotek — ladda upp bilder åt kunden. Webshop och blogg
                 hämtar sina bilder härifrån.
               </p>
-              <ModuleWriteBoundary readOnly={moduleReadOnly('media_library')}>
                 <MediaLibrary
                   tenantId={tenant.id}
                   assets={mediaAssets}
                   usage={mediaUsage}
                   tenantName={tenant.name}
                 />
-              </ModuleWriteBoundary>
             </div>
           ),
         }
@@ -819,8 +790,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <ModulesCard tenantId={tenant.id} modules={modules} />
         </Card>
 
-        {/* goal-62 A2: kund-konton (inloggning på kundens publika sajt) — reglaget
-            fanns bara i kundens egen admin, aldrig här. Samma settings-nyckel. */}
+        {/* One canonical customer-portal mode for this tenant. */}
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Kund-konton</h2>
@@ -832,7 +802,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           </p>
           <CustomerAccountsCard
             tenantId={tenant.id}
-            enabled={rawSettings.customer_accounts_enabled === true}
+            mode={readCustomerPortalMode(rawSettings)}
           />
         </Card>
 
@@ -965,7 +935,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         </div>
         <TenantHeaderActions
           tenantId={tenant.id}
-          tenantName={tenant.name}
           storefrontUrl={isActive ? url : null}
           salonAdminEmail={salonAdmin?.email ?? null}
           serviceRoleAvailable={serviceRoleAvailable}

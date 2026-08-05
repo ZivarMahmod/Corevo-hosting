@@ -55,12 +55,6 @@ const booking = (overrides: Partial<PortalBookingProjection> = {}): PortalBookin
 const visibleText = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
 
 describe('CustomerPortalShell', () => {
-  it('stays a server component and leaves recovery routes free of client focus/logout controllers', () => {
-    const source = readFileSync(resolve(process.cwd(), 'components/customer-portal/PortalShell.tsx'), 'utf8')
-    expect(source).not.toMatch(/^['"]use client['"]/)
-    expect(source).toMatch(/recovery[\s\S]*return[\s\S]*PortalShellFrame|variant === 'recovery'/)
-  })
-
   it('renders the canonical landmarks once and exactly one three-link responsive nav', () => {
     const html = renderToStaticMarkup(
       <PortalShell active="bookings" customerName="Alex">
@@ -265,5 +259,3 @@ describe('customer portal views', () => {
     expect(html).not.toMatch(/Logga in|\/konto/)
   })
 })
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'

@@ -6,6 +6,7 @@ import { moduleCtx } from '@/lib/admin/module-ctx'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { logPlatformAction, type PlatformAuditAction } from '@/lib/platform/audit'
 import type { ActionState } from '@/lib/admin/actions'
+import { resolveReadyTenantAssetId } from '@/lib/media/lifecycle'
 import { GALLERY_RATIOS } from './types'
 
 const READ_ONLY = 'Galleriet kan inte ändras just nu.'
@@ -84,14 +85,9 @@ export async function createGalleryItem(_prev: ActionState, fd: FormData): Promi
   if ('error' in fields) return fields
 
   const supabase = await createClient()
-  const { data: asset } = await supabase
-    .from('media_assets')
-    .select('id')
-    .eq('id', fields.asset_id)
-    .eq('tenant_id', ctx.tenant.id)
-    .eq('status', 'ready')
-    .maybeSingle()
-  if (!asset) return { error: 'Bilden finns inte i ditt Bildbibliotek.' }
+  if (!await resolveReadyTenantAssetId(supabase, ctx.tenant.id, fields.asset_id)) {
+    return { error: 'Bilden finns inte i ditt Bildbibliotek.' }
+  }
 
   const { data, error } = await supabase
     .from('gallery_items')
@@ -115,14 +111,9 @@ export async function updateGalleryItem(_prev: ActionState, fd: FormData): Promi
   if ('error' in fields) return fields
 
   const supabase = await createClient()
-  const { data: asset } = await supabase
-    .from('media_assets')
-    .select('id')
-    .eq('id', fields.asset_id)
-    .eq('tenant_id', ctx.tenant.id)
-    .eq('status', 'ready')
-    .maybeSingle()
-  if (!asset) return { error: 'Bilden finns inte i ditt Bildbibliotek.' }
+  if (!await resolveReadyTenantAssetId(supabase, ctx.tenant.id, fields.asset_id)) {
+    return { error: 'Bilden finns inte i ditt Bildbibliotek.' }
+  }
 
   const { data, error } = await supabase
     .from('gallery_items')

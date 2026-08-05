@@ -1,7 +1,25 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { slugify } from './types'
+
+const mocks = vi.hoisted(() => ({
+  moduleCtx: vi.fn(),
+  createClient: vi.fn(),
+  revalidatePath: vi.fn(),
+  revalidateTenant: vi.fn(),
+  resolveReadyTenantAssetId: vi.fn(),
+}))
+
+vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
+vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.createClient }))
+vi.mock('@/lib/admin/module-ctx', () => ({ moduleCtx: mocks.moduleCtx }))
+vi.mock('@/lib/admin/tenant', () => ({ revalidateTenant: mocks.revalidateTenant }))
+vi.mock('@/lib/media/lifecycle', () => ({
+  resolveReadyTenantAssetId: mocks.resolveReadyTenantAssetId,
+}))
+
+import { createBlogPost, updateBlogPost } from './actions'
 
 const migration = readFileSync(
   resolve(
@@ -17,18 +35,30 @@ const scopeMigration = readFileSync(
   ),
   'utf8',
 ).toLowerCase()
-const actions = readFileSync(resolve(import.meta.dirname, 'actions.ts'), 'utf8')
-const admin = readFileSync(
-  resolve(import.meta.dirname, '../../../components/admin/BloggAdmin.tsx'),
-  'utf8',
-)
 
 describe('Goal 90 blogg contract', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.moduleCtx.mockResolvedValue({
+      tenant: { id: 'tenant-1', slug: 'blogg-test' },
+    })
+  })
+
+  it.each([
+    ['create', createBlogPost],
+    ['update', updateBlogPost],
+  ])('rejects a blank title through the shared %s parser', async (_, action) => {
+    const fd = new FormData()
+    fd.set('id', 'post-1')
+    fd.set('title', '   ')
+
+    await expect(action({}, fd)).resolves.toEqual({ error: 'Ange en rubrik.' })
+    expect(mocks.createClient).not.toHaveBeenCalled()
+  })
+
   it('normaliserar både egen slug och rubrik till en giltig URL-identitet', () => {
     expect(slugify('  ÅÄÖ & Élan  ')).toBe('aao-elan')
     expect(slugify('💐')).toBe('')
-    expect(actions).toContain('slugify(slugRaw || title)')
-    expect(actions).toContain("if (!slug) return { error: 'Ange en giltig slug.' }")
   })
 
   it('låser icke-tom och tenantunik slug i databasen', () => {
@@ -70,20 +100,5 @@ describe('Goal 90 blogg contract', () => {
   it('förbjuder hard delete efter första publicering', () => {
     expect(migration).toContain('published_blog_post_delete_forbidden')
     expect(migration).toContain('before delete on public.blog_posts')
-  })
-
-  it('låter actions skapa draft och använda RPC utan read-then-update', () => {
-    expect(actions).toContain("status: 'draft'")
-    expect(actions).toContain(".rpc('set_blog_post_status'")
-    expect(actions).not.toContain(".select('status, published_at')")
-    expect(actions).not.toContain(".select('published_at')")
-  })
-
-  it('visar arkivering i stället för permanent delete efter publicering', () => {
-    expect(admin).toContain(
-      "const nextStatus = isPublished ? 'archived' : 'published'",
-    )
-    expect(admin).toContain('Publicerad historik bevaras.')
-    expect(admin).toContain('post.published_at ? (')
   })
 })

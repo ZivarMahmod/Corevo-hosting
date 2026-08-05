@@ -34,6 +34,14 @@ jobs:
             https://booking.corevo.se/api/cron/reminders)
           cat /tmp/out
           [ "$code" = "200" ] || { echo "reminders HTTP $code"; exit 1; }
+      - name: Drain durable notifications
+        if: ${{ !cancelled() }}
+        run: |
+          code=$(curl --silent --show-error --connect-timeout 10 --max-time 30 -o /tmp/out -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://booking.corevo.se/api/cron/notifications)
+          cat /tmp/out
+          [ "$code" = "200" ] || { echo "notifications HTTP $code"; exit 1; }
       - name: Process durable payment refunds
         if: ${{ !cancelled() }}
         run: |

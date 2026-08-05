@@ -89,7 +89,7 @@ export function PanelHost({ cfg, step, dispatch, presets, onPrev, onNext, onLaun
       {/* Scroll lives HERE so the FooterNav stays pinned at the column bottom — without
           overflow:auto a tall panel pushes «Nästa» off-screen (Zivar: had to scroll far). */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-        <ActivePanel cfg={cfg} dispatch={dispatch} presets={presets} onNext={onNext} onLaunch={onLaunch} />
+        <ActivePanel cfg={cfg} dispatch={dispatch} presets={presets} onLaunch={onLaunch} />
       </div>
       <FooterNav isFirst={isFirst} isLast={isLast} onPrev={onPrev} onNext={onNext} />
     </div>

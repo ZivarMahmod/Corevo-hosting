@@ -4,47 +4,30 @@ import {
   STOREFRONT_LAYOUTS,
   THEME_LOADS_LAYOUT_MODULES,
   THEME_OWNS_MODULES,
-} from '@/components/storefront/layouts'
-import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
+} from '@/components/storefront/layouts/runtime'
+import {
+  loadLayoutModuleTeasers,
+  withLegacyExternalBooking,
+} from '@/components/storefront/layouts/load-module-teasers'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
 import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
-import { resolveStorefrontSkinContent } from '@/lib/storefront/skin/content'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
 
-/**
- * Storefront home. The tenant's `settings.theme` selects one of five GENUINELY
- * DISTINCT layouts (Salvia/Leander/Zigge/Linnea/Edit) — not a token swap. Each
- * layout renders its own hero + sections; the chrome (nav + footer) lives in
- * app/(public)/layout.tsx. Owner-uploaded media (settings.branding.*) is merged
- * with strong per-theme defaults so an un-uploaded salon still looks complete.
- */
+/** Storefront home. `settings.theme` selects the layout; tenant copy and media
+ * override that theme's defaults. Shared chrome lives in StorefrontShell. */
 export default async function HomePage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings, location } = bundle
 
-  // Render-bron = the renderer. The public storefront renders via the per-theme
-  // layout (the 5 React themes today; the manifest/HTML render-bridge for the
-  // catalogue templates — goal-36). The skin-path (lib/storefront/skin + the
-  // content_slots/template_slots DB) is the KEPT data layer for the next slice
-  // (defs→templates, edits→content_slots), but its slice-1 SKELETON renderer
-  // (SkinRenderer) is PARKED — it never rendered a tenant (prod has 0
-  // content_slots) and a bare-skeleton render would regress the design. When the
-  // marriage slice lands a RICH renderer over the DB layer, it gets wired here.
+  // The selected theme layout is the only renderer.
   const Layout = STOREFRONT_LAYOUTS[settings.theme]
   // Owner copy (settings.copy) wins per-field; theme default fills the rest.
-  const baseCopy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
-
-  const { copy, branding } = await resolveStorefrontSkinContent(
-    tenant.id,
-    settings.theme,
-    baseCopy as Record<string, unknown> | null,
-    settings.branding as unknown as Record<string, unknown>,
-  )
-  const content = resolveThemeContent(settings.theme, branding, copy)
+  const copy = await getTenantCopy(bundle)
+  const content = resolveThemeContent(settings.theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
   // S10: teman som ÄGER sina moduler väver in butik/blogg/presentkort i sitt eget
@@ -56,9 +39,9 @@ export default async function HomePage() {
   const loadedModules = THEME_LOADS_LAYOUT_MODULES.has(settings.theme)
     ? await loadLayoutModuleTeasers(tenant.id, tenant.slug)
     : undefined
-  const modules = loadedModules && settings.bookingLegacyExternal
-    ? { ...loadedModules, bookingReachable: true }
-    : loadedModules
+  const modules = loadedModules
+    ? withLegacyExternalBooking(loadedModules, settings.bookingLegacyExternal)
+    : undefined
 
   // Multi-bransch (spår 5): the live module sections (shop/offert/blogg/lojalitet/
   // presentkort) render right after the theme layout's own sections, gated by the

@@ -1,29 +1,21 @@
-/** Back-office UI primitives (design-system handoff → stack). Most consume the
- *  [data-world="backoffice"] --c-* tokens + type roles, so render them only inside
- *  a back-office shell. EXCEPTION: LoyaltyBlock is world-aware (pass
- *  world="storefront" for /konto — it then reads the salon's --color-* theme,
- *  never Corevo gold). CustomerRecognition + LoyaltyBlock are hook-free and
- *  server-safe; CommandPalette / PiiReveal / NotesThread are client components. */
-export { Icon, type IconName } from './Icon'
+/** Back-office UI primitives. Import specialized client components from their owner. */
+export { Icon } from './Icon'
 export { Card } from './Card'
 export { Badge, type BadgeTone } from './Badge'
-export { Button, type ButtonVariant, type ButtonSize } from './Button'
+export { Button, type ButtonVariant } from './Button'
 export { Stat } from './Stat'
 export { Sparkline } from './Sparkline'
 export { PageHead } from './PageHead'
 export { Table } from './Table'
-export { Callout, type CalloutTone } from './Callout'
+export { Callout } from './Callout'
 export { Drawer } from './Drawer'
 export { Modal } from './Modal'
-export { ToastProvider, useToast, type ToastTone } from './Toast'
-export { ViewSwitcher, usePersistentView, type ViewOption } from './ViewSwitcher'
-export { CommandPalette, type CommandItem } from './CommandPalette'
+export { useToast } from './Toast'
 export { CustomerRecognition, tierTone } from './CustomerRecognition'
-export { LoyaltyBlock, type LoyaltyWorld } from './LoyaltyBlock'
-export { PiiReveal, maskPhone, maskEmail } from './PiiReveal'
+export { LoyaltyBlock } from './LoyaltyBlock'
 export { NotesThread, type ThreadNote } from './NotesThread'
 export { Field, inputStyle, textareaStyle, selectStyle } from './FormField'
 export { EmptyState } from './EmptyState'
-export { STATUS_TONE, statusTone } from './status-tones'
+export { statusTone } from './status-tones'
 export { RowEditButton } from './RowEditButton'
 export { PillToggle } from './PillToggle'

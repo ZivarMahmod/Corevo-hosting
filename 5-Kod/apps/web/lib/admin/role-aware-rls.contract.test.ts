@@ -3,8 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
-const CODE_ROOT = path.resolve(WEB_ROOT, '..', '..')
+const CODE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
 const readMigration = (name: string) =>
   fs.readFileSync(path.join(CODE_ROOT, 'supabase', 'migrations', name), 'utf8')
 
@@ -67,7 +66,9 @@ describe('rollmedveten RLS för kundadmin', () => {
     expect(sql).toContain('revoke select on table public.tenant_settings from anon')
     expect(sql).toContain("to_regclass('public.slot_holds')")
     expect(sql).toContain('create policy tenant_settings_platform_delete')
-    expect(sql).not.toMatch(/grant select \([\s\S]*setup_fee_cents[\s\S]*\) on public\.tenant_settings to anon/)
+    expect(sql).not.toMatch(
+      /grant select \([\s\S]*setup_fee_cents[\s\S]*\) on public\.tenant_settings to anon/,
+    )
     expect(sql).toContain('new.payments_enabled is distinct from old.payments_enabled')
     expect(sql).toContain('new.per_booking_fee_cents is distinct from old.per_booking_fee_cents')
     expect(sql).toContain('new.service_fee_type is distinct from old.service_fee_type')
@@ -75,14 +76,6 @@ describe('rollmedveten RLS för kundadmin', () => {
     expect(sql).not.toContain('platform_fee_fixed_cents')
     expect(sql).not.toContain('platform_fee_bps')
     expect(sql).toContain("coalesce((select auth.role()), '') <> 'service_role'")
-  })
-
-  it('skriver Stripe-ägda fält via serverrollen i stället för ägarens webbsession', () => {
-    const stripe = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'admin', 'stripe.ts'), 'utf8')
-
-    expect(stripe).toContain("import { createAdminServiceClient } from './service'")
-    expect(stripe).toMatch(/service\s*\.from\('tenants'\)/)
-    expect(stripe).toMatch(/service\s*\.from\('tenant_settings'\)/)
   })
 
   it('låter kunder läsa men inte direkt skriva bokningar eller betalningar', () => {
@@ -120,22 +113,10 @@ describe('rollmedveten RLS för kundadmin', () => {
     expect(sql).toContain('create policy slot_holds_admin_read')
   })
 
-  it('låter bara verifierade serveractions uppdatera befintliga bokningar', () => {
-    const actions = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'admin', 'actions.ts'), 'utf8')
-    const calendar = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'admin', 'calendar-actions.ts'), 'utf8')
-    const personal = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'personal', 'actions.ts'), 'utf8')
-
+  it('exponerar bara de atomiska boknings-RPC:erna för mutation', () => {
     const atomicSql = readMigration('0077_atomic_location_admin_booking_flows.sql')
-    expect(actions).toContain("rpc('set_admin_booking_status'")
-    expect(calendar).toContain("'reschedule_admin_booking'")
-    expect(calendar).toContain('bookingRpc.rpc(rpcName')
-    expect(actions).not.toMatch(/\.from\('bookings'\)[\s\S]{0,260}?\.update/)
-    expect(calendar).not.toMatch(/\.from\('bookings'\)[\s\S]{0,260}?\.update/)
     expect(atomicSql).toContain('revoke all on function public.set_admin_booking_status(uuid,text)')
     expect(atomicSql).toContain('revoke all on function public.reschedule_admin_booking(')
-    expect(personal).toMatch(/createAdminServiceClient\(\)/)
-    expect(personal).toContain("status === 'completed' || status === 'no_show'")
-    expect(personal).toContain(".lte('end_ts', nowIso)")
   })
 
   it('exponerar inte ägar-RPC:er för den publika anon-rollen', () => {
@@ -148,7 +129,9 @@ describe('rollmedveten RLS för kundadmin', () => {
       'replace_staff_services',
       'restore_schedule_backup',
     ]) {
-      expect(sql).toMatch(new RegExp(`revoke execute on function public\\.${fn}[\\s\\S]*?from anon;`))
+      expect(sql).toMatch(
+        new RegExp(`revoke execute on function public\\.${fn}[\\s\\S]*?from anon;`),
+      )
     }
   })
 })

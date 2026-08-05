@@ -1,9 +1,5 @@
 import type { NextConfig } from 'next'
 import { fileURLToPath } from 'node:url'
-import {
-  PLATFORM_CUSTOMERS_PREFIX,
-  PLATFORM_LEGACY_CUSTOMERS_PREFIX,
-} from './lib/auth/platform-route-canonical'
 
 // Pin the file-tracing root to the monorepo (avoids picking up a stray
 // lockfile elsewhere on disk; matters for OpenNext output tracing).
@@ -11,13 +7,14 @@ const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
 // ── Security headers + CSP (G10 step 4) ──────────────────────────────────────
 // Static headers live HERE (next.config) rather than middleware.ts: they cover
-// EVERY route, leave the Wave-0-frozen middleware untouched, and need no per-
+// EVERY route and need no per-
 // request nonce (a nonce CSP would force dynamic rendering and break Next/React
 // hydration). CSP is conservative-static: self + the exact third parties we call
 // (Stripe for Checkout/Elements, Supabase for auth/data). `'unsafe-inline'` is
 // allowed for style (Next injects inline styles) and for script (App Router emits
 // inline bootstrap; without a nonce there is no stricter option) — documented
-// trade-off, revisit with a nonce if we ever leave the frozen-middleware regime.
+// trade-off; revisit with a nonce if the runtime can carry one without breaking
+// static rendering.
 //
 // Dev relaxes the policy (HMR/React-Refresh need 'unsafe-eval' + ws:); production
 // drops both and adds upgrade-insecure-requests. NOTE: whether OpenNext emits
@@ -25,8 +22,6 @@ const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 // policy is proven in `next dev` here; confirm the response headers after deploy.
 const isProd = process.env.NODE_ENV === 'production'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-const superadminHost = process.env.NEXT_PUBLIC_SUPERADMIN_HOST ?? 'superbooking.corevo.se'
-const escapedSuperadminHost = superadminHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const cspDirectives = [
   `default-src 'self'`,
@@ -93,19 +88,6 @@ const nextConfig: NextConfig = {
   // Lint runs as its own task (`pnpm lint`); don't couple it to build.
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: false },
-  async redirects() {
-    return [
-      {
-        source: `${PLATFORM_LEGACY_CUSTOMERS_PREFIX}/:path*`,
-        destination: `${PLATFORM_CUSTOMERS_PREFIX}/:path*`,
-        permanent: true,
-        // Config redirects run before middleware. Restrict this compatibility
-        // redirect to the superadmin door so a tenant/custom-domain request can
-        // never be rewritten into a back-office URL before host routing runs.
-        has: [{ type: 'host', value: `^${escapedSuperadminHost}$` }],
-      },
-    ]
-  },
   async rewrites() {
     return [
       {

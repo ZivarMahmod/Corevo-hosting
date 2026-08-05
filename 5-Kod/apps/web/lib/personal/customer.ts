@@ -50,14 +50,6 @@ export type CustomerCard = {
   loyalty: LoyaltyView
 }
 
-type CustomerRow = {
-  id: string
-  display_name: string | null
-  full_name: string | null
-  name_hidden: boolean
-  first_seen_at: string | null
-}
-
 /**
  * Resolve a customer's visible NAME (never contact-PII). display_name wins; when
  * the customer asked to hide their name we show only an initial of the full name;
@@ -75,26 +67,6 @@ export function resolveCustomerName(c: {
   if (c.display_name && c.display_name.trim()) return c.display_name.trim()
   if (c.full_name && c.full_name.trim()) return c.full_name.trim()
   return 'Kund'
-}
-
-/**
- * Batch-resolve visible names for a set of customer ids (one query). Used to label
- * calendar rows without per-row PII calls. RLS lets staff (level >= 3) read every
- * customer row in their own tenant, so the names come back for the whole day.
- */
-export async function resolveCustomerNames(customerIds: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>()
-  const ids = [...new Set(customerIds.filter(Boolean))]
-  if (ids.length === 0) return out
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('customers')
-    .select('id, display_name, full_name, name_hidden')
-    .in('id', ids)
-  for (const c of (data ?? []) as CustomerRow[]) {
-    out.set(c.id, resolveCustomerName(c))
-  }
-  return out
 }
 
 /** Tier thresholds live in tenant_settings.settings.loyalty.tiers as {name, points}[]. */

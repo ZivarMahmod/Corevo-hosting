@@ -7,8 +7,8 @@ export const DEFAULT_CANCELLATION_CUTOFF_HOURS = 24
 
 /**
  * The tenant's cancellation / rebooking deadline, in hours before the booking
- * start. There is no dedicated column for it (schema is shared/frozen this
- * wave), so it lives in `tenant_settings.settings` JSON as
+ * start. There is no dedicated column, so it lives in
+ * `tenant_settings.settings` JSON as
  * `cancellation_cutoff_hours` and is read app-side with a safe default.
  */
 export async function getCancellationCutoffHours(
@@ -23,12 +23,16 @@ export async function getCancellationCutoffHours(
 
   const settings = (data?.settings ?? {}) as Record<string, unknown>
   const raw = settings.cancellation_cutoff_hours
-  const n = typeof raw === 'number' ? raw : Number(raw)
-  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_CANCELLATION_CUTOFF_HOURS
+  return typeof raw === 'number' &&
+    Number.isSafeInteger(raw) &&
+    raw >= 0 &&
+    raw <= 8760
+    ? raw
+    : DEFAULT_CANCELLATION_CUTOFF_HOURS
 }
 
 /** True when `startTs` is still far enough away to allow cancel/rebook. */
 export function withinCancellationWindow(startTs: string, cutoffHours: number, now = new Date()): boolean {
   const start = new Date(startTs).getTime()
-  return start - now.getTime() >= cutoffHours * 3_600_000
+  return start - now.getTime() > cutoffHours * 3_600_000
 }

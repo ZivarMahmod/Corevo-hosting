@@ -1,5 +1,1 @@
-import { PageSkeleton } from '@/components/platform/PlatformSkeleton'
-
-export default function Loading() {
-  return <PageSkeleton table />
-}
+export { PageSkeleton as default } from '@/components/platform/PlatformSkeleton'

@@ -4,6 +4,7 @@ import {
   createPortalPublicId,
   createPortalSecret,
   portalCalendarUid,
+  portalDeliverySecret,
   portalLinkDigest,
   portalRecoveryCodeDigest,
   portalRecoveryContactDigest,
@@ -57,6 +58,18 @@ describe('customer portal crypto', () => {
     expect(first).toMatch(/^[a-f0-9]{64}@calendar\.corevo\.se$/)
     expect(first).not.toContain(bookingId)
     expect(first.split('@')[0]).not.toBe(link)
+  })
+
+  it('derives one opaque delivery secret per outbox intent', async () => {
+    const intent = '123e4567-e89b-42d3-a456-426614174000'
+    const first = await portalDeliverySecret(intent)
+    const second = await portalDeliverySecret(intent)
+    const other = await portalDeliverySecret('223e4567-e89b-42d3-a456-426614174000')
+
+    expect(first).toBe(second)
+    expect(first).toMatch(/^[A-Za-z0-9_-]{43}$/)
+    expect(first).not.toBe(other)
+    expect(first).not.toContain(intent)
   })
 
   it('fails closed unless the dedicated key is at least 32 bytes', async () => {

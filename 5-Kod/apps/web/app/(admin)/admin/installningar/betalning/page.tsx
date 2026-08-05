@@ -10,6 +10,7 @@ import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpt
 import { PageHead } from '@/components/portal/ui'
 import { settingsCategories } from '@/lib/admin/settings-map'
 import { commerceReleaseGate } from '@/lib/release/commerce'
+import { parseTenantLegal } from '@/lib/tenant-region'
 
 /** L3 C-01 — Betalning. StripeConnectCard är ORÖRD, den flyttade bara hit från
  *  inställningsroten (som nu är kartan). Stripes retur-URL pekar hit (lib/admin/stripe.ts). */
@@ -39,17 +40,7 @@ export default async function BetalningPage({
     searchParams.then((s) => ({ stripe: s.stripe })),
   ])
 
-  // goal-72 1c: settings.legal ({ org_nr, vat_rate }) — samma parse som lib/tenant-data.
-  const rawLegal = ((settingsRow?.settings as Record<string, unknown> | null)?.legal ?? {}) as Record<string, unknown>
-  const legal = {
-    orgNr:
-      typeof rawLegal.org_nr === 'string' && rawLegal.org_nr.trim() ? rawLegal.org_nr.trim() : null,
-    vatRate: (() => {
-      const v = rawLegal.vat_rate
-      const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
-      return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null
-    })(),
-  }
+  const legal = parseTenantLegal(settingsRow?.settings)
 
   return (
     <SettingsWorkspace categories={settingsCategories(tenant.terminology)} currentCategory="betalning">

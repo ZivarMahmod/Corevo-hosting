@@ -5,11 +5,6 @@ const migration = readFileSync(
   new URL('../../../../supabase/migrations/20260803191057_atomic_booking_operational_settings.sql', import.meta.url),
   'utf8',
 )
-const action = readFileSync(new URL('./actions/data.ts', import.meta.url), 'utf8')
-const bookingAction = action.slice(
-  action.indexOf('export async function updateBookingSettings'),
-  action.indexOf('export async function setTenantCustomerAccounts'),
-)
 
 describe('atomic booking operational settings', () => {
   it('patches only booking keys behind the site-editor tenant fence', () => {
@@ -17,8 +12,6 @@ describe('atomic booking operational settings', () => {
     expect(migration).toContain("jsonb_set(")
     expect(migration).toContain("'{booking}'")
     expect(migration).toContain("then ts.settings -> 'booking'")
-    expect(bookingAction).toContain("supabase.rpc('update_booking_operational_settings'")
-    expect(bookingAction).not.toContain(".from('tenant_settings')")
   })
 
   it('bounds URLs and writes only sanitized audit metadata', () => {

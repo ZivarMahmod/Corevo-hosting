@@ -6,7 +6,7 @@ import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { AddToCart } from '@/components/storefront/shop/AddToCart'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import { loadShopProduct } from '@/lib/storefront/shop/load-shop'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import s from './product.module.css'
 
 // ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN. En mall som vill ha sitt eget skyltfönster
@@ -15,7 +15,7 @@ import s from './product.module.css'
 // modul-gate) — bara scenen byts.
 //
 // goal-64: registreringen bodde i en HÅRDKODAD tabell här (PRODUCT_VIEWS). Nu deklarerar
-// mallen sitt skyltfönster i sin egen <key>.theme.ts (moduleViews.product).
+// mallen sitt skyltfönster i den kanoniska runtime-mappen.
 
 export const dynamic = 'force-dynamic'
 
@@ -31,9 +31,7 @@ export async function generateMetadata({
   return { title: data ? data.product.name : 'Webshop' }
 }
 
-/** Produktdetaljsida (goal-54 S4). Samma modul-gate som /shop: live/paused
- *  renderar (paused = stängd katalog), draft/off → 404. Okänd/inaktiv produkt
- *  → 404. Token-driven — inga egna färger, bara var(--color-*)/var(--font-*). */
+/** Product detail; both the module and product must be live. */
 export default async function ShopProductPage({
   params,
 }: {
@@ -53,7 +51,7 @@ export default async function ShopProductPage({
   // Mallens eget skyltfönster vinner; den delade vyn är bara fallback.
   const OwnProduct = themeModuleViews(settings.theme).product
   if (OwnProduct) {
-    return <OwnProduct config={config} product={product} paused={false} />
+    return <OwnProduct config={config} product={product} />
   }
 
   const paragraphs = (product.description ?? '')

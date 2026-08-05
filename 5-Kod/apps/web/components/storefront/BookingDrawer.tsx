@@ -1,9 +1,14 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { BookingWizard, type WizardService, type WizardLocation } from '@/components/booking/BookingWizard'
+import {
+  BookingWizard,
+  type BookingMode,
+  type WizardService,
+  type WizardLocation,
+} from '@/components/booking/BookingWizard'
+import { trapTab } from '@/components/portal/ui/focus'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
-import type { BookingMode } from './BookingProvider'
 import styles from './storefront.module.css'
 
 /**
@@ -102,28 +107,8 @@ export function BookingDrawer({
         onClose()
         return
       }
-      if (e.key !== 'Tab') return
       const panel = panelRef.current
-      if (!panel) return
-      // NB: querySelectorAll does NOT skip display:none or tabindex=-1 nodes, so
-      // we filter them out — otherwise the booking-owned bottom-sheet grabber
-      // (display:none on desktop) and the hidden step-4 form submit (tabindex=-1)
-      // would become the trap's first/last boundary and let focus escape.
-      const focusables = Array.from(
-        panel.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((el) => el.offsetParent !== null && el.tabIndex !== -1)
-      if (focusables.length === 0) return
-      const first = focusables[0]!
-      const last = focusables[focusables.length - 1]!
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      if (panel) trapTab(e, panel)
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)

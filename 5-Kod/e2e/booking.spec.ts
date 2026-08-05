@@ -48,7 +48,7 @@ test.describe('@mutating booking end-to-end', () => {
   })
 
   test('logged-in customer keeps their session through the booking flow', async ({ page }) => {
-    await loginCustomer(page, SEED.salonAdmin) // storefront-login; vilket seedat konto som helst bevisar vägen
+    await loginCustomer(page, SEED.customer.email)
     await gotoTenant(page, '/boka', SEED.tenant.slug)
     await bookAsGuest(page, 'E2E Inloggad', 'e2e-loggedin@example.com', '0700000001')
     await expect(page).toHaveURL(/\/boka\/bekraftelse\/[0-9a-f-]+/)

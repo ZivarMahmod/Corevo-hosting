@@ -5,7 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ cancel: vi.fn(), refresh: vi.fn() }))
-vi.mock('@/app/(customer-portal)/mina/actions', () => ({
+vi.mock('@/lib/customer-portal/server-actions', () => ({
   cancelPortalBookingAction: mocks.cancel,
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh }) }))

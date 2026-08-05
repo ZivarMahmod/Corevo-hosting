@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated, moduleAdminState } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { listTenantEvents, listEventRegistrations } from '@/lib/admin/events/data'
 import { KursAdmin } from '@/components/admin/KursAdmin'
 import { Callout, PageHead } from '@/components/portal/ui'
-import { ModuleWriteBoundary } from '@/components/admin/ModuleWriteBoundary'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kurser & event · Adminpanel' }
@@ -22,7 +21,8 @@ export default async function KurserPage() {
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Kurser & event" />
         <Callout tone="info" icon="info">
-          Kurser &amp; event är inte aktiverad för ditt företag. Be plattformsadmin aktivera modulen.
+          Kurser &amp; event är inte aktiverad för ditt företag. Be plattformsadmin aktivera
+          modulen.
         </Callout>
       </section>
     )
@@ -35,9 +35,7 @@ export default async function KurserPage() {
 
   return (
     <section className="portal-section">
-      <ModuleWriteBoundary readOnly={false}>
-        <KursAdmin events={events} registrations={registrations} tenantName={tenant.name} />
-      </ModuleWriteBoundary>
+      <KursAdmin events={events} registrations={registrations} tenantName={tenant.name} />
     </section>
   )
 }

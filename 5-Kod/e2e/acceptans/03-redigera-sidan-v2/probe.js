@@ -1,10 +1,9 @@
 const { spawnSync } = require('node:child_process')
 const path = require('node:path')
 
-const contractOnly = process.argv.includes('--contract')
 const mutating = process.argv.includes('--mutating')
 const required = ['ACCEPT_BASE_URL', 'ACCEPT_ADMIN_EMAIL', 'ACCEPT_ADMIN_PASSWORD', 'ACCEPT_THEME']
-const missing = contractOnly ? [] : required.filter((name) => !process.env[name])
+const missing = required.filter((name) => !process.env[name])
 
 if (missing.length) {
   console.error(`FAIL 03-P00 expected=${required.join(',')} actual=missing:${missing.join(',')}`)
@@ -20,7 +19,7 @@ if (mutating) {
 }
 
 const spec = 'e2e/acceptans/03-redigera-sidan-v2/03-redigera-sidan-v2.accept.spec.ts'
-const grep = contractOnly ? '@contract' : mutating ? '@mutating' : '@readonly'
+const grep = mutating ? '@mutating' : '@readonly'
 const command = process.execPath
 const playwrightCli = require.resolve('@playwright/test/cli')
 const env = {

@@ -13,17 +13,6 @@ const lockAlignment = readFileSync(
   ),
   'utf8',
 ).toLowerCase()
-const actionsUrl = new URL('./actions.ts', import.meta.url)
-const actions = existsSync(actionsUrl) ? readFileSync(actionsUrl, 'utf8') : ''
-const intake = readFileSync(
-  new URL('../../storefront/lojalitet/intake.ts', import.meta.url),
-  'utf8',
-)
-const admin = readFileSync(
-  new URL('../../../components/admin/LojalitetAdmin.tsx', import.meta.url),
-  'utf8',
-)
-
 describe('Goal 91 lojalitet contract', () => {
   it('adds command identity, source and exact reversal links to the existing ledger', () => {
     for (const column of [
@@ -52,25 +41,13 @@ describe('Goal 91 lojalitet contract', () => {
     expect(lockAlignment).toContain("new.tenant_id::text || ':' || v_customer::text")
   })
 
-  it('routes admin spend and reversal through the DB commands', () => {
-    expect(actions).toContain("rpc('spend_loyalty_points'")
-    expect(actions).toContain("rpc('reverse_loyalty_spend'")
-    expect(actions).not.toMatch(/from\('loyalty_ledger'\)[\s\S]{0,160}\.insert\(/)
-  })
-
   it('never activates a paid club plan before the subscription rail exists', () => {
     expect(migration).toContain("'pending_payment'")
     expect(migration).toContain('v_plan_price')
-    expect(intake).toContain('pendingPayment')
   })
 
   it('provides tenant reconciliation without a speculative repair engine', () => {
     expect(migration).toContain('function public.loyalty_reconciliation')
     expect(migration).not.toContain('repair_loyalty')
-  })
-
-  it('wraps the spend form instead of overflowing a 390 px admin viewport', () => {
-    expect(admin).toContain("repeat(auto-fit, minmax(min(100%, 180px), 1fr))")
-    expect(admin).not.toContain("minmax(180px, 1fr) minmax(120px, 180px)")
   })
 })

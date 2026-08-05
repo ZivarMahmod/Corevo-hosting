@@ -24,7 +24,7 @@ test.describe('@mutating salon_admin → public', () => {
 
   test('admin can open the branding form', async ({ page }) => {
     await loginBackoffice(page, SEED.salonAdmin)
-    await page.goto(`${BOOKING_HOST}/admin/varumarke`)
+    await page.goto(`${BOOKING_HOST}/admin/sida`)
     await expect(page.getByRole('button', { name: 'Spara varumärke' })).toBeVisible()
     await page.getByLabel('Typsnitt (CSS font-family)').fill('Inter, system-ui, sans-serif')
     await page.getByRole('button', { name: 'Spara varumärke' }).click()

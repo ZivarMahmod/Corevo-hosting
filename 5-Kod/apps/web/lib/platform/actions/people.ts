@@ -2,19 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { platformCtx } from '../guard'
-import { createServiceClient, hasServiceRole } from '../service'
+import { createServiceClient } from '../service'
 import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC, EMAIL_RE } from './shared'
 import { reportActionError } from './observe'
-import { inviteRedirectUrl } from '@/lib/auth/invite'
-import {
-  compensateFailedStaffInvite,
-  findExistingStaffInviteProfile,
-  findStaffInviteBinding,
-} from '@/lib/auth/staff-invite-service'
+import { provisionStaffInvite } from '@/lib/auth/staff-invite-service'
 import { revalidateTenantById } from '@/lib/admin/tenant'
-
-type PlatformServiceClient = NonNullable<ReturnType<typeof createServiceClient>>
 
 export type PlatformCustomerContactResult =
   | {
@@ -23,44 +16,6 @@ export type PlatformCustomerContactResult =
       expiresAt: string
     }
   | { ok: false; error: string }
-
-async function compensatePlatformStaffInvite(
-  service: PlatformServiceClient,
-  args: { authId: string; tenantId: string; roleId: string; targetStaffId?: string },
-) {
-  return compensateFailedStaffInvite(service, {
-    ...args,
-    reportIncident: async (event) => {
-      await reportActionError('inviteTenantStaff.cleanup', new Error(event.stage), {
-        stage: event.stage,
-        tenantId: event.tenantId,
-        containmentOk: event.containmentOk,
-      })
-    },
-  })
-}
-
-function failedTenantInviteState(
-  result: Awaited<ReturnType<typeof compensatePlatformStaffInvite>>,
-): ActionState | null {
-  if (result.status === 'committed') return null
-  if (result.status === 'conflict_preserved') {
-    return { error: 'Kontot är redan kopplat till en annan medarbetare och lämnades orört.' }
-  }
-  if (result.status === 'manual_cleanup_required' && result.containmentOk) {
-    return {
-      error:
-        'manual_cleanup_required: Kontot spärrades men kunde inte städas automatiskt. Kontrollera incidentloggen innan ny inbjudan.',
-    }
-  }
-  if (result.status === 'containment_failed') {
-    return {
-      error:
-        'containment_failed: Kontot kunde inte spärras fullständigt. Kontrollera incidentloggen omedelbart och skicka ingen ny inbjudan.',
-    }
-  }
-  return { error: 'Inbjudan kunde inte slutföras. Det provisoriska kontot städades; försök igen.' }
-}
 
 /**
  * Lazy platform reveal for customer contact PII. The initial page models never
@@ -145,7 +100,7 @@ export async function revealPlatformCustomerContact(input: {
 /**
  * Trigger a password reset for the salon's admin. Generates a recovery link via
  * the service role and surfaces it for Zivar to hand over (no cross-revir email
- * wiring in v1). Gated on hasServiceRole() — degrades with a clear ops message
+ * wiring in v1). The nullable service client degrades with a clear ops message
  * when SUPABASE_SERVICE_ROLE_KEY is unset, never throws.
  */
 export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -171,8 +126,6 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
     return { error: 'Inget aktivt konto med den e-postadressen finns hos kunden.' }
   }
 
-  if (!hasServiceRole())
-    return { error: 'Lösenords-reset kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
   const svc = createServiceClient()
   if (!svc) return { error: 'Lösenords-reset kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
 
@@ -201,7 +154,6 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
     action: 'tenant.password_reset',
     tenantId,
     actorId: user.id,
-    meta: { email },
   })
   if (!audit.ok) {
     await reportActionError('sendPasswordReset.audit', new Error('audit_write_failed'), { tenantId })
@@ -267,8 +219,9 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
  * Provisions: staff role (level 3) → auth user (inviteUserByEmail) → app_metadata
  * tenant_id → public.users row → new or linked staff row (profile_id). Optional
  * `staffId` links the login to an EXISTING staff row instead of creating one.
- * Gated on hasServiceRole() (SUPABASE_SERVICE_ROLE_KEY, set in prod); degrades with a
- * clear message, never throws. Role/users writes go BEFORE nothing can orphan them.
+ * The nullable service client degrades with a clear message when
+ * SUPABASE_SERVICE_ROLE_KEY is unset. Role/users writes happen only through the
+ * shared provisioning coordinator.
  */
 export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
@@ -281,13 +234,13 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
   if (!tenantId) return { error: 'Saknar kund.' }
   if (!email || !EMAIL_RE.test(email)) return { error: 'Ange en giltig e-postadress.' }
 
-  if (!hasServiceRole())
+  const svc = createServiceClient()
+  if (!svc) {
     return {
       error:
         'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops). Lägg till utan konto under tiden.',
     }
-  const svc = createServiceClient()
-  if (!svc) return { error: 'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
+  }
 
   const { data: tenant } = await supabase
     .from('tenants')
@@ -296,212 +249,54 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
     .maybeSingle()
   if (!tenant) return { error: 'Kunden finns inte.' }
 
-  // 1) Tenant-scoped `staff` role (level 3), idempotent. Platform bypass admits it.
-  await supabase
-    .from('roles')
-    .upsert(
-      { tenant_id: tenantId, name: 'staff', level: 3 },
-      { onConflict: 'tenant_id,name', ignoreDuplicates: true },
-    )
-  const { data: role } = await supabase
-    .from('roles')
-    .select('id')
-    .eq('tenant_id', tenantId)
-    .eq('name', 'staff')
-    .maybeSingle()
-  if (!role) return { error: GENERIC }
-
-  let existing = await findExistingStaffInviteProfile(svc, {
-    email,
+  const result = await provisionStaffInvite({
+    service: svc,
+    accountClient: supabase,
     tenantId,
-    roleId: role.id,
-  })
-  if (!existing.ok) return { error: GENERIC }
-  if (existing.profile && !existing.profile.reusable) {
-    return {
-      error:
-        'manual_cleanup_required: Ett inaktivt konto finns redan för e-postadressen. Kontrollera kontot innan ny inbjudan.',
-    }
-  }
-
-  if (staffId) {
-    const target = await findStaffInviteBinding(svc, {
-      tenantId,
-      authId: existing.profile?.id ?? '',
-      targetStaffId: staffId,
-    })
-    if (!target.ok || !target.staffId) return { error: 'Medarbetaren saknas.' }
-    if (target.authBoundStaffId && target.authBoundStaffId !== staffId) {
-      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
-    }
-    if (target.profileId) {
-      if (existing.profile?.id === target.profileId) {
-        return { success: `Kontot fanns redan och är kopplat till ${email}.` }
+    email,
+    ...(staffId ? { targetStaffId: staffId } : {}),
+    createStaff: async (authId) => {
+      if (staffId) {
+        const { data: linked, error } = await supabase
+          .from('staff')
+          .update({ profile_id: authId })
+          .eq('id', staffId)
+          .eq('tenant_id', tenantId)
+          .is('profile_id', null)
+          .select('id')
+          .maybeSingle()
+        return { error: error ?? (linked ? null : new Error('staff_link_not_committed')) }
       }
-      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
-    }
-  }
 
-  // 2) Invite once. A concurrent/repeated submission may reuse only the exact
-  //    tenant+role profile; Auth errors alone are never treated as proof.
-  let authId = existing.profile?.id ?? ''
-  let inviteSent = false
-  if (!authId) {
-    const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
-      redirectTo: inviteRedirectUrl('staff'),
-    })
-    if (iErr || !invited?.user) {
-      existing = await findExistingStaffInviteProfile(svc, {
-        email,
-        tenantId,
-        roleId: role.id,
-      })
-      if (!existing.ok || !existing.profile || !existing.profile.reusable) {
-        return { error: 'Inbjudan misslyckades. Kontot kunde inte återfinnas säkert.' }
-      }
-      authId = existing.profile.id
-    } else {
-      authId = invited.user.id
-      inviteSent = true
-    }
-  }
-
-  if (!inviteSent) {
-    const binding = await findStaffInviteBinding(svc, {
-      tenantId,
-      authId,
-      ...(staffId ? { targetStaffId: staffId } : {}),
-    })
-    if (!binding.ok) {
-      return { error: 'manual_cleanup_required: Kontots personalkoppling kunde inte verifieras.' }
-    }
-    if (staffId && binding.authBoundStaffId && binding.authBoundStaffId !== staffId) {
-      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
-    }
-    if (binding.profileId === authId) {
-      return { success: `Kontot fanns redan och är kopplat till ${email}.` }
-    }
-    if (staffId && binding.profileId && binding.profileId !== authId) {
-      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
-    }
-  }
-
-  // 3) Bake tenant_id into app_metadata (JWT belt-and-suspenders).
-  const { error: metadataError } = await svc.auth.admin.updateUserById(authId, {
-    app_metadata: { tenant_id: tenantId, platform_admin: false },
-  })
-  if (metadataError) {
-    if (!inviteSent) {
-      await reportActionError('inviteTenantStaff.metadata_existing', metadataError, {
-        tenantId,
-      })
-      return { error: 'manual_cleanup_required: Det befintliga kontots företagskoppling kunde inte verifieras.' }
-    }
-    const resolution = await compensatePlatformStaffInvite(svc, {
-      authId,
-      tenantId,
-      roleId: role.id,
-      ...(staffId ? { targetStaffId: staffId } : {}),
-    })
-    return failedTenantInviteState(resolution) ?? {
-      error: 'manual_cleanup_required: Kontot kopplades men metadata behöver verifieras av drift.',
-    }
-  }
-
-  // 4) public.users row.
-  if (inviteSent) {
-    const { error: uErr } = await supabase
-      .from('users')
-      .insert({ id: authId, tenant_id: tenantId, email, role_id: role.id, status: 'active' })
-    if (uErr) {
-      const resolution = await compensatePlatformStaffInvite(svc, {
-        authId,
-        tenantId,
-        roleId: role.id,
-        ...(staffId ? { targetStaffId: staffId } : {}),
-      })
-      const failure = failedTenantInviteState(resolution)
-      if (failure) return failure
-    }
-  }
-
-  // 5) Create or link the staff row → profile_id points at the new account.
-  if (staffId) {
-    const { data: linked, error: linkErr } = await supabase
-      .from('staff')
-      .update({ profile_id: authId })
-      .eq('id', staffId)
-      .eq('tenant_id', tenantId)
-      .is('profile_id', null)
-      .select('id')
-      .maybeSingle()
-    if (linkErr || !linked) {
-      if (!inviteSent) {
-        const binding = await findStaffInviteBinding(svc, {
-          tenantId,
-          authId,
-          targetStaffId: staffId,
-        })
-        if (
-          binding.ok &&
-          binding.profileId === authId &&
-          binding.authBoundStaffId === staffId
-        ) {
-          // Exact row proves an idempotent retry committed.
-        } else if (!binding.ok) {
-          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
-        } else {
-          return { error: 'Medarbetaren kopplades av en annan inbjudan. Det befintliga kontot lämnades orört.' }
-        }
-      } else {
-        const resolution = await compensatePlatformStaffInvite(svc, {
-          authId,
-          tenantId,
-          roleId: role.id,
-          targetStaffId: staffId,
-        })
-        const failure = failedTenantInviteState(resolution)
-        if (failure) return failure
-      }
-    }
-  } else {
-    const { data: loc } = await supabase
-      .from('locations')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .order('is_primary', { ascending: false })
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    const { error: insErr } = await supabase
-      .from('staff')
-      .insert({
+      const { data: loc } = await supabase
+        .from('locations')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      const { error } = await supabase.from('staff').insert({
         tenant_id: tenantId,
         location_id: loc?.id ?? null,
         profile_id: authId,
         title: title || email,
         active: false,
       })
-    if (insErr) {
-      if (!inviteSent) {
-        const binding = await findStaffInviteBinding(svc, { tenantId, authId })
-        if (binding.ok && binding.profileId === authId) {
-          // Exact row proves an idempotent retry committed.
-        } else if (!binding.ok) {
-          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
-        } else {
-          return { error: GENERIC }
-        }
-      } else {
-        const resolution = await compensatePlatformStaffInvite(svc, {
-          authId,
-          tenantId,
-          roleId: role.id,
-        })
-        const failure = failedTenantInviteState(resolution)
-        if (failure) return failure
-      }
-    }
+      return { error }
+    },
+    reportIncident: async (event) => {
+      await reportActionError(`inviteTenantStaff.${event.stage}`, new Error(event.stage), {
+        tenantId: event.tenantId,
+        ...(typeof event.containmentOk === 'boolean'
+          ? { containmentOk: event.containmentOk }
+          : {}),
+      })
+    },
+  })
+  if (!result.ok) return { error: result.error }
+  if (result.alreadyLinked) {
+    return { success: `Kontot fanns redan och är kopplat till ${email}.` }
   }
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
@@ -512,10 +307,10 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
     tenantId,
     actorId: user.id,
     entityId: staffId || undefined,
-    meta: { inviteSent },
+    meta: { inviteSent: result.inviteSent },
   })
   return {
-    success: inviteSent
+    success: result.inviteSent
       ? `Inbjudan skickad till ${email}. Medarbetaren skapar lösenord via länken.`
       : `Kontot fanns redan och kopplades till ${email}. Använd Glömt lösenord om en ny länk behövs.`,
   }
@@ -616,8 +411,8 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
 
 /**
  * SOFT remove a staff member: set active=false, scoped to the tenant. NOT a hard
- * delete — staff.id is FK'd by bookings/working_hours/staff_services (build-once-
- * never-delete), so deactivating is the safe, reversible act (re-activate via the
+ * delete — staff.id is FK'd by bookings/working_hours/staff_services, so deactivating
+ * preserves referential history and is reversible (re-activate via the
  * edit toggle). A deactivated staff drops out of the booking engine but their
  * history stays intact.
  */

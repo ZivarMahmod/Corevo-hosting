@@ -26,7 +26,7 @@ const SETTINGS_PREFIXES = [
  *  AKTIVERAD döljs helt (ej köpt ≠ behörighet). En aktiverad modul som rollen inte
  *  når visas LÅST (Zivar 2026-07-18: "syns men låst" — frisören/platschefen ska se
  *  att ytan finns och att ägaren kan bevilja den). `activeModuleKeys` undefined ⇒
- *  ingen gating (samma kontrakt som PortalSidebar/paletteFromNav). */
+ *  ingen gating, samma kontrakt som paletteFromNav. */
 function moduleAreas(
   activeModuleKeys?: string[],
   roleLevel?: number,

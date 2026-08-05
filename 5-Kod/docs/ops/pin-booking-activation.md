@@ -1,151 +1,75 @@
-# PIN-verifierad bokning — aktivering och drift
+# PIN-verifierad bokning
 
-Gäller goal-74. Migrationerna `0118–0119` och Worker-version
-`0d440c6f-fbfa-433a-b8f5-c5f39f72d3da` driftsattes 2026-07-21 genom deploy-run
-`29840569825`. Produktions-Workern har server-only Giada-bas och en separat
-API-nyckel. Med frånkopplat modem nådde ett liveprov FreshCuts kontaktsteg och
-visade endast Namn + E-post, utan mobilfält eller konsolfel.
+Det publika bokningsflödet använder en fyrsiffrig engångskod innan bokningen skapas.
+Tenantens `settings.booking.verificationMode` väljer `sms_only`,
+`sms_with_email_fallback` eller `email_only`. SMS går direkt via Giada; e-post går
+via det etablerade e-postreläet.
 
-Quectel RM550V-GL-stödet är installerat på Giada från gatewayens `master`-SHA
-`8f136e7` med 77 gröna tester på både Windows och Giada/Linux. Modemet är
-registrerat på Tele2 med LTE/5G, stark signal och SMS-lagring `sm`/`me`. Ingen
-databärare finns, `cdc-wdm0` är `unmanaged` och internet går via kabel-LAN
-`eno1`; Wi-Fi är endast reserv.
+## Kanoniska ägare
 
-Ett autentiserat offline-anrop mot gatewayen gav `503 modem_offline`, skapade
-inget köjobb och lämnade kön på noll. `sms.corevo.se/health` rapporterade samtidigt
-`status=ok`, `send_enabled=false`, `modem_online=false` och tom kö. Därefter
-accepterades exakt ett maskerat canary-SMS av mobilnätet och Zivar bekräftade
-mottagandet. `COREVO_LIVE_SEND_ENABLED=true` aktiverades; publik health visar nu
-`send_enabled=true`, `modem_online=true` och tom kö. Migration `0119` rättade
-den omedelbara outbox-claimen. Ett nytt Demo-prov skickade PIN via gatewayens
-API, fick `sent` i både Supabase och Giada och visade fältet **Verifieringskod**.
-Provet avbröts före bokning. E-postens verkliga leveranscanary och en fullständig
-PIN-finalisering återstår.
+| Område                              | Ägare                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| Tenantläge                          | `apps/web/lib/platform/booking-variant.ts`                                     |
+| Start, omskick, avbryt och finalize | `apps/web/lib/booking/actions.ts`                                              |
+| PIN/HMAC och kanaltransport         | `apps/web/lib/booking/verification.ts`                                         |
+| Giada health/send                   | `apps/web/lib/notifications/giada.ts`                                          |
+| Atomiska DB-kontrakt                | `supabase/migrations/0118_pin_booking_verification.sql` och senare migrationer |
+| E-postreserv                        | [e-postrunbooken](mejl-egen-smtp.md)                                           |
 
-## Verkligt dataflöde
+## Flöde
 
-```text
-Kunden väljer tid
-        |
-        v
-Worker frågar Giada /health (max 1,5 s)
-        |
-        +-- friskt + modem online --> visa endast mobilnummer
-        |                              |
-        |                              v
-        |                         PIN skickas direkt
-        |
-        +-- nere/stale/okänt -------> visa endast e-post
-                                       |
-                                       v
-                                  PIN skickas direkt
+1. Workern läser tenantens verifieringsläge.
+2. `email_only` väljer e-post. Övriga lägen läser Giadas färska `/health`.
+3. Frisk och online Giada väljer SMS. Fel, timeout eller stale health väljer e-post
+   endast när tenantläget tillåter fallback; `sms_only` failar stängt.
+4. `start_booking_verification` skapar challenge, tids-hold och PIN-outbox atomiskt.
+5. Workern skickar den klara koden direkt och markerar leveransen. Klar PIN lagras
+   inte i databasen och kan därför inte auto-retryas senare.
+6. `finalize_verified_storefront_booking` verifierar challenge, session, kontakt,
+   kod och bokningsdata och skapar bokning + bekräftelse-outbox atomiskt.
 
-Rätt PIN --> Supabase skapar bokning + notifications_outbox i samma transaktion
-                                              |
-                                              v
-                         exakt den outboxraden claimas och skickas direkt
-```
-
-15-minuterscron används inte för PIN eller det normala, direkta
-bekräftelseflödet. Den befintliga cron-körningen är kvar för schemalagda
-påminnelser och säkra retryfall. Ingen ny Worker, Queue, Durable Object eller
-crontrigger har skapats.
-
-## Säkerhetskontrakt
-
-- PIN är sex siffror, gäller fem minuter, kan provas högst fem gånger och kan
-  skickas om tidigast efter 30 sekunder.
-- Start och omskick begränsas fail-closed i två separata lager: per klient-IP
-  och per maskerat kontaktmål/challenge. Byte av nummer eller IP kringgår därför
-  inte utskicksgränsen.
-- Klartext-PIN finns endast i serverminnet medan transportanropet görs. Databasen
-  lagrar HMAC-digest, maskerad kontakt och leveransstatus.
-- En tids-hold skapas tillsammans med challenge och visas som upptagen för andra.
-  Den släpps atomiskt när kunden backar eller vid känt leveransfel och löper
-  annars ut automatiskt.
-- Bokningen kan bara skapas av den service-role-skyddade finalize-RPC:n efter
-  korrekt PIN. Samma challenge/request kan köras igen efter ett tappat svar utan
-  dubbelbokning.
-- Giada får aldrig Supabase-credentials. `notifications_outbox` är fortsatt den
-  enda affärs-/leveranssanningen; Giadas SQLite är en lokal exekveringsjournal.
-- Telefon, e-post, PIN, session token och API-nyckel får aldrig skrivas i logg.
+Samma request/challenge ska vara idempotent. Ett tappat svar får återanvända samma
+bokning; det får inte skapa en andra bokning.
 
 ## Serverkonfiguration
 
-Följande är server-only secrets/vars. Lägg dem aldrig i Git eller i
-`NEXT_PUBLIC_*`.
+- `BOOKING_PIN_PEPPER`: unik serverhemlighet för HMAC.
+- `GIADA_SMS_BASE_URL`: godkänd HTTPS-bas.
+- `GIADA_SMS_API_KEY`: server-only API-nyckel.
+- `GIADA_HEALTH_MAX_AGE_SECONDS`: högsta tillåtna health-ålder.
+- `GIADA_HEALTH_TIMEOUT_MS`: health-timeout.
+- `GIADA_SEND_TIMEOUT_MS`: send-timeout.
+- e-postreläets Worker-konfiguration när e-post eller fallback används.
 
-| Namn | Krav | Funktion |
-|---|---|---|
-| `BOOKING_PIN_PEPPER` | unik slumphemlighet, minst 32 tecken | HMAC för PIN och kontakt |
-| `GIADA_SMS_BASE_URL` | publik HTTPS-bas, normalt `https://sms.corevo.se` | health + send |
-| `GIADA_SMS_API_KEY` | nyckeln som skapats på Giada | `X-API-Key` vid send |
-| `GIADA_HEALTH_MAX_AGE_SECONDS` | standard `90` | stale health går till e-post |
-| `GIADA_HEALTH_TIMEOUT_MS` | standard `1500` | e-post väljs snabbt vid driftfel |
-| `GIADA_SEND_TIMEOUT_MS` | standard `4000` | direkt SMS-anrop |
-| `EMAIL_RELAY_URL` | befintlig relay | PIN/bekräftelse när SMS är nere |
-| `EMAIL_RELAY_SECRET` | befintlig relayhemlighet | relay-auth |
-| `NOTIFICATIONS_FROM` | befintlig publik Worker-var | avsändare för e-post |
+Värdena får aldrig ligga i Git, klientmiljö, dokument eller logg. Giada får inte ha
+Supabase-credentials och får inte claima Corevos affärs-outbox.
 
-API-nyckeln ska roteras samordnat: skapa/rotera på Giada, uppdatera Worker-secret
-och verifiera health/send innan den gamla vägen avvecklas. Skriv aldrig ut den i
-driftlogg eller dokument.
+## Aktiveringsgrind
 
-## Aktiveringsordning och nuvarande checkpoint
+1. Verifiera migrationshistorik och schema enligt
+   [databasmigrations-runbooken](database-migration-drift.md).
+2. Verifiera tenantens exakta `verificationMode`.
+3. Verifiera att pepper och transportkonfiguration finns i rätt Worker-miljö.
+4. Kontrollera Giada health: autentiserad tjänst frisk, modem online och tidsstämpel
+   inom den konfigurerade åldern.
+5. Bevisa e-postleverans innan ett fallbackläge aktiveras.
+6. Kör en uttryckligen godkänd SMS-canary och kontrollera idempotens utan att logga
+   nummer eller text.
+7. Kör ett fullständigt test: start, leverans, fel kod, omskick, finalize, tappat
+   finalize-svar och exakt en bokning/outbox.
+8. Kontrollera offlinefallet: inget Giada-jobb, hold släpps och endast tillåten
+   fallback erbjuds.
 
-1. Kör e-postfallback-testlistan i
-   `6-Testing/goal-74-pin-bokning-testlista.md`, inklusive verklig e-postleverans.
-2. **Klar 2026-07-21:** RM550V-GL monterades med SIM och antenn i strömlös Giada.
-3. **Klar 2026-07-21:** update-timern hämtade gateway-SHA `8f136e7`. Giada kör
-   `COREVO_PROVIDER=modemmanager`;
-   API och worker är omstartade och aktiva.
-4. **Klar 2026-07-21:** `mmcli` ser modemet och SIM, radiodelen är `registered`,
-   SMS stöds, ingen databärare finns och GSM visas som `unmanaged`.
-5. **Klar 2026-07-21:** `ip route get 1.1.1.1` går via `eno1`,
-   `/health` visar `send_enabled=false`, `modem_online=false` och
-   `queue_pending=0`; bokningssidan visar därför fortfarande e-post.
-6. **Klar 2026-07-21:** efter Zivars uttryckliga ja skickades exakt ett maskerat
-   canary-SMS; mobilnätet accepterade det och Zivar bekräftade mottagandet.
-7. **Klar 2026-07-21:** `COREVO_LIVE_SEND_ENABLED=true`; API och worker är
-   omstartade och publik health visar `modem_online=true` med färsk tid.
-8. **Delvis klar 2026-07-21:** en ny Demo-session skickade PIN genom DB, outbox
-   och Giada och visade PIN-fältet. Testet backades ur och skapade ingen bokning;
-   slutlig PIN-inmatning och bokningsskapande återstår.
+Kod-, health- och canarybevis är separata. Rapportera aldrig kanalen som live innan
+alla tre är verifierade i aktuell miljö.
 
-SIM-spåret visar telefonnummer som avsändare. `FRESHCUT` eller annat
-alfanumeriskt tenantnamn kräver ett framtida godkänt A2P/REST- eller SMPP-avtal.
-Det byter transportadapter bakom samma kontrakt och ändrar inte PIN-/bokningsflödet.
+## Incident och rollback
 
-## Driftkontroller
-
-| Kontroll | Friskt | Automatisk kundreaktion |
-|---|---|---|
-| `GET /health` | `status=ok`, `modem_online=true`, färsk `time` | mobilnummer + SMS |
-| Health timeout/5xx/stale | aldrig tolkat som SMS-friskt | e-post före inmatning |
-| `POST /api/v1/messages` | autentiserat, `require_online=true`, stabil idempotens | PIN/bekräftelse direkt |
-| Send 503/offline | inget lokalt SMS-jobb skapas | PIN-start avbryts, hold släpps; ny e-postchallenge |
-| Supabase finalize | `booked` + booking/outbox-id i samma svar | exakt outbox-id dispatchas direkt |
-| Tappat finalize-svar | challenge är idempotent | kunden kan trycka Bekräfta igen |
-
-Giadas systemd healthcheck kör varje minut och update-timern var femte minut.
-Det behövs ingen permanent Claude-/Codex-session och ingen lokal LLM för driften.
-RM550V-enheten görs strikt `unmanaged` i NetworkManager. En root-ägd minutkontroll
-slår endast på radiodelen via `mmcli --enable` och skapar ingen databärare.
-Profil- och dispatcherskydd för `never-default`, route metric `900` och ignorerad
-DNS ligger kvar som försvar på flera nivåer. Hårdvaruverifieringen med RM550V
-visade fortsatt internet/default route via kabel-LAN `eno1` (`192.168.50.1`).
-
-## Rollback
-
-1. Sätt först `COREVO_LIVE_SEND_ENABLED=false` på Giada och starta om API och
-   worker. Health maskerar då modemet som offline, alla sändvägar ger 503 och
-   väntande gatewayjobb makuleras innan en senare återaktivering.
-2. Ta vid behov bort `GIADA_SMS_BASE_URL` eller `GIADA_SMS_API_KEY` från Workern
-   för ytterligare isolering. Enbart nyckelrotation är inte en health-kill-switch.
-3. Behåll e-postrelay och `BOOKING_PIN_PEPPER`. Bokning fortsätter verifierat via
-   e-post utan att PIN-skyddet stängs av.
-4. Rulla tillbaka webbversionen endast via ordinarie deploy-runbook. Rulla inte
-   tillbaka databasmigrationen så länge någon challenge/outboxrad kan finnas.
-5. Granska `notifications_outbox`, Giadas lokala journal och slutlig bokningsstatus
-   utan att skriva ut kontakt eller meddelandetext.
+1. Stäng först fysisk sändning på Giada. Health ska därefter inte kunna väljas som
+   SMS-frisk.
+2. Ta vid behov bort eller rotera Worker-nyckeln.
+3. Byt berörda tenants till `email_only` endast om e-postleveransen är verifierad;
+   annars stoppar verifieringen fail-closed.
+4. Behåll `BOOKING_PIN_PEPPER`, challenges, holds och outbox för säker avstämning.
+5. Rulla inte tillbaka databasmigrationer medan challenge-/outboxrader kan finnas.
+6. Granska endast slutna felkoder, maskerade kontakter och slutlig bokningsstatus.

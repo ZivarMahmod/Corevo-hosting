@@ -62,7 +62,7 @@ vi.mock('@/lib/security/rate-limit', () => ({
   LIMITS: { booking: { max: 1, windowSecs: 1 } },
 }))
 
-import { getShopOrder, reserveOrder } from './actions'
+import { getShopOrder, reserveOrder } from '@/lib/storefront/shop/actions'
 
 beforeEach(() => {
   lifecycle.shop = 'live'

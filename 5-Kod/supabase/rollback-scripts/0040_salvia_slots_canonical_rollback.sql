@@ -6,7 +6,7 @@
 -- (19 slots) återställs INTE rad-för-rad här — dess kanoniska källa är den out-of-band
 -- importen 4-Dokument-Underlag/03-template-katalog/templates-import.sql (salvia-
 -- sektionen). Vill man fullt återgå: kör den importens salvia-del efter denna fil.
--- (Nödåtgärd — den generiska modellen retireras med avsikt; build-once-undantaget är
+-- (Nödåtgärd — den generiska modellen retireras med avsikt; undantaget från additiv migrationsdisciplin är
 --  auktoriserat: det var out-of-band-data, inte byggd historik.)
 -- ============================================================================
 

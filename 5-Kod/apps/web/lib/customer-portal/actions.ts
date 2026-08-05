@@ -89,7 +89,7 @@ function validInput(input: PortalCancellationInput): boolean {
   return PORTAL_UUID_PATTERN.test(input.bookingPublicId) &&
     Number.isSafeInteger(input.expectedCutoffHours) &&
     input.expectedCutoffHours >= 0 &&
-    input.expectedCutoffHours <= 9999 &&
+    input.expectedCutoffHours <= 8760 &&
     PORTAL_UUID_PATTERN.test(input.idempotencyKey)
 }
 

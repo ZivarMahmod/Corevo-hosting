@@ -17,6 +17,7 @@ import { parsePaymentMethods } from '@/lib/storefront/shop/types'
 import { sendOrderStatusEmail } from '@/lib/notifications/shop'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 import { paypalReady } from '@/lib/payments/paypal'
+import { resolveReadyTenantAssetId } from '@/lib/media/lifecycle'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
@@ -24,28 +25,6 @@ const GENERIC = 'Något gick fel. Försök igen.'
 async function moduleCtx(fd: FormData) {
   const ctx = await resolveModuleCtx(fd, 'shop')
   return ctx && commerceReleaseGate(ctx.tenant.id).shop ? ctx : null
-}
-
-/**
- * Resolve a submitted media asset id to a value safe to persist.
- * '' / missing → null. A non-empty id is verified to belong to THIS tenant
- * (defence-in-depth: a tampered cross-tenant id resolves to null, never persists).
- */
-async function resolveTenantAssetId(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  tenantId: string,
-  raw: string,
-): Promise<string | null> {
-  const id = raw.trim()
-  if (!id) return null
-  const { data } = await supabase
-    .from('media_assets')
-    .select('id')
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .eq('status', 'ready')
-    .maybeSingle()
-  return data ? id : null
 }
 
 /**
@@ -92,30 +71,45 @@ async function syncDefaultVariant(
   }
 }
 
-/**
- * goal-64 (migration 0057) — MALL-FÄLTEN ur formuläret.
- *
- * Kategori/badge/jämförelsepris/"från"-pris är det mallarna renderar (filterchips, märket över
- * bilden, kurstavlans ▲▼, "fr. 950 kr"). Utan formulärfält vore kolumnerna döda, och utan
- * kolumnerna kunde mallen bara ljuga eller amputeras — båda är förbjudna.
- *
- * TOM STRÄNG → null (render-on-present hela vägen ner i DB:n): kunden ska kunna TA BORT en
- * kategori/badge igen, och ett tomt fält får aldrig bli en tom chip eller ett tomt märke.
- */
-function productDesignFields(fd: FormData): {
+type ProductFields = {
+  name: string
+  description: string | null
+  price_cents: number
+  stock: number | null
+  sort_order: number
   category: string | null
   badge: string | null
   compare_at_price_cents: number | null
   price_from: boolean
-} {
+}
+
+function parseProductFields(fd: FormData): { fields: ProductFields } | { error: string } {
+  const name = String(fd.get('name') ?? '').trim()
+  if (!name) return { error: 'Ange ett namn.' }
+
+  const stockRaw = String(fd.get('stock') ?? '').trim()
+  let stock: number | null = null
+  if (stockRaw !== '') {
+    const parsed = parseInt(stockRaw, 10)
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      return { error: 'Lager måste vara 0 eller ett positivt heltal.' }
+    }
+    stock = parsed
+  }
+
   const compareRaw = String(fd.get('compare_at_price') ?? '').trim()
   return {
-    category: String(fd.get('category') ?? '').trim() || null,
-    badge: String(fd.get('badge') ?? '').trim() || null,
-    // Tomt jämförelsepris = ingen prisrörelse → priceMovement() ger '—'. Aldrig 0 (0 vore "priset
-    // har stigit från gratis", vilket kurstavlan skulle rita som ▲).
-    compare_at_price_cents: compareRaw === '' ? null : (kronorToCents(compareRaw) ?? null),
-    price_from: String(fd.get('price_from') ?? '') === 'on',
+    fields: {
+      name,
+      description: String(fd.get('description') ?? '').trim() || null,
+      price_cents: kronorToCents(String(fd.get('price') ?? '')) ?? 0,
+      stock,
+      sort_order: parseInt(String(fd.get('sort_order') ?? '0').trim(), 10) || 0,
+      category: String(fd.get('category') ?? '').trim() || null,
+      badge: String(fd.get('badge') ?? '').trim() || null,
+      compare_at_price_cents: compareRaw === '' ? null : (kronorToCents(compareRaw) ?? null),
+      price_from: String(fd.get('price_from') ?? '') === 'on',
+    },
   }
 }
 
@@ -128,26 +122,12 @@ export async function createShopProduct(
   const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
-  const name = String(fd.get('name') ?? '').trim()
-  if (!name) return { error: 'Ange ett namn.' }
-
-  const priceCents = kronorToCents(String(fd.get('price') ?? '')) ?? 0
-  const descRaw = String(fd.get('description') ?? '').trim()
-  const description = descRaw || null
-
-  const stockRaw = String(fd.get('stock') ?? '').trim()
-  let stock: number | null = null
-  if (stockRaw !== '') {
-    const n = parseInt(stockRaw, 10)
-    if (!Number.isInteger(n) || n < 0) return { error: 'Lager måste vara 0 eller ett positivt heltal.' }
-    stock = n
-  }
-
-  const sortOrderRaw = String(fd.get('sort_order') ?? '0').trim()
-  const sort_order = parseInt(sortOrderRaw, 10) || 0
+  const parsed = parseProductFields(fd)
+  if ('error' in parsed) return parsed
+  const { fields } = parsed
 
   const supabase = await createClient()
-  const image_asset_id = await resolveTenantAssetId(
+  const image_asset_id = await resolveReadyTenantAssetId(
     supabase,
     ctx.tenant.id,
     String(fd.get('image_asset_id') ?? ''),
@@ -156,21 +136,20 @@ export async function createShopProduct(
     .from('shop_products')
     .insert({
       tenant_id: ctx.tenant.id,
-      name,
-      description,
-      price_cents: priceCents,
-      stock,
+      ...fields,
       active: true,
-      sort_order,
       image_asset_id,
-      ...productDesignFields(fd),
     })
     .select('id')
     .single()
   if (error || !created) return { error: GENERIC }
 
   // Köp-rälsen köper en variant → skapa produktens Standard-variant (0042-modellen).
-  await syncDefaultVariant(supabase, ctx.tenant.id, created.id, { price_cents: priceCents, stock, image_asset_id })
+  await syncDefaultVariant(supabase, ctx.tenant.id, created.id, {
+    price_cents: fields.price_cents,
+    stock: fields.stock,
+    image_asset_id,
+  })
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/webshop')
@@ -187,26 +166,12 @@ export async function updateShopProduct(
   const id = String(fd.get('id') ?? '')
   if (!id) return { error: 'Saknar produkt.' }
 
-  const name = String(fd.get('name') ?? '').trim()
-  if (!name) return { error: 'Ange ett namn.' }
-
-  const priceCents = kronorToCents(String(fd.get('price') ?? '')) ?? 0
-  const descRaw = String(fd.get('description') ?? '').trim()
-  const description = descRaw || null
-
-  const stockRaw = String(fd.get('stock') ?? '').trim()
-  let stock: number | null = null
-  if (stockRaw !== '') {
-    const n = parseInt(stockRaw, 10)
-    if (!Number.isInteger(n) || n < 0) return { error: 'Lager måste vara 0 eller ett positivt heltal.' }
-    stock = n
-  }
-
-  const sortOrderRaw = String(fd.get('sort_order') ?? '0').trim()
-  const sort_order = parseInt(sortOrderRaw, 10) || 0
+  const parsed = parseProductFields(fd)
+  if ('error' in parsed) return parsed
+  const { fields } = parsed
 
   const supabase = await createClient()
-  const image_asset_id = await resolveTenantAssetId(
+  const image_asset_id = await resolveReadyTenantAssetId(
     supabase,
     ctx.tenant.id,
     String(fd.get('image_asset_id') ?? ''),
@@ -214,20 +179,19 @@ export async function updateShopProduct(
   const { error } = await supabase
     .from('shop_products')
     .update({
-      name,
-      description,
-      price_cents: priceCents,
-      stock,
-      sort_order,
+      ...fields,
       image_asset_id,
-      ...productDesignFields(fd),
     })
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
   if (error) return { error: GENERIC }
 
   // Synka Standard-varianten (köpbar enhet) med produktens nya pris/lager/bild.
-  await syncDefaultVariant(supabase, ctx.tenant.id, id, { price_cents: priceCents, stock, image_asset_id })
+  await syncDefaultVariant(supabase, ctx.tenant.id, id, {
+    price_cents: fields.price_cents,
+    stock: fields.stock,
+    image_asset_id,
+  })
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/webshop')

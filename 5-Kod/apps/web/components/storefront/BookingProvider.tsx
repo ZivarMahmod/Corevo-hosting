@@ -10,7 +10,11 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
+import type {
+  BookingMode,
+  WizardService,
+  WizardLocation,
+} from '@/components/booking/BookingWizard'
 import type { BookingVariant, PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import {
   resolveBookingExternalUrl,
@@ -31,11 +35,6 @@ import { BookingDrawer } from './BookingDrawer'
  * link AFTER mount (in an effect) and open then. The drawer itself is not
  * rendered into the DOM until it has been opened at least once.
  */
-
-/** Presentation mode for the embedded booking flow.
- *  - `wizard`  → Variant 3: steg-för-steg, one decision per screen (DEFAULT).
- *  - `compact` → Variant 4: snabbboka, all choices on one screen. */
-export type BookingMode = 'wizard' | 'compact'
 
 type BookingContextValue = {
   /** Route-level module gate; false for off, true for live. */

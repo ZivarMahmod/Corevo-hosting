@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import {
   revokeOtherPortalSessionsAction,
   revokePortalBookingTrustsAction,
-} from '@/app/(customer-portal)/mina/actions'
+} from '@/lib/customer-portal/server-actions'
 import type {
   PortalBookingTrustDevice,
   PortalSessionDevice,

@@ -5,9 +5,10 @@ import {
   createLoyaltyPlan,
   updateLoyaltyPlan,
   deleteLoyaltyPlan,
-  type ActionState,
-} from '@/lib/platform/actions'
+} from '@/lib/platform/actions/loyalty'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import { centsToKronorInput } from '@/lib/platform/billing'
+import { formatTenantMoney } from '@/lib/tenant-region'
 import { LOYALTY_INTERVAL_LABELS, LOYALTY_INTERVALS } from '@/lib/storefront/lojalitet/types'
 import { Icon } from '@/components/portal/ui'
 import styles from './platform.module.css'
@@ -33,8 +34,6 @@ type LoyaltyPlanRow = {
   sort_order: number
   active: boolean
 }
-
-const kr = new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 })
 
 export function LoyaltyPlansCard({
   tenantId,
@@ -140,7 +139,7 @@ function PlanRow({ tenantId, plan }: { tenantId: string; plan: LoyaltyPlanRow })
             {plan.perks.length > 0 ? ` · ${plan.perks.length} förmåner` : ''}
           </span>
         </span>
-        <span className={styles.svcPrice}>{kr.format(plan.price_cents / 100)}</span>
+        <span className={styles.svcPrice}>{formatTenantMoney(plan.price_cents)}</span>
         <Icon name="chevronDown" size={16} className={styles.svcChev} />
       </summary>
 

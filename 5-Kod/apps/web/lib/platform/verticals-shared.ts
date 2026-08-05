@@ -1,5 +1,5 @@
 // Client-safe vertical (bransch) preset types + pure helper (multi-bransch spår 5).
-// NO 'server-only' — imported by the CLIENT onboarding wizard (CreateTenantForm).
+// NO 'server-only' — imported by the client onboarding studio.
 // The server DB-fetch (loadVerticalPresets) lives in ./verticals (server-only).
 import type { ModuleState } from '@/lib/tenant-modules'
 
@@ -81,7 +81,7 @@ export const PRIMARY_CTA_LABEL_MAX = 40
  *  lagras i OBESTÄMD form, så det går INTE att bygga en svensk genitiv ur det
  *  ("Butik" → "butiks tidszon" ✗). Copy som vill äga verksamheten possessivt måste
  *  därför skrivas om neutralt ("öppettiderna", "tidszonen") tills nyckeln
- *  standardiserats — se 1-Planering/01-arkitektur/bransch-lagret-bokning.md. */
+ *  standardiserats. */
 export const TERMINOLOGY_DEFAULTS: Record<string, string> = {
   staff: 'Personal',
   service: 'Tjänst',
@@ -151,7 +151,7 @@ export function termPlural(
 }
 
 /** Bind a tenant's terminology once → a `term(key, fallback)` closure for a render
- *  pass (mirrors the inline helper in CreateTenantForm). Pure; safe in a client
+ *  pass. Pure; safe in a client
  *  component too (the overlay is a plain serialisable object). */
 export function makeTerm(
   terminology: Terminology | null | undefined,

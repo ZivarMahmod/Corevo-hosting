@@ -7,7 +7,7 @@ import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { PORTAL_MIN_LEVEL, type Portal } from '@/lib/auth/roles'
+import { isActiveLoginAccount, PORTAL_MIN_LEVEL, type Portal } from '@/lib/auth/roles'
 import type { AdminArea } from '@/lib/auth/admin-areas'
 import { hasAdminAreaPermission } from '@/lib/admin/member-permissions'
 import { logAuthDenied } from '@/lib/observability'
@@ -84,8 +84,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       .maybeSingle()
     activeStaff = data
   }
-  const accountAuthorized =
-    profile?.status === 'active' && (role?.level !== 3 || Boolean(activeStaff))
+  const accountAuthorized = isActiveLoginAccount({
+    profileStatus: profile?.status,
+    roleLevel: role?.level ?? 0,
+    activeStaff: Boolean(activeStaff),
+  })
   const roleLevel = accountAuthorized ? (role?.level ?? 0) : 0
   const roleName = accountAuthorized ? (role?.name ?? null) : null
 

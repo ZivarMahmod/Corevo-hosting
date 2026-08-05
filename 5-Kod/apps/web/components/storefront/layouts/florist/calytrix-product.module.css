@@ -109,16 +109,6 @@
   text-align: right;
 }
 
-.cxPaused {
-  margin: 0;
-  background: var(--color-accent-soft, #e8d9de);
-  border-left: 3px solid var(--color-primary, #7d1f46);
-  padding: 14px 18px;
-  color: var(--color-fg, #241019);
-  font-size: 14.5px;
-  font-weight: 600;
-}
-
 /* Köp-kontrollen är modulens <AddToCart>; mallen ger den filens form. */
 .cxBuy :global(button) {
   border: 2px solid var(--color-fg, #241019);

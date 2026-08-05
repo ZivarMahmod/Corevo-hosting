@@ -18,6 +18,9 @@ import {
   parseBookingExternalCtaUrls,
   type BookingProviderKind,
 } from '../booking-external-url'
+import { parseTenantLegalInput } from '@/lib/tenant-region'
+import { isCustomerPortalMode } from '@/lib/customer-portal/mode'
+import { createServiceClient } from '@/lib/platform/service'
 
 // ── §2.1B Operativ data-kontroll ("Supabase med mitt UI", no-code) ──────────────
 
@@ -124,16 +127,9 @@ export async function saveTenantLegal(_p: ActionState, fd: FormData): Promise<Ac
   const tenantId = String(fd.get('tenantId') ?? '')
   if (!tenantId) return { error: 'Saknar kund.' }
 
-  const orgNr = String(fd.get('org_nr') ?? '').trim().slice(0, 40) || null
-  const vatRaw = String(fd.get('vat_rate') ?? '').trim().replace(',', '.')
-  let vatRate: number | null = null
-  if (vatRaw) {
-    const n = Number(vatRaw)
-    if (!Number.isFinite(n) || n < 0 || n > 100) {
-      return { error: 'Momssatsen ska vara ett tal mellan 0 och 100 (t.ex. 25).' }
-    }
-    vatRate = n
-  }
+  const legal = parseTenantLegalInput(fd.get('org_nr'), fd.get('vat_rate'))
+  if (!legal) return { error: 'Momssatsen ska vara ett tal mellan 0 och 100 (t.ex. 25).' }
+  const { orgNr, vatRate } = legal
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd kund.' }
@@ -165,40 +161,6 @@ export async function saveTenantLegal(_p: ActionState, fd: FormData): Promise<Ac
   })
   return { success: 'Juridikuppgifter sparade. Villkor och kvitton uppdaterade.' }
 }
-
-/**
- * Salongsnamn — eget thin-kort i Sida-flikens Allmänt (Zivar: "salongsnamnet från
- * Drift ska komma in här — det är högst upp på sidan om ingen logga finns").
- * Sparar ENDAST tenants.name så det inte drar med sig recensionslänk/variant
- * (saveTenantData nollar google_review_url när fältet saknas i formuläret).
- */
-export async function saveTenantName(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar kund.' }
-  const name = String(fd.get('name') ?? '').trim().slice(0, 120)
-  if (!name) return { error: 'Ange ett företagsnamn.' }
-
-  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd kund.' }
-
-  const { error } = await supabase.from('tenants').update({ name }).eq('id', tenantId)
-  if (error) {
-    await reportActionError('saveTenantName.tenant_update', error, { tenantId })
-    return { error: GENERIC }
-  }
-
-  revalidateTenant(tenant.slug)
-  revalidatePath(`/kunder/${tenantId}`)
-  revalidatePath('/admin/sida')
-  await logPlatformAction(supabase, {
-    action: 'tenant.update',
-    tenantId,
-    actorId: user.id,
-    meta: { name },
-  })
-  return { success: 'Namn sparat. Publika sajten uppdaterad.' }
-}
-
 
 /** Save only the booking provider and external destinations. Presentation is
  * owned by the site revision so an older draft cannot overwrite these values. */
@@ -258,39 +220,27 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
   return { success: 'Bokningsinställningar sparade. Publika sajten uppdaterad.' }
 }
 
-/**
- * goal-62 A2 — Kund-konton av/på från KUNDKORTET.
- *
- * Reglaget fanns bara i kundens egen admin (/admin/installningar). Zivar sitter i
- * superbooking och hittade det aldrig → för honom fanns det "bara i backend".
- * Samma settings-nyckel (`customer_accounts_enabled`), samma läs-seam
- * (tenant-data.ts:143) — bara en andra ingång. MERGE, aldrig clobber.
- *
- * Av = inloggning, "Mitt konto" och /registrera försvinner från kundens publika sajt
- * (gästbokning/gästköp står kvar).
- */
-export async function setTenantCustomerAccounts(_p: ActionState, fd: FormData): Promise<ActionState> {
+/** Platform owner for the tenant's one canonical customer-portal mode. */
+export async function setTenantCustomerPortalMode(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar kund.' }
 
-  const enabled = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
+  const mode = fd.get('customer_portal_mode')
+  if (!isCustomerPortalMode(mode) || mode === 'global_account') {
+    return { error: 'Ogiltigt kundportalläge.' }
+  }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd kund.' }
 
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
-  const prev = (existing?.settings ?? {}) as Record<string, unknown>
-  const settings = { ...prev, customer_accounts_enabled: enabled }
-
-  const { error } = await supabase
-    .from('tenant_settings')
-    .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
+  const service = createServiceClient()
+  if (!service) return { error: GENERIC }
+  const { error } = await service.rpc('set_customer_portal_mode', {
+    p_tenant: tenantId,
+    p_mode: mode,
+  })
   if (error) {
-    await reportActionError('setTenantCustomerAccounts.settings_upsert', error, { tenantId })
+    await reportActionError('setTenantCustomerPortalMode.rpc', error, { tenantId })
     return { error: GENERIC }
   }
 
@@ -301,11 +251,13 @@ export async function setTenantCustomerAccounts(_p: ActionState, fd: FormData): 
     action: 'tenant.update',
     tenantId,
     actorId: user.id,
-    meta: { customer_accounts_enabled: enabled },
+    meta: { customer_portal_mode: mode },
   })
   return {
-    success: enabled
-      ? 'Kund-konton PÅ — inloggning och Mitt konto visas på kundens sajt.'
-      : 'Kund-konton AV — inloggning och Mitt konto dolda. Gästbokning/gästköp står kvar.',
+    success: mode === 'passwordless_tenant'
+      ? 'Lösenordsfri kundportal är vald.'
+      : mode === 'legacy_account'
+        ? 'Kundkonton med inloggning är valda.'
+        : 'Kundportal är avstängd. Gästbokning och gästköp står kvar.',
   }
 }

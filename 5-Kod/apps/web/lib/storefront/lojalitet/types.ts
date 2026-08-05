@@ -119,8 +119,8 @@ function asNonEmptyString(raw: unknown, fallback: string): string {
 
 /**
  * Defensively coerce the raw tenant_modules.config jsonb into a typed
- * LojalitetConfig. Robust to missing/partial config (a freshly activated draft has
- * only the 0035 default; a malformed row degrades to DEFAULT_LOJALITET_CONFIG).
+ * LojalitetConfig. Robust to missing/partial config (a newly activated module may
+ * only have the migration default; a malformed row degrades to DEFAULT_LOJALITET_CONFIG).
  * Reads the snake_case jsonb keys (points_per_visit, stamp_goal, headline,
  * perk_text) exactly as written by the migration default_config.
  */

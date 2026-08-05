@@ -13,7 +13,7 @@ vi.mock('../guard', () => ({ sidaCtx: mocks.sidaCtx }))
 vi.mock('../audit', () => ({ logPlatformAction: mocks.logPlatformAction }))
 vi.mock('@/lib/admin/tenant', () => ({ revalidateTenant: mocks.revalidateTenant }))
 vi.mock('./observe', () => ({ reportActionError: mocks.reportActionError }))
-vi.mock('@/components/storefront/vertical-copy', () => ({ getVerticalCopy: vi.fn(async () => ({})) }))
+vi.mock('@/lib/storefront/vertical-copy', () => ({ getVerticalCopy: vi.fn(async () => ({})) }))
 
 import { setTenantTheme } from './theme'
 

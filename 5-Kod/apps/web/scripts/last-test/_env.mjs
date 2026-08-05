@@ -69,7 +69,7 @@ export async function seed(svc) {
  * Tar bort testets bokningar. ALLTID tenant-filtrerat på fejktenanten.
  *
  * VARFÖR CLI OCH INTE .delete(): bookings har `trg_bookings_no_delete`
- * (build-once-never-delete) och barnraderna i booking_status_history är
+ * för bokningshistorik och barnraderna i booking_status_history är
  * append-only. En vanlig DELETE kastar P0001. Vi stänger av triggrarna för
  * den EGNA sessionen (session_replication_role=replica) — påverkar ingen
  * annan session och ändrar inget schema.

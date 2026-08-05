@@ -1,6 +1,4 @@
-/* @corevo/ui — canonical design tokens (Corevo family).
-   Source of truth: docs/design-system.md. Extracted live from the Corevo POS
-   (corevo.se + admin.corevo.se).
+/* @corevo/ui — canonical shared design tokens for the Corevo family.
 
    STATUS: LIVE — imported in app/layout.tsx (before globals.css), which dropped its
    inline :root. This file is the single applied source for product defaults.
@@ -44,7 +42,7 @@
   /* ── Product tokens (NOT tenant-overridable) ──────────────────────────────── */
   /* --color-accent IS tenant-overridable at runtime by injectTenantTokens()
      (branding.color_accent → --color-accent). This :root default = Corevo gold
-     (#f5a623) and is the FROZEN back-office accent. The storefront re-points it to
+     (#f5a623) and is the shared back-office accent. The storefront re-points it to
      the theme primary in the [data-world="storefront"] block below — never gold. */
   --color-accent: var(--gold, #f5a623);
   --color-accent-fg: #15281f;
@@ -158,7 +156,7 @@
   --sf-radius: var(--radius-md);
 
   /* NEVER Corevo gold on the storefront. The :root default --color-accent is the
-     frozen Corevo gold (#f5a623), which is correct for back-office but a brand leak
+     shared Corevo gold (#f5a623), which is correct for back-office but a brand leak
      here — when a tenant sets no branding.color_accent, injectTenantTokens injects
      nothing and .btn-accent (+ wizard selected-states, accent focus rings, the
      "Boka tid" CTA) would fall back to gold. Re-point the accent to THIS theme's

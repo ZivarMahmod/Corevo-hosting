@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './solsalt.module.css'
 
@@ -22,7 +23,7 @@ import styles from './solsalt.module.css'
  *
  * Filen har varken galleri-band eller stat-rad på hemmet — och då har inte mallen det heller
  * (caps.homeGallery/homeStats = false i manifestet). Att lägga till en sektion "för att de
- * andra mallarna har en" ÄR att improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * andra mallarna har en" är att improvisera bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * Modul-gatingen är plattformens och HELIG: produktbandet ritas bara när shopen har teasers,
  * bloggbandet bara när det finns inlägg, presentkort-plattan bara när modulen är live. En
@@ -136,14 +137,12 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                       aria-label={`${p.name} — visa varan`}
                     >
-                      <span className={styles.slSrOnly}>{p.imageAlt ?? p.name}</span>
+                      <span className="sr-only">{p.imageAlt ?? p.name}</span>
                     </Link>
                     <div className={styles.slCardBody}>
                       <div className={styles.slCardHead}>
                         <h3 className={styles.slCardName}>{p.name}</h3>
-                        <span className={styles.slCardPrice}>
-                          {formatProductPrice(p)}
-                        </span>
+                        <span className={styles.slCardPrice}>{formatProductPrice(p)}</span>
                       </div>
                       {p.description ? <p className={styles.slCardDesc}>{p.description}</p> : null}
                       {/* Filens "Lägg i korg" i mallens form. Teaser-propen bär INTE shop-configen
@@ -214,11 +213,13 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
                       <span
                         className={styles.slTeaserImg}
                         style={
-                          b.coverImageUrl ? { backgroundImage: `url(${b.coverImageUrl})` } : undefined
+                          b.coverImageUrl
+                            ? { backgroundImage: `url(${b.coverImageUrl})` }
+                            : undefined
                         }
                       />
                       {b.publishedAt ? (
-                        <p className={styles.slTeaserDate}>{formatBandDate(b.publishedAt)}</p>
+                        <p className={styles.slTeaserDate}>{formatBloggShortDate(b.publishedAt)}</p>
                       ) : null}
                       <h3 className={styles.slTeaserTitle}>{b.title}</h3>
                     </Link>
@@ -231,11 +232,4 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
       </div>
     </div>
   )
-}
-
-/** Filens datumform i bandet: "4 juli" (versal-mikro sätts av CSS:en). */
-function formatBandDate(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
 }

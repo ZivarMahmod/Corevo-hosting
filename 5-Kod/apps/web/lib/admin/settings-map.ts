@@ -72,8 +72,8 @@ export function settingsCategories(terminology?: Terminology | null): SettingsCa
     },
     {
       id: 'bokningsregler', group: 'BOKNING', href: '/admin/installningar/bokning', label: 'Bokningsregler',
-      hint: 'På, pausad, av och avbokning', icon: 'calendar', area: 'installningar',
-      keywords: 'onlinebokning pausa av boka bokningsfönster avbokningsgräns nya kunder',
+      hint: 'Onlinebokning på/av och avbokning', icon: 'calendar', area: 'installningar',
+      keywords: 'onlinebokning på av boka bokningsfönster avbokningsgräns nya kunder',
     },
     {
       id: 'bokningsflode', group: 'BOKNING', href: '/admin/installningar/bokningsflode', label: 'Bokningsflöde',
@@ -137,7 +137,7 @@ const SETTINGS_SEARCH_DEFS: ReadonlyArray<{
   { id: 'service-price', label: 'Pris på en tjänst', hint: 'Tjänster & priser', categoryId: 'tjanster', keywords: 'pris tjänst utbud längd ändra pris' },
   { id: 'add-staff', label: 'Lägg till medarbetare', hint: 'Personal', categoryId: 'personal', keywords: 'personal medarbetare anställd konto lägg till' },
   { id: 'time-off', label: 'Semester / frånvaro', hint: 'Scheman & frånvaro', categoryId: 'scheman', keywords: 'semester frånvaro ledig sjuk' },
-  { id: 'pause-booking', label: 'Pausa onlinebokningen', hint: 'Bokningsregler', categoryId: 'bokningsregler', keywords: 'pausa stäng bokning på av' },
+  { id: 'pause-booking', label: 'Slå på eller av onlinebokningen', hint: 'Bokningsregler', categoryId: 'bokningsregler', keywords: 'slå på av stäng starta bokning' },
   { id: 'cancellation', label: 'Avbokningsregler', hint: 'Bokningsregler', categoryId: 'bokningsregler', keywords: 'avboka avbokning regler timmar' },
   { id: 'booking-appearance', label: 'Bokningens utseende', hint: 'Bokningsflöde', categoryId: 'bokningsflode', keywords: 'utseende kalender avatar färg bokningsflöde presentation datumväljare' },
   { id: 'stripe', label: 'Koppla Stripe / kortbetalning', hint: 'Betalning', categoryId: 'betalning', keywords: 'stripe betalning kort swish utbetalning pengar' },

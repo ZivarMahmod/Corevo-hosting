@@ -1,7 +1,7 @@
 -- ============================================================================
 -- ROLLBACK — Multi-bransch DB-grund (0026–0029)  ·  spår 1
 --
--- ⚠️ DESTRUKTIV. Bryter projektets build-once-never-delete-regel med AVSIKT:
+-- ⚠️ DESTRUKTIV. Bryter den normala additiva migrationsdisciplinen med AVSIKT:
 -- denna fil är ENBART för en SAFE Supabase-branch under utveckling (06-syntes:
 -- "Allt byggs på SAFE Supabase-branch tills du säger deploy"). KÖR ALDRIG mot
 -- prod (clylvowtowbtotrahuad). På prod gäller framåt-only.

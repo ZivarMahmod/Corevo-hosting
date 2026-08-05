@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { CANONICAL_PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
+import { PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
 import { NAV, isGroup, paletteFromNav } from './nav-items'
 import {
   PLATFORM_AREAS,
   PLATFORM_SUBNAV,
-  activePlatformArea,
   platformAreasForUser,
   platformLinkAllowed,
   platformMobileNavigation,
@@ -15,29 +14,16 @@ import { activeTopnavArea } from './Topnav'
 
 const isRegistered = (href: string) =>
   href === '/' ||
-  CANONICAL_PLATFORM_ROUTE_PREFIXES.some(
-    (prefix) => href === prefix || href.startsWith(`${prefix}/`),
-  )
+  PLATFORM_ROUTE_PREFIXES.some((prefix) => href === prefix || href.startsWith(`${prefix}/`))
 
 describe('superadmin navigation contract', () => {
-  it('maps nested production routes to the correct five-area IA', () => {
-    expect(activePlatformArea('/').id).toBe('overview')
-    expect(activePlatformArea('/platform').id).toBe('overview')
-    expect(activePlatformArea('/kunder/ny').id).toBe('customers')
-    expect(activePlatformArea('/kunder/tenant-id').id).toBe('customers')
-    expect(activePlatformArea('/slutkunder').id).toBe('insight')
-    expect(activePlatformArea('/fakturering').id).toBe('finance')
-    expect(activePlatformArea('/personal-plattform').id).toBe('insight')
-    expect(activePlatformArea('/utskick').id).toBe('insight')
-    expect(activePlatformArea('/drift-och-logg/events').id).toBe('insight')
-    expect(activePlatformArea('/branscher/florist').id).toBe('platform')
-    expect(activePlatformArea('/domaner').id).toBe('platform')
-    expect(activePlatformArea('/partners/partner-id').id).toBe('platform')
-  })
-
   it('exposes Kommunikationscenter as Utskick inside Insyn', () => {
     expect(PLATFORM_SUBNAV.insight).toContainEqual({ href: '/utskick', label: 'Utskick' })
-    expect(NAV.platform.items).toContainEqual({ href: '/utskick', label: 'Utskick', icon: 'message' })
+    expect(NAV.platform.items).toContainEqual({
+      href: '/utskick',
+      label: 'Utskick',
+      icon: 'message',
+    })
     expect(paletteFromNav('platform')).toContainEqual({
       href: '/utskick',
       label: 'Utskick',
@@ -95,7 +81,6 @@ describe('superadmin navigation contract', () => {
       '/branscher',
       '/integrationer',
       '/domaner',
-      '/roller',
       '/installningar',
     ])
   })
@@ -109,7 +94,6 @@ describe('superadmin navigation contract', () => {
     expect(activeMobileId('/drift-och-logg/events')).toBe('drift')
     expect(activeMobileId('/utskick')).toBe('outbox')
     expect(activeMobileId('/integrationer')).toBe('integrations')
-    expect(activePlatformArea('/drift-och-logg/events').id).toBe('insight')
   })
 
   it('återinför varken kundflik eller FAB om serverlistan saknar kundområdet', () => {
@@ -129,7 +113,13 @@ describe('superadmin navigation contract', () => {
     expect(areas.map((area) => area.id)).toEqual(['overview', 'customers', 'finance', 'insight'])
     expect(subnav.platform).toBeUndefined()
     expect(mobile.more.some((area) => area.href === '/partners')).toBe(false)
-    for (const href of ['/partners', '/branscher', '/integrationer', '/domaner', '/roller', '/installningar']) {
+    for (const href of [
+      '/partners',
+      '/branscher',
+      '/integrationer',
+      '/domaner',
+      '/installningar',
+    ]) {
       expect(platformLinkAllowed(href, false), href).toBe(false)
     }
     expect(platformLinkAllowed('/kunder/tenant-id', false)).toBe(true)

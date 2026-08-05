@@ -2,6 +2,7 @@ import 'server-only'
 
 import { sendEmail } from '@/lib/notifications/email'
 import { sendGiadaMessage } from '@/lib/notifications/giada'
+import { esc } from '@/lib/notifications/templates'
 import type { BookingVerificationChannel } from './contact-normalization'
 
 export {
@@ -51,15 +52,6 @@ export function bookingContactDigest(
   return hmac(`booking-contact:${channel}:${normalizedContact}`)
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-}
-
 export async function deliverBookingPin(input: {
   channel: BookingVerificationChannel
   contact: string
@@ -84,7 +76,7 @@ export async function deliverBookingPin(input: {
   const result = await sendEmail({
     to: input.contact,
     subject: `Din kod för bokningen hos ${tenantName}`,
-    html: `<p>Din verifieringskod hos ${escapeHtml(tenantName)} är:</p>`
+    html: `<p>Din verifieringskod hos ${esc(tenantName)} är:</p>`
       + `<p style="font-size:28px;font-weight:700;letter-spacing:6px">${input.pin}</p>`
       + '<p>Koden gäller i 5 minuter.</p>',
   })

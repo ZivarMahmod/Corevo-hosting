@@ -60,7 +60,7 @@ describe('platform outbox summary correction', () => {
 
   it('keeps 0112 in the database release inventory through the latest timestamped migration', () => {
     const workflow = readFileSync(ciPath, 'utf8')
-    expect(workflow.match(/--expected-latest 20260803191057/g)).toHaveLength(2)
+    expect(workflow.match(/--expected-latest 20260804150000/g)).toHaveLength(2)
     expect(workflow.match(/--required-test-versions .*0129,0130,0131,0132,0133,0134,0135/g)).toHaveLength(2)
   })
 })

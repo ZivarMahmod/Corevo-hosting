@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Icon } from './Icon'
+import { trapTab } from './focus'
 
 /**
  * Back-office detail Drawer (playbook §4.9) — the shared right-anchored surface
@@ -55,28 +56,10 @@ export function Drawer({
         close()
         return
       }
-      if (e.key !== 'Tab' || !panelRef.current) return
-      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )].filter((element) => !element.hasAttribute('hidden'))
-      if (focusable.length === 0) {
-        e.preventDefault()
-        panelRef.current.focus()
-        return
-      }
-      const first = focusable[0]!
-      const last = focusable[focusable.length - 1]!
-      if (e.shiftKey && (document.activeElement === first || !panelRef.current.contains(document.activeElement))) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      if (panelRef.current) trapTab(e, panelRef.current)
     }
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     document.addEventListener('keydown', onKey)
     panelRef.current?.focus()
     const prevOverflow = document.body.style.overflow

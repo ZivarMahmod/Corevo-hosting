@@ -575,17 +575,6 @@
 }
 
 /* Pausad butik: katalogen är läsbar, köp-knapparna borta. Meddelandet bär filens linjer. */
-.elNotice {
-  margin: 0 0 40px;
-  border-top: 2px solid var(--color-fg);
-  border-bottom: 2px solid var(--color-fg);
-  padding: 18px 0;
-  text-align: center;
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--tenant-primary-ink, var(--color-primary));
-}
 
 /* ─────────────────────────── /om — uppslaget + siffror ────────────────────── */
 
@@ -954,18 +943,6 @@
   margin: 0;
   color: color-mix(in srgb, var(--color-bg) 50%, transparent);
   font-size: 12.5px;
-}
-
-.elSrOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* ───────────── mobil — speglar filens eget Corevo-tillägg (≤760px) ────────── */

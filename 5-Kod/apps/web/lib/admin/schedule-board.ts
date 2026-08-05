@@ -6,7 +6,32 @@ import {
 import { todayInTz, mondayOf, addDays } from '@/lib/personal/format'
 import { weekRangeUtc, dayRangeUtc } from '@/lib/personal/calendar'
 import { weekdayOf } from '@/lib/booking/tz'
-import type { BoardDay, BoardRow, BoardCell } from '@/components/admin/ScheduleWeekBoard'
+
+export type BoardDay = {
+  date: string
+  name: string
+  dayOfMonth: number
+  isToday: boolean
+}
+
+export type BoardInterval = {
+  label: string
+  tag: string | null
+  offSite: boolean
+}
+
+export type BoardCell = {
+  intervals: BoardInterval[]
+  timeOff: { reason: string | null } | null
+  bookings: number
+}
+
+export type BoardRow = {
+  staffId: string
+  name: string
+  isSelected: boolean
+  cells: BoardCell[]
+}
 
 /**
  * Vecko-brädans databygge — EN källa för både /admin/scheman (redigeringssidan)

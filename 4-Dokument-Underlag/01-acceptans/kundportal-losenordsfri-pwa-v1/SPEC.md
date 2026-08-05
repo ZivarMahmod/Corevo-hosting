@@ -29,7 +29,7 @@ Säker öppning från bekräftelse-SMS/-mejl; företagsspecifik kundöversikt; k
 
 Globalt Corevo-kundkonto; `Mina företag`-hub; lösenord och social inloggning; pushnotiser; erbjudanden/marknadsföring; klippkort/poäng/lojalitet/rekommendationer; webshop i portalen; favoriter/favoritpersonal; ombokning inne i portalen; väntelista; kvitto/betalningshistorik; native-app.
 
-**Inaktivt betyder:** ingen synlig knapp, ingen tom meny, ingen `kommer snart`-ruta, ingen halvaktiv route (brief §3.2; CP-NEG-07). Förbjuden copy är bindande via negativlistan CP-NEG-01–12. Befintlig kod bevaras och avgränsas — den raderas inte, men den syns aldrig i lanseringsytan (`LEGACY/BEVARAD` i `FEATURE-MATRIX.md`).
+**Inaktivt betyder:** ingen synlig knapp, ingen tom meny, ingen `kommer snart`-ruta, ingen halvaktiv route (brief §3.2; CP-NEG-07). Förbjuden copy är bindande via negativlistan CP-NEG-01–12. Kod utan aktivt produkt- eller kompatibilitetskontrakt tas bort; Git är historiken. Verklig `legacy_account`-kompatibilitet avgränsas enligt `FEATURE-MATRIX.md` tills dess tenants har migrerats.
 
 ---
 
@@ -496,8 +496,8 @@ Designfasen ändrar INGEN produktkod — kartan nedan är målstrukturen som des
 - `5-Kod/apps/web/app/(customer-portal)/(open)/aterhamta/[tenantSlug]/page.tsx`
 - `5-Kod/apps/web/app/(customer-portal)/(open)/verifiera/[tenantSlug]/page.tsx`
 - `5-Kod/apps/web/app/(customer-portal)/(open)/hjalp/page.tsx`
-- `5-Kod/apps/web/app/(customer-portal)/mina/layout.tsx` + `page.tsx`, `historik/page.tsx`, `bokningar/[id]/page.tsx`, `profil/page.tsx`, `sakerhet/page.tsx`, `installera/page.tsx`, `integritet/page.tsx`
-- API: `app/api/customer-portal/exchange/route.ts`, `app/api/customer-portal/manifest/route.ts`, `app/api/customer-portal/bookings/[id]/calendar/route.ts`
+- `5-Kod/apps/web/app/(customer-portal)/layout.tsx` + `mina/page.tsx`, `mina/historik/page.tsx`, `mina/bokningar/[id]/page.tsx`, `mina/profil/page.tsx`, `mina/sakerhet/page.tsx`, `mina/installera/page.tsx`, `mina/integritet/page.tsx`
+- API: `app/api/customer-portal/exchange/route.ts`, `app/api/customer-portal/bookings/[id]/calendar/route.ts`; statiskt manifest: `public/pwa/customer-portal.webmanifest`
 
 **Domänlogik/DAL (brief §24.2):** `lib/customer-portal/session.ts`, `link.ts`, `data.ts`, `actions.ts`, `recovery.ts`, `origin.ts`; `customer_portal` klassificeras i `lib/tenant.ts` FÖRE generisk tenantklassificering (`lib/auth/host-routing.ts` är backoffice-only och äger inte denna host); sluggen `mina` reserveras med eget beslutsträd i `lib/customer-portal/host-routing.ts`.
 

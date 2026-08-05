@@ -1,4 +1,5 @@
 import { PLATFORM_ROUTE_PREFIXES } from './platform-routes'
+import type { TenantResolution } from '@/lib/tenant'
 
 // Role → portal mapping. ADR 01 §4 sketched an 8-level ladder (publik → kund →
 // frisör → reception → manager → owner → Corevo admin → super admin), but only
@@ -56,7 +57,8 @@ export function portalHomeFor(opts: {
   platformAdmin: boolean
   partnerAdmin?: boolean
 }): string {
-  if (opts.platformAdmin || opts.partnerAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return '/'
+  if (opts.platformAdmin || opts.partnerAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform)
+    return '/'
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.admin) return '/admin'
   // Paket 06: personalens egen mobil-PWA är primär på booking.corevo.se.
   // Kundadminens kalender finns kvar för uttryckligen delegerade adminytor.
@@ -64,37 +66,43 @@ export function portalHomeFor(opts: {
   return '/konto'
 }
 
-/**
- * goal-27 — DOOR ISOLATION. Which single back-office host (TenantResolution kind) a
- * role uses as its PRIMARY sign-in host: super_admin ⇒ superbooking
- * ('superadmin'), salon_admin/staff ⇒ booking ('platform'). minbooking is an
- * explicit staff-only legacy exception enforced by loginAccessForHost. A
- * customer (below the staff floor) has no back-office door → 'tenant'. The login
- * action rejects + signs out any credential used on a host whose kind ≠ this, so a
- * super-admin credential can NEVER establish a session on booking/minbooking (and
- * vice-versa) — that's what protects the super-admin "godmode" login. Mirrors
- * portalHomeFor's thresholds (platform_admin flag wins regardless of level).
- */
+/** One sign-in host per role: platform operators use superbooking, tenant admin
+ * and staff use booking, and customers use their exact tenant host. */
 export function backofficeHostKindForRole(opts: {
   roleLevel: number
   platformAdmin: boolean
   partnerAdmin?: boolean
-}): 'superadmin' | 'platform' | 'staff_portal' | 'tenant' {
+}): 'superadmin' | 'platform' | 'tenant' {
   if (opts.platformAdmin || opts.partnerAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) {
     return 'superadmin'
   }
-  // ROLL-SEPARATION: personal (nivå 3) jobbar i adminportalens kalender och därför på
-  // ADMIN-dörren (booking). Den dörren serverar även /personal (schema/frånvaro), så
-  // hela arbetsdagen ligger bakom EN inloggning — noll extra klick, ingen värdbyte.
-  // minbooking-dörren (staff_portal) lever kvar och serverar /personal som förr.
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return 'platform'
   return 'tenant'
 }
 
 export type LoginHostKind = 'superadmin' | 'platform' | 'staff_portal' | 'tenant' | 'other'
-export type LoginHostAccess =
-  | { allowed: true; legacyStaff: boolean }
-  | { allowed: false; legacyStaff: false }
+
+/** The compatibility staff host must stay on its one session-bearing surface. */
+export function loginDestinationForHost(opts: {
+  home: string
+  next: string | null
+  hostKind: LoginHostKind | null
+}): string {
+  return opts.hostKind === 'staff_portal' ? opts.home : (opts.next ?? opts.home)
+}
+
+export function resolveLoginHostKind(
+  resolution: TenantResolution,
+  hasActiveTenant: boolean,
+): LoginHostKind {
+  return resolution.kind === 'superadmin' ||
+    resolution.kind === 'platform' ||
+    resolution.kind === 'staff_portal'
+    ? resolution.kind
+    : hasActiveTenant
+      ? 'tenant'
+      : 'other'
+}
 
 /** Database-backed activation state used after authentication, not JWT claims. */
 export function isActiveLoginAccount(input: {
@@ -109,12 +117,7 @@ export function isActiveLoginAccount(input: {
   )
 }
 
-/**
- * Authoritative production login-door contract. A role may establish a session
- * only on its own host. Staff additionally retain the explicit minbooking
- * legacy door, but that exception never applies to owners or platform admins.
- * Customers are bound to the exact resolved storefront tenant.
- */
+/** A role may establish a session only on its own host. */
 export function loginAccessForHost(opts: {
   roleLevel: number
   platformAdmin: boolean
@@ -122,7 +125,7 @@ export function loginAccessForHost(opts: {
   accountTenantId: string | null
   hostKind: LoginHostKind
   hostTenantId: string | null
-}): LoginHostAccess {
+}): { allowed: boolean } {
   const accountDoor = backofficeHostKindForRole(opts)
 
   if (accountDoor === 'tenant') {
@@ -130,20 +133,20 @@ export function loginAccessForHost(opts: {
       opts.hostKind === 'tenant' &&
       Boolean(opts.accountTenantId) &&
       opts.accountTenantId === opts.hostTenantId
-    return matchingTenant
-      ? { allowed: true, legacyStaff: false }
-      : { allowed: false, legacyStaff: false }
+    return { allowed: matchingTenant }
   }
 
-  if (accountDoor === opts.hostKind) return { allowed: true, legacyStaff: false }
+  // COMPAT: minbooking is a published staff-only login boundary. It reaches the
+  // same /personal owner as booking and never admits owners/platform operators.
+  if (opts.hostKind === 'staff_portal') {
+    return {
+      allowed:
+        accountDoor === 'platform' &&
+        !opts.platformAdmin &&
+        !opts.partnerAdmin &&
+        opts.roleLevel === PORTAL_MIN_LEVEL.personal,
+    }
+  }
 
-  const legacyStaff =
-    accountDoor === 'platform' &&
-    opts.hostKind === 'staff_portal' &&
-    !opts.platformAdmin &&
-    opts.roleLevel >= PORTAL_MIN_LEVEL.personal &&
-    opts.roleLevel < PORTAL_MIN_LEVEL.admin
-  return legacyStaff
-    ? { allowed: true, legacyStaff: true }
-    : { allowed: false, legacyStaff: false }
+  return { allowed: accountDoor === opts.hostKind }
 }

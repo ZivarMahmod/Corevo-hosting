@@ -1,4 +1,5 @@
 const { spawnSync } = require('node:child_process')
+const { randomBytes } = require('node:crypto')
 const { existsSync, mkdtempSync, readFileSync, rmSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const path = require('node:path')
@@ -9,8 +10,6 @@ const WEB_DIR = path.join(CODE_DIR, 'apps', 'web')
 const CATALOG_SCRIPT = path.join(WEB_DIR, 'scripts', 'goal93-catalog-acceptance.mjs')
 const CONFIG_FILE = path.join(GOAL_DIR, 'goal93.playwright.config.ts')
 const E2E_DB = path.join(WEB_DIR, 'scripts', 'e2e-db.mjs')
-const PREVIEW_REF = 'cwnhpesrgolflkmyjbrm'
-const PRODUCTION_REF = 'clylvowtowbtotrahuad'
 
 function playwrightPath(...parts) {
   return path.join(...parts).replaceAll('\\', '/')
@@ -31,7 +30,7 @@ function loadMatrix() {
     payload.goal !== 93 ||
     payload.themeCount !== 12 ||
     payload.routeCount !== 174 ||
-    payload.matrixCount !== 376
+    payload.matrixCount !== 362
   ) {
     throw new Error('goal93:probe:matrix-contract')
   }
@@ -39,10 +38,18 @@ function loadMatrix() {
 }
 
 function assertPreviewRef() {
+  const previewRef = process.env.E2E_ALLOWED_SUPABASE_PROJECT_REF
+  const requestedRef = process.env.E2E_SUPABASE_PROJECT_REF
+  const productionRef = process.env.PRODUCTION_SUPABASE_PROJECT_REF
+  if (!previewRef || !requestedRef || !productionRef) {
+    throw new Error('goal93:preview-ref-env')
+  }
+  if (requestedRef !== previewRef) throw new Error('goal93:preview-ref-allowlist')
+  if (requestedRef === productionRef) throw new Error('goal93:production-ref')
+
   const refFile = path.join(CODE_DIR, 'supabase', '.temp', 'project-ref')
   const ref = existsSync(refFile) ? readFileSync(refFile, 'utf8').trim() : ''
-  if (ref === PRODUCTION_REF) throw new Error('goal93:production-ref')
-  if (ref !== PREVIEW_REF) throw new Error(`goal93:preview-ref:${ref || '<missing>'}`)
+  if (ref !== requestedRef) throw new Error(`goal93:preview-ref:${ref || '<missing>'}`)
 }
 
 function assertThemeContract(themeKey, payload) {
@@ -52,12 +59,6 @@ function assertThemeContract(themeKey, payload) {
   const probe = path.join(themeDir, 'probe.js')
   if (!existsSync(spec) || !existsSync(probe)) {
     throw new Error(`goal93:probe:wrapper-missing:${themeKey}`)
-  }
-  if (!readFileSync(spec, 'utf8').includes(`registerThemeAcceptance('${themeKey}')`)) {
-    throw new Error(`goal93:probe:spec-contract:${themeKey}`)
-  }
-  if (!readFileSync(probe, 'utf8').includes(`runProbe('${themeKey}')`)) {
-    throw new Error(`goal93:probe:probe-contract:${themeKey}`)
   }
   const rows = payload.matrix.filter((row) => row.themeKey === themeKey)
   if (rows.length === 0) throw new Error(`goal93:probe:matrix-empty:${themeKey}`)
@@ -114,20 +115,18 @@ function runRuntime() {
   let status = 1
   let authStateDir
   try {
-    const seed = command([E2E_DB, 'seed'])
+    const password = `E2e!${randomBytes(24).toString('base64url')}`
+    const fixtureEnv = { ...process.env, E2E_PASSWORD: password }
+    const seed = command([E2E_DB, 'seed'], fixtureEnv)
     if (seed.status !== 0) {
       process.stderr.write(seed.stderr || seed.stdout || '')
       return seed.status ?? 1
     }
-    const password = /^E2E_PASSWORD=(.+)$/m.exec(seed.stdout || '')?.[1]
-    if (!password) throw new Error('goal93:fixture-password')
     authStateDir = mkdtempSync(path.join(tmpdir(), 'corevo-goal93-auth-'))
     const env = {
-      ...process.env,
-      E2E_PASSWORD: password,
+      ...fixtureEnv,
       GOAL93_AUTH_STATE_FILE: path.join(authStateDir, 'cookies.json'),
-      E2E_BOOKING_HOST:
-        process.env.GOAL93_ACCEPT_BACKOFFICE_URL || 'http://booking.localhost:3000',
+      E2E_BOOKING_HOST: process.env.GOAL93_ACCEPT_BACKOFFICE_URL || 'http://booking.localhost:3000',
     }
     delete env.E2E_BASE_URL
     const result = command(

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { moduleCtx } from '@/lib/admin/module-ctx'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
+import { resolveReadyTenantAssetId } from '@/lib/media/lifecycle'
 import { BLOG_STATUSES, slugify } from './types'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
@@ -19,26 +20,33 @@ function blogWriteError(error: { code?: string; message?: string } | null): stri
   return GENERIC
 }
 
-/**
- * Resolve a submitted media asset id to a value safe to persist.
- * '' / missing → null. A non-empty id is verified to belong to THIS tenant
- * (defence-in-depth: a tampered cross-tenant id resolves to null, never persists).
- */
-async function resolveTenantAssetId(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  tenantId: string,
-  raw: string,
-): Promise<string | null> {
-  const id = raw.trim()
-  if (!id) return null
-  const { data } = await supabase
-    .from('media_assets')
-    .select('id')
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .eq('status', 'ready')
-    .maybeSingle()
-  return data ? id : null
+type BlogPostFields = {
+  title: string
+  slug: string
+  excerpt: string | null
+  body: string | null
+  tag: string | null
+  sort_order: number
+}
+
+function parseBlogPostFields(fd: FormData): { fields: BlogPostFields } | { error: string } {
+  const title = String(fd.get('title') ?? '').trim()
+  if (!title) return { error: 'Ange en rubrik.' }
+
+  const slug = slugify(String(fd.get('slug') ?? '').trim() || title)
+  if (!slug) return { error: 'Ange en giltig slug.' }
+
+  const parsedSortOrder = parseInt(String(fd.get('sort_order') ?? '').trim(), 10)
+  return {
+    fields: {
+      title,
+      slug,
+      excerpt: String(fd.get('excerpt') ?? '').trim() || null,
+      body: String(fd.get('body') ?? '').trim() || null,
+      tag: String(fd.get('tag') ?? '').trim() || null,
+      sort_order: Number.isInteger(parsedSortOrder) ? parsedSortOrder : 0,
+    },
+  }
 }
 
 // ── Blog posts ─────────────────────────────────────────────────────────────────
@@ -47,35 +55,19 @@ export async function createBlogPost(_p: ActionState, fd: FormData): Promise<Act
   const ctx = await moduleCtx(fd, 'blogg')
   if (!ctx) return { error: NO_TENANT }
 
-  const title = String(fd.get('title') ?? '').trim()
-  if (!title) return { error: 'Ange en rubrik.' }
-
-  const slugRaw = String(fd.get('slug') ?? '').trim()
-  const slug = slugify(slugRaw || title)
-  if (!slug) return { error: 'Ange en giltig slug.' }
-
-  const excerpt = String(fd.get('excerpt') ?? '').trim() || null
-  const body = String(fd.get('body') ?? '').trim() || null
-
-  const sortOrderRaw = String(fd.get('sort_order') ?? '').trim()
-  const sort_order = sortOrderRaw !== '' ? parseInt(sortOrderRaw, 10) : 0
+  const parsed = parseBlogPostFields(fd)
+  if ('error' in parsed) return parsed
 
   const supabase = await createClient()
-  const cover_asset_id = await resolveTenantAssetId(
+  const cover_asset_id = await resolveReadyTenantAssetId(
     supabase,
     ctx.tenant.id,
     String(fd.get('cover_asset_id') ?? ''),
   )
   const { error } = await supabase.from('blog_posts').insert({
     tenant_id: ctx.tenant.id,
-    title,
-    slug,
-    excerpt,
-    body,
-    // goal-64 (0057): etiketten mallarna ritar över rubriken. Tom → null → ingen etikett.
-    tag: String(fd.get('tag') ?? '').trim() || null,
+    ...parsed.fields,
     status: 'draft',
-    sort_order: Number.isInteger(sort_order) ? sort_order : 0,
     cover_asset_id,
   })
   if (error) return { error: blogWriteError(error) }
@@ -92,22 +84,12 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
   const id = String(fd.get('id') ?? '').trim()
   if (!id) return { error: 'Saknar inlägg.' }
 
-  const title = String(fd.get('title') ?? '').trim()
-  if (!title) return { error: 'Ange en rubrik.' }
-
-  const slugRaw = String(fd.get('slug') ?? '').trim()
-  const slug = slugify(slugRaw || title)
-  if (!slug) return { error: 'Ange en giltig slug.' }
-
-  const excerpt = String(fd.get('excerpt') ?? '').trim() || null
-  const body = String(fd.get('body') ?? '').trim() || null
-
-  const sortOrderRaw = String(fd.get('sort_order') ?? '').trim()
-  const sort_order = sortOrderRaw !== '' ? parseInt(sortOrderRaw, 10) : 0
+  const parsed = parseBlogPostFields(fd)
+  if ('error' in parsed) return parsed
 
   const supabase = await createClient()
 
-  const cover_asset_id = await resolveTenantAssetId(
+  const cover_asset_id = await resolveReadyTenantAssetId(
     supabase,
     ctx.tenant.id,
     String(fd.get('cover_asset_id') ?? ''),
@@ -116,13 +98,7 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
   const { error } = await supabase
     .from('blog_posts')
     .update({
-      title,
-      slug,
-      excerpt,
-      body,
-      // goal-64 (0057): måste gå att ÄNDRA och TA BORT, inte bara sättas en gång.
-      tag: String(fd.get('tag') ?? '').trim() || null,
-      sort_order: Number.isInteger(sort_order) ? sort_order : 0,
+      ...parsed.fields,
       cover_asset_id,
     })
     .eq('id', id)

@@ -55,7 +55,7 @@ export function EloriaOm({ content, tenant }: ThemePageProps) {
         ) : null}
       </section>
 
-      <p className={styles.elSrOnly}>{tenant.name}</p>
+      <p className="sr-only">{tenant.name}</p>
     </>
   )
 }

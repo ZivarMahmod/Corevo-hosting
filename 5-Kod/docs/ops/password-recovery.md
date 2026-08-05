@@ -16,7 +16,7 @@ varje aktiv inloggningsorigin:
 
 - `https://booking.corevo.se/aterstall-losenord`
 - `https://superbooking.corevo.se/aterstall-losenord`
-- `https://minbooking.corevo.se/aterstall-losenord` så länge legacy-dörren finns
+- `https://minbooking.corevo.se/aterstall-losenord`
 - varje tenant-/egen domän där kundkonton tillåts
 - motsvarande preview-URL endast i separat stagingprojekt
 

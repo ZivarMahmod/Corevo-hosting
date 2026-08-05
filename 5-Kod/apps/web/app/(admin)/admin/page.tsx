@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { dashboardData, listLocations, staffDay, type AdminBooking } from '@/lib/admin/data'
-import { getAdminModuleStates, isBookingActivated } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { resolvePlats } from '@/lib/admin/plats'
 import { requiredLocationId } from '@/lib/admin/location-scope'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
@@ -136,7 +136,7 @@ export default async function AdminPage({
   const pendingApproval = requiresApproval ? active.filter((b) => b.status === 'pending') : []
   const attentionCount = pendingApproval.length + data.cancellationsToday.length
 
-  const bookingPaused = !isBookingActivated(moduleStates)
+  const bookingDisabled = !isModuleActivated(moduleStates, 'booking')
 
   // ── Siffror ────────────────────────────────────────────────────────────────
   const workingStaff = roster.filter((s) => s.start)
@@ -227,9 +227,9 @@ export default async function AdminPage({
         </div>
       </div>
 
-      {bookingPaused && (
+      {bookingDisabled && (
         <Callout tone="warning" icon="alert">
-          <strong>Publik bokning är pausad.</strong> Kunder kan inte boka på din sida just nu.
+          <strong>Publik bokning är avstängd.</strong> Kunder kan inte boka på din sida just nu.
           Bokningar du själv lägger in i kalendern fungerar som vanligt.
         </Callout>
       )}

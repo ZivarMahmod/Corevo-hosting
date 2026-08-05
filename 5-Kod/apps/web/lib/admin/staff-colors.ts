@@ -31,8 +31,6 @@ export const STAFF_PALETTE = [
   '#9D174D', // vinröd
 ] as const
 
-export type StaffColor = (typeof STAFF_PALETTE)[number] | (string & {})
-
 /** Stabil hash → samma anställd får samma färg vid varje render, på varje enhet.
  *  (djb2; vi behöver spridning, inte kryptografi.) */
 function hash(id: string): number {
@@ -59,12 +57,4 @@ export function staffInitials(name: string): string {
   if (!first || !last) return '?'
   if (parts.length === 1) return first.slice(0, 2).toUpperCase()
   return (first.slice(0, 1) + last.slice(0, 1)).toUpperCase()
-}
-
-/** Färgerna som ännu är fria i tenanten — så väljaren inte föreslår en upptagen färg.
- *  Full palett (fler anställda än färger) → hela paletten, dubblett är bättre än ingen. */
-export function availableColors(taken: readonly (string | null | undefined)[]): string[] {
-  const used = new Set(taken.filter(Boolean).map((c) => (c as string).toLowerCase()))
-  const free = STAFF_PALETTE.filter((c) => !used.has(c.toLowerCase()))
-  return free.length > 0 ? [...free] : [...STAFF_PALETTE]
 }

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { bookingStatusPresentation } from './confirmation-status'
+import { bookingStatusLabel, bookingStatusPresentation } from './confirmation-status'
 
 describe('public booking status presentation', () => {
+  it('owns the shared Swedish booking status labels', () => {
+    expect(bookingStatusLabel('pending')).toBe('Ej bekräftad')
+    expect(bookingStatusLabel('no_show')).toBe('Uteblev')
+    expect(bookingStatusLabel('legacy')).toBe('legacy')
+  })
+
   it('never presents a pending request as confirmed', () => {
     const pending = bookingStatusPresentation('pending')
 

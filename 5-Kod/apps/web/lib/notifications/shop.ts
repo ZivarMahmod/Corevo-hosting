@@ -3,9 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
 import { sendEmail } from './email'
 import { loadEmailBrand } from './brand'
-import { shell } from './templates'
+import { esc, shell } from './templates'
 import { logger } from '@/lib/observability'
-import { formatCents } from '@/lib/admin/shop/types'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 
 // Webshop-kundmejl (goal-54): statusmejl till kunden när en order bekräftas,
 // blir redo eller slutförs. Best-effort som all annan notifiering — ett mejlfel
@@ -29,10 +29,6 @@ const COPY: Record<MailableStatus, { title: string; lead: string }> = {
     title: 'Tack för din beställning',
     lead: 'Din beställning är nu slutförd. Här är en sammanfattning:',
   },
-}
-
-function esc(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 }
 
 /**
@@ -86,7 +82,7 @@ export async function sendOrderPlacedEmail(
       .map(
         (it) =>
           `<tr><td style="padding:6px 0;font-size:14px;color:#211C17">${esc(it.product_name)} × ${it.quantity}</td>` +
-          `<td style="padding:6px 0;font-size:14px;color:#211C17;text-align:right;white-space:nowrap">${esc(formatCents(it.unit_price_cents * it.quantity, order.currency))}</td></tr>`,
+          `<td style="padding:6px 0;font-size:14px;color:#211C17;text-align:right;white-space:nowrap">${esc(formatShopPrice(it.unit_price_cents * it.quantity, order.currency))}</td></tr>`,
       )
       .join('')
 
@@ -107,7 +103,7 @@ export async function sendOrderPlacedEmail(
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #E4DAC6">
         ${rows}
         <tr><td style="padding:10px 0 0;border-top:1px solid #E4DAC6;font-size:14px;font-weight:600;color:#211C17">Totalt</td>
-        <td style="padding:10px 0 0;border-top:1px solid #E4DAC6;font-size:14px;font-weight:600;color:#211C17;text-align:right;white-space:nowrap">${esc(formatCents(order.total_cents, order.currency))}</td></tr>
+        <td style="padding:10px 0 0;border-top:1px solid #E4DAC6;font-size:14px;font-weight:600;color:#211C17;text-align:right;white-space:nowrap">${esc(formatShopPrice(order.total_cents, order.currency))}</td></tr>
       </table>
       <p style="margin:14px 0 0;font-size:14px;color:#6A5F52">${esc(fulfilmentLine)}</p>
       ${paymentNote}
@@ -120,14 +116,10 @@ export async function sendOrderPlacedEmail(
       from: brand.from,
       replyTo: brand.replyTo,
     })
-    if (res.ok) logger.info('shop.notify.sent', { orderId, status: 'placed', to })
+    if (res.ok) logger.info('shop.notify.sent', { orderId, status: 'placed' })
     else if (!res.skipped) logger.warn('shop.notify.failed', { orderId, status: 'placed', error: res.error })
-  } catch (err) {
-    logger.warn('shop.notify.threw', {
-      orderId,
-      status: 'placed',
-      error: err instanceof Error ? err.message : String(err),
-    })
+  } catch {
+    logger.warn('shop.notify.threw', { orderId, status: 'placed' })
   }
 }
 
@@ -183,7 +175,7 @@ export async function sendOrderStatusEmail(
       .map(
         (it) =>
           `<tr><td style="padding:6px 0;font-size:14px;color:#211C17">${esc(it.product_name)} × ${it.quantity}</td>` +
-          `<td style="padding:6px 0;font-size:14px;color:#211C17;text-align:right;white-space:nowrap">${esc(formatCents(it.unit_price_cents * it.quantity, order.currency))}</td></tr>`,
+          `<td style="padding:6px 0;font-size:14px;color:#211C17;text-align:right;white-space:nowrap">${esc(formatShopPrice(it.unit_price_cents * it.quantity, order.currency))}</td></tr>`,
       )
       .join('')
     const tracking = order.tracking_number
@@ -195,7 +187,7 @@ export async function sendOrderStatusEmail(
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #E4DAC6">
         ${rows}
         <tr><td style="padding:10px 0 0;border-top:1px solid #E4DAC6;font-size:14px;font-weight:600;color:#211C17">Totalt</td>
-        <td style="padding:10px 0 0;border-top:1px solid #E4DAC6;font-size:14px;font-weight:600;color:#211C17;text-align:right;white-space:nowrap">${esc(formatCents(order.total_cents, order.currency))}</td></tr>
+        <td style="padding:10px 0 0;border-top:1px solid #E4DAC6;font-size:14px;font-weight:600;color:#211C17;text-align:right;white-space:nowrap">${esc(formatShopPrice(order.total_cents, order.currency))}</td></tr>
       </table>
       ${tracking}`
 
@@ -206,13 +198,9 @@ export async function sendOrderStatusEmail(
       from: brand.from,
       replyTo: brand.replyTo,
     })
-    if (res.ok) logger.info('shop.notify.sent', { orderId, status, to })
+    if (res.ok) logger.info('shop.notify.sent', { orderId, status })
     else if (!res.skipped) logger.warn('shop.notify.failed', { orderId, status, error: res.error })
-  } catch (err) {
-    logger.warn('shop.notify.threw', {
-      orderId,
-      status,
-      error: err instanceof Error ? err.message : String(err),
-    })
+  } catch {
+    logger.warn('shop.notify.threw', { orderId, status })
   }
 }

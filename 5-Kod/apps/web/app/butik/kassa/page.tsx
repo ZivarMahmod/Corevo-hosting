@@ -2,9 +2,8 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-// goal-55 körning 7A: kassan flyttad till (public)/kassa så köparen aldrig byter
-// värld (temade naven behålls). Filen behålls som ren redirect (build-once-never-
-// delete) — gamla länkar/bokmärken till /butik/kassa landar rätt.
+// Gamla publicerade länkar och bokmärken till /butik/kassa behåller sitt URL-kontrakt
+// genom denna redirect till den kanoniska kassan.
 export default function KassaRedirect() {
   redirect('/kassa')
 }

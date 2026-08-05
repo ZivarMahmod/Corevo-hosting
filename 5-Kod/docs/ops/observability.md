@@ -52,7 +52,7 @@ Tills en deploy körts: den externa Sentry-sinken är **obevisad live** — pås
 den landar externt utan steg 1–4.
 
 ## drift-och-logg-sidan
-Audit-feeden (`audit_log`, cross-tenant) är RIKTIG data — rör inte skrivvägen
-(build-once-never-delete). Hälsoraden (4 pill: API-uptid/Workers/DB-pool/Köade SMS) är
+Audit-feeden (`audit_log`, cross-tenant) är RIKTIG append-only-data — rör inte
+skrivvägen. Hälsoraden (4 pill: API-uptid/Workers/DB-pool/Köade SMS) är
 ärligt **"— · ej kopplad"** eftersom ingen telemetri-källa finns i stacken utan ny ops.
 Aldrig en fabricerad siffra (status-honesty-regeln).

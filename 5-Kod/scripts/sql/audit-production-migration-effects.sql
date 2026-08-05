@@ -1,9 +1,40 @@
 -- Read-only production audit for migration effects that were applied outside the
--- normal Supabase CLI history. This file must never mutate schema, data, grants,
--- policies, or migration history.
+-- normal Supabase CLI history. This file must never mutate persistent schema, data,
+-- grants, policies, or migration history.
 --
 -- Run from 5-Kod/:
 --   supabase db query --linked --file scripts/sql/audit-production-migration-effects.sql
+
+-- pg_cron is intentionally absent in local/disposable databases. Keep the audit's
+-- schedule check in this session so its cron.job query is never planned there.
+do $$
+begin
+  perform set_config('corevo.audit_cron_sweeps_ok', 'false', false);
+  if to_regclass('cron.job') is not null then
+    perform set_config(
+      'corevo.audit_cron_sweeps_ok',
+      (
+        not exists (
+          select required.jobname, required.schedule
+          from (values
+            ('corevo-expire-pending-bookings', '*/15 * * * *'),
+            ('corevo-prune-shop-reserves', '*/15 * * * *'),
+            ('corevo-prune-slot-holds', '*/15 * * * *'),
+            ('corevo-prune-contact-messages', '10 4 * * *')
+          ) required(jobname, schedule)
+          where not exists (
+            select 1 from cron.job j
+            where j.jobname = required.jobname
+              and j.schedule = required.schedule
+              and j.active = true
+          )
+        )
+      )::text,
+      false
+    );
+  end if;
+end
+$$;
 
 with checks(version, check_name, passed, evidence) as (
   values
@@ -380,22 +411,7 @@ with checks(version, check_name, passed, evidence) as (
     (
       '0090',
       'database cron sweeps',
-      to_regclass('cron.job') is not null
-      and not exists (
-        select required.jobname, required.schedule
-        from (values
-          ('corevo-expire-pending-bookings', '*/15 * * * *'),
-          ('corevo-prune-shop-reserves', '*/15 * * * *'),
-          ('corevo-prune-slot-holds', '*/15 * * * *'),
-          ('corevo-prune-contact-messages', '10 4 * * *')
-        ) required(jobname, schedule)
-        where not exists (
-          select 1 from cron.job j
-          where j.jobname = required.jobname
-            and j.schedule = required.schedule
-            and j.active = true
-        )
-      ),
+      current_setting('corevo.audit_cron_sweeps_ok', true) = 'true',
       'four active named pg_cron jobs with expected schedules'
     ),
     (
@@ -499,3 +515,64 @@ with checks(version, check_name, passed, evidence) as (
 select version, check_name, passed, evidence
 from checks
 order by version;
+
+select
+  '20260804123000' as version,
+  'push transport retired' as check_name,
+  not exists (
+    select 1 from public.customer_notification_prefs where push_enabled
+  )
+  and not exists (
+    select 1 from public.push_subscriptions where revoked_at is null
+  )
+  and not exists (
+    select 1 from public.notifications_outbox
+    where chosen_channel = 'push'
+      and status in ('routing', 'queued', 'attempting', 'delivery_started')
+  )
+  and not exists (
+    select 1 from public.notifications_outbox
+    where chosen_channel in ('email', 'sms')
+      and attempt_count >= max_attempts
+      and (
+        status = 'queued'
+        or (status = 'attempting' and (lease_expires_at is null or lease_expires_at <= now()))
+      )
+  ) as passed,
+  'no active push preference, subscription, active or uncertain push row, or exhausted nonterminal fallback' as evidence;
+
+select
+  '20260804140000' as version,
+  'portal mode and booking links reconciled' as check_name,
+  not exists (
+    select 1 from private.customer_portal_links
+    where purpose = 'booking_access' and booking_id is null and revoked_at is null
+  )
+  and not exists (
+    select 1 from public.tenant_settings where settings ? 'customer_accounts_enabled'
+  ) as passed,
+  'no active unbound booking link or legacy account flag' as evidence;
+
+select
+  '20260804150000' as version,
+  'customer cancellation data reconciled' as check_name,
+  coalesce((
+    select convalidated
+    from pg_constraint
+    where conname = 'tenant_settings_cancellation_cutoff_hours_check'
+  ), false)
+  and not exists (
+    select 1
+    from public.bookings b
+    join public.payments p on p.tenant_id = b.tenant_id
+      and p.booking_id = b.id
+      and p.status = 'succeeded'
+    where b.status = 'cancelled'
+      and not exists (
+        select 1 from private.payment_refund_jobs j
+        where j.tenant_id = b.tenant_id
+          and j.booking_id = b.id
+          and j.payment_id = p.id
+      )
+  ) as passed,
+  'validated cutoff constraint and no cancelled paid booking without refund job' as evidence;

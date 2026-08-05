@@ -18,7 +18,7 @@ vi.mock('@/lib/r2/upload', () => ({
 }))
 
 import {
-  retainOwnedMediaUrls,
+  resolveReadyTenantAssetId,
   retireManagedImages,
   uploadManagedImage,
 } from './lifecycle'
@@ -53,6 +53,29 @@ beforeEach(() => {
   mocks.uploadImageAtKey.mockResolvedValue({ ok: true, key, url })
   mocks.deleteR2Keys.mockResolvedValue(true)
   mocks.deleteByPublicUrl.mockResolvedValue(undefined)
+})
+
+describe('resolveReadyTenantAssetId', () => {
+  it('accepts only a ready asset owned by the submitted tenant', async () => {
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: assetId }, error: null }),
+    }
+    query.select.mockReturnValue(query)
+    query.eq.mockReturnValue(query)
+
+    await expect(resolveReadyTenantAssetId(
+      { from: vi.fn().mockReturnValue(query) } as never,
+      tenantId,
+      ` ${assetId} `,
+    )).resolves.toBe(assetId)
+    expect(query.eq.mock.calls).toEqual([
+      ['id', assetId],
+      ['tenant_id', tenantId],
+      ['status', 'ready'],
+    ])
+  })
 })
 
 describe('uploadManagedImage', () => {
@@ -325,19 +348,5 @@ describe('retireManagedImages', () => {
     )
 
     expect(mocks.deleteByPublicUrl).not.toHaveBeenCalled()
-  })
-})
-
-describe('retainOwnedMediaUrls', () => {
-  it('keeps only URLs already stored for the tenant and de-duplicates them within the cap', () => {
-    const ownedA = 'https://cdn.example.test/media/tenant-a/asset-a'
-    const ownedB = 'https://cdn.example.test/media/tenant-a/asset-b'
-    const foreign = 'https://cdn.example.test/media/tenant-b/asset-x'
-
-    expect(retainOwnedMediaUrls(
-      [foreign, ownedA, ownedA, ownedB],
-      [ownedA, ownedB],
-      2,
-    )).toEqual([ownedA, ownedB])
   })
 })

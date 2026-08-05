@@ -18,7 +18,7 @@ name: Deploy
 
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       target:
@@ -71,8 +71,16 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+          STAGING_PROJECT_REF: ${{ secrets.STAGING_SUPABASE_PROJECT_REF }}
+          EXPECTED_STAGING_PROJECT_REF: ${{ vars.STAGING_SUPABASE_PROJECT_REF }}
+          PRODUCTION_PROJECT_REF: ${{ vars.PRODUCTION_SUPABASE_PROJECT_REF }}
         run: |
-          supabase link --project-ref "${{ secrets.STAGING_SUPABASE_PROJECT_REF }}"
+          test -n "$STAGING_PROJECT_REF"
+          test -n "$EXPECTED_STAGING_PROJECT_REF"
+          test -n "$PRODUCTION_PROJECT_REF"
+          test "$STAGING_PROJECT_REF" = "$EXPECTED_STAGING_PROJECT_REF"
+          test "$STAGING_PROJECT_REF" != "$PRODUCTION_PROJECT_REF"
+          supabase link --project-ref "$STAGING_PROJECT_REF"
           supabase db push
 
       - name: Verify staging migration history parity
@@ -82,7 +90,7 @@ jobs:
         run: |
           supabase migration list --linked > "$RUNNER_TEMP/staging-migrations.txt"
           node scripts/verify-database-release.mjs \
-            --expected-latest 20260803191057 \
+            --expected-latest 20260804150000 \
             --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121,0122,0123,0124,0125,0126,0127,0128,0129,0130,0131,0132,0133,0134,0135,0136 \
             --history-file "$RUNNER_TEMP/staging-migrations.txt" \
             --history-side remote
@@ -143,14 +151,32 @@ jobs:
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
+          E2E_ENABLED: ${{ vars.E2E_ENABLED }}
         run: |
-          count=$(gh api \
+          [ "$E2E_ENABLED" = "true" ] || {
+            echo "::error::E2E_ENABLED must be true before a production release."
+            exit 1
+          }
+
+          run_ids=$(gh api \
             --method GET \
             "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
             -f head_sha="$GITHUB_SHA" \
             -f per_page=100 \
-            --jq '[.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success")] | length')
-          [ "$count" -gt 0 ] || {
+            --jq '.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success" and .event == "workflow_dispatch") | .id')
+
+          run_id=""
+          for candidate_run_id in $run_ids; do
+            e2e_count=$(gh api \
+              --method GET \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/jobs?filter=latest&per_page=100" \
+              --jq '[.jobs[] | select(.name == "playwright e2e (staging)" and .conclusion == "success")] | length')
+            if [ "$e2e_count" -eq 1 ]; then
+              run_id="$candidate_run_id"
+              break
+            fi
+          done
+          [ -n "$run_id" ] || {
             echo "::error::No successful main CI with all configured release gates exists for $GITHUB_SHA"
             exit 1
           }
@@ -186,7 +212,7 @@ jobs:
           PROD_DB_MIGRATION: ${{ vars.PROD_DB_MIGRATION }}
         run: >-
           node scripts/verify-database-release.mjs
-          --expected-latest 20260803191057
+          --expected-latest 20260804150000
           --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116,0117,0118,0119,0120,0121,0122,0123,0124,0125,0126,0127,0128,0129,0130,0131,0132,0133,0134,0135,0136
           --production-checkpoint docs/ops/production-schema-checkpoint.json
           --declared-latest "$PROD_DB_MIGRATION"

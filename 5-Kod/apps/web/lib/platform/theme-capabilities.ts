@@ -8,30 +8,13 @@
  *   homeGallery  — galleri-sektionen på HEM finns bara i FreshCut/Salvia/Leander.
  *
  * Fält som INTE listas här gäller ALLA mallar via de DELADE undersidorna: /om
- * renderar AboutSplit (aboutCopy + aboutImage), AccentPhrase (italic),
- * StylistSpotlights (team) och ClosingCta (closingImage) för varje mall; /kontakt
- * ClosingCta. Byter man mall försvinner/dyker kontrollerna upp — sparade värden
+ * renderar AboutSplit (aboutCopy + aboutImage), AccentPhrase (italic) och
+ * ClosingCta (closingImage) för varje mall; teamfält renderas av /team. /kontakt
+ * renderar ClosingCta. Byter man mall försvinner/dyker kontrollerna upp — sparade värden
  * ligger kvar i tenant_settings och återanvänds när mallen väljs igen.
  */
-import {
-  FLORIST_CAPS,
-  FLORIST_EXTRA_HOME,
-  FLORIST_OWNS_COPY,
-} from '@/components/storefront/layouts/florist/registry'
-import { EKONOMI_CAPS, EKONOMI_OWNS_COPY } from '@/components/storefront/layouts/ekonomi/registry'
-import {
-  SALONG_CAPS,
-  SALONG_EXTRA_HOME,
-  SALONG_OWNS_COPY,
-} from '@/components/storefront/layouts/salong/registry'
-
-export type ThemeCaps = {
-  heroEyebrow: boolean
-  homeStats: boolean
-  homeGallery: boolean
-  /** HEM-layouten har en egen om-sektion (aboutCopyHome kan avvika från Om oss-sidan). */
-  homeAbout: boolean
-}
+import { THEME_DEFINITIONS } from '@/lib/storefront/themes/registry'
+import type { ExtraField, ThemeCaps } from '@/lib/storefront/themes/types'
 
 const DEFAULT_CAPS: ThemeCaps = { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: false }
 
@@ -39,9 +22,7 @@ export const THEME_CAPS: Record<string, ThemeCaps> = {
   // FLORIST-SVITEN (goal-58): varje mall deklarerar sina caps i sin egen
   // <key>.theme.ts — ingen mall kan hamna på DEFAULT_CAPS av glömska (floras
   // saknade rad göme dess galleri-kontroll i editorn i månader, se raden nedan).
-  ...FLORIST_CAPS,
-  ...EKONOMI_CAPS,
-  ...SALONG_CAPS,
+  ...Object.fromEntries(THEME_DEFINITIONS.map((theme) => [theme.key, theme.caps])),
   freshcut: { heroEyebrow: false, homeStats: false, homeGallery: true, homeAbout: true },
   salvia: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
   leander: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: false },
@@ -90,20 +71,18 @@ export function themeContentCompatibility(
 /**
  * goal-64 — MALLEN ÄGER SIN TEXT.
  *
- * Copy-precedensen är annars `kund > bransch > mall` (theme-content.ts → layerCopy):
+ * Copy-precedensen är annars `kund > bransch > mall` (theme-copy.ts → layerCopy):
  * BRANSCH_COPY läggs OVANPÅ mallens egna texter, så en florist-tenant får branschens
  * generiska hero-copy även när mallen har en egen. För mallar som är exakta kopior av
  * ett Claude Design-paket är designens copy en DEL av designen — att tyst byta ut den
- * är att improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * är att improvisera bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * Står mallen här hoppas bransch-nivån över: `kund > mall`. Ägarens settings.copy
  * vinner fortfarande — det ÄR redigeraren. Tom mängd i dag ⇒ noll beteendeändring;
  * de sju äldre temana + flora/freshcut/zentum är opåverkade.
  */
 export const THEME_OWNS_COPY: ReadonlySet<string> = new Set<string>([
-  ...FLORIST_OWNS_COPY,
-  ...EKONOMI_OWNS_COPY,
-  ...SALONG_OWNS_COPY,
+  ...THEME_DEFINITIONS.filter((theme) => theme.ownsCopy).map((theme) => theme.key),
 ])
 
 export function themeOwnsCopy(key: string): boolean {
@@ -113,14 +92,15 @@ export function themeOwnsCopy(key: string): boolean {
 /** Mall-EGNA extrafält på HEM (utöver de generella hero-fälten): fält + mallens
  *  inbyggda standardtext (layoutens fasta prosa). Redigeras i Sida-flikens Hem-flik;
  *  tomt = layoutens inbyggda text fortsätter gälla. */
-export type ExtraField = { name: string; label: string; hint?: string; rows?: number; default: string }
-
 export const THEME_EXTRA_HOME: Record<string, ExtraField[]> = {
   // goal-61 editor-paritet: florist-mallarna deklarerar sina redigerbara element i
   // sin egen <key>.theme.ts (extraHome) — registryt samlar, hit spreadas de. En mall
   // utan deklaration får inga extra fält (ingen tyst default).
-  ...FLORIST_EXTRA_HOME,
-  ...SALONG_EXTRA_HOME,
+  ...Object.fromEntries(
+    THEME_DEFINITIONS
+      .filter((theme) => theme.extraHome?.length)
+      .map((theme) => [theme.key, theme.extraHome!]),
+  ),
   // goal-57 körning 13 (D1/D4): floras pelare + invävda modul-band — varje synlig
   // text på hemmet redigerbar. Defaults = layoutens inbyggda strängar (FloraLayout).
   flora: [

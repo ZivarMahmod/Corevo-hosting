@@ -27,6 +27,7 @@ begin
   end loop;
 
   foreach v_rpc in array array[
+    'set_customer_portal_mode',
     'customer_portal_mint_link',
     'customer_portal_exchange_link',
     'customer_portal_session_snapshot',
@@ -106,6 +107,8 @@ declare
   v_booking_a uuid := gen_random_uuid();
   v_booking_b uuid := gen_random_uuid();
   v_link uuid;
+  v_link_expiry timestamptz;
+  v_link_intent uuid;
   v_session uuid := gen_random_uuid();
   v_session_digest text := repeat('b', 64);
   v_result record;
@@ -124,6 +127,8 @@ declare
   v_generic_public uuid;
   v_generic_failed_public uuid;
   v_generic_locked_public uuid;
+  v_mode_flow uuid := gen_random_uuid();
+  v_mode_session_id uuid;
 begin
   insert into public.tenants (id, slug, name, status) values
     (v_tenant_a, 'portal-test-a', 'Portal Test A', 'active'),
@@ -135,9 +140,9 @@ begin
      '{"customer_portal":{"mode":"passwordless_tenant"},"cancellation_cutoff_hours":24}'::jsonb);
   insert into public.tenant_domains (tenant_id, domain, is_primary, verified) values
     (v_tenant_a, 'portal-test-a.example', true, true);
-  insert into public.customers (id, tenant_id, full_name, phone, status) values
-    (v_customer_a, v_tenant_a, 'Portal A', '+46700000001', 'active'),
-    (v_customer_b, v_tenant_b, 'Portal B', '+46700000002', 'active');
+  insert into public.customers (id, tenant_id, full_name, phone, email, status) values
+    (v_customer_a, v_tenant_a, 'Portal A', '+46700000001', 'portal-a@example.test', 'active'),
+    (v_customer_b, v_tenant_b, 'Portal B', '+46700000002', 'portal-b@example.test', 'active');
   insert into public.locations (id, tenant_id, name, address, timezone, is_primary) values
     (v_location_a, v_tenant_a, 'A', 'Testgatan 1', 'Europe/Stockholm', true),
     (v_location_b, v_tenant_b, 'B', null, 'Europe/Stockholm', true);
@@ -187,16 +192,68 @@ begin
      gen_random_uuid(), 'sms', repeat('b', 64), '+46 ••• •• 02', repeat('d', 64),
      'delivered', statement_timestamp() + interval '5 minutes', statement_timestamp(), v_booking_b);
 
-  select m.link_public_id into v_link
+  select r.id into v_link_intent
+  from public.route_booking_notification(
+    p_tenant => v_tenant_a,
+    p_booking => v_booking_a,
+    p_staff => v_staff_a,
+    p_event_type => 'booking_confirmation',
+    p_event_key => 'portal-link-confirmation:' || v_booking_a::text,
+    p_category => 'transactional',
+    p_type_opt_in => null,
+    p_expected_statuses => array['confirmed']::text[],
+    p_payload => pg_catalog.jsonb_build_object(
+      'template', 'booking_confirmation', 'booking_id', v_booking_a
+    )
+  ) r;
+  if v_link_intent is null then raise exception 'portal_link_intent_missing'; end if;
+
+  select m.link_public_id, m.expires_at into v_link, v_link_expiry
   from public.customer_portal_mint_link(
     v_tenant_a, v_customer_a, 'booking_access', repeat('a', 64), 1,
-    statement_timestamp() + interval '15 minutes', gen_random_uuid()
+    statement_timestamp() + interval '15 minutes', v_link_intent
   ) m;
+  select * into v_result
+  from public.customer_portal_mint_link(
+    v_tenant_a, v_customer_a, 'booking_access', repeat('a', 64), 1,
+    statement_timestamp() + interval '1 minute', v_link_intent
+  );
+  if v_result.link_public_id <> v_link or v_result.expires_at <> v_link_expiry
+     or (select count(*) from private.customer_portal_links l
+         where l.delivery_intent_id = v_link_intent and l.purpose = 'booking_access') <> 1
+     or (select count(*) from private.customer_portal_audit a
+         where a.entity_public_id = v_link and a.event_type = 'link_minted') <> 1 then
+    raise exception 'portal_link_mint_not_idempotent';
+  end if;
+  begin
+    perform public.customer_portal_mint_link(
+      v_tenant_a, v_customer_a, 'booking_access', repeat('x', 64), 1,
+      statement_timestamp() + interval '15 minutes', v_link_intent
+    );
+    raise exception 'portal_link_intent_mismatch_allowed';
+  exception when sqlstate '22023' then
+    null;
+  end;
+
+  update public.notifications_outbox set booking_id = null where id = v_link_intent;
+
   select * into v_result
   from public.customer_portal_exchange_link(
     v_link, repeat('a', 64), v_session, v_session_digest, 1
   );
-  if v_result.outcome <> 'ok' then raise exception 'portal_exchange_failed'; end if;
+  if v_result.outcome <> 'ok' or v_result.booking_id <> v_booking_a then
+    raise exception 'portal_exchange_failed:%', row_to_json(v_result);
+  end if;
+  select * into v_result
+  from public.customer_portal_exchange_link(
+    v_link, repeat('a', 64), gen_random_uuid(), repeat('c', 64), 1,
+    v_session, v_session_digest
+  );
+  if v_result.outcome <> 'ok'
+     or v_result.session_public_id <> v_session
+     or v_result.booking_id <> v_booking_a then
+    raise exception 'portal_consumed_link_reopen_failed:%', row_to_json(v_result);
+  end if;
 
   select * into v_result
   from public.customer_portal_session_snapshot(v_session, v_session_digest);
@@ -478,10 +535,26 @@ begin
   end loop;
   perform pg_catalog.set_config('request.jwt.claims', '{}', true);
 
+  select r.id into v_link_intent
+  from public.route_booking_notification(
+    p_tenant => v_tenant_a,
+    p_booking => v_booking_a,
+    p_staff => v_staff_a,
+    p_event_type => 'booking_reminder',
+    p_event_key => 'portal-link-reminder:' || v_booking_a::text,
+    p_category => 'transactional',
+    p_type_opt_in => 'reminders',
+    p_expected_statuses => array['confirmed']::text[],
+    p_payload => pg_catalog.jsonb_build_object(
+      'template', 'booking_reminder', 'booking_id', v_booking_a
+    )
+  ) r;
+  if v_link_intent is null then raise exception 'portal_reauth_intent_missing'; end if;
+
   select m.link_public_id into v_link
   from public.customer_portal_mint_link(
     v_tenant_a, v_customer_a, 'booking_access', repeat('f', 64), 1,
-    statement_timestamp() + interval '15 minutes', gen_random_uuid()
+    statement_timestamp() + interval '15 minutes', v_link_intent
   ) m;
   v_session := gen_random_uuid();
   v_session_digest := repeat('9', 64);
@@ -489,7 +562,9 @@ begin
   from public.customer_portal_exchange_link(
     v_link, repeat('f', 64), v_session, v_session_digest, 1
   );
-  if v_result.outcome <> 'ok' then raise exception 'portal_reauthentication_failed'; end if;
+  if v_result.outcome <> 'ok' or v_result.booking_id <> v_booking_a then
+    raise exception 'portal_reauthentication_failed:%', row_to_json(v_result);
+  end if;
 
   select public.customer_portal_list_bookings(
     v_session, v_session_digest, 'history', null, null, 20
@@ -587,6 +662,113 @@ begin
     );
     raise exception 'portal_unknown_mode_did_not_fail_closed';
   exception when sqlstate '22023' then
+    null;
+  end;
+
+  -- The canonical setter creates the missing nested object and revokes every
+  -- passwordless credential kind. Re-enabling must not resurrect any of them.
+  update public.tenant_settings set settings = '{}'::jsonb where tenant_id = v_tenant_b;
+  select * into v_result from public.set_customer_portal_mode(
+    v_tenant_b, 'passwordless_tenant'
+  );
+  if v_result.mode <> 'passwordless_tenant'
+     or (select settings #>> '{customer_portal,mode}' from public.tenant_settings
+         where tenant_id = v_tenant_b) <> 'passwordless_tenant' then
+    raise exception 'portal_mode_nested_write_failed';
+  end if;
+
+  select m.link_public_id into v_link
+  from public.customer_portal_mint_link(
+    v_tenant_b, v_customer_b, 'recovery', repeat('t', 64), 1,
+    statement_timestamp() + interval '15 minutes', null
+  ) m;
+  insert into private.customer_portal_sessions (
+    public_id, tenant_id, customer_id, secret_digest, key_version,
+    idle_expires_at, absolute_expires_at
+  ) values (
+    gen_random_uuid(), v_tenant_b, v_customer_b, repeat('u', 64), 1,
+    statement_timestamp() + interval '1 day', statement_timestamp() + interval '7 days'
+  ) returning id into v_mode_session_id;
+  insert into private.customer_booking_trusts (
+    public_id, tenant_id, customer_id, secret_digest, key_version,
+    idle_expires_at, absolute_expires_at
+  ) values (
+    gen_random_uuid(), v_tenant_b, v_customer_b, repeat('v', 64), 1,
+    statement_timestamp() + interval '1 day', statement_timestamp() + interval '7 days'
+  );
+  insert into private.customer_portal_challenges (
+    public_id, tenant_id, customer_id, purpose, channel,
+    subject_digest, contact_digest, code_digest, key_version, expires_at
+  ) values (
+    gen_random_uuid(), v_tenant_b, v_customer_b, 'recovery', 'sms',
+    repeat('w', 64), repeat('x', 64), repeat('y', 64), 1,
+    statement_timestamp() + interval '5 minutes'
+  );
+  insert into private.customer_portal_verified_contacts (
+    tenant_id, customer_id, channel, contact_digest, contact_masked,
+    source_flow_public_id
+  ) values (
+    v_tenant_b, v_customer_b, 'sms', repeat('a', 64), '+46 ••• •• 02',
+    v_mode_flow
+  );
+  insert into private.customer_portal_contact_change_flows (
+    public_id, tenant_id, customer_id, session_id, subject_digest,
+    key_version, action, current_channel, current_contact_digest,
+    current_contact_masked, current_code_digest, current_expires_at,
+    current_resend_after, flow_expires_at, new_destination
+  ) values (
+    v_mode_flow, v_tenant_b, v_customer_b, v_mode_session_id, repeat('b', 64),
+    1, 'change_phone', 'sms', repeat('a', 64), '+46 ••• •• 02',
+    repeat('c', 64), statement_timestamp() + interval '5 minutes',
+    statement_timestamp() + interval '30 seconds',
+    statement_timestamp() + interval '10 minutes', '+46700000003'
+  );
+
+  select * into v_result from public.set_customer_portal_mode(v_tenant_b, 'off');
+  if v_result.mode <> 'off'
+     or (select settings #>> '{customer_portal,mode}' from public.tenant_settings
+         where tenant_id = v_tenant_b) <> 'off'
+     or exists (select 1 from private.customer_portal_links
+                where tenant_id = v_tenant_b and revoked_at is null and consumed_at is null)
+     or exists (select 1 from private.customer_portal_sessions
+                where tenant_id = v_tenant_b and revoked_at is null)
+     or exists (select 1 from private.customer_booking_trusts
+                where tenant_id = v_tenant_b and revoked_at is null)
+     or exists (select 1 from private.customer_portal_challenges
+                where tenant_id = v_tenant_b and revoked_at is null and consumed_at is null)
+     or exists (select 1 from private.customer_portal_verified_contacts
+                where tenant_id = v_tenant_b and revoked_at is null)
+     or exists (select 1 from private.customer_portal_contact_change_flows
+                where tenant_id = v_tenant_b
+                  and (revoked_at is null or new_destination is not null)) then
+    raise exception 'portal_mode_revocation_failed';
+  end if;
+  perform public.set_customer_portal_mode(v_tenant_b, 'passwordless_tenant');
+  select * into v_result from public.customer_portal_exchange_link(
+    v_link, repeat('t', 64), gen_random_uuid(), repeat('z', 64), 1
+  );
+  if v_result.outcome <> 'invalid' then raise exception 'portal_mode_credential_resurrected'; end if;
+
+  -- A credential statement that predates the current mode generation cannot
+  -- become active after a completed off/on cutover.
+  update public.tenant_settings ts
+  set settings = pg_catalog.jsonb_set(
+    ts.settings,
+    '{customer_portal,mode_changed_at}',
+    pg_catalog.to_jsonb(statement_timestamp() + interval '1 minute'),
+    true
+  )
+  where ts.tenant_id = v_tenant_b;
+  begin
+    insert into private.customer_portal_sessions (
+      public_id, tenant_id, customer_id, secret_digest, key_version,
+      idle_expires_at, absolute_expires_at
+    ) values (
+      gen_random_uuid(), v_tenant_b, v_customer_b, repeat('d', 64), 1,
+      statement_timestamp() + interval '1 day', statement_timestamp() + interval '7 days'
+    );
+    raise exception 'portal_mode_generation_fence_missing';
+  exception when sqlstate '55000' then
     null;
   end;
 

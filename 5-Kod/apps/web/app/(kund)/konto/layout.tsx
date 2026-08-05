@@ -1,17 +1,15 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { requirePortal } from '@/lib/auth/session'
-import { currentTenant } from '@/lib/tenant-data'
+import { currentRequestTenant, currentTenant } from '@/lib/tenant-data'
 import { PortalShell } from '@/components/portal/PortalShell'
-import { currentKundTenant } from '@/lib/kund/tenant'
 import { canRenderCustomerPortal } from '@/lib/kund/customer-host-fence'
 import { createClient } from '@/lib/supabase/server'
-import { signOut } from '@/app/(auth)/actions'
+import { signOut } from '@/lib/auth/actions'
 
 export const dynamic = 'force-dynamic'
 
-// Plan 015: kund-PWA:n — manifestet gör /konto installerbart ("Lägg till på
-// hemskärmen"); service workern registreras av PushOptIn först vid opt-in.
+// Kund-PWA:n är installerbar men registrerar ingen service worker för persondata.
 export const metadata: Metadata = { manifest: '/pwa/kund.webmanifest' }
 
 function WrongCustomerHost() {
@@ -51,8 +49,14 @@ function WrongCustomerHost() {
  * booking-host visit, where there is no host tenant, 404s too).
  */
 export default async function KontoLayout({ children }: { children: React.ReactNode }) {
+  const bundle = await currentTenant()
+  if (
+    bundle?.settings.portalMode !== 'legacy_account' ||
+    !bundle.settings.customerAccountsEnabled
+  ) notFound()
+
   const user = await requirePortal('kund')
-  const hostTenant = await currentKundTenant()
+  const hostTenant = await currentRequestTenant()
   const supabase = await createClient()
   const { data: customer } = hostTenant
     ? await supabase
@@ -80,9 +84,6 @@ export default async function KontoLayout({ children }: { children: React.ReactN
   // Branding and every account child are loaded only after the tenant identity
   // fence above has passed. A mismatched account can therefore render neither
   // another tenant's chrome nor its own data under the wrong host.
-  const bundle = await currentTenant()
-  if (!bundle?.settings.customerAccountsEnabled) notFound()
-
   // The /konto subtree is a STOREFRONT surface (the salon's own product), so it
   // carries the storefront world + the salon's theme. PortalShell now applies all
   // three on its kund-branch root — data-world, data-theme AND the inline

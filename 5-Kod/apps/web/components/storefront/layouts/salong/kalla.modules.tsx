@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice, shopCategoryChips } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
@@ -32,23 +33,15 @@ import styles from './kalla.module.css'
  * stängd butik). SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
-}
-
 /* ═════════════════════════════════ APOTEKET ═══════════════════════════════ */
 
-export function KallaShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function KallaShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   // Filens ord för det ofiltrerade urvalet är "Allt". Teasern har ingen filterrad i filen.
   const chips = teaser ? [] : shopCategoryChips(data, 'Allt')
@@ -80,12 +73,6 @@ export function KallaShop({ data, paused, limit, moreHref, content }: ThemeShopV
         </div>
       ) : null}
 
-      {paused ? (
-        <p role="status" className={styles.kaNotice}>
-          Apoteket är tillfälligt stängt för beställningar. Vi öppnar igen snart.
-        </p>
-      ) : null}
-
       {products.length === 0 ? (
         <p className={styles.kaEmpty}>
           {data.activeCategory
@@ -102,7 +89,7 @@ export function KallaShop({ data, paused, limit, moreHref, content }: ThemeShopV
                 aria-label={`${p.name} — visa produkten`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.kaSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <div className={styles.kaShopBody}>
                 {/* Filens `{{ p.cat }}` — kategorin i spärrad mikroversal över namnet.
@@ -114,11 +101,9 @@ export function KallaShop({ data, paused, limit, moreHref, content }: ThemeShopV
                 {p.description ? <p className={styles.kaShopDesc}>{p.description}</p> : null}
                 {/* formatProductPrice → "fr. X kr" när produkten bär price_from. */}
                 <p className={styles.kaShopPrice}>{formatProductPrice(p)}</p>
-                {paused ? null : (
-                  <div className={styles.kaShopBuy}>
-                    <AddToCart product={p} fulfilment={config.fulfilment} />
-                  </div>
-                )}
+                <div className={styles.kaShopBuy}>
+                  <AddToCart product={p} fulfilment={config.fulfilment} />
+                </div>
               </div>
             </li>
           ))}
@@ -153,7 +138,7 @@ export function KallaBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
       ) : (
         <ul className={styles.kaBloggList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggShortDate(p.publishedAt)
             return (
               <li key={p.id}>
                 <a href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.kaBloggCard}>
@@ -168,7 +153,9 @@ export function KallaBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
                   <div className={styles.kaBloggBody}>
                     {/* Filen: "{{ b.tag }} · {{ b.date }}" i teal mikroversal. Taggen = blog_posts.tag. */}
                     {p.tag || date ? (
-                      <p className={styles.kaBloggDate}>{[p.tag, date].filter(Boolean).join(' · ')}</p>
+                      <p className={styles.kaBloggDate}>
+                        {[p.tag, date].filter(Boolean).join(' · ')}
+                      </p>
                     ) : null}
                     <h2 className={styles.kaBloggTitle}>{p.title}</h2>
                     {p.excerpt ? <p className={styles.kaBloggExcerpt}>{p.excerpt}</p> : null}
@@ -223,9 +210,7 @@ export function KallaTeam({ members, content }: ThemeTeamViewProps) {
               />
             ) : null}
             <h2 className={styles.kaTeamName}>{m.name}</h2>
-            {m.title && m.title !== m.name ? (
-              <p className={styles.kaTeamRoll}>{m.title}</p>
-            ) : null}
+            {m.title && m.title !== m.name ? <p className={styles.kaTeamRoll}>{m.title}</p> : null}
             {m.bio ? <p className={styles.kaTeamBio}>{m.bio}</p> : null}
             {m.specialties ? <p className={styles.kaTeamSpec}>{m.specialties}</p> : null}
             <a href={`/boka?personal=${m.id}`} className={styles.kaTeamBook}>
@@ -251,10 +236,14 @@ export function KallaGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.kaGalleri} data-module="galleri">
       <div className={styles.kaPageHead}>
-        <p className={styles.kaPageEyebrow}
+        <p
+          className={styles.kaPageEyebrow}
           data-corevo-editor-field="galleryEyebrow"
           data-corevo-editor-stable-field="galleryEyebrow"
-          hidden={!content.galleryEyebrow}>{content.galleryEyebrow ?? ''}</p>
+          hidden={!content.galleryEyebrow}
+        >
+          {content.galleryEyebrow ?? ''}
+        </p>
         <h1 className={styles.kaPageTitle}>{content.galleryTitle ?? 'Rummet'}</h1>
       </div>
 
@@ -320,7 +309,8 @@ export function KallaLojalitet({ config, plans, content }: ThemeLojalitetViewPro
               <p className={styles.kaPlanTag}>{p.featured ? 'Vanligast' : ' '}</p>
               <h3 className={styles.kaPlanName}>{p.name}</h3>
               <p className={styles.kaPlanPrice}>
-                {formatPlanPrice(p.priceCents)} / {loyaltyIntervalLabel(p.interval).replace('per ', '')}
+                {formatPlanPrice(p.priceCents)} /{' '}
+                {loyaltyIntervalLabel(p.interval).replace('per ', '')}
               </p>
               <div className={styles.kaPlanPerks}>
                 {p.perks.map((perk) => (

@@ -24,7 +24,7 @@ import styles from './blomstertorget.module.css'
  * Filen har varken hero-band, team-sektion eller presentkortsrad på hemmet — och då har
  * inte mallen det heller. Modulerna nås via masthead, kupongen och sidfoten, precis som i
  * filen. Att lägga till en sektion "för att de andra mallarna har en" ÄR att improvisera
- * bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * MOCKDATAN ÄR BARA FORMEN: prisnoteringarna och torgets varor kommer ur shop-modulen
  * (modules.shopTeasers), notiserna ur bloggen (modules.bloggTeasers) och kungörelserna ur
@@ -48,7 +48,7 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const picks = content.galleryImages.slice(1, 3)
-  // Torgpriserna nås bara när shopen är live/pausad; annars pekar CTA:n på tjänsterna.
+  // Torgpriserna nås bara när shopen är live; annars pekar CTA:n på tjänsterna.
   const priceHref = shopReachable ? '/shop' : '/tjanster'
 
   return (

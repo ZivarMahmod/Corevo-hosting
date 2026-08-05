@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { sendPasswordReset, setTenantStatus } from '@/lib/platform/actions'
+import { sendPasswordReset } from '@/lib/platform/actions/people'
+import { setTenantStatus } from '@/lib/platform/actions/status'
 import { Button, Icon, useToast } from '@/components/portal/ui'
 import styles from './tenant-detail.module.css'
 
@@ -20,13 +21,11 @@ import styles from './tenant-detail.module.css'
  */
 export function TenantHeaderActions({
   tenantId,
-  tenantName,
   storefrontUrl,
   salonAdminEmail,
   serviceRoleAvailable,
 }: {
   tenantId: string
-  tenantName: string
   storefrontUrl: string | null
   salonAdminEmail: string | null
   serviceRoleAvailable: boolean
@@ -76,7 +75,7 @@ export function TenantHeaderActions({
  * Riskzon-kort (law: SuperTenant.jsx Drift danger card) — Zivar-requested REAL
  * delete. "Ta bort salong" is a two-step soft-delete: setTenantStatus('deleted')
  * flips tenants.status only — the public storefront + admin are blocked while ALL
- * rows + history are kept (build-once-never-delete). A HARD row-deletion is still
+ * rows + history are kept for audit, relationer och återställning. A HARD row-deletion is still
  * permanently blocked by the audit-guard; this never issues a `.delete()`. On
  * success we leave the (now-deleted) detail page back to the list.
  */

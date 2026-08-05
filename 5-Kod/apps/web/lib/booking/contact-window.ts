@@ -10,11 +10,3 @@ export function contactWindowBounds(now: Date = new Date()): {
     toUtc: new Date(now.getTime() + CONTACT_AFTER_HOURS * 60 * 60 * 1000).toISOString(),
   }
 }
-
-export function isWithinContactWindow(startISO: string, now: Date = new Date()): boolean {
-  const value = new Date(startISO).getTime()
-  if (!Number.isFinite(value)) return false
-  const from = now.getTime() - CONTACT_BEFORE_HOURS * 60 * 60 * 1000
-  const to = now.getTime() + CONTACT_AFTER_HOURS * 60 * 60 * 1000
-  return value >= from && value <= to
-}

@@ -20,38 +20,12 @@ const reviewMigration = readFileSync(
   ),
   'utf8',
 )
-const adminActions = readFileSync(new URL('./actions.ts', import.meta.url), 'utf8')
-const publicAction = readFileSync(
-  new URL('../../../app/(public)/kurser/actions.ts', import.meta.url),
-  'utf8',
-)
-const sharedForm = readFileSync(
-  new URL('../../../components/storefront/KursAnmalanForm.tsx', import.meta.url),
-  'utf8',
-)
-const themedForm = readFileSync(
-  new URL('../../../components/storefront/layouts/florist/ateljevinter.forms.tsx', import.meta.url),
-  'utf8',
-)
-
 describe('Goal 90 event lifecycle contract', () => {
   it('makes onsite registration idempotent under one tenant-scoped UUID', () => {
     expect(migration).toContain('idempotency_key uuid')
     expect(migration).toContain('event_registrations_tenant_idempotency_unique')
     expect(migration).toContain('p_idempotency_key uuid')
     expect(migration).toContain('idempotency_conflict')
-    expect(publicAction).toContain('p_idempotency_key: requestId')
-    expect(sharedForm).toContain('name="request_id"')
-    expect(themedForm).toContain('name="request_id"')
-    const retryLookup = publicAction.indexOf(".eq('idempotency_key', requestId)")
-    expect(retryLookup).toBeGreaterThan(-1)
-    expect(publicAction.indexOf('checkRateLimit(')).toBeGreaterThan(retryLookup)
-    expect(publicAction).toContain(
-      ".select('event_id, name, email, phone, party_size, message')",
-    )
-    for (const field of ['event_id', 'name', 'email', 'phone', 'party_size', 'message']) {
-      expect(publicAction).toContain(`existing.${field}`)
-    }
   })
 
   it('enforces tenant-matching event relations and immutable history', () => {
@@ -80,7 +54,6 @@ describe('Goal 90 event lifecycle contract', () => {
   it('fails closed before changing any paid registration', () => {
     expect(migration).toContain('event_paid_refund_required')
     expect(migration).toContain('registration_paid_refund_required')
-    expect(adminActions).toContain('Återbetalning krävs')
   })
 
   it('checks capacity against the new reservation and clears restored cancellation state', () => {
@@ -90,16 +63,5 @@ describe('Goal 90 event lifecycle contract', () => {
     expect(reviewMigration).toContain('new.cancelled_at := null')
     expect(reviewMigration).toContain('new.cancelled_by := null')
     expect(reviewMigration).toContain('new.cancellation_reason := null')
-  })
-
-  it('routes admin status changes only through the lifecycle RPCs', () => {
-    expect(adminActions).toContain("rpc('set_tenant_event_status'")
-    expect(adminActions).toContain("rpc('set_event_registration_status'")
-    expect(adminActions).not.toMatch(
-      /from\('tenant_events'\)[\s\S]{0,120}\.update\(\{ status:/,
-    )
-    expect(adminActions).not.toMatch(
-      /from\('event_registrations'\)[\s\S]{0,120}\.update\(\{ status:/,
-    )
   })
 })

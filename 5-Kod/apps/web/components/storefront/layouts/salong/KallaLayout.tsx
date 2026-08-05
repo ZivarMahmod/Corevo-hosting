@@ -3,6 +3,7 @@ import { Reveal } from '../../Reveal'
 import { Bookable } from '../../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './kalla.module.css'
 
@@ -23,7 +24,7 @@ import styles from './kalla.module.css'
  * Filen har varken butiks-, presentkorts- eller klubb-band på hemmet — och då har inte
  * mallen det heller. De modulerna nås via nav och sidfot, precis som i filen. Att lägga
  * till en sektion "för att grannmallen har en" ÄR att improvisera bort mallen
- * (CLAUDE.md § DESIGN-TROHET).
+ * (se AGENTS.md:s UI-acceptansregel).
  *
  * TEAMET är OWNER-ONLY: `content.team` är tom tills ägaren laddat upp riktiga personer, och
  * då ritas sektionen INTE alls. Mallen visar aldrig filens Ester/Nour/Vilgot som om de vore
@@ -88,7 +89,9 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
             data-corevo-editor-stable-field="hero_images.0"
             style={bandPhoto ? { backgroundImage: `url(${bandPhoto})` } : undefined}
           />
-          <p className={styles.kaBandCaption}>{content.homeGalleryEyebrow ?? 'Behandlingsrummet'}</p>
+          <p className={styles.kaBandCaption}>
+            {content.homeGalleryEyebrow ?? 'Behandlingsrummet'}
+          </p>
         </Reveal>
       </section>
 
@@ -150,7 +153,9 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
             className={styles.kaAboutPhoto}
             data-corevo-editor-field="about_image"
             data-corevo-editor-stable-field="about_image"
-            style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
+            style={
+              content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined
+            }
           />
         </Reveal>
       </section>
@@ -171,7 +176,12 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
                   />
                   <h3 className={styles.kaTeamName}>{m.name}</h3>
                   <p className={styles.kaTeamRoll}>{m.role}</p>
-                  <Bookable enabled={bookingReachable} as="span" className={styles.kaTextLink} label={`Boka ${m.name}`}>
+                  <Bookable
+                    enabled={bookingReachable}
+                    as="span"
+                    className={styles.kaTextLink}
+                    label={`Boka ${m.name}`}
+                  >
                     Boka {m.name} →
                   </Bookable>
                 </Reveal>
@@ -196,7 +206,9 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
                 <Reveal delay={i * 70}>
                   <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.kaNoteRow}>
                     <h3 className={styles.kaNoteRowTitle}>{p.title}</h3>
-                    <span className={styles.kaNoteRowDate}>{formatNoteDate(p.publishedAt)}</span>
+                    <span className={styles.kaNoteRowDate}>
+                      {formatBloggShortDate(p.publishedAt)}
+                    </span>
                   </Link>
                 </Reveal>
               </li>
@@ -206,12 +218,4 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
       ) : null}
     </div>
   )
-}
-
-/** Filens korta datumform ("8 juli") — inget år, inget klockslag. */
-function formatNoteDate(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
 }

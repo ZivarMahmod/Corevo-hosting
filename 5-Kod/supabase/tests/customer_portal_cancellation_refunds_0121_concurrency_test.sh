@@ -142,6 +142,33 @@ wait "$cancel_b_pid"
 grep -q '^cancelled$' "$tmp_dir/cancel-a"
 grep -q '^cancelled$' "$tmp_dir/cancel-b"
 
+docker exec -i "$db_container" psql -qAtX -v ON_ERROR_STOP=1 -U postgres -d postgres > "$tmp_dir/cancel-owner-a" <<'SQL' &
+set request.jwt.claim.role = 'service_role';
+select outcome from public.cancel_verified_customer_booking(
+  'c1210000-0000-4000-8000-000000000001',
+  'c1210000-0000-4000-8000-000000000074',
+  'c1210000-0000-4000-8000-000000000031',
+  'c1210000-0000-4000-8000-000000000021'
+);
+SQL
+cancel_owner_a_pid=$!
+docker exec -i "$db_container" psql -qAtX -v ON_ERROR_STOP=1 -U postgres -d postgres > "$tmp_dir/cancel-owner-b" <<'SQL' &
+set request.jwt.claim.role = 'service_role';
+select outcome from public.cancel_verified_customer_booking(
+  'c1210000-0000-4000-8000-000000000001',
+  'c1210000-0000-4000-8000-000000000074',
+  'c1210000-0000-4000-8000-000000000031',
+  'c1210000-0000-4000-8000-000000000021'
+);
+SQL
+cancel_owner_b_pid=$!
+wait "$cancel_owner_a_pid"
+wait "$cancel_owner_b_pid"
+cancelled_count="$(grep -h -c '^cancelled$' "$tmp_dir/cancel-owner-a" "$tmp_dir/cancel-owner-b" | awk '{ total += $1 } END { print total }')"
+already_count="$(grep -h -c '^already_cancelled$' "$tmp_dir/cancel-owner-a" "$tmp_dir/cancel-owner-b" | awk '{ total += $1 } END { print total }')"
+[ "$cancelled_count" = "1" ]
+[ "$already_count" = "1" ]
+
 docker exec -i "$db_container" psql -qAtX -v ON_ERROR_STOP=1 -U postgres -d postgres > "$tmp_dir/rebook-a" <<'SQL' &
 begin;
 set local request.jwt.claim.role = 'service_role';
@@ -211,6 +238,17 @@ begin
          where tenant_id='c1210000-0000-4000-8000-000000000001'
            and event_key='booking:c1210000-0000-4000-8000-000000000073:cancelled') <> 1 then
     raise exception 'refund_cancel_concurrency_invalid';
+  end if;
+  if (select status from public.bookings where id='c1210000-0000-4000-8000-000000000074') <> 'cancelled'
+     or (select count(*) from public.booking_status_history
+         where booking_id='c1210000-0000-4000-8000-000000000074'
+           and from_status in ('pending','confirmed') and to_status='cancelled') <> 1
+     or (select count(*) from public.notifications_outbox
+         where tenant_id='c1210000-0000-4000-8000-000000000001'
+           and event_key='booking:c1210000-0000-4000-8000-000000000074:cancelled') <> 1
+     or (select count(*) from private.payment_refund_jobs
+         where payment_id='c1210000-0000-4000-8000-000000000095') <> 1 then
+    raise exception 'cancel_owner_concurrency_invalid';
   end if;
 end $$;
 SQL

@@ -22,7 +22,7 @@ import card from './calytrix-modules.module.css'
  *
  * Filen har varken galleri-band eller blogg-band på hemmet — och då har inte mallen det
  * heller. Att lägga till en sektion "för att de andra mallarna har en" ÄR att improvisera
- * bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * MODUL-GATINGEN ÄR HELIG: är webshopen av finns inga köpknappar, inga produktkort och
  * ingen enda länk till /shop — heron faller då tillbaka på tjänstesidan. Saknad

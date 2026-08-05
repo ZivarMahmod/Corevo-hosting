@@ -1,29 +1,5 @@
-// Presentkort-modul — SERVER data loader. Fetches ONLY the tenant's presentkort
-// config (from tenant_modules.config) via the anonymous public client, shaping it
-// for PresentkortSection. Modeled ORDAGRANT on lib/storefront/lojalitet/
-// load-lojalitet.ts + lib/storefront/shop/load-shop.ts.
-//
-// NO TABLE QUERY (unlike load-blogg/load-shop): the public surface is pure promo
-// (headline + amount presets + fulfilment), so it needs no gift_cards data. The
-// gift_cards table (0036) is NOT anon-readable on purpose — codes + balances are
-// sensitive and must never leak, and the public promo needs no row — so this loader
-// reads config and nothing else.
-//
-// NOT a 'server-only' module by import convention: it uses the cookie-less anon
-// public client (safe inside unstable_cache) exactly like load-lojalitet.ts /
-// load-shop.ts / tenant-modules.ts. It is still only ever called from server
-// components.
-//
-// CRITICAL (same fence as tenant-data.ts / tenant-modules.ts, ADR 01 §2): the
-// `anon` role carries NO tenant_id claim, so RLS does NOT isolate tenants for the
-// public client. The query filters by the resolved tenant_id IN THE APP LAYER
-// (.eq('tenant_id', …)).
-//
-// GATING IS THE CALLER'S JOB: this loader does not check module state. The
-// storefront resolves tenant_modules.state via getTenantModuleStates() and only
-// renders PresentkortSection when presentkort === 'live' (same shape as the booking
-// + shop + offert + blogg + lojalitet gate). Off/draft når aldrig loadern; paused
-// laddas för den stängda publika vyn.
+// Caller gates the live module. Every anon query must keep the explicit tenant_id
+// filter; gift-card codes and balances never leave their protected table.
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'

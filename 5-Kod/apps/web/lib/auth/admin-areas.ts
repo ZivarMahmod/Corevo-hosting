@@ -39,7 +39,6 @@ export type AdminArea =
   | 'lojalitet'
   | 'presentkort'
   | 'sida'
-  | 'varumarke'
   | 'installningar'
 
 /**
@@ -68,7 +67,6 @@ export const ADMIN_AREA_MIN_LEVEL: Record<AdminArea, number> = {
   lojalitet: ROLE_LEVEL.salonAdmin,
   presentkort: ROLE_LEVEL.salonAdmin,
   sida: ROLE_LEVEL.salonAdmin,
-  varumarke: ROLE_LEVEL.salonAdmin,
   installningar: ROLE_LEVEL.salonAdmin,
 }
 
@@ -98,7 +96,6 @@ const AREA_PREFIX: ReadonlyArray<readonly [string, AdminArea]> = [
   ['/admin/lojalitet', 'lojalitet'],
   ['/admin/presentkort', 'presentkort'],
   ['/admin/sida', 'sida'],
-  ['/admin/varumarke', 'varumarke'],
   ['/admin/installningar', 'installningar'],
   ['/admin', 'oversikt'],
 ]

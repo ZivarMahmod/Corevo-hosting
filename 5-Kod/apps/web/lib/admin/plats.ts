@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { PLATS_ALLA, PLATS_COOKIE } from './plats-constants'
 
-export { PLATS_ALLA, PLATS_COOKIE } from './plats-constants'
+export { PLATS_COOKIE } from './plats-constants'
 
 /**
  * Global "vald butik" för kund-admin (Zivar 2026-07-10: "ett val där man väljer

@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requirePortal } from '@/lib/auth/session'
 import { createAdminClient } from './admin'
-import { currentKundTenant } from './tenant'
+import { currentRequestTenant } from '@/lib/tenant-data'
 import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
 import { finalizeCustomerRebookSafely } from './rebook-finalization'
@@ -21,8 +21,6 @@ import {
   inspectCustomerClaim,
   reconcileCustomerClaim,
 } from './customer-claim-server'
-
-const ACTIVE_STATUSES = ['pending', 'confirmed']
 
 function isActiveStatus(status: string): boolean {
   return status === 'pending' || status === 'confirmed'
@@ -206,7 +204,7 @@ export async function signUpCustomer(_prev: SignUpState, formData: FormData): Pr
     return { error: 'Lösenordet måste vara minst 8 tecken.' }
   }
 
-  const tenant = await currentKundTenant()
+  const tenant = await currentRequestTenant()
   if (!tenant) {
     return { error: 'Registrering sker via företagets egen sida. Öppna företagets adress och försök igen.' }
   }
@@ -317,10 +315,8 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
 }
 
 // ── Cancel ───────────────────────────────────────────────────────────────────
-// Sets status='cancelled', which frees the slot (the no_double_booking EXCLUDE
-// only blocks pending/confirmed/completed). The UPDATE itself re-asserts
-// ownership (legacy profile OR claimed customer relation) + tenant + active
-// status → no TOCTOU gap.
+// Ownership is verified on the read side, then the canonical database owner
+// re-asserts tenant + customer identity, policy and active status atomically.
 export async function cancelBooking(
   _prev: BookingActionState,
   formData: FormData,
@@ -333,50 +329,28 @@ export async function cancelBooking(
 
   const booking = await getMyBooking(user.id, tenantId, bookingId)
   if (!booking) return { error: 'Bokningen hittades inte.' }
-  if (!isActiveStatus(booking.status)) {
-    return { error: 'Bokningen kan inte avbokas.' }
-  }
-
-  const supabase = await createClient()
-  const cutoff = await getCancellationCutoffHours(supabase, tenantId)
-  if (!withinCancellationWindow(booking.startTs, cutoff)) {
-    return { error: `Avbokning måste ske minst ${cutoff} timmar före tiden.` }
-  }
-
-  // Kundsessionen har ingen rå UPDATE-policy på bookings. Den privilegierade
-  // skrivningen sker först efter ägarskap + cutoff ovan, på servern.
   const admin = createAdminClient()
-  const cancelledAt = new Date().toISOString()
-  const { data: cancelled, error } = await admin
-    .from('bookings')
-    // cancelled_by: 'customer' — salongens ångralogg ska kunna svara "kunden avbokade
-    // själv" utan att gissa. Skriver vi bara status här blir loggen en lista över
-    // avbokningar utan avsändare, och då är den värdelös just när den behövs.
-    .update({ status: 'cancelled', cancelled_at: cancelledAt, cancelled_by: 'customer' })
-    .eq('id', bookingId)
-    .eq('tenant_id', tenantId)
-    .or(
-      booking.customerId
-        ? `customer_profile_id.eq.${user.id},customer_id.eq.${booking.customerId}`
-        : `customer_profile_id.eq.${user.id}`,
-    )
-    .in('status', ACTIVE_STATUSES)
-    .select('id')
-    .maybeSingle()
-  if (error) return { error: 'Kunde inte avboka. Försök igen.' }
-  if (!cancelled) return { error: 'Bokningen ändrades av någon annan. Ladda om och försök igen.' }
-
-  const notification = await queueBookingEvent({
-    tenantId,
-    bookingId,
-    type: 'booking_cancelled',
-    occurredAt: cancelledAt,
-    startISO: booking.startTs,
+  const { data, error } = await admin.rpc('cancel_verified_customer_booking', {
+    p_tenant: tenantId,
+    p_booking: bookingId,
+    p_customer: booking.customerId ?? null,
+    p_customer_profile: user.id,
   })
+  if (error) return { error: 'Kunde inte avboka. Försök igen.' }
+  const result = data?.[0]
+  if (!result) return { error: 'Kunde inte avboka. Försök igen.' }
+  if (result.outcome !== 'cancelled' && result.outcome !== 'already_cancelled') {
+    return {
+      error:
+        result.outcome === 'not_allowed'
+          ? 'Bokningen kan inte längre avbokas online.'
+          : 'Bokningen ändrades av någon annan. Ladda om och försök igen.',
+    }
+  }
 
   revalidatePath('/konto')
   revalidatePath(`/konto/bokningar/${bookingId}`)
-  redirect(`/konto?notis=${notification.state}`)
+  redirect('/konto')
 }
 
 // ── Rebook (same service, new time) ──────────────────────────────────────────
@@ -427,7 +401,7 @@ export async function rebookBooking(
     return { error: `Ombokning måste ske minst ${cutoff} timmar före tiden.` }
   }
 
-  const tenant = await currentKundTenant()
+  const tenant = await currentRequestTenant()
   if (!tenant) return { error: 'Okänt företag.' }
 
   // 1) Secure the new slot (reused RPC; lets the EXCLUDE raise 23P01 on a race).

@@ -16,34 +16,6 @@ function assertPlatformRead(
   if (result.error) throw new Error(`${label}: ${result.error.message}`)
 }
 
-export type PlatformMetrics = {
-  tenantsTotal: number
-  tenantsActive: number
-  tenantsSuspended: number
-  bookingsTotal: number
-}
-
-// DORMANT — build-once-never-delete; ersatt av platformOverview. Radera ej.
-export async function platformMetrics(): Promise<PlatformMetrics> {
-  const { supabase } = await platformCtx()
-  const [total, active, suspended, bookings] = await Promise.all([
-    supabase.from('tenants').select('*', { count: 'exact', head: true }),
-    supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('status', 'suspended'),
-    supabase.from('bookings').select('*', { count: 'exact', head: true }),
-  ])
-  assertPlatformRead('platformMetrics tenants total', total)
-  assertPlatformRead('platformMetrics active tenants', active)
-  assertPlatformRead('platformMetrics suspended tenants', suspended)
-  assertPlatformRead('platformMetrics bookings', bookings)
-  return {
-    tenantsTotal: total.count ?? 0,
-    tenantsActive: active.count ?? 0,
-    tenantsSuspended: suspended.count ?? 0,
-    bookingsTotal: bookings.count ?? 0,
-  }
-}
-
 /** Current calendar month in the platform timezone (1-12). Pure for testing. */
 export function platformMonth(now: Date = new Date()): { year: number; month: number } {
   // Resolve the y/m in Europe/Stockholm (not the server's UTC) so the "denna
@@ -171,26 +143,6 @@ export async function bookingTrend(
     if (bucket) bucket.count += 1
   }
   return buckets
-}
-
-// ── Plattformshälsa (health pills, §2.3) ────────────────────────────────────────
-// The mock shows API-uptid / Workers / DB-pool / Köade SMS pills with live-looking
-// numbers (99,98% · 34% · 3). Those have NO backing telemetry source in this stack
-// (no metrics pipeline wired) — so we NEVER fabricate a live number. This returns
-// `available: false`; the view renders an honest static/empty pill (or omits them),
-// never a fake "live" figure. When a telemetry source is wired later, populate the
-// fields and flip `available`.
-export type PlatformHealth = {
-  available: false
-  /** Why the live pills are unavailable — shown verbatim in the honest empty-state. */
-  reason: string
-}
-
-export function getPlatformHealth(): PlatformHealth {
-  return {
-    available: false,
-    reason: 'Ingen telemetri-källa kopplad — hälsovärden visas inte som live.',
-  }
 }
 
 /** UTC [from, to) bounds of a calendar month in the platform timezone. */

@@ -2,8 +2,14 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { statusLabel } from '@/lib/admin/format'
-import type { LocationRow, SlotRow, WorkingHourRow } from '@/lib/admin/data'
+import { bookingStatusLabel } from '@/lib/booking/confirmation-status'
+import type {
+  LocationRow,
+  SlotRow,
+  StaffCard,
+  StaffServiceOption,
+  WorkingHourRow,
+} from '@/lib/admin/data'
 import { Badge, Callout, Card, Icon, type BadgeTone } from '@/components/portal/ui'
 import type { MemberPermissions as PermissionValue } from '@/lib/admin/member-permissions'
 import {
@@ -12,18 +18,11 @@ import {
   LocationSection,
   EgetKontoSection,
   DangerSection,
-  type StaffCard,
-  type ServiceOption,
   type LocationOption,
 } from './StaffRoster'
 import { StaffRolePicker } from './StaffRolePicker'
 import { StaffBookability } from './StaffBookability'
-import {
-  ScheduleActions,
-  SlotManager,
-  WorkingHoursEditor,
-  type WeekCol,
-} from './SlotManager'
+import { ScheduleActions, SlotManager, WorkingHoursEditor, type WeekCol } from './SlotManager'
 import { ScheduleLock } from './ScheduleLock'
 import { TimeOffManager, type TimeOffItem } from './TimeOffManager'
 
@@ -66,7 +65,7 @@ export function StaffDetail({
   timeOffItems,
 }: {
   member: StaffCard
-  services: ServiceOption[]
+  services: StaffServiceOption[]
   locations: LocationOption[]
   tz: string
   staffNoun: string
@@ -223,7 +222,9 @@ export function StaffDetail({
                 </div>
                 <SlotManager
                   staffId={member.id}
-                  staff={[{ id: member.id, displayName: member.displayName, active: member.active }]}
+                  staff={[
+                    { id: member.id, displayName: member.displayName, active: member.active },
+                  ]}
                   rows={slots}
                   weekCols={weekCols}
                   locations={editorLocations}
@@ -275,7 +276,9 @@ export function StaffDetail({
               Verklig dag · idag
             </div>
             {member.today.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0 }}>Inga bokningar idag.</p>
+              <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0 }}>
+                Inga bokningar idag.
+              </p>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {member.today.map((b) => (
@@ -309,7 +312,7 @@ export function StaffDetail({
                         {b.serviceName ?? 'Okänd tjänst'}
                       </div>
                     </div>
-                    <Badge tone={statusTone(b.status)}>{statusLabel(b.status)}</Badge>
+                    <Badge tone={statusTone(b.status)}>{bookingStatusLabel(b.status)}</Badge>
                   </div>
                 ))}
               </div>

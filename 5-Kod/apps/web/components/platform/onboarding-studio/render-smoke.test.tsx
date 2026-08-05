@@ -12,7 +12,7 @@ import { describe, it, expect, vi } from 'vitest'
 
 // OnboardingStudio imports the createTenant server action — stub it so the module
 // imports cleanly in the node test env (we only smoke its RENDER, not the write).
-vi.mock('@/lib/platform/actions', () => ({ createTenant: async () => ({}) }))
+vi.mock('@/lib/platform/actions/tenants', () => ({ createTenant: async () => ({}) }))
 
 // W2: PreviewPane now mounts the REAL storefront layout; Bookable inside it calls
 // useRouter (next/navigation) — stub it so the node render env doesn't throw.
@@ -287,7 +287,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       />,
     )
     expect(html).toContain('href="/kunder/t9"') // real, working platform link
-    expect(html).toContain('klippoteket.corevo.se') // canonical reserved address shown
+    expect(html).toContain('klippoteket.boka.corevo.se') // canonical reserved address shown
     expect(html).toContain('Onboarda nästa kund')
     expect(html).toContain('är skapad') // honest header, NOT "är live" (host doesn't resolve yet)
     expect(html).not.toContain('byggs i senare vågor') // old placeholder copy is gone

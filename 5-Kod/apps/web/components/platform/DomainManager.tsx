@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { addCustomDomain, verifyCustomDomain, removeCustomDomain } from '@/lib/platform/actions'
+import { addCustomDomain, verifyCustomDomain, removeCustomDomain } from '@/lib/platform/actions/domains'
 import type { TenantDomainRow } from '@/lib/platform/domains'
 import type { DcvRecord } from '@/lib/cloudflare/custom-hostnames'
 import { useToast } from '@/components/portal/ui'

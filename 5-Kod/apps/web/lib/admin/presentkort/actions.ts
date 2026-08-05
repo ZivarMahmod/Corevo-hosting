@@ -63,7 +63,10 @@ function commandError(error: { message?: string } | null): string {
   return GENERIC
 }
 
-export async function issueGiftCard(formData: FormData): Promise<GiftCardActionState> {
+export async function issueGiftCard(
+  _previousState: GiftCardActionState,
+  formData: FormData,
+): Promise<GiftCardActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
 
@@ -119,7 +122,10 @@ export async function issueGiftCard(formData: FormData): Promise<GiftCardActionS
   }
 }
 
-export async function redeemGiftCard(formData: FormData): Promise<ActionState> {
+export async function redeemGiftCard(
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
 
@@ -156,7 +162,10 @@ export async function redeemGiftCard(formData: FormData): Promise<ActionState> {
   return { success: 'Beloppet har lösts in.' }
 }
 
-export async function voidGiftCard(formData: FormData): Promise<ActionState> {
+export async function voidGiftCard(
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
 
@@ -177,53 +186,4 @@ export async function voidGiftCard(formData: FormData): Promise<ActionState> {
 
   revalidatePath('/admin/presentkort')
   return { success: 'Presentkort makulerat.' }
-}
-
-export async function adjustGiftCard(formData: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
-  if (!ctx) return { error: NO_TENANT }
-
-  const id = String(formData.get('id') ?? '').trim()
-  const reason = String(formData.get('reason') ?? '').trim()
-  const deltaCents = kronorToCents(Math.abs(Number(formData.get('deltaKr'))))
-    * (String(formData.get('direction')) === 'decrease' ? -1 : 1)
-  const requestId = requestIdOf(formData)
-  if (!id || !requestId || !reason || deltaCents === 0) {
-    return { error: 'Kontrollera presentkort, belopp och orsak.' }
-  }
-
-  const supabase = await createClient()
-  const { error } = await supabase.rpc('adjust_gift_card', {
-    p_tenant: ctx.tenant.id,
-    p_gift_card: id,
-    p_delta_cents: deltaCents,
-    p_idempotency_key: requestId,
-    p_reason: reason,
-  })
-  if (error) return { error: commandError(error) }
-
-  revalidatePath('/admin/presentkort')
-  return { success: 'Saldot har justerats.' }
-}
-
-export async function restoreGiftCardRedemption(formData: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
-  if (!ctx) return { error: NO_TENANT }
-
-  const entryId = String(formData.get('entryId') ?? '').trim()
-  const reason = String(formData.get('reason') ?? '').trim()
-  const requestId = requestIdOf(formData)
-  if (!entryId || !requestId || !reason) return { error: 'Kontrollera inlösen och orsak.' }
-
-  const supabase = await createClient()
-  const { error } = await supabase.rpc('restore_gift_card_redemption', {
-    p_tenant: ctx.tenant.id,
-    p_redemption_entry: entryId,
-    p_idempotency_key: requestId,
-    p_reason: reason,
-  })
-  if (error) return { error: commandError(error) }
-
-  revalidatePath('/admin/presentkort')
-  return { success: 'Inlösen har återställts.' }
 }

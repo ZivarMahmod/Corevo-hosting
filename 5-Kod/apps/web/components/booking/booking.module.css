@@ -3,7 +3,7 @@
    We REUSE the global .wizard- and .confirm- classes for layout; this file only
    adds genuinely new patterns (skeleton shimmer, focus-ring, empty state) that
    globals.css does not provide. Gold selected-states are applied inline via
-   var(--color-accent) on the elements themselves, because the frozen global
+   var(--color-accent) on the elements themselves, because the shared global
    selectors (.wizard-day.selected etc.) out-specify a single hashed class. */
 
 /* ---- Loading skeleton (shimmer) ---- */

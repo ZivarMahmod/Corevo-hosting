@@ -42,7 +42,6 @@ export default async function IntegrationSettingsPage() {
           address=""
           contactEmail=""
           contactPhone=""
-          customerAccountsEnabled={false}
           googleReviewUrl={values.google_review_url ?? ''}
         />
       </section>

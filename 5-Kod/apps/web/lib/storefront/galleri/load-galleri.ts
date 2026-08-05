@@ -1,22 +1,5 @@
-// Galleri-modul — SERVER data loader (goal-64). Hämtar kundens gallery_items (0057)
-// via den anonyma publika klienten och joinar in bilden ur media_assets, precis som
-// load-blogg.ts joinar in bloggens omslag. Modellerad ORDAGRANT på
-// lib/storefront/blogg/load-blogg.ts.
-//
-// INTE 'server-only' by import convention: den använder den cookie-lösa anon-klienten
-// (säker inuti unstable_cache) exakt som load-shop.ts / load-blogg.ts. Den anropas
-// ändå bara från serverkomponenter.
-//
-// KRITISKT (samma stängsel som tenant-data.ts / tenant-modules.ts, ADR 01 §2):
-// `anon`-rollen bär INGET tenant_id-claim, så RLS isolerar INTE tenants för den
-// publika klienten. Varje query filtrerar på det upplösta tenant_id:t I APP-LAGRET
-// (.eq('tenant_id', …)). RLS (0057) är djupförsvar — den kapar dessutom anon-läsning
-// till active = true, men vi sätter active i app-lagret också, för tydlighet och
-// paritet med shop-loaderns active-filter.
-//
-// GATINGEN ÄR ANROPARENS JOBB: loadern kollar inte modul-state. /galleri löser
-// tenant_modules.state via getTenantModuleStates() och 404:ar när galleri varken är
-// live eller paused — samma form som blogg-gaten. En off/draft-modul når aldrig hit.
+// Caller gates the live module. Every anon query must keep the explicit tenant_id
+// and active filters.
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'

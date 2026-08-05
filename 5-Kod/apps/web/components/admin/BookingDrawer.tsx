@@ -4,7 +4,8 @@ import { useActionState, useEffect, useRef, useState, useTransition } from 'reac
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { setBookingStatus, type ActionState } from '@/lib/admin/actions'
-import { statusLabel, ALLOWED_FROM, type BookingStatus } from '@/lib/admin/format'
+import { ALLOWED_FROM, type BookingStatus } from '@/lib/admin/format'
+import { bookingStatusLabel } from '@/lib/booking/confirmation-status'
 import { badgeClass } from '@/components/admin/badge'
 import {
   Button,
@@ -407,7 +408,7 @@ export function BookingDrawer({
           <span style={{ color: 'var(--c-ink-2)', fontSize: 12.5 }}>
             hos {booking.staffTitle} · {dayLabel(booking.startTs, tz)}
           </span>
-          <span className={badgeClass(booking.status)}>{statusLabel(booking.status)}</span>
+          <span className={badgeClass(booking.status)}>{bookingStatusLabel(booking.status)}</span>
         </span>
       }
       onClose={onClose}
@@ -678,7 +679,7 @@ export function BookingDrawer({
               value={`${dayLabel(booking.createdAt, tz)} ${timeLabel(booking.createdAt, tz)}`}
               num
             />
-            <DetailPair label="Status" value={statusLabel(booking.status)} />
+            <DetailPair label="Status" value={bookingStatusLabel(booking.status)} />
             <DetailPair label={staffNoun} value={booking.staffTitle} />
           </div>
         </section>

@@ -1,7 +1,6 @@
 /* ============================================================
    ZENTUM — ekonomi-svitens hemsida. Portad EXAKT ur den verifierade
    statiska kopian (public/mallar/zentum/style.css, fidelity-probe 63/63).
-   Spec: 4-Dokument-Underlag/zentum-mall-spec.md.
 
    Färgerna kommer ur mallens [data-theme="zentum"]-block (florist/types
    floristThemeBlock) men skrivs här som lokala alias så CSS:en är läsbar

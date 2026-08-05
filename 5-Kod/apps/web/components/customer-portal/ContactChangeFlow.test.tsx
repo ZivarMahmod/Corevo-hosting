@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
 }))
 
-vi.mock('@/app/(customer-portal)/mina/actions', () => ({
+vi.mock('@/lib/customer-portal/server-actions', () => ({
   startPortalContactChangeAction: mocks.start,
   verifyPortalContactChangeCurrentAction: mocks.verifyCurrent,
   submitPortalContactChangeDestinationAction: mocks.submitDestination,

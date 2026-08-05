@@ -4,7 +4,6 @@ import { getAdminTenant } from '@/lib/admin/tenant'
 import {
   getAdminModuleStates,
   isModuleActivated,
-  moduleAdminState,
 } from '@/lib/admin/modules'
 import { listGalleryItems } from '@/lib/admin/galleri/data'
 import { listMediaAssets } from '@/lib/admin/media/data'
@@ -38,7 +37,6 @@ export default async function GalleriPage() {
     )
   }
 
-  const state = moduleAdminState(states, 'galleri')
   const [items, assets] = await Promise.all([
     listGalleryItems(tenant.id),
     listMediaAssets(tenant.id),
@@ -51,7 +49,6 @@ export default async function GalleriPage() {
         assets={assets}
         tenantName={tenant.name}
         previewHref={`/salong-preview/${tenant.slug}/galleri`}
-        readOnly={false}
       />
     </section>
   )

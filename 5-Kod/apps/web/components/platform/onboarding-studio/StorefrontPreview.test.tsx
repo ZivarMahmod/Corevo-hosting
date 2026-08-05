@@ -1,7 +1,7 @@
 // goal-48 W2 — StorefrontPreview RENDER smoke + invariants. Proves the real per-theme
 // layout renders client-side from an unsaved StudioCfg without throwing, the theme
 // guard falls back on an unknown key, accent-ONLY injection (no theme-mask), the
-// resolveModuleState gating (present/absent/paused), and services=[] honest empty-state.
+// binary module gating, and services=[] honest empty-state.
 // node env + renderToStaticMarkup (no DOM). Bookable (in the real layout) calls
 // useRouter → mock next/navigation, like render-smoke mocks the createTenant action.
 import { describe, it, expect, vi } from 'vitest'

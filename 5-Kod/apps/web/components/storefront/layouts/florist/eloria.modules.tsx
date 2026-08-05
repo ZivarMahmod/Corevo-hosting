@@ -4,6 +4,7 @@ import { AddToCart } from '../../shop/AddToCart'
 // ALLA mallar skriver det likadant. Mallen formaterar aldrig ett pris själv.
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatBloggMonthYear } from '@/lib/storefront/blogg/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
 import type {
   ThemeShopViewProps,
@@ -30,25 +31,15 @@ import styles from './eloria.module.css'
  * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-/** Filens datum-form är månad + år ("Juni 2026") — inte ett fullt datum. */
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  const s = d.toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 /* ════════════════════════════════ KATALOGEN ═══════════════════════════════ */
 
-export function EloriaShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function EloriaShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   return (
     <section className={styles.elPage} data-module="shop" data-fulfilment={config.fulfilment}>
@@ -58,13 +49,6 @@ export function EloriaShop({ data, paused, limit, moreHref, content }: ThemeShop
         Katalogen är vägledande — varje komposition binds efter dagens bästa snitt. Beställ
         genom en förfrågan, så återkommer vi inom en timme under öppettid.
       </p>
-
-      {/* Pausad modul: katalogen är LÄSBAR, men noll köpknappar. */}
-      {paused ? (
-        <p role="status" className={styles.elNotice}>
-          Katalogen är tillfälligt stängd för nya beställningar.
-        </p>
-      ) : null}
 
       {products.length === 0 ? (
         <p className={styles.elEmpty}>Katalogen är tom just nu.</p>
@@ -78,7 +62,7 @@ export function EloriaShop({ data, paused, limit, moreHref, content }: ThemeShop
                 aria-label={`${p.name} — visa kompositionen`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.elSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <p className={styles.elCatalogName}>
                 <a href={`/shop/${p.id}`}>{p.name}</a>
@@ -86,7 +70,7 @@ export function EloriaShop({ data, paused, limit, moreHref, content }: ThemeShop
               <div className={styles.elCatalogHair} />
               {p.description ? <p className={styles.elCatalogDesc}>{p.description}</p> : null}
               <p className={styles.elCatalogPrice}>{formatProductPrice(p)}</p>
-              {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} />}
+              <AddToCart product={p} fulfilment={config.fulfilment} />
             </li>
           ))}
         </ul>
@@ -121,7 +105,7 @@ export function EloriaBlogg({ posts: allPosts, limit, moreHref, content }: Theme
       ) : (
         <ul className={styles.elJournalPosts}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggMonthYear(p.publishedAt)
             return (
               <li key={p.id}>
                 <article>

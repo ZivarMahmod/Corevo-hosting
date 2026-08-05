@@ -45,7 +45,6 @@ describe('PinVerificationForm recovery mode', () => {
   it('always renders only the neutral channel line and one semantic OTP input', async () => {
     await act(async () => root.render(
       <PinVerificationForm
-        mode="recovery"
         tenantSlug="freshcut"
         initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 30 }}
         verifyAction={vi.fn()}
@@ -71,7 +70,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('keeps an invalid code, reports attempts and restores focus to the field', async () => {
     const verifyAction = vi.fn().mockResolvedValue({ ok: false, reason: 'invalid', attemptsRemaining: 3 })
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
     ))
     await setCode('123456')
     await submit()
@@ -88,7 +87,7 @@ describe('PinVerificationForm recovery mode', () => {
     vi.useFakeTimers()
     const verifyAction = vi.fn().mockResolvedValue({ ok: true })
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
     ))
     await setCode('589511')
     await submit()
@@ -102,7 +101,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('locks the field and verify action with exact pending copy', async () => {
     const verifyAction = vi.fn(() => new Promise<never>(() => undefined))
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
     ))
     await setCode('123456')
     await submit()
@@ -115,7 +114,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('keeps the code after a neutral verification failure', async () => {
     const verifyAction = vi.fn().mockResolvedValue({ ok: false })
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
     ))
     await setCode('123456')
     await submit()
@@ -129,7 +128,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('turns a rejected verify request into CP-PIN-21 without clearing the code', async () => {
     const verifyAction = vi.fn().mockRejectedValue(new Error('network'))
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 30 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 30 }} verifyAction={verifyAction} resendAction={vi.fn()} />,
     ))
     await setCode('123456')
     await submit()
@@ -143,7 +142,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('never resends an expired credential and offers a fresh recovery challenge', async () => {
     const resendAction = vi.fn()
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'expired' }} verifyAction={vi.fn()} resendAction={resendAction} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'expired' }} verifyAction={vi.fn()} resendAction={resendAction} />,
     ))
     expect(container.querySelector('[role="alert"]')?.textContent).toBe('Koden har gått ut. Begär en ny kod.')
     expect(container.querySelector('[role="alert"] .cp-icon')).not.toBeNull()
@@ -160,7 +159,7 @@ describe('PinVerificationForm recovery mode', () => {
     vi.useFakeTimers()
     const resendAction = vi.fn()
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'max_attempts', retryAfterSeconds: 2 }} verifyAction={vi.fn()} resendAction={resendAction} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'max_attempts', retryAfterSeconds: 2 }} verifyAction={vi.fn()} resendAction={resendAction} />,
     ))
     expect(container.querySelector('[role="alert"]')?.textContent).toBe('För många försök. Försök igen om 1 min.')
     expect(container.querySelector<HTMLInputElement>('#engangskod')?.disabled).toBe(true)
@@ -177,7 +176,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('starts on the fresh recovery path when a max-attempt lock has already elapsed', async () => {
     const resendAction = vi.fn()
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'max_attempts', retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'max_attempts', retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
     ))
     expect(container.querySelector<HTMLAnchorElement>('.cp-resend a')?.getAttribute('href')).toBe('/aterhamta/freshcut')
     expect(container.querySelector('.cp-resend button')).toBeNull()
@@ -189,7 +188,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('confirms resend neutrally and applies the server cooldown', async () => {
     const resendAction = vi.fn().mockResolvedValue({ state: 'accepted', retryAfterSeconds: 42 })
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
     ))
     await act(async () => container.querySelector<HTMLButtonElement>('.cp-resend button')!.click())
     expect(resendAction).toHaveBeenCalledWith('freshcut')
@@ -201,7 +200,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('keeps resend available after a neutral resend failure', async () => {
     const resendAction = vi.fn().mockResolvedValue({ state: 'unavailable' })
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
     ))
     await act(async () => container.querySelector<HTMLButtonElement>('.cp-resend button')!.click())
     expect(container.querySelector('[role="alert"]')?.textContent).toBe('Koden kunde inte skickas. Försök igen.')
@@ -212,7 +211,7 @@ describe('PinVerificationForm recovery mode', () => {
   it('turns a rejected resend into the same channel-neutral failure with retry available', async () => {
     const resendAction = vi.fn().mockRejectedValue(new Error('network'))
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 0 }} verifyAction={vi.fn()} resendAction={resendAction} />,
     ))
     await act(async () => container.querySelector<HTMLButtonElement>('.cp-resend button')!.click())
     expect(container.querySelector('[role="alert"]')?.textContent).toBe('Koden kunde inte skickas. Försök igen.')
@@ -224,7 +223,7 @@ describe('PinVerificationForm recovery mode', () => {
     vi.useFakeTimers()
     const resendAction = vi.fn(() => new Promise<never>(() => undefined))
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 1 }} verifyAction={vi.fn()} resendAction={resendAction} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'sent', attemptsRemaining: 5, retryAfterSeconds: 1 }} verifyAction={vi.fn()} resendAction={resendAction} />,
     ))
     const screen = () => container.querySelector('[data-screen="verifiera"]')?.getAttribute('data-state')
     expect(screen()).toBe('cooldown')
@@ -237,7 +236,7 @@ describe('PinVerificationForm recovery mode', () => {
 
   it('maps an unavailable challenge to the canonical delivery_failed selector', async () => {
     await act(async () => root.render(
-      <PinVerificationForm mode="recovery" tenantSlug="freshcut" initialState={{ state: 'unavailable' }} verifyAction={vi.fn()} resendAction={vi.fn()} />,
+      <PinVerificationForm tenantSlug="freshcut" initialState={{ state: 'unavailable' }} verifyAction={vi.fn()} resendAction={vi.fn()} />,
     ))
     expect(container.querySelector('[data-screen="verifiera"]')?.getAttribute('data-state')).toBe('delivery_failed')
     expect(container.querySelector('[role="alert"]')?.textContent).toBe('Koden kunde inte skickas. Försök igen.')

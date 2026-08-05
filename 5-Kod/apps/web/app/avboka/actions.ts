@@ -3,11 +3,6 @@
 import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { verifyCancelToken } from '@/lib/booking/cancel-token'
-import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund/settings'
-import {
-  queueBookingEvent,
-  type BookingNotificationQueueResult,
-} from '@/lib/notifications/booking-events'
 import { logger } from '@/lib/observability'
 
 // Guest self-service CANCEL action (NOTIF-GUEST). The only authorisation is the
@@ -21,7 +16,7 @@ import { logger } from '@/lib/observability'
 // never reveal another tenant's/booker's booking (the token binds to ONE id).
 
 export type CancelResult =
-  | { ok: true; notification: BookingNotificationQueueResult }
+  | { ok: true }
   | { ok: false; reason: 'invalid_token' | 'not_found' | 'already_cancelled' | 'too_late' | 'error'; message: string }
 
 export async function cancelByToken(bookingId: string, token: string): Promise<CancelResult> {
@@ -43,55 +38,38 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
     return { ok: false, reason: 'error', message: 'Avbokning är inte tillgänglig just nu.' }
   }
 
-  // 2. Load the booking (service-role; token already proved the capability).
+  // 2. Load only the identity needed by the canonical database mutation.
   const { data: b } = await admin
     .from('bookings')
-    .select('id, tenant_id, status, start_ts')
+    .select('id, tenant_id, customer_id, customer_profile_id')
     .eq('id', bookingId)
     .maybeSingle()
   if (!b) return { ok: false, reason: 'not_found', message: 'Bokningen hittades inte.' }
 
-  // 3. Only active bookings can be cancelled.
-  if (b.status === 'cancelled') {
-    return { ok: false, reason: 'already_cancelled', message: 'Den här tiden är redan avbokad.' }
-  }
-  if (b.status !== 'pending' && b.status !== 'confirmed') {
-    return { ok: false, reason: 'error', message: 'Bokningen kan inte avbokas.' }
-  }
-
-  // 4. Re-check the cancellation window (the page may have been open a while).
-  const cutoff = await getCancellationCutoffHours(admin, b.tenant_id)
-  if (!withinCancellationWindow(b.start_ts, cutoff)) {
-    return { ok: false, reason: 'too_late', message: 'Det är för sent att avboka online — hör av dig direkt.' }
-  }
-
-  // Set status='cancelled' (service-role). Guard on status so a concurrent cancel
-  // (e.g. staff in the back-office) doesn't double-fire the notification below.
-  const cancelledAt = new Date().toISOString()
-  const { data: updated, error } = await admin
-    .from('bookings')
-    .update({ status: 'cancelled', cancelled_at: cancelledAt, cancelled_by: 'customer' })
-    .eq('id', bookingId)
-    .eq('tenant_id', b.tenant_id)
-    .in('status', ['pending', 'confirmed'])
-    .select('id')
-    .maybeSingle()
+  const { data, error } = await admin.rpc('cancel_verified_customer_booking', {
+    p_tenant: b.tenant_id,
+    p_booking: bookingId,
+    p_customer: b.customer_id,
+    p_customer_profile: b.customer_profile_id,
+  })
   if (error) {
-    logger.warn('avboka.cancel_update_failed', { bookingId, error: error.message })
+    logger.warn('avboka.cancel_rpc_failed', { bookingId, error: error.message })
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
-  if (!updated) {
-    // Someone else cancelled between our read and write — treat as already done.
+  const result = data?.[0]
+  if (!result) return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
+  if (result.outcome === 'cancelled') return { ok: true }
+  if (result.outcome === 'already_cancelled') {
     return { ok: false, reason: 'already_cancelled', message: 'Den här tiden är redan avbokad.' }
   }
-
-  const notification = await queueBookingEvent({
-    tenantId: b.tenant_id,
-    bookingId,
-    type: 'booking_cancelled',
-    occurredAt: cancelledAt,
-    startISO: b.start_ts,
-  })
-
-  return { ok: true, notification }
+  if (result.outcome === 'not_found') {
+    return { ok: false, reason: 'not_found', message: 'Bokningen hittades inte.' }
+  }
+  if (
+    result.outcome === 'not_allowed' &&
+    (result.booking_status === 'pending' || result.booking_status === 'confirmed')
+  ) {
+    return { ok: false, reason: 'too_late', message: 'Det är för sent att avboka online — hör av dig direkt.' }
+  }
+  return { ok: false, reason: 'error', message: 'Bokningen kan inte avbokas.' }
 }

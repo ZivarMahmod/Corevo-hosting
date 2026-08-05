@@ -2,7 +2,7 @@
 //
 // Locked contract (the spec's shared seam — onboarding-auto + CI-sync reuse THIS,
 // never re-implement): a customer domain becomes deploy-safe by living in the
-// committed wrangler.jsonc top-level `routes[]` (like the 3 fixed back-office hosts,
+// committed wrangler.jsonc top-level `routes[]` (like the fixed infra hosts,
 // which never go down). Writing the line is a COMMIT, not a deploy.
 //
 //   upsertCustomDomainRoute(wranglerPath, slug) -> { added: boolean, pattern: string }
@@ -11,7 +11,7 @@
 // JSON.parse+stringify — that murders the comments, the original FX-14 cause),
 // idempotent (added=false when already present), refuses reserved/POS labels and
 // any invalid label, NEVER produces a wildcard pattern, and touches ONLY top-level
-// routes — never env.staging.routes (which must stay []), the 3 fixed hosts, the
+// routes — never env.staging.routes (which must stay []), the fixed hosts, the
 // POS zone, or the *.boka.corevo.se wildcard.
 
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -35,22 +35,29 @@ export const REQUIRED_FIXED_ROUTES = [
 // gen-deploy-config.mjs RESERVED / lib/tenant.ts DEFAULT_RESERVED so neither the
 // generator nor this editor can ever attach a POS host.
 export const RESERVED = new Set(
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(','),
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(
+    ',',
+  ),
 )
 
 /** A valid customer DNS label: lowercase letters/digits/hyphen only (no dots, no `*`). */
 const VALID_LABEL = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/
 
 export function normalizeSlug(raw) {
-  return String(raw ?? '').trim().toLowerCase()
+  return String(raw ?? '')
+    .trim()
+    .toLowerCase()
 }
 
 /** Throws if the slug can't be a safe customer subdomain (empty/reserved/invalid/wildcard). */
 export function assertSafeSlug(slug) {
   if (!slug) throw new Error('domain-routes: empty slug')
-  if (RESERVED.has(slug)) throw new Error(`domain-routes: '${slug}' is a reserved/POS label — refusing`)
+  if (RESERVED.has(slug))
+    throw new Error(`domain-routes: '${slug}' is a reserved/POS label — refusing`)
   if (!VALID_LABEL.test(slug)) {
-    throw new Error(`domain-routes: '${slug}' is not a valid DNS label (a-z 0-9 -, no dots/wildcards)`)
+    throw new Error(
+      `domain-routes: '${slug}' is not a valid DNS label (a-z 0-9 -, no dots/wildcards)`,
+    )
   }
 }
 
@@ -126,7 +133,8 @@ export function applyCustomDomainEdit(text, rawSlug) {
   const after = parseJsonc(next, [], { allowTrailingComma: true })
   const patterns = (after?.routes || []).map((r) => r && r.pattern)
   for (const fixed of REQUIRED_FIXED_ROUTES) {
-    if (!patterns.includes(fixed)) throw new Error(`domain-routes: edit would drop fixed route '${fixed}' — aborting`)
+    if (!patterns.includes(fixed))
+      throw new Error(`domain-routes: edit would drop fixed route '${fixed}' — aborting`)
   }
   if (patterns.some((p) => typeof p === 'string' && p.startsWith('*.corevo.se'))) {
     throw new Error('domain-routes: refusing — a *.corevo.se wildcard would capture POS subdomains')

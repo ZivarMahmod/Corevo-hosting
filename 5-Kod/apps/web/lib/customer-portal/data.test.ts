@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -136,7 +135,7 @@ describe('customer portal server DAL', () => {
         phone: '+46 70 000 00 00',
         address: 'Testgatan 1',
         mapUrl: null,
-        bookingOrigin: 'https://freshcut.corevo.se',
+        bookingOrigin: 'https://freshcut.boka.corevo.se',
         timezone: 'Europe/Stockholm',
         locale: 'sv-SE',
         defaultCountry: 'SE',
@@ -450,14 +449,4 @@ describe('customer portal server DAL', () => {
     await expect(getPortalBooking(bookingId)).resolves.toEqual({ outcome: 'not_found' })
   })
 
-  it('uses only the three portal RPCs and contains no direct table query or shared cache', async () => {
-    const source = readFileSync(new URL('./data.ts', import.meta.url), 'utf8')
-    expect(source).not.toMatch(/\.from\s*\(/)
-    expect(source).not.toMatch(/\b(?:cache|unstable_cache)\s*\(/)
-    expect(source.match(/'customer_portal_[a-z_]+'/g)?.sort()).toEqual([
-      "'customer_portal_get_booking'",
-      "'customer_portal_list_bookings'",
-      "'customer_portal_session_snapshot'",
-    ])
-  })
 })

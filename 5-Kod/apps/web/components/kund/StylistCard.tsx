@@ -23,7 +23,7 @@ import styles from './account.module.css'
  *   · no favorite, no visits → honest CTA to find a frisör.
  *
  * The "Skriv till {frisör}" message input the mock shows has NO customer-writable
- * action (no note/message channel exists in the consume-only lib) — so it is
+ * action (no note/message channel exists) — so it is
  * intentionally omitted (no dead control). "Boka hos {frisör}" deep-links into
  * the real /boka flow carrying the staff id (mirrors FavoritesList's quick-book).
  */

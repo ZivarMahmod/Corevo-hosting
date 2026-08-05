@@ -1,7 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@corevo/db'
-import { commerceReleaseGate } from '../release/commerce'
-
 // SINGLE source of truth for "ska denna bokning ta betalt online vid bokning?".
 // Gate = payments_enabled (salongens master-toggle) AND stripe_charges_enabled
 // (Connect-kontot redo). payment_mode (0001) ingår MEDVETET INTE — den styr
@@ -40,20 +36,4 @@ export function paymentSettingsStatus(gate: PaymentGate): PaymentSettingsStatus 
   if (!gate.chargesEnabled) return { label: 'Inte kopplat', tone: 'neutral' }
   if (!gate.paymentsEnabled) return { label: 'AV', tone: 'neutral' }
   return { label: 'PÅ', tone: 'success' }
-}
-
-/** Read the gate for a tenant (works with the anon public client or service-role). */
-export async function getPaymentGate(
-  supabase: SupabaseClient<Database>,
-  tenantId: string,
-): Promise<PaymentGate> {
-  const [{ data: settings }, { data: tenant }] = await Promise.all([
-    supabase.from('tenant_settings').select('payments_enabled').eq('tenant_id', tenantId).maybeSingle(),
-    supabase.from('tenants').select('stripe_charges_enabled').eq('id', tenantId).maybeSingle(),
-  ])
-  return paymentGateFromFlags(
-    settings?.payments_enabled ?? false,
-    tenant?.stripe_charges_enabled ?? false,
-    commerceReleaseGate(tenantId).bookingPayment,
-  )
 }

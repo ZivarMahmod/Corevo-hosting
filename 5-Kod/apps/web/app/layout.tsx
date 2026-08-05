@@ -35,22 +35,16 @@ import {
   Work_Sans,
   Figtree,
 } from 'next/font/google'
-// Steg 1 (prestanda-auditen): palett-CSS:en importeras nu ur en REN DATAFIL (noll
-// imports) i stället för ur tema-registryt. Registryt drog hela storefront-modulgrafen
-// (nav/footer/kassa/wizard, 150+ filer) in i rot-layouten, som kör på VARJE request —
-// login, admin, 404, api. Filen genereras ur registryn (npm run gen:theme-css) och
-// hålls i synk av theme-css.sync.test.ts.
-import {
-  FLORIST_THEME_CSS,
-  EKONOMI_THEME_CSS,
-  SALONG_THEME_CSS,
-} from '@/components/storefront/layouts/theme-css.generated'
+import { THEME_DEFINITIONS } from '@/lib/storefront/themes/registry'
+import { themeCssBlock } from '@/lib/storefront/themes/types'
 import '@corevo/ui/tokens.css'
 import './globals.css'
 import './booking-global.css'
 import './portal-global.css'
 
-// Corevo family typography (design-system.md §3): Playfair Display for display
+const THEME_CSS = THEME_DEFINITIONS.map(themeCssBlock).join('\n')
+
+// Corevo family typography: Playfair Display for display
 // headings, Inter for body/UI. Exposed as CSS vars consumed by --font-display /
 // --font-body in @corevo/ui/tokens.css. self-hosted by next/font at build time.
 const playfair = Playfair_Display({
@@ -184,28 +178,133 @@ const merriweather = Merriweather({
 // next/font är en BYGG-TIDS-transform: varje anrop måste ha ett literalt objekt (ingen
 // spread, inga variabler) — annars kan swc-pluginet inte läsa det och familjen laddas
 // aldrig. Därför upprepas subsets/display/preload på varje rad; det är avsiktligt.
-const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap', preload: false }) // ateljevinter (display + brödtext)
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-manrope',
+  display: 'swap',
+  preload: false,
+}) // ateljevinter (display + brödtext)
 const lora = Lora({ subsets: ['latin'], variable: '--font-lora', display: 'swap', preload: false }) // aurora display
-const nunitoSans = Nunito_Sans({ subsets: ['latin'], variable: '--font-nunito', display: 'swap', preload: false }) // aurora brödtext
-const archivo = Archivo({ subsets: ['latin'], variable: '--font-archivo', display: 'swap', preload: false }) // blomstertorget masthead
-const newsreader = Newsreader({ subsets: ['latin'], variable: '--font-newsreader', display: 'swap', preload: false }) // blomstertorget brödtext
-const instrumentSerif = Instrument_Serif({ subsets: ['latin'], weight: '400', variable: '--font-instrumentserif', display: 'swap', preload: false }) // calytrix display
-const instrumentSans = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrumentsans', display: 'swap', preload: false }) // calytrix brödtext
-const spectral = Spectral({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-spectral', display: 'swap', preload: false }) // kundportal premium display
-const mulish = Mulish({ subsets: ['latin'], variable: '--font-mulish', display: 'swap', preload: false }) // eloria brödtext
-const karla = Karla({ subsets: ['latin'], variable: '--font-karla', display: 'swap', preload: false }) // kalla brödtext
-const poiret = Poiret_One({ subsets: ['latin'], weight: '400', variable: '--font-poiret', display: 'swap', preload: false }) // lunaria display
-const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-spacegrotesk', display: 'swap', preload: false }) // onyx display
-const bodoni = Bodoni_Moda({ subsets: ['latin'], variable: '--font-bodoni', display: 'swap', preload: false }) // siluett display
-const schibsted = Schibsted_Grotesk({ subsets: ['latin'], variable: '--font-schibsted', display: 'swap', preload: false }) // siluett brödtext
-const hanken = Hanken_Grotesk({ subsets: ['latin'], variable: '--font-hanken', display: 'swap', preload: false }) // sivsav brödtext
-const anton = Anton({ subsets: ['latin'], weight: '400', variable: '--font-anton', display: 'swap', preload: false }) // snitt poster-display
-const workSans = Work_Sans({ subsets: ['latin'], variable: '--font-worksans', display: 'swap', preload: false }) // snitt brödtext
-const figtree = Figtree({ subsets: ['latin'], variable: '--font-figtree', display: 'swap', preload: false }) // solsalt brödtext
+const nunitoSans = Nunito_Sans({
+  subsets: ['latin'],
+  variable: '--font-nunito',
+  display: 'swap',
+  preload: false,
+}) // aurora brödtext
+const archivo = Archivo({
+  subsets: ['latin'],
+  variable: '--font-archivo',
+  display: 'swap',
+  preload: false,
+}) // blomstertorget masthead
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  variable: '--font-newsreader',
+  display: 'swap',
+  preload: false,
+}) // blomstertorget brödtext
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-instrumentserif',
+  display: 'swap',
+  preload: false,
+}) // calytrix display
+const instrumentSans = Instrument_Sans({
+  subsets: ['latin'],
+  variable: '--font-instrumentsans',
+  display: 'swap',
+  preload: false,
+}) // calytrix brödtext
+const spectral = Spectral({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-spectral',
+  display: 'swap',
+  preload: false,
+}) // kundportal premium display
+const mulish = Mulish({
+  subsets: ['latin'],
+  variable: '--font-mulish',
+  display: 'swap',
+  preload: false,
+}) // eloria brödtext
+const karla = Karla({
+  subsets: ['latin'],
+  variable: '--font-karla',
+  display: 'swap',
+  preload: false,
+}) // kalla brödtext
+const poiret = Poiret_One({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-poiret',
+  display: 'swap',
+  preload: false,
+}) // lunaria display
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-spacegrotesk',
+  display: 'swap',
+  preload: false,
+}) // onyx display
+const bodoni = Bodoni_Moda({
+  subsets: ['latin'],
+  variable: '--font-bodoni',
+  display: 'swap',
+  preload: false,
+}) // siluett display
+const schibsted = Schibsted_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-schibsted',
+  display: 'swap',
+  preload: false,
+}) // siluett brödtext
+const hanken = Hanken_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-hanken',
+  display: 'swap',
+  preload: false,
+}) // sivsav brödtext
+const anton = Anton({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-anton',
+  display: 'swap',
+  preload: false,
+}) // snitt poster-display
+const workSans = Work_Sans({
+  subsets: ['latin'],
+  variable: '--font-worksans',
+  display: 'swap',
+  preload: false,
+}) // snitt brödtext
+const figtree = Figtree({
+  subsets: ['latin'],
+  variable: '--font-figtree',
+  display: 'swap',
+  preload: false,
+}) // solsalt brödtext
 
 const DC_FONT_VARS = [
-  manrope, lora, nunitoSans, archivo, newsreader, instrumentSerif, instrumentSans, spectral,
-  mulish, karla, poiret, spaceGrotesk, bodoni, schibsted, hanken, anton, workSans, figtree,
+  manrope,
+  lora,
+  nunitoSans,
+  archivo,
+  newsreader,
+  instrumentSerif,
+  instrumentSans,
+  spectral,
+  mulish,
+  karla,
+  poiret,
+  spaceGrotesk,
+  bodoni,
+  schibsted,
+  hanken,
+  anton,
+  workSans,
+  figtree,
 ]
   .map((f) => f.variable)
   .join(' ')
@@ -215,9 +314,7 @@ export const metadata: Metadata = {
   description: 'Corevo Booking Platform',
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="sv"
@@ -233,17 +330,8 @@ export default function RootLayout({
               "try{var t=localStorage.getItem('corevo-bo-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-bo-theme',t)}catch(e){}",
           }}
         />
-        {/* FLORIST-SVITENS palettblock (goal-58): samma sorts
-            [data-world="storefront"][data-theme="<key>"]-block som tokens.css har för de
-            7 äldre temana, men GENERERADE ur florist-registryt — en sanning, ingen
-            handskriven CSS-dubblering. Ligger i roten (inte i (public)/layout.tsx) för
-            att ALLA sex rötter som sätter data-theme ska få färgerna: storefront,
-            salong-preview, /boka, /avboka, /konto och onboarding-studions preview. */}
-        <style dangerouslySetInnerHTML={{ __html: FLORIST_THEME_CSS }} />
-        {/* EKONOMI-SVITENS palettblock (goal-63) — samma mekanik som florist ovan. */}
-        <style dangerouslySetInnerHTML={{ __html: EKONOMI_THEME_CSS }} />
-        {/* SALONG-SVITENS palettblock (goal-64) — samma mekanik. */}
-        <style dangerouslySetInnerHTML={{ __html: SALONG_THEME_CSS }} />
+        {/* Alla storefront-rötter behöver samma CSS från den kanoniska temaregistryn. */}
+        <style dangerouslySetInnerHTML={{ __html: THEME_CSS }} />
       </head>
       <body>{children}</body>
     </html>

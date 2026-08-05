@@ -1,7 +1,7 @@
-// fix-35 — PROD domain VALIDATOR (was: generator; repurposed, code kept = build-once).
+// fix-35 — PROD domain validator.
 //
 // THE MODEL CHANGE (fix-35): customer domains now live in COMMITTED wrangler.jsonc
-// top-level routes[] (like the 3 fixed back-office hosts), so a deploy of that file
+// top-level routes[] (like the fixed infra hosts), so a deploy of that file
 // re-asserts every one and can NEVER detach them. This file is therefore no longer
 // the deploy SOURCE (it stopped writing wrangler.deploy.json). It is now a fail-closed
 // PRE-FLIGHT VALIDATOR: it proves the committed wrangler.jsonc is a SUPERSET of what
@@ -18,15 +18,19 @@
 // `*.boka.corevo.se/*` wildcard. Existing legacy custom domains still ride guard #1
 // so a deployment cannot silently detach them.
 //
-// The pure helpers (buildRoutes/fetchActiveSlugs/REQUIRED_FIXED_HOSTS) are RETAINED
-// (build-once-never-delete) — they encode the route contract + the fail-closed DB
-// read, reused by tests and any future CI-sync that WRITES the file.
+// buildRoutes, fetchActiveSlugs and REQUIRED_FIXED_HOSTS are shared by this validator,
+// deploy-prod, check_domains and their contract tests.
 //
 // Run from apps/web:  node scripts/gen-deploy-config.mjs   (validate; exit 1 on drift)
 
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { readCustomDomainPatterns, readAllRoutePatterns, REQUIRED_FIXED_ROUTES, RESERVED } from './domain-routes.mjs'
+import {
+  readCustomDomainPatterns,
+  readAllRoutePatterns,
+  REQUIRED_FIXED_ROUTES,
+  RESERVED,
+} from './domain-routes.mjs'
 import { cfApi, resolveAccountId, listWorkerDomains } from './cf-domains.mjs'
 
 const WORKER = process.env.CF_WORKER_NAME || 'bokningsplatformen'
@@ -45,8 +49,8 @@ export const REQUIRED_FIXED_HOSTS = [
 /**
  * Preserve the fixed infra routes. Tenant slugs deliberately do not alter the route
  * list because the canonical `*.boka.corevo.se/*` route covers them all. THROWS if
- * any required fixed host is missing (the deploy-safety invariant). RETAINED for
- * backwards-compatible callers under build-once-never-delete.
+ * any required fixed host is missing (the deploy-safety invariant). deploy-prod and
+ * the domain checks are current callers.
  * @param {Array<{pattern:string,custom_domain?:boolean,zone_name?:string}>} baseRoutes
  * @param {string[]} slugs
  */
@@ -108,8 +112,8 @@ async function main() {
   const wranglerPath = resolve(here, '..', 'wrangler.jsonc')
   const committedPatterns = readCustomDomainPatterns(wranglerPath)
 
-  // Invariant: ALL fixed routes must be in the committed file — the 3 back-office
-  // custom_domains AND the *.boka.corevo.se/* storefront wildcard (a zone_name route,
+  // Invariant: all fixed routes must be in the committed file — the infra
+  // custom domains and the *.boka.corevo.se/* storefront wildcard (a zone_name route,
   // so it is checked against the FULL routes[], not just custom_domain entries).
   const allRoutes = new Set(readAllRoutePatterns(wranglerPath))
   const missingFixed = REQUIRED_FIXED_ROUTES.filter((p) => !allRoutes.has(p))
@@ -150,9 +154,13 @@ async function main() {
     process.exit(1)
   }
 
-  console.log('✓ Domain validator OK — wildcard is present and committed routes cover every live legacy domain.')
+  console.log(
+    '✓ Domain validator OK — wildcard is present and committed routes cover every live legacy domain.',
+  )
   console.log(`  fixed hosts: ${REQUIRED_FIXED_HOSTS.join(', ')}`)
-  console.log(`  live custom domains: ${liveDomains.filter((h) => !REQUIRED_FIXED_HOSTS.includes(h)).join(', ') || '(none)'}`)
+  console.log(
+    `  live custom domains: ${liveDomains.filter((h) => !REQUIRED_FIXED_HOSTS.includes(h)).join(', ') || '(none)'}`,
+  )
 }
 
 const invokedDirectly =

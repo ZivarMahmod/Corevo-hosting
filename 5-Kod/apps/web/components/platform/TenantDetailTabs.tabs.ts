@@ -1,4 +1,18 @@
-import type { TenantTabKey } from './TenantDetailTabs'
+export type TenantTabKey =
+  | 'Översikt'
+  | 'Tjänster'
+  | 'Kunder'
+  | 'Personal'
+  | 'Kurser'
+  | 'Klubben'
+  | 'Webshop'
+  | 'Blogg'
+  | 'Offerter'
+  | 'Meddelanden'
+  | 'Bildbibliotek'
+  | 'Sida'
+  | 'Integrationer'
+  | 'Drift'
 
 const slugs: Record<TenantTabKey, string> = {
   Översikt: 'oversikt', Tjänster: 'tjanster', Kunder: 'kunder', Personal: 'personal',

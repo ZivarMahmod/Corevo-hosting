@@ -1,13 +1,9 @@
 import { describe, it, expect } from 'vitest'
-// theme-content FÖRST: registry.ts och theme-capabilities.ts sitter i en cirkulär
-// import med den (types.ts hämtar ThemeCaps därifrån). Importeras registryt först
-// hinner THEME_CONTENT aldrig initieras → base blir undefined i resolveThemeContent.
-import { layerCopy, resolveThemeContent } from '@/components/storefront/theme-content'
-import { branschCopy } from '@/components/storefront/bransch-copy'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { branschCopy } from './bransch-copy'
+import { layerCopy } from './theme-copy'
 import { THEME_OWNS_COPY, themeOwnsCopy } from '@/lib/platform/theme-capabilities'
-import { FLORIST_THEMES } from '@/components/storefront/layouts/florist/registry'
-import { EKONOMI_THEMES } from '@/components/storefront/layouts/ekonomi/registry'
-import { SALONG_THEMES } from '@/components/storefront/layouts/salong/registry'
+import { THEME_DEFINITIONS, THEME_SUITES } from './themes/registry'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 
 /**
@@ -22,8 +18,7 @@ import type { StorefrontTheme } from '@/lib/tenant-data'
  * flaggan (noll regression för de 21 befintliga), och att det hoppas över för mallar med.
  */
 
-// Den riktiga skip-logiken bor i tenant-copy.ts (server-only + DB). Den är EN rad ovanpå
-// den layerCopy() som testas här — samma kedja, bara utan DB-rundan.
+// Den riktiga skip-logiken bor i tenant-copy.ts ovanpå den redan laddade tenant-bundlen.
 const resolveMed = (theme: StorefrontTheme, verticalId: string, ownerCopy: Parameters<typeof layerCopy>[1]) =>
   themeOwnsCopy(theme)
     ? resolveThemeContent(theme, null, layerCopy({}, ownerCopy))
@@ -31,7 +26,7 @@ const resolveMed = (theme: StorefrontTheme, verticalId: string, ownerCopy: Param
 
 describe('goal-64: THEME_OWNS_COPY', () => {
   it('härleds ur mallarnas egna manifest (ownsCopy) — ingen separat lista att glömma', () => {
-    const declared = [...FLORIST_THEMES, ...EKONOMI_THEMES, ...SALONG_THEMES]
+    const declared = THEME_DEFINITIONS
       .filter((t) => t.ownsCopy)
       .map((t) => t.key)
     expect([...THEME_OWNS_COPY].sort()).toEqual(declared.sort())
@@ -57,7 +52,7 @@ describe('goal-64: THEME_OWNS_COPY', () => {
   })
 
   it('med flaggan vinner mallen över branschen — men kunden vinner alltid över mallen', () => {
-    const fejkad = { ...FLORIST_THEMES[0], key: 'fejkmall', ownsCopy: true }
+    const fejkad = { ...THEME_SUITES.florist[0], key: 'fejkmall', ownsCopy: true }
     // Simulerar skip-grenen i tenant-copy.ts för en mall som äger sin copy.
     const utanBransch = layerCopy({}, null)
     const medKund = layerCopy({}, { heroTitle: 'Kundens egen rubrik' })

@@ -4,6 +4,7 @@ import { useActionState, useState, type ReactNode } from 'react'
 import { saveSettings, type ActionState } from '@/lib/admin/actions'
 import { Card, Callout } from '@/components/portal/ui'
 import type { SettingsScope } from '@/lib/admin/scoped-settings'
+import type { CustomerPortalMode } from '@/lib/customer-portal/mode'
 import styles from './admin.module.css'
 
 const TIMEZONES = [
@@ -31,7 +32,7 @@ export type SettingsFormProps = {
   address: string
   contactEmail: string
   contactPhone: string
-  customerAccountsEnabled: boolean
+  customerPortalMode?: CustomerPortalMode | null
   /** Notiser & integritet — defaults match the "absent => on" reader semantics. */
   notifications?: NotificationToggles
   googleReviewUrl?: string
@@ -192,13 +193,18 @@ export function SettingsForm({
           }
         /> : null}
 
-        {/* G12: storefront customer accounts (login + "Mitt konto" + signup). */}
-        <LiveToggleRow
-          name="customer_accounts_enabled"
-          defaultOn={props.customerAccountsEnabled}
-          title="Kund-konton"
-          desc="Visar inloggning + ”Mitt konto” på din publika sajt (annars endast gästbokning)."
-        />
+        {props.customerPortalMode === 'off' || props.customerPortalMode === 'legacy_account' ? (
+          <LiveToggleRow
+            name="legacy_customer_account_requested"
+            defaultOn={props.customerPortalMode === 'legacy_account'}
+            title="Kund-konton"
+            desc="Visar inloggning + ”Mitt konto” på din publika sajt (annars endast gästbokning)."
+          />
+        ) : (
+          <Callout tone="info">
+            Kundportalläget hanteras av plattformsadministratören.
+          </Callout>
+        )}
 
         <label className={styles.field}>
           <span>Avbokning senast (timmar före)</span>
@@ -207,6 +213,7 @@ export function SettingsForm({
             type="number"
             min="0"
             max="8760"
+            step="1"
             defaultValue={props.cancellationHours}
             style={{ maxWidth: '10rem' }}
           />

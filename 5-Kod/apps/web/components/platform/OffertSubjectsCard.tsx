@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState } from 'react'
-import { saveOffertSubjects, type ActionState } from '@/lib/platform/actions'
+import { saveOffertSubjects } from '@/lib/platform/actions/offert'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import { Icon } from '@/components/portal/ui'
 import styles from './platform.module.css'
 

@@ -2,6 +2,7 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice, shopCategoryChips } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { formatBloggLongDate } from '@/lib/storefront/blogg/types'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
@@ -29,23 +30,15 @@ import styles from './sivsav.module.css'
  * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-function formatPostDate(iso: string | null): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
 /* ════════════════════════════════ BUKETTERNA ══════════════════════════════ */
 
-export function SivSavShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
+export function SivSavShop({ data, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
-  if (teaser && allProducts.length === 0 && !paused) return null
+  if (teaser && allProducts.length === 0) return null
 
   // Filens ord för det ofiltrerade urvalet är "Allt". Teasern har ingen filterrad i filen.
   const chips = teaser ? [] : shopCategoryChips(data, 'Allt')
@@ -73,13 +66,6 @@ export function SivSavShop({ data, paused, limit, moreHref, content }: ThemeShop
         </div>
       ) : null}
 
-      {paused ? (
-        <p role="status" className={styles.ssNotice}>
-          Butiken är tillfälligt stängd för nya beställningar. Sortimentet står kvar — vi
-          öppnar snart igen.
-        </p>
-      ) : null}
-
       {products.length === 0 ? (
         <p className={styles.ssEmpty}>
           {data.activeCategory
@@ -96,7 +82,7 @@ export function SivSavShop({ data, paused, limit, moreHref, content }: ThemeShop
                 aria-label={`${p.name} — visa buketten`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                <span className={styles.ssSrOnly}>{p.imageAlt ?? p.name}</span>
+                <span className="sr-only">{p.imageAlt ?? p.name}</span>
               </a>
               <div className={styles.ssProductRow}>
                 <h3 className={styles.ssShopName}>
@@ -106,7 +92,7 @@ export function SivSavShop({ data, paused, limit, moreHref, content }: ThemeShop
                 <span className={styles.ssProductPrice}>{formatProductPrice(p)}</span>
               </div>
               {p.description ? <p className={styles.ssShopDesc}>{p.description}</p> : null}
-              {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} compact />}
+              <AddToCart product={p} fulfilment={config.fulfilment} compact />
             </li>
           ))}
         </ul>
@@ -141,13 +127,11 @@ export function SivSavBlogg({ posts: allPosts, limit, moreHref, content }: Theme
       ) : (
         <ul className={styles.ssPostList}>
           {posts.map((p) => {
-            const date = formatPostDate(p.publishedAt)
+            const date = formatBloggLongDate(p.publishedAt)
             const href = p.slug ? `/blogg/${p.slug}` : null
             return (
               <li key={p.id}>
-                <article
-                  className={p.coverImageUrl ? styles.ssPostCard : styles.ssPostCardText}
-                >
+                <article className={p.coverImageUrl ? styles.ssPostCard : styles.ssPostCardText}>
                   {p.coverImageUrl ? (
                     <div
                       className={styles.ssPostImg}
@@ -159,7 +143,9 @@ export function SivSavBlogg({ posts: allPosts, limit, moreHref, content }: Theme
                   <div className={styles.ssPostBody}>
                     {/* Filen: "{{ b.tag }} · {{ b.date }}" i spärrad salvia-versal. Taggen = blog_posts.tag. */}
                     {p.tag || date ? (
-                      <p className={styles.ssPostMeta}>{[p.tag, date].filter(Boolean).join(' · ')}</p>
+                      <p className={styles.ssPostMeta}>
+                        {[p.tag, date].filter(Boolean).join(' · ')}
+                      </p>
                     ) : null}
                     <h2 className={styles.ssPostTitle}>
                       {href ? <a href={href}>{p.title}</a> : p.title}

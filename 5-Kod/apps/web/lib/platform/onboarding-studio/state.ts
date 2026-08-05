@@ -20,7 +20,7 @@ export type StudioStage = 'super' | 'studio' | 'result'
 /**
  * Every cfg mutation a panel can dispatch (ports app.jsx's `A` action set, adapted to
  * the leaner W1 StudioCfg). Discriminated on `type`; the leaves match these literals
- * EXACTLY, so the payload field names are part of the frozen contract:
+ * EXACTLY, so the payload field names are part of the action contract:
  *   applyBranch  { key }      — tag the customer's category ONLY (no theme/module seeding)
  *   setName      { value }    — set name; auto-syncs slug until slugTouched
  *   setSlug      { value }    — set slug by hand → locks slugTouched=true
@@ -108,7 +108,7 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
   }
 }
 
-/** The prop contract every leaf panel receives (frozen — leaves import this type). */
+/** The prop contract every leaf panel receives. */
 export type PanelProps = {
   cfg: StudioCfg
   dispatch: Dispatch<StudioAction>
@@ -117,7 +117,7 @@ export type PanelProps = {
 
 /**
  * Translate a StudioCfg into the exact FormData `createTenant` expects (build-contract
- * §6). Mirrors CreateTenantForm's hidden-input shape; createTenant requires `name`,
+ * §6). createTenant requires `name`,
  * a valid `slug`, a selectable theme and `owner_email`.
  *
  * - `vertical_id`  emitted always (`branch ?? ''`); server coerces empty → null.
@@ -130,10 +130,9 @@ export type PanelProps = {
  *                  dropped. createTenant re-validates (parseServiceInputs) + inserts.
  * - `hero_title` / `hero_lede` (W5) → settings.copy.{heroTitle,heroLede}; empty = theme
  *                  default. Renders on the live page + preview via resolveThemeContent.
- * - `owner_role`   fixed 'salon_admin'.
  * - logo / city are intentionally omitted (deferred / not in StudioCfg).
  */
-export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
+export function buildTenantOnboardingFormData(cfg: StudioCfg): FormData {
   const fd = new FormData()
   fd.set('vertical_id', cfg.branch ?? '')
   fd.set('name', cfg.name)
@@ -160,8 +159,5 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   fd.set('hero_lede', cfg.heroLede)
   fd.set('owner_name', cfg.ownerName)
   fd.set('owner_email', cfg.ownerEmail)
-  // The owner role seam: salon_admin is the only assignable role today (honest fixed
-  // value, mirrors CreateTenantForm.tsx). createTenant resolves it via resolveOwnerRole.
-  fd.set('owner_role', 'salon_admin')
   return fd
 }

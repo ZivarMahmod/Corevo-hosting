@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { trapTab } from '@/components/portal/ui/focus'
 import { NAV_LINKS } from './NavLinks'
 import { BookCta } from './BookCta'
 import { UtilityBar } from '@/components/storefront/UtilityBar'
@@ -116,22 +117,8 @@ export function NavShell({
         setMenuOpen(false)
         return
       }
-      if (e.key !== 'Tab') return
       const overlay = overlayRef.current
-      if (!overlay) return
-      const focusables = overlay.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      if (focusables.length === 0) return
-      const first = focusables[0]!
-      const last = focusables[focusables.length - 1]!
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      if (overlay) trapTab(e, overlay)
     }
     document.addEventListener('keydown', onKey)
     return () => {
@@ -204,7 +191,11 @@ export function NavShell({
           {/* goal-55 7B: korg-rad i mobil-overlayn — stänger menyn och öppnar
               /varukorg-sidan (goal-57). */}
           {cartEnabled ? (
-            <CartNavButton variant="overlay" tabIndex={menuOpen ? 0 : -1} onOpen={() => setMenuOpen(false)} />
+            <CartNavButton
+              variant="overlay"
+              tabIndex={menuOpen ? 0 : -1}
+              onOpen={() => setMenuOpen(false)}
+            />
           ) : null}
           {customerAccountsEnabled ? (
             <Link href="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>

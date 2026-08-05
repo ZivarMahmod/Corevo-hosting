@@ -113,17 +113,3 @@ export const SHOP_ORDER_STATUS_LABELS: Record<ShopOrderStatus, string> = {
   completed: 'Slutförd',
   cancelled: 'Avbruten',
 }
-
-/**
- * Format a minor-unit price (e.g. 14900) as a Swedish-formatted string.
- * Pure + currency-aware (SEK → "kr" suffix; otherwise ISO code prefix).
- * Mirrors formatShopPrice in lib/storefront/shop/types.ts — kept as a
- * separate copy so this module has zero imports and remains a PUR file.
- */
-export function formatCents(cents: number, currency = 'SEK'): string {
-  const major = (cents / 100).toLocaleString('sv-SE', {
-    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  })
-  return currency === 'SEK' ? `${major} kr` : `${major} ${currency}`
-}

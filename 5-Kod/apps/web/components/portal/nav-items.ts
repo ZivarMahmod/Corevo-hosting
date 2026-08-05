@@ -1,11 +1,8 @@
-import type { IconName } from './ui/Icon'
+import type { IconName } from '@/lib/ui-icons'
 import type { CommandItem } from './ui/CommandPalette'
 import { ADMIN_AREA_MIN_LEVEL as A, adminAreaForPath } from '@/lib/auth/admin-areas'
 
-/** ENDA källan för back-office-navigationen. Både PortalSidebar (railen) och
- *  PortalShell (⌘K-paletten via paletteFromNav) konsumerar SAMMA lista — de kan
- *  inte drifta isär (goal-55 steg 1; tidigare handkopierades paletten i
- *  PortalShell och gled ifrån sidomenyn). */
+/** Katalogen som PortalShell använder för kommandopalettens destinationsposter. */
 
 export type PortalRole = 'admin' | 'platform' | 'personal'
 
@@ -33,11 +30,10 @@ export type NavConfig = { sub: string; items: NavEntry[] }
 
 export const isGroup = (e: NavEntry): e is { group: string } => 'group' in e
 
-/** Role-driven nav sets + their active-path matching. The three back-office
- *  portals live at different roots (admin → /admin, platform → / on
- *  booking.corevo.se, personal → /personal), so each keeps its own match rule —
- *  these are NOT unified (matches the existing AdminNav/PlatformNav/PersonalNav).
- *  Grouping + order follow the v3 handoff (design_handoff_backoffice/Shell.jsx → NAV). */
+/** Role-driven nav sets + their active-path matching. The back-office portals
+ *  live at different roots (admin → /admin, platform → /, personal →
+ *  /personal), so each keeps its own match rule —
+ *  these are NOT unified because their route semantics differ. */
 export const NAV: Record<PortalRole, NavConfig> = {
   platform: {
     sub: 'Plattform',
@@ -66,7 +62,6 @@ export const NAV: Record<PortalRole, NavConfig> = {
       { href: '/partners', label: 'Partners', icon: 'building' },
       { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
       { href: '/domaner', label: 'Domäner', icon: 'link' },
-      { href: '/roller', label: 'Roller', icon: 'shield' },
       { href: '/installningar', label: 'Inställningar', icon: 'settings' },
     ],
   },
@@ -109,19 +104,66 @@ export const NAV: Record<PortalRole, NavConfig> = {
       // Kundens språk, inte plattformens: "Moduler" är en intern term (Zivar).
       { group: 'Din verksamhet' },
       // Kurser = egen opt-in-modul sedan 0056 (rad krävs, isModuleActivated).
-      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', module: 'kurser', minLevel: A.kurser },
-      { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', module: 'media_library', minLevel: A.media },
-      { href: '/admin/galleri', label: 'Galleri', icon: 'grid', module: 'galleri', minLevel: A.galleri },
-      { href: '/admin/webshop', label: 'Webshop', icon: 'grid', module: 'shop', minLevel: A.webshop },
+      {
+        href: '/admin/kurser',
+        label: 'Kurser',
+        icon: 'calendar',
+        module: 'kurser',
+        minLevel: A.kurser,
+      },
+      {
+        href: '/admin/media',
+        label: 'Bildbibliotek',
+        icon: 'upload',
+        module: 'media_library',
+        minLevel: A.media,
+      },
+      {
+        href: '/admin/galleri',
+        label: 'Galleri',
+        icon: 'grid',
+        module: 'galleri',
+        minLevel: A.galleri,
+      },
+      {
+        href: '/admin/webshop',
+        label: 'Webshop',
+        icon: 'grid',
+        module: 'shop',
+        minLevel: A.webshop,
+      },
       { href: '/admin/blogg', label: 'Blogg', icon: 'edit', module: 'blogg', minLevel: A.blogg },
-      { href: '/admin/offerter', label: 'Offerter', icon: 'mail', module: 'offert', minLevel: A.offerter },
-      { href: '/admin/lojalitet', label: 'Lojalitet', icon: 'star', module: 'lojalitet', minLevel: A.lojalitet },
-      { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift', module: 'presentkort', minLevel: A.presentkort },
+      {
+        href: '/admin/offerter',
+        label: 'Offerter',
+        icon: 'mail',
+        module: 'offert',
+        minLevel: A.offerter,
+      },
+      {
+        href: '/admin/lojalitet',
+        label: 'Lojalitet',
+        icon: 'star',
+        module: 'lojalitet',
+        minLevel: A.lojalitet,
+      },
+      {
+        href: '/admin/presentkort',
+        label: 'Presentkort',
+        icon: 'gift',
+        module: 'presentkort',
+        minLevel: A.presentkort,
+      },
       { group: 'Din sida' },
       // Bokningsflödet (bokningssätt/tid-väljare/bilder) bor som flik INNE i
       // Redigera sidan — en yta, en preview (Zivar 2026-07-10).
       { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette', minLevel: A.sida },
-      { href: '/admin/installningar', label: 'Inställningar', icon: 'settings', minLevel: A.installningar },
+      {
+        href: '/admin/installningar',
+        label: 'Inställningar',
+        icon: 'settings',
+        minLevel: A.installningar,
+      },
     ],
   },
   personal: {
@@ -151,16 +193,21 @@ export function isNavItemVisible(
   },
 ): boolean {
   if (item.requiresStaffProfile && opts.hasStaffProfile === false) return false
-  if (item.module && opts.activeModuleKeys && !opts.activeModuleKeys.includes(item.module)) return false
-  if (item.minLevel !== undefined && opts.roleLevel !== undefined && opts.roleLevel < item.minLevel) {
+  if (item.module && opts.activeModuleKeys && !opts.activeModuleKeys.includes(item.module))
+    return false
+  if (
+    item.minLevel !== undefined &&
+    opts.roleLevel !== undefined &&
+    opts.roleLevel < item.minLevel
+  ) {
     const area = adminAreaForPath(item.href)
     return area !== null && (opts.grantedAreas?.includes(area) ?? false)
   }
   return true
 }
 
-/** ⌘K-palettens "Gå till"-lista, härledd ur SAMMA NAV som sidomenyn. Samma
- *  modul- och roll-gating som PortalSidebar: `activeModuleKeys` undefined → ingen
+/** ⌘K-palettens "Gå till"-lista, härledd ur NAV. För modul-gating gäller:
+ *  `activeModuleKeys` undefined → ingen
  *  modul-gating (platform/personal); [] → alla modul-poster döljs. */
 export function paletteFromNav(
   role: PortalRole,

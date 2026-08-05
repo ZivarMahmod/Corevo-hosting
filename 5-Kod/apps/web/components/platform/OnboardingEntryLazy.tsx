@@ -8,12 +8,11 @@ const OnboardingStudio = dynamic(
   { ssr: false, loading: () => <div aria-busy="true">Laddar onboardingstudion…</div> },
 )
 
-/** Loads the selected onboarding surface as a browser asset, outside the Worker. */
+/** Loads the onboarding studio as a browser asset, outside the Worker. */
 export function OnboardingEntryLazy({
   presets,
 }: {
   presets: VerticalPresetData
-  studioEnabled: boolean
 }) {
   return <OnboardingStudio presets={presets} />
 }

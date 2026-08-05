@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { SEED } from './helpers'
+import { BOOKING_HOST, SEED } from './helpers'
 
 // G12 — two-zone login model. Back-office logs in on the PLATFORM host
 // (booking.<root>); the storefront lives on the TENANT host (frisorN.<root>).
@@ -9,8 +9,8 @@ import { SEED } from './helpers'
 // Auth only — no business-data writes. Kept to ONE login per test (the login
 // path is IP-rate-limited at 8/5min, so redundant re-logins would trip it).
 
-const BOOKING = 'http://booking.localhost:3000'
-const STORE = 'http://frisor1.localhost:3000'
+const BOOKING = BOOKING_HOST
+const STORE = `http://${SEED.tenant.slug}.localhost:${process.env.E2E_PORT ?? '3000'}`
 
 async function loginAt(page: import('@playwright/test').Page, base: string, email: string) {
   await page.goto(`${base}/login`)
@@ -23,7 +23,9 @@ async function loginAt(page: import('@playwright/test').Page, base: string, emai
 }
 
 test.describe('@backoffice platform host = back-office, clean URLs', () => {
-  test('super_admin → clean dashboard at /, clean routes, no /platform in URL', async ({ page }) => {
+  test('super_admin → clean dashboard at /, clean routes, no /platform in URL', async ({
+    page,
+  }) => {
     await loginAt(page, BOOKING, SEED.platformAdmin)
     // Lands on the platform dashboard at the clean root.
     await expect(page).toHaveURL(`${BOOKING}/`)
@@ -49,7 +51,9 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
     // platform dashboard instead of silently rendering the account's anchored tenant.
     for (const p of ['/admin', '/personal']) {
       await page.goto(`${BOOKING}${p}`)
-      await expect(page, `${p} must bounce super_admin to the platform dashboard`).toHaveURL(`${BOOKING}/`)
+      await expect(page, `${p} must bounce super_admin to the platform dashboard`).toHaveURL(
+        `${BOOKING}/`,
+      )
     }
   })
 
@@ -60,7 +64,9 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
     // 6, platform_admin=false) is denied to /ingen-atkomst, never sees other tenants.
     for (const p of ['/kunder', '/slutkunder', '/fakturering']) {
       await page.goto(`${BOOKING}${p}`)
-      await expect(page, `${p} must deny a salon_admin`).toHaveURL(new RegExp(`${BOOKING}/ingen-atkomst`))
+      await expect(page, `${p} must deny a salon_admin`).toHaveURL(
+        new RegExp(`${BOOKING}/ingen-atkomst`),
+      )
     }
   })
 
@@ -76,7 +82,9 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
     // Kalendern och kunderna: JA.
     for (const p of ['/admin/bokningar', '/admin/kunder']) {
       await page.goto(`${BOOKING}${p}`)
-      await expect(page, `${p} måste vara öppen för personal`).toHaveURL(new RegExp(`${BOOKING}${p}`))
+      await expect(page, `${p} måste vara öppen för personal`).toHaveURL(
+        new RegExp(`${BOOKING}${p}`),
+      )
     }
 
     // Systemadministrationen: NEJ. Det är den här raden som gör rollen meningsfull —
@@ -93,7 +101,7 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
 test.describe('@backoffice tenant host = storefront only', () => {
   test('back-office paths are bounced off the storefront host', async ({ page }) => {
     // No login needed — the bounce happens in middleware before the auth gate.
-    for (const p of ['/admin', '/personal', '/kunder', '/slutkunder', '/salonger', '/platform']) {
+    for (const p of ['/admin', '/personal', '/kunder', '/slutkunder', '/platform']) {
       await page.goto(`${STORE}${p}`)
       await expect(page, `${p} should bounce to storefront root`).toHaveURL(`${STORE}/`)
     }

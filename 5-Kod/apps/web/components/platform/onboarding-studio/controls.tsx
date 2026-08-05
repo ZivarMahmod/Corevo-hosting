@@ -1,15 +1,12 @@
 'use client'
 
 // Onboarding-studio (goal-48) — shared presentational controls the 12 leaf panels
-// reuse. Inline-styled against the [data-world="backoffice"] --c-* tokens (project
-// convention: CreateTenantForm is 100% inline-styled, no *.module.css). These are the
-// W1 "frozen" form primitives — lifted verbatim from CreateTenantForm's inline `Field`
-// + module state-pills so the studio renders identically to the proven wizard.
+// reuse. Inline-styled against the [data-world="backoffice"] --c-* tokens. These are
+// the onboardingstudions delade formulärkontroller.
 import { useId, useState, type CSSProperties } from 'react'
 import { type ModuleState } from '@/lib/tenant-modules'
 
-/** Svenska etiketter per modul-läge (mirror of CreateTenantForm's MODULE_STATE_LABELS
- *  — presentational only; the lifecycle itself lives in tenant-modules). */
+/** Svenska etiketter per modul-läge; livscykeln ägs av tenant-modules. */
 export const MODULE_STATE_LABELS: Record<ModuleState, string> = {
   off: 'Av',
   live: 'På',
@@ -24,7 +21,7 @@ const fieldLabel: CSSProperties = {
 
 /**
  * Labelled text input (label fs12.5 / input fs14 / focus ring var(--c-forest)).
- * Lifted from CreateTenantForm's inline Field; focus is wired with a small `focused`
+ * Focus is wired with a small `focused`
  * state because inline styles can't express `:focus`.
  */
 export function Field({
@@ -92,7 +89,7 @@ export function Field({
 }
 
 /**
- * The off/live pill control (mirrors CreateTenantForm's module pills).
+ * The off/live pill control for onboarding modules.
  * The active
  * pill is forest-bordered on paper-2, the rest muted. Pure presentational.
  */

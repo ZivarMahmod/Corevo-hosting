@@ -15,28 +15,27 @@ import {
 import { kronorToCents } from './format'
 import {
   managedUploadErrorMessage,
-  retainOwnedMediaUrls,
   retireManagedImages,
   uploadManagedImage,
-  type ManagedUploadFailureReason,
 } from '@/lib/media/lifecycle'
-import { mergeBranding } from '@/lib/branding/merge'
-import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
-import { canWrite } from '@/lib/platform/catalog-shared'
 import { BOOKING_STATUSES, restoreBlockedByRefund } from './format'
-import type { CopyOverride } from '@/components/storefront/theme-content'
-import { createAdminServiceClient } from './service'
+import { createServiceClient } from '@/lib/platform/service'
 import { eraseTenantCustomerData } from '@/lib/gdpr/erase'
-import { inviteRedirectUrl } from '@/lib/auth/invite'
-import {
-  compensateFailedStaffInvite,
-  findExistingStaffInviteProfile,
-  findStaffInviteBinding,
-} from '@/lib/auth/staff-invite-service'
+import { provisionStaffInvite } from '@/lib/auth/staff-invite-service'
 import { captureException } from '@/lib/observability'
 import { getAdminLocationPreferences } from './location-context'
 import { notificationQueueMessage, queueBookingEvent } from '@/lib/notifications/booking-events'
-import { mergeScopedSettings, parseSettingsScope, type SettingsScope } from './scoped-settings'
+import {
+  mergeScopedSettings,
+  parseCancellationCutoffHours,
+  parseSettingsScope,
+  type SettingsScope,
+} from './scoped-settings'
+import { parseTenantLegalInput } from '@/lib/tenant-region'
+import {
+  readCustomerPortalMode,
+  resolveLegacyPortalModeChange,
+} from '@/lib/customer-portal/mode'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -56,47 +55,6 @@ function staffActivationErrorMessage(message: string): string {
     return 'Koppla minst en aktiv tjänst för medarbetarens plats innan du aktiverar medarbetaren.'
   }
   return GENERIC
-}
-
-type AdminServiceClient = NonNullable<ReturnType<typeof createAdminServiceClient>>
-
-async function compensateAdminStaffInvite(
-  service: AdminServiceClient,
-  args: { authId: string; tenantId: string; roleId: string; targetStaffId?: string },
-) {
-  return compensateFailedStaffInvite(service, {
-    ...args,
-    reportIncident: async (event) => {
-      await captureException(new Error('staff_invite_manual_cleanup_required'), {
-        action: 'inviteStaff.cleanup',
-        stage: event.stage,
-        tenantId: event.tenantId,
-        containmentOk: event.containmentOk,
-      })
-    },
-  })
-}
-
-function failedInviteState(
-  result: Awaited<ReturnType<typeof compensateAdminStaffInvite>>,
-): ActionState | null {
-  if (result.status === 'committed') return null
-  if (result.status === 'conflict_preserved') {
-    return { error: 'Kontot är redan kopplat till en annan medarbetare och lämnades orört.' }
-  }
-  if (result.status === 'manual_cleanup_required' && result.containmentOk) {
-    return {
-      error:
-        'manual_cleanup_required: Kontot spärrades men kunde inte städas automatiskt. Kontakta drift innan en ny inbjudan skickas.',
-    }
-  }
-  if (result.status === 'containment_failed') {
-    return {
-      error:
-        'containment_failed: Kontot kunde inte spärras fullständigt. Kontakta drift omedelbart och skicka ingen ny inbjudan.',
-    }
-  }
-  return { error: 'Inbjudan kunde inte slutföras. Det provisoriska kontot städades; försök igen.' }
 }
 
 /**
@@ -466,8 +424,6 @@ export async function createStaff(_p: ActionState, fd: FormData): Promise<Action
   if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
-  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
-  revalidateTenant(ctx.tenant.slug)
   return { success: 'Medarbetare tillagd. Bokningsstatusen visar om något behöver slutföras.' }
 }
 
@@ -532,8 +488,8 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
   }
 
   // Foto (staff.avatar_url, 0049): remove_avatar=true → null (standard-silhuett
-  // visas); annars laddas bifogad fil upp till R2 (samma pipeline som Sida-ytans
-  // saveTenantStaffPhoto). Gamla objektet städas best-effort EFTER commit och BARA
+  // visas); annars laddas bifogad fil upp till R2 via den gemensamma hanterade
+  // mediapipelinen. Gamla objektet städas best-effort EFTER commit och BARA
   // när det är medarbetarens EGNA lagrade avatar_url (DB-läst — aldrig en klient-
   // skickad URL).
   let removedAvatar: string | null = null
@@ -587,8 +543,6 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
   )
 
   revalidateStaff(ctx.tenant.slug)
-  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
-  revalidateTenant(ctx.tenant.slug)
   return { success: 'Sparad.' }
 }
 
@@ -608,8 +562,6 @@ export async function toggleStaffActive(_p: ActionState, fd: FormData): Promise<
   if (error) return { error: staffActivationErrorMessage(error.message) }
 
   revalidateStaff(ctx.tenant.slug)
-  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
-  revalidateTenant(ctx.tenant.slug)
   return {
     success: active
       ? accountLinked
@@ -641,8 +593,6 @@ export async function deleteStaff(_p: ActionState, fd: FormData): Promise<Action
   }
 
   revalidateStaff(ctx.tenant.slug)
-  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
-  revalidateTenant(ctx.tenant.slug)
   return { success: 'Medarbetare borttagen.' }
 }
 
@@ -689,8 +639,6 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
-  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
-  revalidateTenant(ctx.tenant.slug)
   return { success: 'Tjänster kopplade.' }
 }
 
@@ -789,7 +737,7 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
     ? null
     : await resolveActiveStaffLocation(supabase, ctx.tenant.id, requestedLocation)
   if (!staffId && !locationId) return { error: 'Välj en aktiv plats.' }
-  const svc = createAdminServiceClient()
+  const svc = createServiceClient()
   if (!svc) {
     return {
       error:
@@ -797,223 +745,51 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
     }
   }
 
-  // 1) Tenant-scoped `staff` role (level 3). Roller är plattformsdata efter 0071,
-  //    så den redan obligatoriska service-klienten skapar/läser rollen server-side.
-  //    Detta görs före Auth-inbjudan så ett DB-fel inte skapar ett föräldralöst konto.
-  await svc
-    .from('roles')
-    .upsert(
-      { tenant_id: ctx.tenant.id, name: 'staff', level: 3 },
-      { onConflict: 'tenant_id,name', ignoreDuplicates: true },
-    )
-  const { data: role, error: rErr } = await svc
-    .from('roles')
-    .select('id')
-    .eq('tenant_id', ctx.tenant.id)
-    .eq('name', 'staff')
-    .maybeSingle()
-  if (rErr || !role) return { error: GENERIC }
-  const roleId = role.id
-
-  // A safe retry reuses only the exact active tenant+staff profile. It never
-  // guesses from an Auth "already exists" error or moves an account across tenants.
-  let existing = await findExistingStaffInviteProfile(svc, {
-    email,
+  const result = await provisionStaffInvite({
+    service: svc,
+    accountClient: svc,
     tenantId: ctx.tenant.id,
-    roleId,
+    email,
+    ...(staffId ? { targetStaffId: staffId } : {}),
+    createStaff: async (authId) => {
+      if (staffId) {
+        const { data: linked, error } = await supabase
+          .from('staff')
+          .update({ profile_id: authId })
+          .eq('id', staffId)
+          .eq('tenant_id', ctx.tenant.id)
+          .is('profile_id', null)
+          .select('id')
+          .maybeSingle()
+        return { error: error ?? (linked ? null : new Error('staff_link_not_committed')) }
+      }
+
+      const { error } = await supabase.rpc('create_staff_with_defaults', {
+        p_title: title || email,
+        p_location: locationId!,
+        p_profile: authId,
+      })
+      return { error }
+    },
+    reportIncident: async (event) => {
+      await captureException(new Error(event.stage), {
+        action: 'inviteStaff',
+        stage: event.stage,
+        tenantId: event.tenantId,
+        ...(typeof event.containmentOk === 'boolean'
+          ? { containmentOk: event.containmentOk }
+          : {}),
+      })
+    },
   })
-  if (!existing.ok) return { error: GENERIC }
-  if (existing.profile && !existing.profile.reusable) {
-    return {
-      error:
-        'manual_cleanup_required: Ett inaktivt konto finns redan för e-postadressen. Aktivera eller städa kontot innan ny inbjudan.',
-    }
-  }
-
-  if (staffId) {
-    const target = await findStaffInviteBinding(svc, {
-      tenantId: ctx.tenant.id,
-      authId: existing.profile?.id ?? '',
-      targetStaffId: staffId,
-    })
-    if (!target.ok || !target.staffId) return { error: 'Medarbetaren saknas.' }
-    if (target.authBoundStaffId && target.authBoundStaffId !== staffId) {
-      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
-    }
-    if (target.profileId) {
-      if (existing.profile?.id === target.profileId) {
-        return { success: `Kontot fanns redan och är kopplat till ${email}.` }
-      }
-      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
-    }
-  }
-
-  // 2) Invite the auth user (one-time magic link). If a concurrent retry won,
-  //    re-read the exact public profile once and continue idempotently.
-  let authId = existing.profile?.id ?? ''
-  let inviteSent = false
-  if (!authId) {
-    const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
-      redirectTo: inviteRedirectUrl('staff'),
-    })
-    if (iErr || !invited?.user) {
-      existing = await findExistingStaffInviteProfile(svc, {
-        email,
-        tenantId: ctx.tenant.id,
-        roleId,
-      })
-      if (!existing.ok || !existing.profile || !existing.profile.reusable) {
-        return { error: 'Inbjudan misslyckades. Kontot kunde inte återfinnas säkert.' }
-      }
-      authId = existing.profile.id
-    } else {
-      authId = invited.user.id
-      inviteSent = true
-    }
-  }
-
-  if (!inviteSent) {
-    const binding = await findStaffInviteBinding(svc, {
-      tenantId: ctx.tenant.id,
-      authId,
-      ...(staffId ? { targetStaffId: staffId } : {}),
-    })
-    if (!binding.ok) {
-      return { error: 'manual_cleanup_required: Kontots personalkoppling kunde inte verifieras.' }
-    }
-    if (staffId && binding.authBoundStaffId && binding.authBoundStaffId !== staffId) {
-      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
-    }
-    if (binding.profileId === authId) {
-      return { success: `Kontot fanns redan och är kopplat till ${email}.` }
-    }
-    if (staffId && binding.profileId && binding.profileId !== authId) {
-      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
-    }
-  }
-
-  // 3) Bake tenant_id into app_metadata so the JWT carries it before the access
-  //    token hook is enabled (same belt-and-suspenders as the platform invite).
-  const { error: metadataError } = await svc.auth.admin.updateUserById(authId, {
-    app_metadata: { tenant_id: ctx.tenant.id, platform_admin: false },
-  })
-  if (metadataError) {
-    if (!inviteSent) {
-      await captureException(new Error('existing_staff_metadata_update_failed'), {
-        action: 'inviteStaff.metadata',
-        tenantId: ctx.tenant.id,
-      })
-      return {
-        error:
-          'manual_cleanup_required: Det befintliga kontots företagskoppling kunde inte verifieras.',
-      }
-    }
-    const resolution = await compensateAdminStaffInvite(svc, {
-      authId,
-      tenantId: ctx.tenant.id,
-      roleId,
-      ...(staffId ? { targetStaffId: staffId } : {}),
-    })
-    return (
-      failedInviteState(resolution) ?? {
-        error:
-          'manual_cleanup_required: Kontot kopplades men metadata behöver verifieras av drift.',
-      }
-    )
-  }
-
-  // 4) public.users-raden skrivs med service-role; authenticated får avsiktligt
-  //    aldrig ändra role_id/status direkt efter 0071.
-  if (inviteSent) {
-    const { error: uErr } = await svc
-      .from('users')
-      .insert({ id: authId, tenant_id: ctx.tenant.id, email, role_id: roleId, status: 'active' })
-    if (uErr) {
-      const resolution = await compensateAdminStaffInvite(svc, {
-        authId,
-        tenantId: ctx.tenant.id,
-        roleId,
-        ...(staffId ? { targetStaffId: staffId } : {}),
-      })
-      const failure = failedInviteState(resolution)
-      if (failure) return failure
-    }
-  }
-
-  // 5) Create or link the staff row → profile_id points at the new account.
-  if (staffId) {
-    const { data: linked, error: linkErr } = await supabase
-      .from('staff')
-      .update({ profile_id: authId })
-      .eq('id', staffId)
-      .eq('tenant_id', ctx.tenant.id)
-      .is('profile_id', null)
-      .select('id')
-      .maybeSingle()
-    if (linkErr || !linked) {
-      if (!inviteSent) {
-        const binding = await findStaffInviteBinding(svc, {
-          tenantId: ctx.tenant.id,
-          authId,
-          targetStaffId: staffId,
-        })
-        if (binding.ok && binding.profileId === authId && binding.authBoundStaffId === staffId) {
-          // Ambiguous update response, but the exact retry target proves commit.
-        } else if (!binding.ok) {
-          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
-        } else {
-          return {
-            error:
-              'Medarbetaren kopplades av en annan inbjudan. Det befintliga kontot lämnades orört.',
-          }
-        }
-      } else {
-        const resolution = await compensateAdminStaffInvite(svc, {
-          authId,
-          tenantId: ctx.tenant.id,
-          roleId,
-          targetStaffId: staffId,
-        })
-        const failure = failedInviteState(resolution)
-        if (failure) return failure
-      }
-    }
-  } else {
-    const { error: insErr } = await supabase.rpc('create_staff_with_defaults', {
-      p_title: title || email,
-      p_location: locationId!,
-      p_profile: authId,
-    })
-    if (insErr) {
-      if (!inviteSent) {
-        const binding = await findStaffInviteBinding(svc, {
-          tenantId: ctx.tenant.id,
-          authId,
-        })
-        if (binding.ok && binding.profileId === authId) {
-          // Exact row proves an idempotent retry committed.
-        } else if (!binding.ok) {
-          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
-        } else {
-          return { error: GENERIC }
-        }
-      } else {
-        const resolution = await compensateAdminStaffInvite(svc, {
-          authId,
-          tenantId: ctx.tenant.id,
-          roleId,
-        })
-        const failure = failedInviteState(resolution)
-        if (failure) return failure
-      }
-    }
+  if (!result.ok) return { error: result.error }
+  if (result.alreadyLinked) {
+    return { success: `Kontot fanns redan och är kopplat till ${email}.` }
   }
 
   revalidateStaff(ctx.tenant.slug)
-  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
-  revalidateTenant(ctx.tenant.slug)
   return {
-    success: !inviteSent
+    success: !result.inviteSent
       ? `Kontot fanns redan och kopplades till ${email}. Använd Glömt lösenord om en ny länk behövs.`
       : staffId
         ? `Inbjudan skickad till ${email}. Kontot är kopplat till den befintliga medarbetaren.`
@@ -1128,11 +904,8 @@ export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Pr
 // engine offers EXACTLY those starts; with none it falls back to the working_hours
 // raster. Uneven start times are allowed by design — the owner picks them.
 //
-// ⚠️ Activation dependency (OUT OF M6 REVIR): the public booking engine still reads
-// `working_hours` + a fixed step (app/boka/actions.ts) and does NOT yet read
-// working_hour_slots. The DB (anon-read policy 0011:598, seed fn) is built for M3
-// to consume in a later wave. Until M3 reads these, explicit slots are stored +
-// editable here but do not yet change the public bookable times. Copy reflects that.
+// The public availability owner reads active working_hour_slots and otherwise falls
+// back to working_hours. Admin keeps the same data editable here.
 
 export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx('scheman')
@@ -1264,152 +1037,14 @@ export async function seedStaffSlots(_p: ActionState, fd: FormData): Promise<Act
   }
 }
 
-// ── Branding (white-label) ────────────────────────────────────────────────────
-const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-
-function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
-  const v = String(raw ?? '').trim()
-  if (v === '') return null
-  return HEX_RE.test(v) ? v : undefined // undefined = invalid (caller rejects)
-}
-
-type TeamMember = { name: string; role: string; img: string }
-type StatTuple = [value: string, label: string]
-
-type Branding = {
-  color_primary?: string | null
-  color_bg?: string | null
-  color_fg?: string | null
-  color_accent?: string | null
-  font_body?: string | null
-  logo_url?: string | null
-  // Owner-uploaded storefront media (saveStorefrontMedia). Kept here so a
-  // colors-only save (saveBranding) preserves them via the `...prev` spread.
-  hero_images?: string[] | null
-  gallery_images?: string[] | null
-  about_image?: string | null
-  closing_image?: string | null
-  team?: TeamMember[] | null
-  stats?: StatTuple[] | null
-}
-
-export async function saveBranding(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('sida')
-  if (!ctx) return { error: NO_TENANT }
-
-  // goal-21 RBAC enforcement (ADDITIVE-RESTRICTIVE, on top of adminCtx's level gate):
-  // resolve the caller's role against the stored/merged permission matrix and deny if
-  // their Branding access is read-only/none. canWrite() can ONLY narrow — it returns
-  // true for an unknown/null role or missing cell (deferring to the outer guard), so it
-  // never grants. With defaults salon_admin/super_admin keep Branding write → zero
-  // behavior change today; it bites only if an admin sets a role's Branding to none.
-  const supabaseForPerms = await createClient()
-  const roleMatrix = await resolveRoleMatrix(supabaseForPerms)
-  if (!canWrite(roleMatrix, ctx.user.roleName, 'Branding'))
-    return { error: 'Din roll har inte behörighet att ändra varumärke. Kontakta plattformsadmin.' }
-
-  const colorPrimary = hexOrNull(fd.get('color_primary'))
-  const colorBg = hexOrNull(fd.get('color_bg'))
-  const colorFg = hexOrNull(fd.get('color_fg'))
-  const colorAccent = hexOrNull(fd.get('color_accent'))
-  if (
-    colorPrimary === undefined ||
-    colorBg === undefined ||
-    colorFg === undefined ||
-    colorAccent === undefined
-  )
-    return { error: 'Ogiltig färgkod. Använd hex, t.ex. #1f6feb.' }
-  const fontBody = String(fd.get('font_body') ?? '')
-    .trim()
-    .slice(0, 120)
-  const removeLogo = String(fd.get('remove_logo') ?? '') === 'true'
-  const logo = fd.get('logo')
-
-  const supabase = await createClient()
-  // Merge onto existing branding so a colors-only save keeps the logo and vice versa.
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('branding')
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  const prev = (existing?.branding ?? {}) as Branding
-
-  let logoUrl = prev.logo_url ?? null
-  let warning: string | null = null
-  let uploadedLogoNew = false
-  if (removeLogo) logoUrl = null
-  if (logo instanceof File && logo.size > 0) {
-    const res = await uploadManagedImage(
-      supabase,
-      ctx.tenant.id,
-      logo,
-      'branding',
-    )
-    if (res.ok) {
-      logoUrl = res.url
-      uploadedLogoNew = !res.duplicate
-    } else warning = managedUploadErrorMessage(res.reason)
-  }
-
-  // Preserve any owner-uploaded storefront media (hero/gallery/about/closing/
-  // team/stats) written by saveStorefrontMedia — mergeBranding spreads prev and
-  // applies only this action's slice, so a colours-only save never clobbers them.
-  const branding: Branding = mergeBranding(prev, {
-    color_primary: colorPrimary,
-    color_bg: colorBg,
-    color_fg: colorFg,
-    color_accent: colorAccent,
-    font_body: fontBody || null,
-    logo_url: logoUrl,
-  })
-
-  const { error } = await supabase
-    .from('tenant_settings')
-    .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
-  if (error) {
-    if (uploadedLogoNew && logoUrl) {
-      await retireManagedImages(supabase, ctx.tenant.id, [logoUrl])
-    }
-    return { error: GENERIC }
-  }
-
-  await retireManagedImages(
-    supabase,
-    ctx.tenant.id,
-    [prev.logo_url],
-    [branding.logo_url],
-  )
-
-  revalidateTenant(ctx.tenant.slug)
-  revalidatePath('/admin/sida')
-  return warning
-    ? { error: warning }
-    : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
-}
-
-// ── Juridikuppgifter (goal-72 1c, plan 003) ────────────────────────────────────
-/** Org-nr + momssats → settings.legal ({ org_nr, vat_rate }) — samma seam som
- *  lib/tenant-data parsar för villkorssidan och kvittomejlet. MERGE, aldrig clobber.
- *  Tomt fält = null = konsumenterna utelämnar raden. Ägaryta ('installningar'). */
+// ── Legal settings ────────────────────────────────────────────────────────────
 export async function saveLegalSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx('installningar')
   if (!ctx) return { error: NO_TENANT }
 
-  const orgNr =
-    String(fd.get('org_nr') ?? '')
-      .trim()
-      .slice(0, 40) || null
-  const vatRaw = String(fd.get('vat_rate') ?? '')
-    .trim()
-    .replace(',', '.')
-  let vatRate: number | null = null
-  if (vatRaw) {
-    const n = Number(vatRaw)
-    if (!Number.isFinite(n) || n < 0 || n > 100) {
-      return { error: 'Momssatsen ska vara ett tal mellan 0 och 100 (t.ex. 25).' }
-    }
-    vatRate = n
-  }
+  const legal = parseTenantLegalInput(fd.get('org_nr'), fd.get('vat_rate'))
+  if (!legal) return { error: 'Momssatsen ska vara ett tal mellan 0 och 100 (t.ex. 25).' }
+  const { orgNr, vatRate } = legal
 
   const supabase = await createClient()
   const { data: existing } = await supabase
@@ -1431,272 +1066,6 @@ export async function saveLegalSettings(_p: ActionState, fd: FormData): Promise<
   return { success: 'Juridikuppgifter sparade. Villkor och kvitton uppdaterade.' }
 }
 
-// ── Storefront media (hero/gallery/about/closing + team + stats) ───────────────
-// Owner-uploaded media that OVERRIDES the per-theme defaults on the storefront
-// (read side: resolveThemeContent + parseSettings already consume these keys).
-// Empty → the storefront keeps showing the strong per-theme default photo.
-const HERO_MAX = 5
-const GALLERY_MAX = 8
-const TEAM_MAX = 12
-const STATS_MAX = 6
-
-/** Neutral upload-failure copy for storefront photos. */
-function mediaUploadMessage(reason: ManagedUploadFailureReason): string {
-  switch (reason) {
-    case 'bad_type':
-      return 'Bilderna måste vara PNG, JPG, WEBP eller GIF.'
-    case 'too_large':
-      return 'Någon bild är för stor (max 8 MB per bild).'
-    case 'no_public_base':
-    case 'no_binding':
-      return 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2 + R2_PUBLIC_BASE_URL). Övriga ändringar sparades.'
-    case 'quota':
-      return 'Bildkvoten är full. Ta bort en oanvänd bild och försök igen.'
-    case 'pending':
-      return 'Samma bild håller redan på att laddas upp. Försök igen om en stund.'
-    case 'unavailable':
-      return 'Samma bild väntar på städning. Försök igen när städningen är klar.'
-    case 'database':
-      return 'Bilderna kunde inte sparas säkert. Försök igen.'
-    default:
-      return 'En eller flera bilder kunde inte laddas upp. Försök igen.'
-  }
-}
-
-/**
- * Save owner-uploaded storefront media into tenant_settings.branding (jsonb),
- * MERGED onto the existing branding so colours/font/logo are never clobbered.
- *
- * FormData contract:
- *   hero_existing  (multiple) — already-saved hero URLs to KEEP (drop to remove)
- *   hero_files     (multiple) — newly chosen hero image files
- *   gallery_existing (multiple) — already-saved gallery URLs to KEEP
- *   gallery_files    (multiple) — newly chosen gallery image files
- *   about_existing / about_file     — single retained URL / single new file
- *   about_remove = 'true'           — drop the about image
- *   closing_existing / closing_file — single retained URL / single new file
- *   closing_remove = 'true'         — drop the closing image
- *   team_name_<i> / team_role_<i> / team_img_<i> (retained URL) / team_photo_<i> (file)
- *   stat_value_<i> / stat_label_<i>  (note: STORED as [value, label])
- */
-export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('sida')
-  if (!ctx) return { error: NO_TENANT }
-
-  const tenantId = ctx.tenant.id
-  const supabase = await createClient()
-  let uploadWarning: string | null = null
-  const uploadedNewUrls: string[] = []
-
-  const { data: existing, error: existingError } = await supabase
-    .from('tenant_settings')
-    .select('branding')
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  if (existingError) return { error: GENERIC }
-  const prev = (existing?.branding ?? {}) as Branding
-  const previousTeamImages = (prev.team ?? []).map((member) => member.img)
-
-  // Upload a single file; on failure record a (first) warning and return null so
-  // the caller can degrade gracefully — exactly like saveBranding's logo path.
-  async function tryUpload(file: File): Promise<string | null> {
-    const res = await uploadManagedImage(
-      supabase,
-      tenantId,
-      file,
-      'sajtbyggare',
-    )
-    if (res.ok) {
-      if (!res.duplicate) uploadedNewUrls.push(res.url)
-      return res.url
-    }
-    if (!uploadWarning) uploadWarning = mediaUploadMessage(res.reason)
-    return null
-  }
-
-  // ── Hero & gallery: retained URLs (hidden) + newly uploaded files, capped. ──
-  // Cap retained first, then upload only as many new files as still fit under the
-  // cap (FX-14): uploading files we'd slice off afterwards would orphan them in R2 —
-  // their URLs would be in neither prev nor the saved set, so prune never sees them.
-  const heroRetained = retainOwnedMediaUrls(
-    fd.getAll('hero_existing').map(String),
-    prev.hero_images ?? [],
-    HERO_MAX,
-  )
-  const heroFiles = fd
-    .getAll('hero_files')
-    .filter((f): f is File => f instanceof File && f.size > 0)
-    .slice(0, HERO_MAX - heroRetained.length)
-  const heroUploaded: string[] = []
-  for (const f of heroFiles) {
-    const url = await tryUpload(f)
-    if (url) heroUploaded.push(url)
-  }
-  const heroImages = [...heroRetained, ...heroUploaded]
-
-  const galleryRetained = retainOwnedMediaUrls(
-    fd.getAll('gallery_existing').map(String),
-    prev.gallery_images ?? [],
-    GALLERY_MAX,
-  )
-  const galleryFiles = fd
-    .getAll('gallery_files')
-    .filter((f): f is File => f instanceof File && f.size > 0)
-    .slice(0, GALLERY_MAX - galleryRetained.length)
-  const galleryUploaded: string[] = []
-  for (const f of galleryFiles) {
-    const url = await tryUpload(f)
-    if (url) galleryUploaded.push(url)
-  }
-  const galleryImages = [...galleryRetained, ...galleryUploaded]
-
-  // ── About / closing: single image each (retained URL unless removed/replaced). ──
-  async function singleImage(
-    prefix: string,
-    previousUrl: string | null | undefined,
-  ): Promise<string | null> {
-    if (String(fd.get(`${prefix}_remove`) ?? '') === 'true') return null
-    const file = fd.get(`${prefix}_file`)
-    if (file instanceof File && file.size > 0) {
-      const url = await tryUpload(file)
-      if (url) return url
-      // Upload failed — fall back to the retained URL so we don't silently drop it.
-    }
-    const existing = String(fd.get(`${prefix}_existing`) ?? '').trim()
-    return retainOwnedMediaUrls([existing], [previousUrl], 1)[0] ?? null
-  }
-  const aboutImage = await singleImage('about', prev.about_image)
-  const closingImage = await singleImage('closing', prev.closing_image)
-
-  // ── Team: indexed rows (name + role + retained-img + optional photo file). ──
-  // Indexed (not parallel getAll) so an optional missing photo can't misalign rows.
-  const team: TeamMember[] = []
-  for (let i = 0; i < TEAM_MAX; i++) {
-    const name = String(fd.get(`team_name_${i}`) ?? '').trim()
-    const role = String(fd.get(`team_role_${i}`) ?? '').trim()
-    let img = retainOwnedMediaUrls(
-      [String(fd.get(`team_img_${i}`) ?? '')],
-      previousTeamImages,
-      1,
-    )[0] ?? ''
-    const photo = fd.get(`team_photo_${i}`)
-    if (photo instanceof File && photo.size > 0) {
-      const url = await tryUpload(photo)
-      if (url) img = url
-    }
-    // Skip incomplete rows: storefront has no per-member fallback, so a member
-    // without an image renders a broken <img>. Require a name and an image.
-    if (name && img) team.push({ name, role, img })
-  }
-
-  // ── Stats: indexed value/label pairs. STORED as [value, label] (ThemeStat). ──
-  // Require BOTH fields: layouts render the label as the React key, so empty
-  // labels would collide (key=""); a half-filled stat is also not meaningful.
-  const stats: StatTuple[] = []
-  for (let i = 0; i < STATS_MAX; i++) {
-    const value = String(fd.get(`stat_value_${i}`) ?? '').trim()
-    const label = String(fd.get(`stat_label_${i}`) ?? '').trim()
-    if (value && label) stats.push([value, label])
-  }
-
-  // Owner media slice only — mergeBranding keeps colours/font/logo/accent intact.
-  const branding: Branding = mergeBranding(prev, {
-    hero_images: heroImages,
-    gallery_images: galleryImages,
-    about_image: aboutImage,
-    closing_image: closingImage,
-    team,
-    stats,
-  })
-
-  const { error } = await supabase
-    .from('tenant_settings')
-    .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
-  if (error) {
-    await retireManagedImages(supabase, tenantId, uploadedNewUrls)
-    return { error: GENERIC }
-  }
-
-  // VÅG 5 durability: the DB save has COMMITTED. Everything below is best-effort
-  // cleanup + cache revalidation and must NEVER turn a successful save
-  // into an error-boundary crash — that's the "data saved but UI says it failed =
-  // appears to vanish" class WORKFLOW-03 hunts (Zivar repro: removing an image then
-  // saving). retireManagedImages is already best-effort internally; this wraps the
-  // whole tail (incl. revalidate*) so any throw here can't unwind a committed save.
-  try {
-    // FX-14: delete storefront objects this save dropped or replaced (hero, gallery,
-    // about, closing, team photos). The logo is owned by saveBranding, so prev.logo_url
-    // is deliberately NOT in this set — a media save must never delete the live logo.
-    await retireManagedImages(
-      supabase,
-      tenantId,
-      [
-        ...(prev.hero_images ?? []),
-        ...(prev.gallery_images ?? []),
-        prev.about_image,
-        prev.closing_image,
-        ...(prev.team ?? []).map((m) => m.img),
-      ],
-      [...heroImages, ...galleryImages, aboutImage, closingImage, ...team.map((m) => m.img)],
-    )
-    revalidateTenant(ctx.tenant.slug)
-    revalidatePath('/admin/sida')
-  } catch {
-    // best-effort cleanup — a prune/revalidate miss never fails an already-saved write.
-  }
-  return uploadWarning
-    ? { error: uploadWarning }
-    : { success: 'Bilder & innehåll sparat. Publika webbplatsen uppdaterad.' }
-}
-
-// ── Storefront copy (owner editorial overrides) — M6 §3.6 / M2↔M6 contract ─────
-// Owner copy lives in tenant_settings.settings.copy (CopyOverride). The storefront
-// reads it through resolveTenantCopy/resolveThemeContent (the M2-built contract):
-// a non-empty string per field overrides the theme default; empty/missing reverts
-// to the theme copy. We MERGE onto the existing settings jsonb (...prev) so we never
-// clobber layout/theme/contact/notifications — same seam saveSettings uses.
-const COPY_FIELDS = [
-  'heroEyebrow',
-  'heroTitle',
-  'heroLede',
-  'aboutCopy',
-  'tagline',
-  'italic',
-] as const
-
-export async function saveStorefrontCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('sida')
-  if (!ctx) return { error: NO_TENANT }
-
-  // Build the copy patch from the form. An empty field is stored as '' — the
-  // resolver treats empty as "unset" → reverts to the theme default. That's the
-  // undo path: clear a field, save, and the theme copy comes back.
-  const copy: CopyOverride = {}
-  for (const f of COPY_FIELDS) {
-    // Trim only trailing/leading; inner newlines are preserved by the resolver.
-    copy[f] = String(fd.get(f) ?? '').slice(0, 600)
-  }
-
-  const supabase = await createClient()
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  const prev = (existing?.settings ?? {}) as Record<string, unknown>
-  const settings = { ...prev, copy }
-
-  const { error } = await supabase
-    .from('tenant_settings')
-    .upsert({ tenant_id: ctx.tenant.id, settings }, { onConflict: 'tenant_id' })
-  if (error) return { error: GENERIC }
-
-  revalidateTenant(ctx.tenant.slug)
-  revalidatePath('/admin/sida')
-  return { success: 'Texter sparade. Publika webbplatsen uppdaterad.' }
-}
-
-// ── Salon settings ────────────────────────────────────────────────────────────
 const PAYMENT_MODES = ['on_site', 'online', 'both', 'coming_soon'] as const
 
 function isValidTz(tz: string): boolean {
@@ -1711,8 +1080,8 @@ function isValidTz(tz: string): boolean {
 
 /**
  * Owner's Google-review link. Empty → null (review nudge no-ops gracefully).
- * Otherwise must parse as an https URL; mirrors hexOrNull's contract so the caller
- * rejects on `undefined`. Uses the WHATWG `URL` global (available on Workers).
+ * Otherwise must parse as an https URL; invalid input returns `undefined` so the
+ * caller can reject it. Uses the WHATWG `URL` global (available on Workers).
  */
 function httpsUrlOrNull(raw: FormDataEntryValue | null): string | null | undefined {
   const v = String(raw ?? '').trim()
@@ -1744,7 +1113,6 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const address = String(fd.get('address') ?? '').trim()
   const contactEmail = String(fd.get('contact_email') ?? '').trim()
   const contactPhone = String(fd.get('contact_phone') ?? '').trim()
-  const customerAccounts = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
 
   // Checkboxes only appear in FormData when checked. Scope makes absence mean
   // "off" only for the visible card, never for unrelated settings.
@@ -1765,11 +1133,8 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   if (scope === 'all' && !name) return { error: 'Ange ett företagsnamn.' }
   if (scope === 'all' && !PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
     return { error: 'Ogiltigt betalningsläge.' }
-  const cancelHours = cancelRaw === '' ? 24 : Number(cancelRaw)
-  if (
-    includesScope('booking') &&
-    (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
-  )
+  const cancelHours = parseCancellationCutoffHours(cancelRaw)
+  if (includesScope('booking') && cancelHours === null)
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
   if (scope === 'all' && timezone && !isValidTz(timezone))
     return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
@@ -1780,25 +1145,36 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
 
   const supabase = await createClient()
 
+  const { data: existing, error: settingsReadError } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (settingsReadError) return { error: GENERIC }
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const currentPortalMode = readCustomerPortalMode(prev)
+  const portalModeDecision = includesScope('booking')
+    ? resolveLegacyPortalModeChange(
+        currentPortalMode,
+        String(fd.get('legacy_customer_account_requested') ?? '') === 'true',
+      )
+    : { ok: true as const, nextMode: null }
+  if (fd.has('customer_portal_mode') || !portalModeDecision.ok) {
+    return { error: 'Kundportalläget hanteras av plattformsadministratören.' }
+  }
+
   // 1) tenant name (feeds the cached public bundle).
   if (scope === 'all') {
     const t = await supabase.from('tenants').update({ name }).eq('id', ctx.tenant.id)
     if (t.error) return { error: GENERIC }
   }
 
-  // 2) tenant_settings: merge into the existing settings jsonb so we never clobber
-  //    layout / custom_override that the public theming layer relies on.
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  // 2) tenant_settings: merge into the existing settings jsonb so scoped saves do
+  //    not clobber settings owned by another admin section.
   const settings = mergeScopedSettings(prev, scope, {
-    cancellationHours: includesScope('booking') ? cancelHours : undefined,
+    cancellationHours: includesScope('booking') ? (cancelHours ?? undefined) : undefined,
     contact:
       scope === 'all' ? { email: contactEmail || null, phone: contactPhone || null } : undefined,
-    customerAccountsEnabled: includesScope('booking') ? customerAccounts : undefined,
     notifications,
     googleReviewUrl,
     cookieBannerEnabled,
@@ -1813,6 +1189,16 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     .from('tenant_settings')
     .upsert(settingsWrite, { onConflict: 'tenant_id' })
   if (s.error) return { error: GENERIC }
+
+  if (portalModeDecision.nextMode && portalModeDecision.nextMode !== currentPortalMode) {
+    const service = createServiceClient()
+    if (!service) return { error: GENERIC }
+    const portal = await service.rpc('set_customer_portal_mode', {
+      p_tenant: ctx.tenant.id,
+      p_mode: portalModeDecision.nextMode,
+    })
+    if (portal.error) return { error: GENERIC }
+  }
 
   // 3) primary location (timezone + name + address), if the tenant has one.
   if (scope === 'all' && ctx.tenant.locationId) {
@@ -1833,7 +1219,6 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   revalidatePath('/admin/installningar/paminnelser')
   revalidatePath('/admin/installningar/integrationer')
   revalidatePath('/admin/installningar/sekretess')
-  revalidatePath('/admin/installningar/foretag')
   return { success: 'Inställningar sparade.' }
 }
 

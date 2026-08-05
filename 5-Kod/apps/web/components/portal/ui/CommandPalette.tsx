@@ -2,8 +2,10 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
+import { trapTab } from './focus'
 import { searchAdminPalette } from '@/lib/admin/calendar-actions'
+import type { IconName } from '@/lib/ui-icons'
 
 /** One go-to entry in the palette. Serializable so the server shell can build
  *  the list (role-keyed) and hand it to this client component. */
@@ -136,25 +138,7 @@ export function CommandPalette({
         if (it) run(it)
       } else if (e.key === 'Tab') {
         const dialog = dialogRef.current
-        if (!dialog) return
-        const focusable = Array.from(
-          dialog.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
-          ),
-        )
-        const first = focusable[0]
-        const last = focusable.at(-1)
-        if (!first || !last) return
-        if (
-          e.shiftKey &&
-          (document.activeElement === first || !dialog.contains(document.activeElement))
-        ) {
-          e.preventDefault()
-          last.focus()
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault()
-          first.focus()
-        }
+        if (dialog) trapTab(e, dialog)
       }
     }
     window.addEventListener('keydown', onKey)

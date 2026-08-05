@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { STOREFRONT_THEMES } from '@/lib/tenant-data'
 
 const migrationsDir = fileURLToPath(new URL('../../../../supabase/migrations/', import.meta.url))
 const migration = readdirSync(migrationsDir)
@@ -9,19 +10,6 @@ const migration = readdirSync(migrationsDir)
   .reverse()
   .map((name) => readFileSync(`${migrationsDir}/${name}`, 'utf8').toLowerCase())
   .find((source) => source.includes('goal 88: atomic theme switch'))
-const themeAction = readFileSync(
-  fileURLToPath(new URL('./actions/theme.ts', import.meta.url)),
-  'utf8',
-)
-const tenantData = readFileSync(
-  fileURLToPath(new URL('../tenant-data.ts', import.meta.url)),
-  'utf8',
-)
-const sidaStudioLazy = readFileSync(
-  fileURLToPath(new URL('../../components/platform/SidaStudioV2Lazy.tsx', import.meta.url)),
-  'utf8',
-)
-
 describe('Goal 88 atomic theme switch contract', () => {
   it('serializes draft check and settings write behind the canonical tenant lock', () => {
     expect(migration).toBeTruthy()
@@ -52,14 +40,13 @@ describe('Goal 88 atomic theme switch contract', () => {
   })
 
   it('keeps the SQL canonical theme set equal to the storefront registry', () => {
-    const registryBlock = tenantData.match(/STOREFRONT_THEMES\s*=\s*\[([\s\S]*?)\]\s*as const/)?.[1]
     const helperBlock = migration?.match(
       /when p_settings ->> 'theme' in \(([\s\S]*?)\)\s*then/,
     )?.[1]
     const literals = (source: string | undefined) =>
       new Set([...(source ?? '').matchAll(/'([^']+)'/g)].map((match) => match[1]))
 
-    expect(literals(helperBlock)).toEqual(literals(registryBlock))
+    expect(literals(helperBlock)).toEqual(new Set(STOREFRONT_THEMES))
   })
 
   it('keeps the RPC root-only, hardened and narrowly granted', () => {
@@ -79,12 +66,6 @@ describe('Goal 88 atomic theme switch contract', () => {
     expect(migration).toContain(
       'public.switch_tenant_theme(uuid,jsonb,text,text,jsonb)',
     )
-  })
-
-  it('routes the action through the RPC and removes the split draft/upsert sequence', () => {
-    expect(themeAction).toContain("supabase.rpc('switch_tenant_theme'")
-    expect(themeAction).not.toContain(".from('site_revisions')")
-    expect(themeAction).not.toContain(".upsert({ tenant_id: tenantId, settings }")
   })
 
   it('guards both draft-creating RPCs after the same tenant lock', () => {
@@ -113,12 +94,6 @@ describe('Goal 88 atomic theme switch contract', () => {
     )
     expect(restore).toContain(
       "private.canonical_site_theme(v_snapshot -> 'settings') is distinct from v_live_theme",
-    )
-  })
-
-  it('keeps the editor keyed by published theme through the success refresh handoff', () => {
-    expect(sidaStudioLazy).toContain(
-      'key={`${props.tenantId}:${props.publishedSnapshot.settings.theme}`}',
     )
   })
 })

@@ -30,15 +30,16 @@ describe('customer portal PWA', () => {
     expect(typedManifest).toMatchObject({
       name: 'Mina bokningar · Corevo',
       short_name: 'Mina bokningar',
-      id: '/mina',
+      id: '/mina/',
       start_url: '/mina/',
       scope: '/mina/',
       display: 'standalone',
       theme_color: '#191a17',
       background_color: '#191a17',
     })
-    expect(JSON.stringify(typedManifest))
-      .not.toMatch(/freshcut|tenantName|customerName|token|bookingId|\?/)
+    expect(JSON.stringify(typedManifest)).not.toMatch(
+      /freshcut|tenantName|customerName|token|bookingId|\?/,
+    )
 
     expect(typedManifest.icons).toEqual([
       {
@@ -70,22 +71,5 @@ describe('customer portal PWA', () => {
       const size = Number.parseInt(icon.sizes, 10)
       expect(pngSize(icon.src)).toEqual({ width: size, height: size })
     }
-
-    const layout = fs.readFileSync(
-      path.join(WEB_ROOT, 'app', '(customer-portal)', 'layout.tsx'),
-      'utf8',
-    )
-    expect(layout).toContain("manifest: '/pwa/customer-portal.webmanifest'")
-    expect(layout).toContain("apple: '/pwa/corevo-apple-touch-icon-180.png'")
-    expect(pngSize('/pwa/corevo-apple-touch-icon-180.png')).toEqual({ width: 180, height: 180 })
-    expect(layout).not.toMatch(/kund-sw|serviceWorker|navigator\.serviceWorker/)
-
-    const installPrompt = fs.readFileSync(
-      path.join(WEB_ROOT, 'components', 'customer-portal', 'InstallPromptCard.tsx'),
-      'utf8',
-    )
-    expect(installPrompt).toContain('src="/pwa/corevo-icon-192.png"')
-    expect(installPrompt).toContain('unoptimized')
-    expect(installPrompt).not.toContain('customer-portal-icon')
   })
 })

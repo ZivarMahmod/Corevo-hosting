@@ -1,43 +1,52 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { gotoTenant, loginCustomer, SEED } from './helpers'
 
-// @mutating — exercises the customer self-service cancel + rebook flow.
-// DEPENDS ON STAGING SEED: a `kund`-role account that owns at least one active
-// (pending/confirmed) booking inside the cancellation window. The base seed.sql
-// has no customer booking, so staging seed must add one (see e2e/README.md).
-// Skips gracefully if the account has no changeable booking, so it never produces
-// a false failure on an under-seeded environment.
-
+// @mutating — exercises the real customer self-service rebook + cancel owners
+// against the active booking in supabase/seeds/e2e-seed.sql.
 test.describe('@mutating cancel & rebook', () => {
   test('customer can rebook then cancel an active booking', async ({ page }) => {
-    await loginCustomer(page, SEED.salonAdmin) // replace with a seeded kund account on staging
-    await gotoTenant(page, '/konto', SEED.tenant.slug)
+    await loginCustomer(page, SEED.customer.email)
+    await gotoTenant(page, `/konto/bokningar/${SEED.customer.activeBookingId}`)
 
-    const firstBooking = page.locator('a[href^="/konto/bokningar/"]').first()
-    if (!(await firstBooking.isVisible().catch(() => false))) {
-      test.skip(true, 'No customer booking seeded on this environment.')
-      return
-    }
-    await firstBooking.click()
+    await expect(page.getByRole('heading', { name: SEED.relationship.serviceLabel })).toBeVisible()
+    await page.getByRole('button', { name: 'Omboka', exact: true }).click()
 
-    const rebook = page.getByRole('button', { name: 'Omboka' })
-    if (await rebook.isVisible().catch(() => false)) {
-      await rebook.click()
-      await page.locator('button:has-text("mån"), button:has-text("tis")').first().click()
-      const time = page.locator('[class*="time"]').first()
-      if (await time.isVisible().catch(() => false)) {
-        await time.click()
-        await page.getByRole('button', { name: 'Bekräfta ny tid' }).click()
-        await expect(page.getByRole('alert')).toHaveCount(0, { timeout: 8000 }).catch(() => {})
+    const dayButtons = page
+      .getByText('Välj ny dag', { exact: true })
+      .locator('xpath=following-sibling::div[1]//button')
+    expect(await dayButtons.count(), 'Ombokningsväljaren saknar dagar.').toBeGreaterThan(0)
+
+    let slotSelected = false
+    for (let day = 0; day < (await dayButtons.count()); day += 1) {
+      await dayButtons.nth(day).click()
+      const timeLabel = page.getByText('Välj ny tid', { exact: true })
+      await Promise.race([
+        timeLabel.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined),
+        page
+          .getByText('Inga lediga tider den dagen. Välj en annan dag.', { exact: true })
+          .waitFor({ state: 'visible', timeout: 10_000 })
+          .catch(() => undefined),
+      ])
+      const times = timeLabel.locator('xpath=following-sibling::div[1]//button')
+      if ((await times.count()) > 0) {
+        await times.first().click()
+        slotSelected = true
+        break
       }
     }
+    expect(slotSelected, 'Den seedade tjänsten saknar ombokningsbar tid inom 14 dagar.').toBe(true)
 
-    // Cancel — auto-accept the window.confirm() dialog.
-    page.on('dialog', (d) => d.accept())
-    const cancel = page.getByRole('button', { name: 'Avboka' })
-    if (await cancel.isVisible().catch(() => false)) {
-      await cancel.click()
-      await expect(page).toHaveURL(/\/konto/)
-    }
+    await page.getByRole('button', { name: 'Bekräfta ny tid' }).click()
+    await expect(page).toHaveURL(
+      (url) =>
+        /^\/konto\/bokningar\/[0-9a-f-]{36}$/.test(url.pathname) &&
+        !url.pathname.endsWith(SEED.customer.activeBookingId),
+      { timeout: 30_000 },
+    )
+
+    await page.getByRole('button', { name: 'Avboka', exact: true }).click()
+    await page.getByRole('button', { name: 'Säker? Avboka', exact: true }).click()
+    await expect(page).toHaveURL((url) => url.pathname === '/konto', { timeout: 30_000 })
+    await expect(page.getByText('Du har inga kommande tider.', { exact: true })).toBeVisible()
   })
 })

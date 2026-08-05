@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { requireUser } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
-import { currentKundTenant } from '@/lib/kund/tenant'
+import { currentTenant } from '@/lib/tenant-data'
 import { hashCustomerClaimToken } from '@/lib/kund/customer-claim'
 import { consumeCustomerClaim } from '@/lib/kund/customer-claim-server'
 
@@ -33,12 +33,17 @@ export default async function CustomerClaimPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
+  const bundle = await currentTenant()
+  if (
+    bundle?.settings.portalMode !== 'legacy_account' ||
+    !bundle.settings.customerAccountsEnabled
+  ) notFound()
+
   // This route deliberately lives outside the guarded /konto layout. It is the
   // one narrow bridge for a signed-in `pending_claim` account. Every portal/data
   // route still requires an active customer; the RPC rechecks tenant/role/status.
   await requireUser(`/konto/koppla/${token}`)
-  const tenant = await currentKundTenant()
-  if (!tenant) return <ClaimFailure kind="wrong_tenant" />
+  const tenant = bundle.tenant
 
   let tokenHash: string
   try {

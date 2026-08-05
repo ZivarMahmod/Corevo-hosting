@@ -27,7 +27,7 @@ values (
   'on_site',
   '{"color_primary":"#b5651d","font_body":"Inter","logo_url":"/demo-logo-frisor1.svg"}'::jsonb,
   -- G12: demo opts INTO customer accounts (storefront login + /konto).
-  '{"layout":{"nav_variant":"A","hero_variant":"1"},"customer_accounts_enabled":true}'::jsonb,
+  '{"layout":{"nav_variant":"A","hero_variant":"1"},"customer_portal":{"mode":"legacy_account"}}'::jsonb,
   'fixed', 500
 )
 on conflict (tenant_id) do nothing;

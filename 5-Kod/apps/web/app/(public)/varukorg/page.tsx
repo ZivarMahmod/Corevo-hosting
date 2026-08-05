@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { CartPageContents } from '@/components/storefront/shop/CartPageContents'
 import { SubpageHero } from '@/components/storefront/sections'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 import styles from './varukorg.module.css'
 
@@ -15,18 +14,16 @@ import styles from './varukorg.module.css'
 // scenen byts. Mallar utan egen korg får den delade — tills de bygger sin.
 //
 // goal-64: registreringen bodde i en HÅRDKODAD tabell här (CART_VIEWS). Nu deklarerar
-// mallen sin korg i sin egen <key>.theme.ts (moduleViews.cart) och vi slår upp den —
+// mallen sin korg i den kanoniska runtime-mappen och vi slår upp den —
 // samma väg som butiken och bloggen. En ny mall rör inte längre den här filen.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Varukorg' }
 
-// Varukorgen som egen sida (goal-57 körning 11) — samma temade (public)-skal och
-// modulgate som kassan: LIVE → korgen; PAUSED → ärlig stängd-vy (korgen finns kvar
-// i localStorage); off/draft → notFound.
+// Varukorgen som egen sida — samma temade (public)-skal och modulgate som kassan:
+// live → korgen; av → notFound.
 //
-// goal-60: skalet bär varukorg.module.css (var 5 inline style={{}}). Gaten är
-// oförändrad — samma tre utfall, samma villkor.
+// Skalet bär varukorg.module.css.
 export default async function VarukorgPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()

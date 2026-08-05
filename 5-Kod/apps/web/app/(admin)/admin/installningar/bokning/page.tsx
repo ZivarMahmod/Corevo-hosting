@@ -3,13 +3,13 @@ import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
 import { getSettingsRow } from '@/lib/admin/data'
-import { bookingModeFromState } from '@/lib/admin/booking-mode'
 import { BookingModeCard } from '@/components/admin/BookingModeCard'
 import { SettingsForm } from '@/components/admin/SettingsForm'
 import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
 import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
 import { PageHead } from '@/components/portal/ui'
 import { settingsCategories } from '@/lib/admin/settings-map'
+import { readCustomerPortalMode } from '@/lib/customer-portal/mode'
 
 /** L3 C-03 — bokningsregler som lägen. Läget ÄR tenant_modules.state för `booking`
  *  (samma mekanism som storefronten läser), aldrig en ny flagga. */
@@ -28,12 +28,10 @@ export default async function BokningsreglerPage() {
     getAdminModuleStates(tenant.id),
     getSettingsRow(tenant.id),
   ])
-  const current = bookingModeFromState(
-    'booking' in states ? moduleAdminState(states, 'booking') : undefined,
-  )
+  const current = moduleAdminState(states, 'booking')
   const values = (settings?.settings ?? {}) as {
     cancellation_cutoff_hours?: number
-    customer_accounts_enabled?: boolean
+    customer_portal?: unknown
   }
 
   return (
@@ -59,7 +57,7 @@ export default async function BokningsreglerPage() {
         address=""
         contactEmail=""
         contactPhone=""
-        customerAccountsEnabled={values.customer_accounts_enabled === true}
+        customerPortalMode={readCustomerPortalMode(values)}
       />
     </section>
     </SettingsWorkspace>

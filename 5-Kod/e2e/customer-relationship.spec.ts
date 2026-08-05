@@ -1,35 +1,28 @@
 import { expect, test } from '@playwright/test'
 import { BOOKING_HOST, SEED, gotoTenant, loginBackoffice, loginCustomer } from './helpers'
 
-// @readonly — requires the deterministic relationship fixture described in
-// e2e/README.md. It never changes the customer, booking or note rows.
-const fixture = {
-  email: process.env.E2E_RELATIONSHIP_CUSTOMER_EMAIL,
-  customerLabel: process.env.E2E_RELATIONSHIP_CUSTOMER_LABEL,
-  service: process.env.E2E_RELATIONSHIP_SERVICE,
-  staff: process.env.E2E_RELATIONSHIP_STAFF,
-  preference: process.env.E2E_RELATIONSHIP_PREFERENCE,
-  internalNote: process.env.E2E_RELATIONSHIP_INTERNAL_NOTE,
-}
-
-const ready = Object.values(fixture).every(Boolean)
-
+// @readonly — reads the deterministic customer, visit, favorite and staff-only
+// client-card rows owned by supabase/seeds/e2e-seed.sql.
 test.describe('@readonly customer relationship', () => {
-  test.skip(!ready, 'Deterministisk tvåbesöks-/claim-fixtur saknas; se e2e/README.md.')
-
-  test('claimed guest sees completed history and relationship but never internal notes', async ({
+  test('customer sees completed history and favorite but never staff-only notes', async ({
     page,
   }) => {
-    await loginCustomer(page, fixture.email!, SEED.tenant.slug)
-    await gotoTenant(page, '/konto', SEED.tenant.slug)
+    await loginCustomer(page, SEED.customer.email)
+    await gotoTenant(page, '/konto')
 
-    await expect(page.getByText(fixture.service!, { exact: true }).first()).toBeVisible()
-    await expect(page.getByText(fixture.staff!, { exact: true }).first()).toBeVisible()
-    await expect(page.getByText(fixture.internalNote!, { exact: true })).toHaveCount(0)
-    await expect(page.getByText(fixture.preference!, { exact: true })).toHaveCount(0)
+    await expect(page.getByText('Tidigare besök', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText(SEED.relationship.serviceLabel, { exact: true }).first(),
+    ).toBeVisible()
+    await expect(
+      page.getByText(SEED.relationship.staffLabel, { exact: true }).first(),
+    ).toBeVisible()
+    await expect(page.getByText('Din sparade personal · ni har setts 2 gånger')).toBeVisible()
+    await expect(page.getByText(SEED.relationship.internalNote, { exact: true })).toHaveCount(0)
+    await expect(page.getByText(SEED.relationship.preferenceLabel, { exact: true })).toHaveCount(0)
   })
 
-  test('staff opens the same customer card by touch and sees the internal memory', async ({
+  test('staff opens the same customer card by touch and sees internal memory', async ({
     browser,
   }) => {
     const context = await browser.newContext({
@@ -42,11 +35,32 @@ test.describe('@readonly customer relationship', () => {
     await loginBackoffice(page, SEED.staff)
     await page.goto(`${BOOKING_HOST}/personal`)
 
-    const customer = page.getByRole('button', { name: fixture.customerLabel!, exact: true }).first()
-    await customer.tap()
-    await expect(page.getByRole('dialog', { name: 'Klientkort' })).toBeVisible()
-    await expect(page.getByText(fixture.preference!, { exact: true }).first()).toBeVisible()
-    await expect(page.getByDisplayValue(fixture.internalNote!)).toBeVisible()
+    let bookingFound = false
+    for (let day = 0; day < 10; day += 1) {
+      const booking = page.locator('button').filter({ hasText: SEED.customer.label }).first()
+      if (await booking.isVisible().catch(() => false)) {
+        await booking.tap()
+        bookingFound = true
+        break
+      }
+      await page.getByRole('link', { name: 'Nästa dag' }).click()
+    }
+    expect(bookingFound, 'Den seedade kundbokningen saknas i personalens kommande dagar.').toBe(
+      true,
+    )
+
+    const bookingDialog = page.getByRole('dialog', { name: 'Bokning' })
+    await expect(bookingDialog).toBeVisible()
+    await bookingDialog.getByRole('button', { name: SEED.customer.label, exact: true }).tap()
+
+    const clientCard = page.getByRole('dialog', { name: 'Klientkort' })
+    await expect(clientCard).toBeVisible()
+    await expect(
+      clientCard.getByText(SEED.relationship.preferenceLabel, { exact: true }).first(),
+    ).toBeVisible()
+    await expect(clientCard.getByLabel('Intern notering')).toHaveValue(
+      SEED.relationship.internalNote,
+    )
     await context.close()
   })
 })

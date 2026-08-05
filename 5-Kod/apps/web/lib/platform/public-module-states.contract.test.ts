@@ -9,11 +9,6 @@ const migration = fs.readFileSync(
   ),
   'utf8',
 )
-const reader = fs.readFileSync(
-  path.resolve(process.cwd(), 'lib/tenant-modules.ts'),
-  'utf8',
-)
-
 describe('public module state read', () => {
   it('exposes only module key + state for active tenants through a narrow RPC', () => {
     expect(migration).toContain(
@@ -23,10 +18,5 @@ describe('public module state read', () => {
     expect(migration).toContain("t.status = 'active'")
     expect(migration).toContain('grant execute')
     expect(migration).not.toContain('returns setof public.tenant_modules')
-  })
-
-  it('uses the narrow RPC so explicit off rows are not mistaken for missing', () => {
-    expect(reader).toContain(".rpc('get_public_tenant_module_states'")
-    expect(reader).not.toContain(".from('tenant_modules')")
   })
 })

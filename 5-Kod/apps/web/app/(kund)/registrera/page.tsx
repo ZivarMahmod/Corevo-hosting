@@ -20,6 +20,12 @@ export default async function RegistreraPage({
 }) {
   const sp = await searchParams
   const next = safeInternalRedirectPath(sp.next)
+  const bundle = await currentTenant()
+  if (
+    bundle?.settings.portalMode !== 'legacy_account' ||
+    !bundle.settings.customerAccountsEnabled
+  ) notFound()
+
   // Pilot contract: open auto-confirmed registration is disabled. A new account
   // may only be created while carrying an expiring customer claim link.
   if (!isCustomerClaimPath(next)) notFound()
@@ -27,9 +33,6 @@ export default async function RegistreraPage({
   const user = await getCurrentUser()
   if (user) redirect(next ?? portalHomeFor(user))
 
-  const bundle = await currentTenant()
-  // G12: signup exists only when the storefront owner enabled customer accounts.
-  if (!bundle?.settings.customerAccountsEnabled) notFound()
   const branding = bundle.settings.branding ?? {}
   const tenantName = bundle.tenant.name ?? 'Corevo'
 

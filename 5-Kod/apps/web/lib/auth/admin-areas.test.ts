@@ -17,7 +17,6 @@ const STAFF_DENIED: AdminArea[] = [
   'installningar',
   'personal',
   'scheman',
-  'varumarke',
   'sida',
   'webshop',
   'blogg',
@@ -76,7 +75,6 @@ describe('adminAreaForPath', () => {
   it('mappar rutt → yta (längsta prefixet vinner)', () => {
     expect(adminAreaForPath('/admin')).toBe('oversikt')
     expect(adminAreaForPath('/admin/bokningar')).toBe('bokningar')
-    expect(adminAreaForPath('/admin/bokningar/vy')).toBe('bokningar')
     expect(adminAreaForPath('/admin/kunder/abc-123')).toBe('kunder')
     expect(adminAreaForPath('/admin/installningar')).toBe('installningar')
     expect(adminAreaForPath('/admin/statistik')).toBe('statistik')

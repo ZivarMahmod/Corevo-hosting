@@ -17,7 +17,6 @@ export const ROOT_ONLY_PLATFORM_PREFIXES = [
   '/branscher',
   '/integrationer',
   '/domaner',
-  '/roller',
   '/installningar',
 ] as const
 
@@ -36,7 +35,7 @@ export const PLATFORM_AREAS: readonly PlatformArea[] = [
     id: 'platform',
     href: '/branscher',
     label: 'Plattform',
-    prefixes: ['/partners', '/branscher', '/integrationer', '/domaner', '/roller', '/installningar'],
+    prefixes: ['/partners', '/branscher', '/integrationer', '/domaner', '/installningar'],
   },
 ] as const
 
@@ -52,7 +51,6 @@ export const PLATFORM_SUBNAV: Partial<Record<PlatformAreaId, readonly PlatformNa
     { href: '/branscher', label: 'Branscher' },
     { href: '/integrationer', label: 'Integrationer' },
     { href: '/domaner', label: 'Domäner' },
-    { href: '/roller', label: 'Roller' },
     { href: '/installningar', label: 'Inställningar' },
   ],
 }
@@ -74,14 +72,6 @@ export function platformLinkAllowed(href: string, isRoot: boolean): boolean {
 export function platformPathMatches(pathname: string, prefix: string): boolean {
   if (prefix === '/') return pathname === '/'
   return pathname === prefix || pathname.startsWith(`${prefix}/`)
-}
-
-export function activePlatformArea(pathname: string): PlatformArea {
-  return (
-    PLATFORM_AREAS.find((area) =>
-      area.prefixes.some((prefix) => platformPathMatches(pathname, prefix)),
-    ) ?? PLATFORM_AREAS[0]!
-  )
 }
 
 /** Mobilen omarrangerar samma servergodkända plattformsområden som desktop. Insyns
@@ -144,7 +134,6 @@ export function platformMobileNavigation(
             prefixes: ['/integrationer'],
           },
           { id: 'domains', href: '/domaner', label: 'Domäner', prefixes: ['/domaner'] },
-          { id: 'roles', href: '/roller', label: 'Roller', prefixes: ['/roller'] },
           {
             id: 'platform-settings',
             href: '/installningar',

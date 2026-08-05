@@ -4,7 +4,7 @@ import {
   PiiReveal,
   type PiiContact,
 } from '@/components/portal/ui/PiiReveal'
-import { revealPlatformCustomerContact } from '@/lib/platform/actions'
+import { revealPlatformCustomerContact } from '@/lib/platform/actions/people'
 
 /** Client-only bridge from the shared reveal UI to the platform server action. */
 export function PlatformPiiReveal({

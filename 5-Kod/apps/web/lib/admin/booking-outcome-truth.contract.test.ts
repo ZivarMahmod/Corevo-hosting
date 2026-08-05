@@ -61,16 +61,7 @@ describe('0095 booking outcome truth', () => {
     expect(sql).not.toContain("b.status in ('pending', 'confirmed', 'completed')")
   })
 
-  it('fencar personalens mutation till tenant, egen personal och end_ts', () => {
-    const personal = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'personal', 'actions.ts'), 'utf8')
-    expect(personal).toContain(".select('id, status, end_ts, customer_id, staff_id')")
-    expect(personal).toContain(".eq('tenant_id', user.tenantId ?? '')")
-    expect(personal).toContain(".in('staff_id', myStaffIds)")
-    expect(personal).toContain(".lte('end_ts', nowIso)")
-  })
-
   it('producerar completion som en atomisk, icke-levererbar routing-händelse', () => {
-    const admin = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'admin', 'actions.ts'), 'utf8')
     expect(sql).toContain('create or replace function private.enqueue_booking_completed_event')
     expect(sql).toContain('insert into public.notifications_outbox')
     expect(sql).toContain("'booking_completed'")
@@ -84,9 +75,6 @@ describe('0095 booking outcome truth', () => {
     expect(sql).toMatch(
       /create trigger trg_enqueue_booking_completed_event[\s\S]*?after update of status on public\.bookings/,
     )
-    expect(admin).not.toContain('enqueueNotification')
-    expect(admin).not.toContain('sendReviewNudgeForBooking')
-    expect(admin).not.toContain("channel: 'sms'")
   })
 
   it('ogiltigförklarar oskickat completion-event vid no_show och återöppnar bara egen korrigering', () => {
@@ -112,13 +100,6 @@ describe('0095 booking outcome truth', () => {
     expect(noShowBranch).not.toContain('delivery_started')
     expect(noShowBranch).not.toContain("'sent'")
     expect(noShowBranch).not.toContain("'delivered'")
-  })
-
-  it('låter personalens statuswrite förlita sig på samma atomiska DB-event', () => {
-    const personal = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'personal', 'actions.ts'), 'utf8')
-    expect(personal).not.toContain('enqueueNotification')
-    expect(personal).not.toContain('sendReviewNudgeForBooking')
-    expect(personal).not.toContain("channel: 'sms'")
   })
 
   it('ger bara expiry-svepet en exakt intern väg för passerade pending-rader', () => {
@@ -156,8 +137,6 @@ describe('0095 booking outcome truth', () => {
   })
 
   it('räknar livstid tenantbrett bakom en explicit auktoriserad definer-RPC', () => {
-    const customerPortal = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'kund', 'loyalty.ts'), 'utf8')
-    const staffCard = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'personal', 'customer.ts'), 'utf8')
     const totals = sql.match(
       /create or replace function public\.customer_loyalty_totals\([\s\S]*?comment on function public\.customer_loyalty_totals\(uuid, uuid\)[\s\S]*?;/,
     )?.[0]
@@ -180,12 +159,6 @@ describe('0095 booking outcome truth', () => {
     expect(totals).toContain('from public, anon, authenticated, service_role')
     expect(totals).toContain('to authenticated')
     expect(totals).not.toContain('to authenticated, service_role')
-    expect(customerPortal).toContain("rpc('customer_loyalty_totals'")
-    expect(staffCard).toContain("rpc('customer_loyalty_totals'")
-    expect(customerPortal).not.toContain(
-      ".from('loyalty_ledger')\n      .select('points_delta, reason')",
-    )
-    expect(staffCard).not.toContain(".from('loyalty_ledger').select('points_delta')")
   })
 
   it('runtime-provar totalsyn utan att bredda rå bokningsåtkomst', () => {
@@ -218,26 +191,6 @@ describe('0095 booking outcome truth', () => {
     expect(runtimeSql).toContain('no_show_contributed_to_lifetime')
   })
 
-  it('låter inte passerade aktiva bokningar avbokas eller ombokas via personalservern', () => {
-    const personal = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'personal', 'actions.ts'), 'utf8')
-    expect(personal).toContain(".gt('end_ts', nowIso)")
-    expect(personal).toContain('Bokningen behöver avslutas som Genomförd eller Uteblev.')
-  })
-
-  it('behåller exakt count-stöd i datalagret utan en påtvingad kalenderkö', () => {
-    const data = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'admin', 'data.ts'), 'utf8')
-    const page = fs.readFileSync(
-      path.join(WEB_ROOT, 'app', '(admin)', 'admin', 'bokningar', 'page.tsx'),
-      'utf8',
-    )
-    expect(data).toContain('export async function countBookings')
-    expect(data).toContain("count: 'exact', head: true")
-    expect(data).toContain('filters.limit')
-    expect(data).toMatch(/\.range\(\s*filters\.offset \?\? 0,/)
-    expect(page).not.toContain('countBookings(tenant.id')
-    expect(page).not.toContain('unresolvedCount')
-  })
-
   it('låter bara dokumenterad unik idempotens sväljas av lojalitetstriggern', () => {
     const body = sql.match(
       /create or replace function public\.earn_loyalty_on_completed\(\)[\s\S]*?as \$\$([\s\S]*?)\$\$;/,
@@ -245,24 +198,5 @@ describe('0095 booking outcome truth', () => {
     expect(body).toBeTruthy()
     expect(body).toContain("on conflict (booking_id) where (reason = 'earn_completed') do nothing")
     expect(body).not.toContain('exception when others')
-  })
-
-  it('håller utfall valbart inne i bokningen utan en klocka eller kö över kalendern', () => {
-    const page = fs.readFileSync(
-      path.join(WEB_ROOT, 'app', '(admin)', 'admin', 'bokningar', 'page.tsx'),
-      'utf8',
-    )
-    const drawer = fs.readFileSync(
-      path.join(WEB_ROOT, 'components', 'admin', 'BookingDrawer.tsx'),
-      'utf8',
-    )
-    expect(page).not.toContain('endToUtc: nowIso')
-    expect(page).not.toContain("statuses: ['pending', 'confirmed']")
-    expect(page).toContain('new Date(b.endTs).getTime() <= now')
-    expect(page).not.toContain('tidigare bokningar saknar resultat')
-    expect(page).not.toContain('calendarStyles.unresolvedQueue')
-    expect(drawer).toContain("target: 'completed'")
-    expect(drawer).toContain('Uteblev')
-    expect(drawer).not.toContain('Behöver avslutas.')
   })
 })

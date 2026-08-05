@@ -55,8 +55,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortReachable = modules?.presentkortReachable ?? false
-  // Pelarna länkar bara dit en sida faktiskt finns (live/paused renderar; av/draft
-  // → notFound). En pelare mot avstängd modul vore en 404-fälla (S9). Utan
+  // Pelarna länkar bara till live moduler. Utan
   // modules-prop (studions statiska preview) VISAS pelarna — previewn ska se en
   // hel sida, och dess länkar är ändå inte klickbara på riktigt.
   const shopReachable = modules?.shopReachable ?? false

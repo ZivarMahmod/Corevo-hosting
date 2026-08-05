@@ -24,6 +24,7 @@ import {
   cartLineToReserveItem,
   type OrderTotals,
   type ShippingOption,
+  type ShopFulfilment,
   type ShopPaymentMethod,
 } from '@/lib/storefront/shop/types'
 import {
@@ -32,7 +33,7 @@ import {
   cancelOrder,
   startShopCheckout,
   startPaypalCheckout,
-} from '@/app/butik/actions'
+} from '@/lib/storefront/shop/actions'
 
 export type CheckoutCustomer = {
   name: string
@@ -64,10 +65,11 @@ export type UseCheckout = {
 }
 
 export function useCheckout(args: {
+  fulfilment: ShopFulfilment
   shippingOptions: ShippingOption[]
   paymentMethods: ShopPaymentMethod[]
 }): UseCheckout {
-  const { shippingOptions, paymentMethods } = args
+  const { fulfilment, shippingOptions, paymentMethods } = args
   const { lines, token, subtotalCents, clear } = useCart()
   const router = useRouter()
 
@@ -87,6 +89,7 @@ export function useCheckout(args: {
   // Dubbelbetalnings-vakt: synkron ref (state är asynkront — två snabba klick kan annars
   // skicka två confirmOrder). Dubbelbetalning är en riktig bugg.
   const inFlight = useRef(false)
+  const confirmedOrder = useRef<{ orderId: string; requiresPayment: boolean } | null>(null)
 
   const currency = lines[0]?.currency ?? 'SEK'
 
@@ -131,6 +134,17 @@ export function useCheckout(args: {
 
   const placeOrder = async (customer: CheckoutCustomer): Promise<string | null> => {
     if (inFlight.current) return null // dubbelklick-vakt (synkron, till skillnad från state)
+
+    const name = customer.name.trim()
+    const email = customer.email.trim()
+    const phone = customer.phone.trim()
+    const shipAddress = customer.shipAddress?.trim() || undefined
+    const note = customer.note?.trim() || undefined
+    if (!name || !email || !phone) return 'Fyll i namn, e-post och telefon.'
+    if (!/.+@.+\..+/.test(email)) return 'Kontrollera e-postadressen.'
+    if (fulfilment === 'ship' && !shipAddress) return 'Fyll i leveransadress.'
+    if (customer.acceptTerms !== true) return 'Godkänn köpvillkoren för att slutföra köpet.'
+
     if (!orderId) return 'Beställningen är inte redo — ladda om sidan.'
     // Har butiken leveransval MÅSTE ett vara valt (servern kräver det också — 0058).
     if (shippingOptions.length > 0 && !shippingId) return 'Välj ett leveranssätt.'
@@ -139,50 +153,54 @@ export function useCheckout(args: {
     inFlight.current = true
     setSubmitting(true)
 
-    const res = await confirmOrder({
-      orderId,
-      token,
-      name: customer.name,
-      email: customer.email,
-      phone: customer.phone,
-      shipAddress: customer.shipAddress,
-      note: customer.note,
-      shippingOptionId: shippingId, // BARA id:t — priset är serverns
-      paymentMethod,
-      acceptTerms: customer.acceptTerms === true,
-    })
-    if (!res.ok) {
+    try {
+      let res = confirmedOrder.current
+      if (!res) {
+        const confirmation = await confirmOrder({
+          orderId,
+          token,
+          name,
+          email,
+          phone,
+          shipAddress,
+          note,
+          shippingOptionId: shippingId, // BARA id:t — priset är serverns
+          paymentMethod,
+          acceptTerms: true,
+        })
+        if (!confirmation.ok) {
+          inFlight.current = false
+          setSubmitting(false)
+          return confirmation.message
+        }
+        confirmedOrder.current = confirmation
+        res = confirmation
+      }
+
+      // BETAL-ROUTINGEN. inFlight släpps ALDRIG efter ett lyckat köp: knappen förblir
+      // låst under redirecten (annars hinner ett andra klick in medan sidan byter).
+      if (res.requiresPayment) {
+        const checkout = paymentMethod === 'paypal'
+          ? await startPaypalCheckout(res.orderId, token)
+          : await startShopCheckout(res.orderId, token, paymentMethod)
+        if (!checkout.ok) {
+          inFlight.current = false
+          setSubmitting(false)
+          return checkout.message
+        }
+        clear()
+        window.location.href = checkout.url
+        return null
+      }
+
+      clear()
+      router.push(`/bekraftelse/${res.orderId}`)
+      return null
+    } catch {
       inFlight.current = false
       setSubmitting(false)
-      return res.message
+      return 'Något gick fel. Försök igen.'
     }
-
-    // BETAL-ROUTINGEN. inFlight släpps ALDRIG efter ett lyckat köp: knappen förblir låst
-    // under redirecten (annars hinner ett andra klick in medan sidan byter).
-    //
-    // PayPal går sin egen väg (plattformens konto), oavsett Stripe-gaten. Kort/Swish/
-    // Klarna/Apple Pay går via kundens Stripe och kräver att betal-gaten är på
-    // (requiresPayment). Misslyckas en betalstart faller vi igenom till bekräftelsen —
-    // ordern står kvar obetald och sidan säger det ärligt, i stället för en vit skärm.
-    if (paymentMethod === 'paypal') {
-      const pp = await startPaypalCheckout(res.orderId, token)
-      if (pp.ok) {
-        clear()
-        window.location.href = pp.url
-        return null
-      }
-    } else if (res.requiresPayment) {
-      const co = await startShopCheckout(res.orderId, token, paymentMethod)
-      if (co.ok) {
-        clear()
-        window.location.href = co.url
-        return null
-      }
-    }
-
-    clear()
-    router.push(`/bekraftelse/${res.orderId}`)
-    return null
   }
 
   return {

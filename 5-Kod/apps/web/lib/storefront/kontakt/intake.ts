@@ -1,7 +1,6 @@
 'use server'
 
-import { headers } from 'next/headers'
-import { createPublicClient } from '@/lib/supabase/public'
+import { currentRequestTenant } from '@/lib/tenant-data'
 import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { sendContactMessageEmail } from '@/lib/notifications/kontakt'
@@ -23,22 +22,6 @@ import {
 // SKILLNAD mot offert: INGEN modul-gate. /kontakt är ingen modul — sidan finns alltid
 // i varje mall och kan inte stängas av. Det finns alltså inget `state !== 'live'` att
 // spärra mot; en gate här skulle stänga en dörr som designen säger ska stå öppen.
-
-/** Resolve the request's tenant from the middleware header (never the client). */
-async function getTenantContext(): Promise<{ id: string; slug: string; name: string } | null> {
-  const h = await headers()
-  const slug = h.get('x-corevo-tenant-slug')
-  if (!slug) return null
-  const supabase = createPublicClient()
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id, slug, name')
-    .eq('slug', slug)
-    .eq('status', 'active')
-    .maybeSingle()
-  if (!tenant) return null
-  return { id: tenant.id, slug: tenant.slug, name: tenant.name ?? '' }
-}
 
 /**
  * Skicka ett anonymt kontaktmeddelande. Resolvar tenant server-side, rate-limitar,
@@ -62,7 +45,7 @@ export async function submitContactMessage(
   }
 
   // b. Tenant ur middleware-headern (aldrig klienten).
-  const ctx = await getTenantContext()
+  const ctx = await currentRequestTenant()
   if (!ctx) return { phase: 'error', message: 'Okänt företag.' }
 
   // c. Rate-limit den anonyma skrivningen per IP+tenant. Fails open vid DB-fel.

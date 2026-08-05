@@ -2,11 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   createServiceClient: vi.fn(),
-  requestOrigin: vi.fn(),
 }))
 
 vi.mock('@/lib/platform/service', () => ({ createServiceClient: mocks.createServiceClient }))
-vi.mock('@/lib/url', () => ({ requestOrigin: mocks.requestOrigin }))
 vi.mock('@/lib/observability', () => ({ logger: { info: vi.fn(), warn: vi.fn() } }))
 
 import {
@@ -22,7 +20,7 @@ const base: BookingNotificationEvent = {
   occurredAt: '2030-01-01T09:00:00.000Z',
 }
 
-function serviceWithTenantOrigin(rpc: ReturnType<typeof vi.fn>) {
+function serviceWithTenantOrigin(rpc: ReturnType<typeof vi.fn>, domains: string[] = []) {
   const tenantQuery = {
     select: vi.fn(), eq: vi.fn(), maybeSingle: vi.fn(),
   }
@@ -32,7 +30,7 @@ function serviceWithTenantOrigin(rpc: ReturnType<typeof vi.fn>) {
   const domainQuery = {
     select: vi.fn(), eq: vi.fn(),
     then: (resolve: (value: unknown) => unknown) =>
-      Promise.resolve({ data: [], error: null }).then(resolve),
+      Promise.resolve({ data: domains.map((domain) => ({ domain })), error: null }).then(resolve),
   }
   domainQuery.select.mockReturnValue(domainQuery)
   domainQuery.eq.mockReturnValue(domainQuery)
@@ -44,7 +42,6 @@ function serviceWithTenantOrigin(rpc: ReturnType<typeof vi.fn>) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.requestOrigin.mockResolvedValue('https://demo.corevo.se')
 })
 
 describe('bookingEventKey', () => {
@@ -159,12 +156,42 @@ describe('queueBookingEvent', () => {
     })
 
     const args = rpc.mock.calls[0]?.[1] as { p_payload: { origin: string } }
-    expect(args.p_payload.origin).toBe('https://demo.corevo.se')
+    expect(args.p_payload.origin).toBe('https://demo.boka.corevo.se')
+  })
+
+  it('normalizes the published root-zone compatibility host to the canonical branch', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ id: '3', status: 'queued', chosen_channel: 'email', skip_reason: null, inserted: true }],
+      error: null,
+    })
+    mocks.createServiceClient.mockReturnValue(serviceWithTenantOrigin(rpc))
+
+    await queueBookingEvent({
+      ...base,
+      includeManageLink: true,
+      origin: 'https://demo.corevo.se',
+    })
+
+    const args = rpc.mock.calls[0]?.[1] as { p_payload: { origin: string } }
+    expect(args.p_payload.origin).toBe('https://demo.boka.corevo.se')
+  })
+
+  it('prefers a verified external domain when no trusted origin was supplied', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ id: '3', status: 'queued', chosen_channel: 'email', skip_reason: null, inserted: true }],
+      error: null,
+    })
+    mocks.createServiceClient.mockReturnValue(serviceWithTenantOrigin(rpc, ['boka.demo.se']))
+
+    await queueBookingEvent({ ...base, includeManageLink: true })
+
+    const args = rpc.mock.calls[0]?.[1] as { p_payload: { origin: string } }
+    expect(args.p_payload.origin).toBe('https://boka.demo.se')
   })
 
   it('never persists a raw account-claim or cancellation token in the outbox payload', async () => {
     const rpc = vi.fn().mockResolvedValue({
-      data: [{ id: '3', status: 'queued', chosen_channel: 'push', skip_reason: null, inserted: true }],
+      data: [{ id: '3', status: 'queued', chosen_channel: 'email', skip_reason: null, inserted: true }],
       error: null,
     })
     mocks.createServiceClient.mockReturnValue(serviceWithTenantOrigin(rpc))

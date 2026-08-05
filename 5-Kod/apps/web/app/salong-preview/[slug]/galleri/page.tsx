@@ -2,26 +2,17 @@ import type { Metadata } from 'next'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
 import { GalleriSection } from '@/components/storefront/galleri/GalleriSection'
 import { loadGalleriData } from '@/lib/storefront/galleri/load-galleri'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
-import { loadPreviewBundle, resolvePreviewCopyMode, resolvePreviewTheme, PreviewShell, PreviewModuleOff } from '../preview-shell'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
+import { getTenantCopy } from '@/lib/storefront/tenant-copy'
+import { themeModuleViews } from '@/components/storefront/layouts/runtime'
+import { StorefrontShell } from '@/components/storefront/StorefrontShell'
+import { loadPreviewPage, PreviewModuleOff, type PreviewPageProps } from '../preview-shell'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Förhandsvisning · Galleri', robots: { index: false } }
 
-export default async function PreviewGalleriPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>
-  searchParams: Promise<{ theme?: string; copy?: string }>
-}) {
-  const { slug } = await params
-  const { theme: themeParam, copy: copyParam } = await searchParams
-  const bundle = await loadPreviewBundle(slug)
-  const theme = resolvePreviewTheme(bundle, themeParam)
-  const copyMode = resolvePreviewCopyMode(copyParam)
+export default async function PreviewGalleriPage(props: PreviewPageProps) {
+  const { bundle, theme, copyMode } = await loadPreviewPage(props)
   const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const off = !isModuleLive(states, 'galleri')
@@ -32,16 +23,16 @@ export default async function PreviewGalleriPage({
     body = <PreviewModuleOff moduleLabel="Galleri" />
   } else if (View) {
     const data = await loadGalleriData(tenant.id, tenant.slug)
-    const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme, copyMode)
+    const copy = await getTenantCopy(bundle, theme, copyMode)
     const content = resolveThemeContent(theme, settings.branding, copy)
-    body = (
-      <>
-        <View items={data?.items ?? []} content={content} tenantName={tenant.name} />
-      </>
-    )
+    body = <View items={data?.items ?? []} content={content} tenantName={tenant.name} />
   } else {
-    body = <GalleriSection tenantId={tenant.id} slug={tenant.slug} paused={false} pageHero />
+    body = <GalleriSection tenantId={tenant.id} slug={tenant.slug} pageHero />
   }
 
-  return <PreviewShell bundle={bundle} theme={theme} copyMode={copyMode}>{body}</PreviewShell>
+  return (
+    <StorefrontShell bundle={bundle} surface="preview" theme={theme} copyMode={copyMode}>
+      {body}
+    </StorefrontShell>
+  )
 }

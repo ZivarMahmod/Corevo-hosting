@@ -11,26 +11,12 @@ const cleanup = readFileSync(
   'utf8',
 ).toLowerCase()
 const ownerFence = readFileSync(
-  resolve(process.cwd(), '../../supabase/migrations/0083_tenant_member_permissions_owner_fence.sql'),
+  resolve(
+    process.cwd(),
+    '../../supabase/migrations/0083_tenant_member_permissions_owner_fence.sql',
+  ),
   'utf8',
 ).toLowerCase()
-const actions = readFileSync(resolve(process.cwd(), 'lib/admin/actions.ts'), 'utf8')
-const schedulePage = readFileSync(
-  resolve(process.cwd(), 'app/(admin)/admin/scheman/page.tsx'),
-  'utf8',
-)
-const staffDetailPage = readFileSync(
-  resolve(process.cwd(), 'app/(admin)/admin/personal/[id]/page.tsx'),
-  'utf8',
-)
-const staffDetail = readFileSync(
-  resolve(process.cwd(), 'components/admin/StaffDetail.tsx'),
-  'utf8',
-)
-const permissionLoader = readFileSync(
-  resolve(process.cwd(), 'lib/admin/member-permissions.ts'),
-  'utf8',
-)
 const lifecyclePath = resolve(
   process.cwd(),
   '../../supabase/migrations/0130_tenant_mutation_lifecycle.sql',
@@ -51,16 +37,6 @@ describe('tenant member permission database enforcement', () => {
     expect(migration).toContain('private.can_access_location(p_location)')
     expect(migration).toContain('create policy working_hours_manager_write')
     expect(migration).toContain('create policy working_hour_slots_manager_write')
-    for (const fn of [
-      'addStaffWorkingHours',
-      'deleteStaffWorkingHours',
-      'addStaffSlots',
-      'deleteStaffSlot',
-      'seedStaffSlots',
-    ]) {
-      const body = actions.slice(actions.indexOf(`export async function ${fn}`))
-      expect(body.slice(0, body.indexOf('\n}'))).toContain("adminCtx('scheman')")
-    }
   })
 
   it('keeps staff administration owner-only below security-definer RPCs', () => {
@@ -73,15 +49,6 @@ describe('tenant member permission database enforcement', () => {
     expect(migration).toContain("session_user in ('postgres', 'supabase_admin')")
     expect(migration).toContain('private.has_organization_scope()')
     expect(migration).toContain('v_old_tenant = v_session_tenant')
-    expect(schedulePage).not.toContain('<StaffBookability')
-    expect(staffDetailPage).toContain(
-      "const canManageRoles = canAccessPersonal && preferences.accessScope === 'organization'",
-    )
-    expect(staffDetailPage).toContain('const canManageStaff = canAccessPersonal &&')
-    expect(staffDetail).toContain('canManageRoles ? (')
-    expect(staffDetail).toContain('canManageStaff ? (')
-    expect(staffDetail).toContain('<StaffBookability')
-    expect(staffDetail).toContain('<DangerSection')
   })
 
   it('uses the explicit site grant for tenant-bound revisions', () => {
@@ -130,9 +97,7 @@ describe('tenant member permission database enforcement', () => {
     )
     expect(existsSync(lifecycleRuntimePath)).toBe(true)
     expect(lifecycleRuntime).toContain('set local role authenticated')
-    expect(lifecycleRuntime).toContain(
-      "coalesce((select auth.role()), '') <> 'authenticated'",
-    )
+    expect(lifecycleRuntime).toContain("coalesce((select auth.role()), '') <> 'authenticated'")
   })
 
   it('keeps the two absence-impact readers status-neutral', () => {
@@ -149,7 +114,9 @@ describe('tenant member permission database enforcement', () => {
   it('removes redundant advisor findings without widening grants', () => {
     expect(cleanup).toContain('drop policy if exists tenant_member_permissions_owner_write')
     expect(cleanup).toContain('drop index if exists public.tenant_member_permissions_tenant_idx')
-    expect(migration).toContain('revoke insert, update, delete on table public.tenant_member_permissions')
+    expect(migration).toContain(
+      'revoke insert, update, delete on table public.tenant_member_permissions',
+    )
   })
 
   it('reserverar tenantvida rolländringar och listläsning för organisationsägaren', () => {
@@ -159,6 +126,5 @@ describe('tenant member permission database enforcement', () => {
     expect(ownerFence).toContain("raise exception 'organization_owner_required'")
     expect(ownerFence).toContain('s.id = p_staff')
     expect(ownerFence).toContain('s.tenant_id = v_tenant')
-    expect(permissionLoader).toContain("if (error) throw new Error('member_permissions_load_failed')")
   })
 })

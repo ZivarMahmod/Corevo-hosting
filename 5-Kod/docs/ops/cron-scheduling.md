@@ -33,6 +33,8 @@ och deklarerar `*/15 * * * *`. Staging har uttryckligen tom cronlista. Workern
 använder inga DO Queue/DO Tag Cache-exporter, så inga sådana behöver re-exporteras.
 
 Deploy sker fortsatt via `scripts/deploy-prod.mjs`, aldrig bare Wrangler. Följ
-aktiverings- och rollbackstegen i `first-customer-launch.md`.
+[deploy- och rollbackrunbooken](deploy-runbook.md), och aktivera inte
+produktionsschemat förrän scheduler, secrets, heartbeat och rollback har
+återverifierats i [releaseinventeringen](../../../2-Byggplan/ROADMAP.md).
 
 Källa: [OpenNext – Custom Worker](https://opennext.js.org/cloudflare/howtos/custom-worker).

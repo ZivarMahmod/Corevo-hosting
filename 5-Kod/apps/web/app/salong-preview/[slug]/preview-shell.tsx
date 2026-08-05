@@ -1,48 +1,20 @@
-import type { CSSProperties, ReactNode } from 'react'
 import { notFound } from 'next/navigation'
 import { requirePortal } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
-import { injectTenantTokens } from '@corevo/ui'
-import { getTenantBySlug, STOREFRONT_THEMES, type StorefrontTheme, type TenantBundle } from '@/lib/tenant-data'
-import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
-import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { Nav } from '@/components/brand/Nav'
-import { NavShell } from '@/components/brand/NavShell'
-import { Footer } from '@/components/brand/Footer'
-import { FooterFull } from '@/components/brand/FooterFull'
-import { BookingProvider } from '@/components/storefront/BookingProvider'
-import { CartProvider } from '@/components/storefront/shop/CartProvider'
-import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
-import { InlineBooking } from '@/components/storefront/InlineBooking'
-import { resolveStaffNoun } from '@/components/storefront/staff-noun'
-import { branschBokning } from '@/components/storefront/bransch-copy'
-import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
-import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
-import { canonicalModuleHref, moduleNavigationLinks, moduleRouteReachable } from '@/components/storefront/layouts/module-navigation'
-import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
-import { countTeamMembers } from '@/lib/storefront/team/load-team'
-import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
-import { freshCutNavigationLinks } from '@/components/storefront/layouts/FreshCutChrome'
-import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
-import storefront from '@/components/storefront/storefront.module.css'
+import {
+  getTenantBySlug,
+  STOREFRONT_THEMES,
+  type StorefrontTheme,
+  type TenantBundle,
+} from '@/lib/tenant-data'
 
-/**
- * Delat skal för super-admin-previewens ALLA sidor (/salong-preview/<slug>[/tjanster|
- * /om|/kontakt]) — samma chrome som app/(public)/layout.tsx: Nav (toppbanner),
- * BookingProvider med RIKTIGA tjänster (Zivar: "kunna göra allt i previewen som i
- * deras riktiga storefront" — boknings-drawern öppnar och funkar), footer per tema.
- * Ett vanligt server-komponent-skal (INTE en route-layout: layouts får inte
- * searchParams, och ?theme= måste styra chromen). Sid-innehållet skickas som children.
- *
- * Draft-mall: ?theme= förhandsvisar en ANNAN mall utan att spara — valideras mot de
- * kända mallarna; ogiltigt/utelämnat → tenantens sparade tema.
- *
- * Middleware (steg 2b) sätter x-corevo-tenant-slug ur preview-URL:en, så själv-
- * hämtande storefront-sektioner (LocationHours, modulsektioner) resolvar rätt tenant
- * via currentTenant() precis som på den riktiga tenant-hosten.
- */
-export function resolvePreviewTheme(bundle: TenantBundle, themeParam: string | undefined): StorefrontTheme {
-  return typeof themeParam === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(themeParam)
+/** Shared URL policy and tenant authorization for storefront preview routes. */
+export function resolvePreviewTheme(
+  bundle: TenantBundle,
+  themeParam: string | undefined,
+): StorefrontTheme {
+  return typeof themeParam === 'string' &&
+    (STOREFRONT_THEMES as readonly string[]).includes(themeParam)
     ? (themeParam as StorefrontTheme)
     : bundle.settings.theme
 }
@@ -51,6 +23,26 @@ export type PreviewCopyMode = 'keep' | 'template' | null
 
 export function resolvePreviewCopyMode(copyParam: string | undefined): PreviewCopyMode {
   return copyParam === 'keep' || copyParam === 'template' ? copyParam : null
+}
+
+export type PreviewPageProps = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ theme?: string; copy?: string }>
+}
+
+export async function loadPreviewPage<
+  Params extends { slug: string },
+  SearchParams extends { theme?: string; copy?: string },
+>({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<SearchParams> }) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams])
+  const bundle = await loadPreviewBundle(resolvedParams.slug)
+  return {
+    params: resolvedParams,
+    searchParams: resolvedSearchParams,
+    bundle,
+    theme: resolvePreviewTheme(bundle, resolvedSearchParams.theme),
+    copyMode: resolvePreviewCopyMode(resolvedSearchParams.copy),
+  }
 }
 
 /** goal-61 preview-parity: ärligt besked när en modulsida previewas men modulen är AV —
@@ -96,181 +88,4 @@ export async function loadPreviewBundle(slug: string): Promise<TenantBundle> {
   const bundle = await getTenantBySlug(slug)
   if (!bundle) notFound() // unknown / suspended (public client sees active only)
   return bundle
-}
-
-export async function PreviewShell({
-  bundle,
-  theme,
-  copyMode,
-  children,
-}: {
-  bundle: TenantBundle
-  theme: StorefrontTheme
-  copyMode: PreviewCopyMode
-  children: ReactNode
-}) {
-  const { tenant, settings, location } = bundle
-  const themeBase = THEME_CONTENT[theme]
-  const isFullFooter = theme === 'salvia' || theme === 'freshcut'
-
-  // Riktig bokning i previewen — samma gating som (public)/layout: bara en LIVE
-  // bokningsmodul får riktiga tjänster; annars renderar CTA:erna inert.
-  const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
-  const layoutModules = await loadLayoutModuleTeasers(tenant.id, tenant.slug)
-  const bookingState = moduleState(moduleStates, 'booking')
-  const bookingLive = bookingState === 'live'
-  const bookingReachable = bookingLive || settings.bookingLegacyExternal
-  const effectiveLayoutModules = settings.bookingLegacyExternal
-    ? { ...layoutModules, bookingReachable: true }
-    : layoutModules
-  const [allWizardServices, wizardLocations, staffNoun, bookingPrefs, teamCount] = await Promise.all([
-    getWizardServices(tenant.id, tenant.slug),
-    getWizardLocations(tenant.id, tenant.slug),
-    resolveStaffNoun(tenant.vertical_id),
-    getBookingPrefs(tenant.id, tenant.slug),
-    countTeamMembers(tenant.id, tenant.slug),
-  ])
-  const wizardServices = bookingReachable ? allWizardServices : []
-
-  // Footer-taglinen ärar ägarens copy-override (temats standard annars) — samma
-  // kontrakt som (public)/layout.
-  // BRANSCH-REGELN: bokningens verb ur bransch-lagret (se (public)/layout.tsx).
-  const bokning = branschBokning(tenant.vertical_id)
-  const copy = await getTenantCopy(
-    tenant.id,
-    tenant.slug,
-    tenant.vertical_id ?? null,
-    theme,
-    copyMode,
-  )
-  const tagline = resolveTenantCopy(theme, copy).tagline
-
-  // goal-61 preview-parity: previewn bar tidigare ALLTID den delade Nav/Footer —
-  // Zivar previewade calytrix och såg fel sidhuvud (samma bugg goal-60 fixade i
-  // onboarding-studions StorefrontPreview, men Sida-flikens iframe missades).
-  // Nu exakt samma chrome-dispatch + modul-gatade länklista + bransch-CTA som
-  // app/(public)/layout.tsx. OBS: chromen följer ?theme= (previewens hela poäng).
-  const chrome = themeChrome(theme)
-  const moduleLinks = moduleNavigationLinks(effectiveLayoutModules)
-  const navLinks = [
-    { href: '/', label: 'Hem' },
-    ...moduleLinks.filter((link) => link.href === '/shop'),
-    ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
-    ...moduleLinks.filter((link) => link.href !== '/shop'),
-    ...(teamCount > 0 ? [{ href: '/team', label: 'Team' }] : []),
-    { href: '/om', label: 'Om oss' },
-    { href: '/kontakt', label: 'Kontakt' },
-  ]
-  const shellNavLinks = theme === 'freshcut' ? freshCutNavigationLinks(navLinks) : navLinks
-  // Bransch-CTA med samma modul-gate som layouten (peka aldrig på en död modulsida).
-  const rawPrimaryCta = await resolvePrimaryCta(tenant.vertical_id)
-  const primaryCta =
-    rawPrimaryCta && moduleRouteReachable(rawPrimaryCta.href, effectiveLayoutModules, bookingReachable)
-      ? { ...rawPrimaryCta, href: canonicalModuleHref(rawPrimaryCta.href) }
-      : null
-
-  return (
-    <div
-      className={`tenant-root ${storefront.tplRoot}`}
-      data-world="storefront"
-      data-theme={theme}
-      data-tenant={tenant.id}
-      style={injectTenantTokens(settings.branding) as CSSProperties}
-    >
-      <SidaPreviewBridge />
-      <BookingProvider
-        reachable={bookingReachable}
-        provider={settings.bookingProvider}
-        externalUrl={settings.bookingExternalUrl}
-        externalCtaUrls={settings.bookingExternalCtaUrls}
-        services={wizardServices}
-        locations={wizardLocations}
-        tenantName={tenant.name}
-        staffNoun={staffNoun}
-        bokaCta={bokning.cta}
-        variant={settings.bookingVariant}
-        pickerMode={bookingPrefs.pickerMode}
-        staffAvatarMode={bookingPrefs.staffAvatarMode}
-        countryCode={settings.countryCode}
-        locale={settings.locale}
-        currency={settings.currency}
-        defaultTimeZone={settings.defaultTimeZone}
-      >
-        {/* CartProvider omsluter nav+main+footer (navens korg-knapp använder useCart) —
-            samma ordning som (public)/layout. */}
-        <CartProvider>
-        {chrome.Nav ? (
-          <NavShell
-            customerAccountsEnabled={settings.customerAccountsEnabled}
-            cartEnabled={layoutModules.shopReachable}
-            utilityText={themeBase.utility}
-            hideUtility={chrome.ownsUtility}
-            links={shellNavLinks}
-            primaryCta={primaryCta}
-          >
-            <chrome.Nav
-              tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
-              branding={settings.branding}
-              links={shellNavLinks}
-              primaryCta={primaryCta}
-              cartEnabled={layoutModules.shopReachable}
-              customerAccountsEnabled={settings.customerAccountsEnabled}
-              utilityText={themeBase.utility}
-              location={location}
-              contact={settings.contact}
-            />
-          </NavShell>
-        ) : (
-          <Nav
-            tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
-            branding={settings.branding}
-            customerAccountsEnabled={settings.customerAccountsEnabled}
-            cartEnabled={layoutModules.shopReachable}
-            utilityText={themeBase.utility}
-            primaryCta={primaryCta}
-            links={shellNavLinks}
-          />
-        )}
-        <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
-        {wizardServices.length > 0 ? (
-          <InlineBooking
-            services={wizardServices}
-            locations={wizardLocations}
-            tenantName={tenant.name}
-            staffNoun={staffNoun}
-            bokaCta={bokning.cta}
-            bokaOnline={bokning.online}
-            pickerMode={bookingPrefs.pickerMode}
-            staffAvatarMode={bookingPrefs.staffAvatarMode}
-            countryCode={settings.countryCode}
-            locale={settings.locale}
-            currency={settings.currency}
-            defaultTimeZone={settings.defaultTimeZone}
-            previewControlled
-          />
-        ) : null}
-        {chrome.Footer ? (
-          <chrome.Footer
-            tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
-            tagline={tagline}
-            location={location}
-            contact={settings.contact}
-            social={settings.social}
-            links={shellNavLinks}
-          />
-        ) : isFullFooter ? (
-          <FooterFull
-            tenant={{ name: tenant.name }}
-            tagline={tagline}
-            location={location}
-            contact={settings.contact}
-            social={settings.social}
-          />
-        ) : (
-          <Footer tenant={{ name: tenant.name }} bokaOnline={bokning.online} />
-        )}
-        </CartProvider>
-      </BookingProvider>
-    </div>
-  )
 }

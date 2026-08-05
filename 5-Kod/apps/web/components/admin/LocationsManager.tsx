@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LocationRow } from '@/lib/admin/data'
 import {
@@ -17,6 +17,8 @@ import {
   Card,
   Drawer,
   Icon,
+  Field,
+  inputStyle,
   PageHead,
   Table,
   useToast,
@@ -32,26 +34,6 @@ const TIMEZONES = [
   'Europe/London',
   'UTC',
 ]
-
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
 
 /**
  * Platser — samma Card/Drawer/toast-grammatik som ServicesManager (tidigare den

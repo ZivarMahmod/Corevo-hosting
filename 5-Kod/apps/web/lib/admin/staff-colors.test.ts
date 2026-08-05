@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { STAFF_PALETTE, availableColors, staffColor, staffInitials } from './staff-colors'
+import { STAFF_PALETTE, staffColor, staffInitials } from './staff-colors'
 
 describe('staffColor', () => {
   it('vald hex-färg vinner över den härledda', () => {
@@ -38,20 +38,4 @@ describe('staffInitials', () => {
     expect(staffInitials('Anna Li Bergström')).toBe('AB'))
   it('ett namn → två tecken', () => expect(staffInitials('Anna')).toBe('AN'))
   it('tomt namn kraschar inte kortet', () => expect(staffInitials('   ')).toBe('?'))
-})
-
-describe('availableColors', () => {
-  it('föreslår aldrig en upptagen färg', () => {
-    const free = availableColors([STAFF_PALETTE[0], STAFF_PALETTE[1]])
-    expect(free).not.toContain(STAFF_PALETTE[0])
-    expect(free).toHaveLength(STAFF_PALETTE.length - 2)
-  })
-
-  it('okänsligt för versalisering (DB kan bära #ABCDEF)', () => {
-    expect(availableColors([STAFF_PALETTE[0].toUpperCase()])).not.toContain(STAFF_PALETTE[0])
-  })
-
-  it('full palett → hela paletten igen (dubblett slår tom väljare)', () => {
-    expect(availableColors([...STAFF_PALETTE])).toHaveLength(STAFF_PALETTE.length)
-  })
 })

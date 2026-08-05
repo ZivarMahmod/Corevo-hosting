@@ -8,6 +8,7 @@ import {
   type ContactResult,
 } from '@/lib/personal/actions'
 import { fmtDateTime } from '@/lib/personal/format'
+import { bookingStatusLabel } from '@/lib/booking/confirmation-status'
 import {
   Drawer,
   Badge,
@@ -19,14 +20,6 @@ import {
 } from '@/components/portal/ui'
 import { CustomerNotesForm } from './CustomerNotesForm'
 import styles from './personal.module.css'
-
-const STATUS_SV: Record<string, string> = {
-  pending: 'Ej bekräftad',
-  confirmed: 'Bekräftad',
-  completed: 'Genomförd',
-  cancelled: 'Avbokad',
-  no_show: 'Uteblev',
-}
 
 /** Year-only "kund sedan" label from an ISO instant (e.g. "2024"). */
 function sinceYear(iso: string | null): string | null {
@@ -234,7 +227,9 @@ function CardBody({
               size={15}
               style={{ color: 'var(--c-gold-600)', flex: 'none', marginTop: 1 }}
             />
-            <div style={{ fontSize: 13, color: 'var(--c-ink)', lineHeight: 1.45 }}>{bookingNote}</div>
+            <div style={{ fontSize: 13, color: 'var(--c-ink)', lineHeight: 1.45 }}>
+              {bookingNote}
+            </div>
           </div>
         </section>
       ) : null}
@@ -333,10 +328,13 @@ function CardBody({
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--c-ink-3)' }}>
                     {fmtDateTime(h.startTs, h.timeZone)}
-                    {h.staffTitle ? ` · ${h.staffTitle}` : ''} · {STATUS_SV[h.status] ?? h.status}
+                    {h.staffTitle ? ` · ${h.staffTitle}` : ''} · {bookingStatusLabel(h.status)}
                   </div>
                 </div>
-                <span className="num" style={{ fontSize: 12.5, color: 'var(--c-ink-2)', whiteSpace: 'nowrap' }}>
+                <span
+                  className="num"
+                  style={{ fontSize: 12.5, color: 'var(--c-ink-2)', whiteSpace: 'nowrap' }}
+                >
                   {h.priceCents != null ? `${Math.round(h.priceCents / 100)} kr` : ''}
                 </span>
               </div>

@@ -7,8 +7,9 @@ import {
   type AdminTenant,
 } from '@/lib/admin/tenant'
 import { getAdminModuleStates } from '@/lib/admin/modules'
+import { hasOrganizationScope } from '@/lib/admin/location-context'
 import {
-  isModuleAdminWritable,
+  isModuleLive,
   type ModuleKey,
   type TenantModuleStates,
 } from '@/lib/tenant-modules'
@@ -54,8 +55,18 @@ export async function moduleCtx(
     const states = Object.fromEntries(
       Object.entries(adminStates).map(([key, row]) => [key, row.state]),
     ) as TenantModuleStates
-    if (!isModuleAdminWritable(states, moduleKey)) return null
+    if (!isModuleLive(states, moduleKey)) return null
   }
 
   return { user, tenant }
+}
+
+/** Tenant context for organization-wide mutations; operators keep their RLS-scoped tenant path. */
+export async function organizationOwnerCtx(
+  fd: FormData,
+): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
+  const ctx = await moduleCtx(fd)
+  if (!ctx) return null
+  if (ctx.user.platformAdmin || (ctx.user.partnerAdmin && ctx.user.partnerId)) return ctx
+  return (await hasOrganizationScope(ctx.user.id)) ? ctx : null
 }

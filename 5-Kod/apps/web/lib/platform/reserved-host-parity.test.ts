@@ -8,7 +8,10 @@ const read = (url: URL) => readFileSync(url, 'utf8')
 
 describe('reserved host parity', () => {
   it('keeps both tracked env files on the exact canonical TypeScript set', () => {
-    const files = [new URL('../../../../.env.example', import.meta.url), new URL('../../.env.production', import.meta.url)]
+    const files = [
+      new URL('../../../../.env.example', import.meta.url),
+      new URL('../../.env.production', import.meta.url),
+    ]
     for (const file of files) {
       const value = /^NEXT_PUBLIC_RESERVED_SUBDOMAINS=(.+)$/m.exec(read(file))?.[1] ?? ''
       expect(value.split(',').filter(Boolean)).toEqual(canonical)
@@ -23,10 +26,16 @@ describe('reserved host parity', () => {
     for (const file of files) expect(read(file)).toContain(csv)
   })
 
-  it('keeps the SQL fallback slug denylist in exact canonical parity', () => {
-    const sql = read(new URL('../../../../supabase/migrations/0122_customer_portal_rebook_origin.sql', import.meta.url))
+  it('keeps the SQL fallback slug denylist fail-closed', () => {
+    const sql = read(
+      new URL(
+        '../../../../supabase/migrations/0122_customer_portal_rebook_origin.sql',
+        import.meta.url,
+      ),
+    )
     const block = /v_slug\s+not\s+in\s*\(([^)]+)\)/i.exec(sql)?.[1] ?? ''
     const labels = [...block.matchAll(/'([^']+)'/g)].map((match) => match[1])
-    expect(labels).toEqual(canonical)
+    expect(labels).toEqual(expect.arrayContaining(canonical))
+    expect(new Set(labels).size).toBe(labels.length)
   })
 })

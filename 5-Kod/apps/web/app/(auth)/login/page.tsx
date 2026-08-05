@@ -1,32 +1,48 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { getCurrentUser } from '@/lib/auth/session'
-import { currentKundTenant } from '@/lib/kund/tenant'
+import { currentRequestTenant, currentTenant } from '@/lib/tenant-data'
 import { getTenantFromHost, isPreviewHost } from '@/lib/tenant'
-import { loginAccessForHost, portalHomeFor, type LoginHostKind } from '@/lib/auth/roles'
+import {
+  loginAccessForHost,
+  loginDestinationForHost,
+  portalHomeFor,
+  resolveLoginHostKind,
+} from '@/lib/auth/roles'
 import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'
 import { LoginForm } from './LoginForm'
 
 export const metadata: Metadata = { title: 'Logga in' }
 
-async function canRedirectExistingSession(user: Awaited<ReturnType<typeof getCurrentUser>>) {
-  if (!user) return false
+async function assertTenantLoginAvailable() {
   const host = (await headers()).get('host')
-  if (isPreviewHost(host)) return true
+  const resolved = getTenantFromHost(host)
+  const bundle = await currentTenant()
+
+  if (
+    (resolved.kind === 'tenant' && !bundle) ||
+    (bundle && (
+      bundle.settings.portalMode !== 'legacy_account' ||
+      !bundle.settings.customerAccountsEnabled
+    ))
+  ) notFound()
+}
+
+async function existingSessionDestination(
+  user: Awaited<ReturnType<typeof getCurrentUser>>,
+  next: string | null,
+) {
+  if (!user) return null
+  const home = portalHomeFor(user)
+  const host = (await headers()).get('host')
+  if (isPreviewHost(host)) return next ?? home
 
   const resolved = getTenantFromHost(host)
-  const hostTenant = await currentKundTenant()
-  const hostKind: LoginHostKind =
-    resolved.kind === 'superadmin' ||
-    resolved.kind === 'platform' ||
-    resolved.kind === 'staff_portal'
-      ? resolved.kind
-      : hostTenant
-        ? 'tenant'
-        : 'other'
+  const hostTenant = await currentRequestTenant()
+  const hostKind = resolveLoginHostKind(resolved, Boolean(hostTenant))
 
-  return loginAccessForHost({
+  const allowed = loginAccessForHost({
     roleLevel: user.roleLevel,
     platformAdmin: user.platformAdmin,
     partnerAdmin: user.partnerAdmin,
@@ -34,6 +50,7 @@ async function canRedirectExistingSession(user: Awaited<ReturnType<typeof getCur
     hostKind,
     hostTenantId: hostTenant?.id ?? null,
   }).allowed
+  return allowed ? loginDestinationForHost({ home, next, hostKind }) : null
 }
 
 export default async function LoginPage({
@@ -43,9 +60,9 @@ export default async function LoginPage({
 }) {
   const sp = await searchParams
   const next = safeInternalRedirectPath(sp.next)
+  await assertTenantLoginAvailable()
   const user = await getCurrentUser()
-  if (user && (await canRedirectExistingSession(user))) {
-    redirect(next ?? portalHomeFor(user))
-  }
+  const destination = await existingSessionDestination(user, next)
+  if (destination) redirect(destination)
   return <LoginForm next={next ?? ''} />
 }

@@ -23,7 +23,7 @@ import {
 } from '@/lib/storefront/offert/types'
 import { submitOffertRequest } from '@/lib/storefront/offert/intake'
 import { KURS_SUBMIT_INITIAL, type KursSubmitState } from '@/lib/storefront/kurser/types'
-import { submitEventRegistration } from '@/app/(public)/kurser/actions'
+import { submitEventRegistration } from '@/lib/storefront/kurser/actions'
 import { useCart } from '../../shop/CartProvider'
 import {
   formatGiftPrice,

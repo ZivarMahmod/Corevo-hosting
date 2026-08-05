@@ -1,35 +1,5 @@
-// Lojalitet-modul — SERVER data loader. Fetches ONLY the tenant's lojalitet config
-// (from tenant_modules.config) via the anonymous public client, shaping it for
-// LojalitetSection. Modeled ORDAGRANT on lib/storefront/blogg/load-blogg.ts +
-// lib/storefront/shop/load-shop.ts.
-//
-// NO TABLE QUERY (unlike load-blogg/load-shop): the public surface is pure promo
-// (headline + perk + variant presentation), so it needs no ledger data. The
-// pre-existing loyalty_ledger table (0016) is SELECT-only and not anon-readable
-// anyway — anon carries no tenant claim and the public promo needs no balance — so
-// this loader reads config and nothing else.
-//
-// NOT a 'server-only' module by import convention: it uses the cookie-less anon
-// public client (safe inside unstable_cache) exactly like load-shop.ts /
-// load-blogg.ts / tenant-modules.ts. It is still only ever called from server
-// components.
-//
-// CRITICAL (same fence as tenant-data.ts / tenant-modules.ts, ADR 01 §2): the
-// `anon` role carries NO tenant_id claim, so RLS does NOT isolate tenants for the
-// public client. The query filters by the resolved tenant_id IN THE APP LAYER
-// (.eq('tenant_id', …)).
-//
-// GATING IS THE CALLER'S JOB: this loader does not check module state. The
-// storefront resolves tenant_modules.state via getTenantModuleStates() and only
-// renders LojalitetSection when lojalitet === 'live' (same shape as the booking +
-// shop + offert + blogg gate). Off/draft når aldrig loadern; paused laddas för den
-// stängda publika vyn.
-
-// goal-64 TILLÄGG: loadern läser numera OCKSÅ kundens klubb-nivåer (loyalty_plans,
-// migration 0057) — Källas Droppe/Källa/Flod. Samma cache-nyckel, samma `tenant:<slug>`-
-// tag och samma app-lager-fence (.eq('tenant_id')) som configen; nivåerna är publikt
-// läsbara (loyalty_plans_public_read, active=true) exakt som shop_products, men RLS
-// isolerar INTE anon mellan tenants — .eq:t nedan är den enda isoleringen.
+// Caller gates the live module. Every anon query must keep the explicit tenant_id
+// filter; balances are never part of this public promo loader.
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'

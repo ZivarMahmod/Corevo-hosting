@@ -10,7 +10,6 @@ vi.mock('@/lib/platform/service', () => ({ createServiceClient: mocks.createServ
 import {
   dispatchNotificationOutbox,
   dispatchNotificationOutboxById,
-  enqueueNotification,
 } from './outbox'
 
 const claimed = {
@@ -51,54 +50,6 @@ describe('durable notification outbox', () => {
     mocks.createServiceClient.mockReturnValue({ rpc: mocks.rpc })
   })
 
-  it('enqueues through the idempotent database RPC', async () => {
-    mocks.rpc.mockResolvedValueOnce({
-      data: [{ id: claimed.id, inserted: true }],
-      error: null,
-    })
-
-    await expect(
-      enqueueNotification({
-        tenantId: claimed.tenant_id,
-        eventType: claimed.event_type,
-        eventKey: claimed.event_key,
-        category: 'transactional',
-        channel: 'email',
-        payload: claimed.payload,
-      }),
-    ).resolves.toEqual({ id: claimed.id, inserted: true })
-
-    expect(mocks.rpc).toHaveBeenCalledWith('enqueue_notification', {
-      p_tenant: claimed.tenant_id,
-      p_customer: null,
-      p_booking: null,
-      p_staff: null,
-      p_event_type: claimed.event_type,
-      p_event_key: claimed.event_key,
-      p_category: 'transactional',
-      p_channel: 'email',
-      p_fallback_channel: null,
-      p_consent_state: {},
-      p_payload: claimed.payload,
-      p_max_attempts: 5,
-    })
-  })
-
-  it('does not pretend an enqueue succeeded without service-role', async () => {
-    mocks.createServiceClient.mockReturnValue(null)
-    await expect(
-      enqueueNotification({
-        tenantId: claimed.tenant_id,
-        eventType: claimed.event_type,
-        eventKey: claimed.event_key,
-        category: 'transactional',
-        channel: 'email',
-        payload: {},
-      }),
-    ).resolves.toEqual({ id: null, inserted: false, error: 'service_role_unavailable' })
-    expect(mocks.rpc).not.toHaveBeenCalled()
-  })
-
   it('claims, delivers and acknowledges with the lease token', async () => {
     mocks.rpc
       .mockResolvedValueOnce({ data: [claimed], error: null })
@@ -132,6 +83,37 @@ describe('durable notification outbox', () => {
       p_parts: 1,
       p_skip_reason: null,
     })
+  })
+
+  it('bounds parallel provider work to the requested concurrency', async () => {
+    const second = {
+      ...claimed,
+      id: '10000000-0000-0000-0000-000000000002',
+      event_key: 'booking:30000000-0000-0000-0000-000000000002:confirmation',
+      lease_token: '40000000-0000-0000-0000-000000000002',
+    }
+    const third = {
+      ...claimed,
+      id: '10000000-0000-0000-0000-000000000003',
+      event_key: 'booking:30000000-0000-0000-0000-000000000003:confirmation',
+      lease_token: '40000000-0000-0000-0000-000000000003',
+    }
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === 'claim_notification_outbox') return { data: [claimed, second, third], error: null }
+      return { data: true, error: null }
+    })
+    const resolvers: Array<(result: { status: 'sent'; providerRef: string }) => void> = []
+    const deliver = vi.fn(() => new Promise<{ status: 'sent'; providerRef: string }>((resolve) => {
+      resolvers.push(resolve)
+    }))
+
+    const run = dispatchNotificationOutbox({ deliver, concurrency: 2 })
+    await vi.waitFor(() => expect(deliver).toHaveBeenCalledTimes(2))
+    resolvers[0]!({ status: 'sent', providerRef: 'provider-0' })
+    await vi.waitFor(() => expect(deliver).toHaveBeenCalledTimes(3))
+    resolvers.slice(1).forEach((resolve, index) => resolve({ status: 'sent', providerRef: `provider-${index + 1}` }))
+
+    await expect(run).resolves.toMatchObject({ claimed: 3, sent: 3 })
   })
 
   it('claims exactly one returned outbox id for immediate delivery', async () => {
@@ -258,9 +240,9 @@ describe('durable notification outbox', () => {
     expect(mocks.rpc).toHaveBeenCalledTimes(1)
   })
 
-  it('fails a malformed claimed row with a usable CAS identity instead of leasing it forever', async () => {
+  it('terminalizes a retired push row instead of sending it', async () => {
     mocks.rpc
-      .mockResolvedValueOnce({ data: [{ ...claimed, chosen_channel: null }], error: null })
+      .mockResolvedValueOnce({ data: [{ ...claimed, chosen_channel: 'push' }], error: null })
       .mockResolvedValueOnce({ data: true, error: null })
     const deliver = vi.fn()
 

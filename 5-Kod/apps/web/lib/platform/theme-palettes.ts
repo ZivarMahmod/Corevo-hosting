@@ -1,18 +1,17 @@
 /**
- * Storefront-mallarnas standard-paletter — EN sanning som mall-väljaren (ThemePicker),
- * onboarding-studion och Varumärke-formuläret (PlatformBrandingForm) läser, så operatören
+ * Storefront-mallarnas standard-paletter — EN sanning som mall-väljaren (ThemePicker)
+ * och onboarding-studion läser, så operatören
  * SER vad varje mall är. Värdena SPEGLAR [data-theme]-blocken (packages/ui/tokens.css för
- * de äldre temana; florist-sviten genererar sina ur florist/registry.ts).
+ * de äldre temana; de nya sviterna genereras ur lib/storefront/themes/registry.ts).
  * accent = mallens primary: storefronten sätter --color-accent: var(--color-primary)
  * när tenanten inte valt en egen accent (tokens.css, storefront-blocket).
  *
  * goal-58: sviten är 20 mallar. En platt lista blir en röra → varje mall bär KATEGORI
  * (mallväljarens flikar), TAGGAR (filter: Mörk/Ljus/Minimal…) och HERO (kortets foto).
  */
-import { FLORIST_PALETTES } from '@/components/storefront/layouts/florist/registry'
-import { EKONOMI_PALETTES } from '@/components/storefront/layouts/ekonomi/registry'
-import { SALONG_PALETTES } from '@/components/storefront/layouts/salong/registry'
-import { THEME_CONTENT } from '@/components/storefront/theme-content'
+import { THEME_CONTENT } from '@/lib/storefront/theme-content'
+import { THEME_SUITES } from '@/lib/storefront/themes/registry'
+import type { StorefrontThemeDefinition } from '@/lib/storefront/themes/types'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 import {
   SELECTABLE_THEME_CATALOG,
@@ -49,10 +48,6 @@ export type ThemePalette = {
 export const COREVO_12_THEME_KEYS: readonly StorefrontTheme[] =
   SELECTABLE_THEME_CATALOG.map((entry) => entry.key as StorefrontTheme)
 
-export function isSelectableTheme(key: string): key is StorefrontTheme {
-  return isSelectableCatalogTheme(key)
-}
-
 /** Ljus eller mörk mall? Relativ luminans på bakgrunden (samma formel som WCAG). */
 function isDark(bg: string): boolean {
   const c = parseInt(bg.replace('#', ''), 16)
@@ -73,8 +68,20 @@ function hero(key: string): string {
   return THEME_CONTENT[key as StorefrontTheme]?.heroImages[0] ?? ''
 }
 
-function tagsFor(key: string, desc: string, bg: string, extra: string[] = []): string[] {
+function tagsFor(desc: string, bg: string, extra: string[] = []): string[] {
   return [isDark(bg) ? 'Mörk' : 'Ljus', hueTag(desc), ...extra].filter(Boolean)
+}
+
+function definitionPalette(theme: StorefrontThemeDefinition) {
+  return {
+    key: theme.key,
+    name: theme.name,
+    desc: theme.desc,
+    primary: theme.palette.primary,
+    bg: theme.palette.bg,
+    fg: theme.palette.fg,
+    accent: theme.palette.primary,
+  }
 }
 
 /** De handbyggda salongs-/barbermallarna (kvar som literaler — de speglar tokens.css). */
@@ -87,11 +94,11 @@ const LEGACY: Omit<ThemePalette, 'category' | 'tags' | 'hero'>[] = [
 ]
 
 export const THEME_PALETTES: ThemePalette[] = [
-  // FLORIST-SVITEN (goal-58) — 13 mallar + flora, härledda ur florist/registry.ts.
-  ...FLORIST_PALETTES.map((p) => ({
+  // FLORIST-SVITEN (goal-58) — härledd ur det rena temaregistret.
+  ...THEME_SUITES.florist.map(definitionPalette).map((p) => ({
     ...p,
     category: 'florist' as const,
-    tags: tagsFor(p.key, p.desc, p.bg),
+    tags: tagsFor(p.desc, p.bg),
     hero: hero(p.key),
   })),
   {
@@ -103,28 +110,28 @@ export const THEME_PALETTES: ThemePalette[] = [
     fg: '#2B2A24',
     accent: '#44523B',
     category: 'florist',
-    tags: tagsFor('flora', 'Mossgrönt på linne · bohemisk florist', '#F7F3EA'),
+    tags: tagsFor('Mossgrönt på linne · bohemisk florist', '#F7F3EA'),
     hero: hero('flora'),
   },
-  // EKONOMI-SVITEN (goal-63) — härledd ur ekonomi/registry.ts.
-  ...EKONOMI_PALETTES.map((p) => ({
+  // EKONOMI-SVITEN (goal-63).
+  ...THEME_SUITES.ekonomi.map(definitionPalette).map((p) => ({
     ...p,
     category: 'ekonomi' as const,
-    tags: tagsFor(p.key, p.desc, p.bg),
+    tags: tagsFor(p.desc, p.bg),
     hero: hero(p.key),
   })),
   // SALONG-SVITEN (goal-64) — Claude Design-paketen för salong/frisör. Kategori 'bokning',
   // samma flik som de äldre handbyggda salongsmallarna.
-  ...SALONG_PALETTES.map((p) => ({
+  ...THEME_SUITES.salong.map(definitionPalette).map((p) => ({
     ...p,
     category: 'bokning' as const,
-    tags: tagsFor(p.key, p.desc, p.bg),
+    tags: tagsFor(p.desc, p.bg),
     hero: hero(p.key),
   })),
   ...LEGACY.map((p) => ({
     ...p,
     category: 'bokning' as const,
-    tags: tagsFor(p.key, p.desc, p.bg),
+    tags: tagsFor(p.desc, p.bg),
     hero: hero(p.key),
   })),
   {
@@ -148,4 +155,4 @@ export function themePalette(key: string): ThemePalette {
 }
 
 /** Exakt handoffens 12 mallar. Legacy finns kvar i registret för befintliga kunder. */
-export const SELECTABLE_THEMES: ThemePalette[] = THEME_PALETTES.filter((t) => isSelectableTheme(t.key))
+export const SELECTABLE_THEMES: ThemePalette[] = THEME_PALETTES.filter((t) => isSelectableCatalogTheme(t.key))

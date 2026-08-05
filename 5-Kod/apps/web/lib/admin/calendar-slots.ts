@@ -9,7 +9,7 @@ import { weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
  *  EN SANNING (Zivars beslut 2026-07-14): en tid är ledig när den ryms i resursens
  *  ARBETSTID och inte krockar med en bokning eller en blockering. Punkt.
  *
- *  Skillnaden mot det publika flödet (app/boka/actions.ts) är avsiktlig och exakt en:
+ *  Skillnaden mot det publika flödet (lib/booking/availability-actions.ts) är avsiktlig och exakt en:
  *  vi skickar ALDRIG `explicitStarts`. Fasta starttider (working_hour_slots) är en
  *  presentationsregel för självbokande kunder — de får aldrig begränsa vad ägaren kan
  *  boka i sin egen kalender. Motorn (computeSlots) är oförändrad; det är anroparen som

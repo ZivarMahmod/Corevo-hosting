@@ -819,7 +819,7 @@
               <p style="margin:0 0 13px; font-size:12.5px; color:var(--ink3); line-height:1.5;">{{ drStatusText }}</p>
               <button onClick="{{ drStatusAct }}" style="height:34px; padding:0 15px; border-radius:9px; border:none; background:{{ drStatusBtnBg }}; color:#fff; font-weight:600; font-size:13px; cursor:pointer;" style-hover="filter:brightness(1.08);">{{ drStatusBtn }}</button>
               <div style="margin-top:15px; padding-top:13px; border-top:1px solid var(--line);">
-                <p style="margin:0 0 10px; font-size:12px; color:var(--ink3); line-height:1.55;">Ta bort = mjuk borttagning: publik sajt + admin blockeras, men alla rader & historik sparas (build-once-never-delete — hård radering är permanent spärrad). Vill du bara dölja tillfälligt? Pausa ovan i stället.</p>
+                <p style="margin:0 0 10px; font-size:12px; color:var(--ink3); line-height:1.55;">Ta bort = mjuk borttagning: publik sajt + admin blockeras, men relationer och audit-historik sparas. Vill du bara dölja tillfälligt? Pausa ovan i stället.</p>
                 <sc-if value="{{ drDelConfirm }}" hint-placeholder-val="{{ false }}">
                   <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:10px 12px; background:color-mix(in srgb, var(--bad) 13%, var(--sf)); border-radius:9px;">
                     <span style="flex:1; min-width:180px; font-size:12.5px;">Ta bort <b>{{ ktName }}</b>? Mjukt — data & historik sparas.</span>
@@ -836,7 +836,7 @@
             <div style="background:var(--sf); border:1px solid var(--line); border-radius:12px; box-shadow:var(--sh); overflow:hidden;">
               <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line);">
                 <p style="margin:0; font-size:14px; font-weight:650;">Audit-logg</p>
-                <span style="font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--ink3); background:var(--sf2); border-radius:99px; padding:3px 9px; font-family:'IBM Plex Mono',monospace;">audit_log · never-delete</span>
+                <span style="font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--ink3); background:var(--sf2); border-radius:99px; padding:3px 9px; font-family:'IBM Plex Mono',monospace;">audit_log · append-only</span>
               </div>
               <sc-if value="{{ drAuditEmpty }}" hint-placeholder-val="{{ false }}">
                 <p style="margin:0; padding:16px 18px; font-size:12.5px; color:var(--ink3);">Inga loggade händelser ännu för den här kunden.</p>
@@ -1534,7 +1534,7 @@
             <div style="background:var(--sf); border:1px solid var(--line); border-radius:12px; box-shadow:var(--sh); overflow:hidden;">
               <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid var(--line);">
                 <p style="margin:0; font-size:14px; font-weight:650;">Audit-logg</p>
-                <span style="font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--ink3); background:var(--sf2); border-radius:99px; padding:3px 9px; font-family:'IBM Plex Mono',monospace;">audit_log · build-once-never-delete</span>
+                <span style="font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--ink3); background:var(--sf2); border-radius:99px; padding:3px 9px; font-family:'IBM Plex Mono',monospace;">audit_log · append-only</span>
               </div>
               <sc-if value="{{ logEmpty }}" hint-placeholder-val="{{ false }}">
                 <p style="margin:0; padding:18px; font-size:13px; color:var(--ink3);">Inget matchar.</p>
@@ -1733,7 +1733,7 @@
               <div style="display:flex; align-items:center; gap:12px;">
                 <span style="flex:1; min-width:0;">
                   <span style="display:flex; align-items:center; gap:8px;"><span style="font-weight:600; font-size:13.5px;">Audit-guard mot radering</span><span style="font-size:10.5px; font-weight:650; color:var(--ok); background:color-mix(in srgb, var(--ok) 16%, var(--sf)); border-radius:99px; padding:2px 8px;">Aktiv</span></span>
-                  <span style="display:block; font-size:12px; color:var(--ink3); margin-top:2px;">Skyddade rader kan aldrig raderas, bara suspenderas. Skyddat i koden — build-once-never-delete.</span>
+                  <span style="display:block; font-size:12px; color:var(--ink3); margin-top:2px;">Tenantrader suspenderas eller mjukraderas så relationer och audit-historik bevaras.</span>
                 </span>
                 <span title="Skyddat i koden — inget reglage kan stänga av regeln" style="width:34px; height:20px; flex:none; border-radius:99px; background:var(--acc); position:relative; opacity:.55; cursor:not-allowed;">
                   <span style="position:absolute; top:2px; left:16px; width:16px; height:16px; border-radius:99px; background:#fff;"></span>

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { listCustomers, customerStats } from '@/lib/admin/data'
+import { CUSTOMER_TIER_LABELS, listCustomers, customerStats } from '@/lib/admin/data'
 import { getCustomerStaffFavorite } from '@/lib/kund/favorites'
 import { formatDateTime } from '@/lib/admin/format'
 import { CustomerExport, type ExportRow } from './CustomerExport'
@@ -10,13 +10,6 @@ import styles from '@/components/admin/kunder-v2.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kunder · Adminpanel' }
-
-const TIER_LABEL: Record<'guld' | 'silver' | 'brons' | 'ny', string> = {
-  guld: 'Guld',
-  silver: 'Silver',
-  brons: 'Brons',
-  ny: 'Ny',
-}
 
 /** Tomma läget i master–detalj: ingen kund vald → överblick + bulk-export. Listan
  *  (layouten) står kvar till vänster; välj en kund för att öppna kortet till höger. */
@@ -46,7 +39,7 @@ export default async function CustomersIndexPage() {
   const favs = await Promise.all(everyone.map((c) => getCustomerStaffFavorite(c.id)))
   const exportRows: ExportRow[] = everyone.map((c, i) => ({
     shownName: c.shownName,
-    tier: TIER_LABEL[c.tier],
+    tier: CUSTOMER_TIER_LABELS[c.tier],
     visits: c.visits,
     lastVisit: c.lastVisitTs ? formatDateTime(c.lastVisitTs, tenant.timeZone) : '—',
     favStaff: favs[i]?.title?.trim() || '—',

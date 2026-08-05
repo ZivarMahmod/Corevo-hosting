@@ -3,6 +3,7 @@ import { Reveal } from '../../Reveal'
 import { Bookable } from '../../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
+import { formatBloggShortDate } from '@/lib/storefront/blogg/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './siluett.module.css'
 
@@ -26,7 +27,7 @@ import styles from './siluett.module.css'
  * Filen har varken butiks-band eller presentkortsrad på hemmet — och då har inte mallen
  * det heller. Butiken, klubben, presentkortet och eventförfrågan nås via nav och sidfot,
  * precis som i .dc-filen. Att lägga till en sektion "för att de andra mallarna har en" ÄR
- * att improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ * att improvisera bort mallen (se AGENTS.md:s UI-acceptansregel).
  *
  * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
  * renderar samma komponent.
@@ -110,7 +111,12 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
             {signatures.map((s, i) => (
               <li key={s.id}>
                 <Reveal delay={i * 90}>
-                  <Bookable slotId={`service:${s.id}`} enabled={bookingReachable} className={styles.siSigCard} label={`Boka — ${s.name}`}>
+                  <Bookable
+                    slotId={`service:${s.id}`}
+                    enabled={bookingReachable}
+                    className={styles.siSigCard}
+                    label={`Boka — ${s.name}`}
+                  >
                     <p className={styles.siSigNo}>N°{String(i + 1).padStart(2, '0')}</p>
                     <h3 className={styles.siSigName}>{s.name}</h3>
                     <p className={styles.siSigDesc}>{serviceDesc(s)}</p>
@@ -189,7 +195,7 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
           {posts.map((p, i) => (
             <Reveal key={p.id} delay={i * 80}>
               <Link href={`/blogg/${p.slug}`} className={styles.siJournalRow}>
-                <p className={styles.siJournalMeta}>{formatPostDate(p.publishedAt)}</p>
+                <p className={styles.siJournalMeta}>{formatBloggShortDate(p.publishedAt)}</p>
                 <h3 className={styles.siJournalTitle}>{p.title}</h3>
                 <span className={styles.siJournalArrow}>→</span>
               </Link>
@@ -199,12 +205,4 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
       ) : null}
     </div>
   )
-}
-
-/** Filens "Guide · 2 juli"-rad. Utan datum står bara rubriken — vi hittar inte på ett. */
-function formatPostDate(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
 }

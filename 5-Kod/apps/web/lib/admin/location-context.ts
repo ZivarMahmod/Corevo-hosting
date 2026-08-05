@@ -21,3 +21,7 @@ export async function getAdminLocationPreferences(
     primaryLocationId: row?.primary_location_id ?? null,
   }
 }
+
+export async function hasOrganizationScope(userId: string): Promise<boolean> {
+  return (await getAdminLocationPreferences(userId)).accessScope === 'organization'
+}

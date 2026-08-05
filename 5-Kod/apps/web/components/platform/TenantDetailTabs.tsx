@@ -3,16 +3,21 @@
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { Icon, type IconName } from '@/components/portal/ui'
+import { Icon } from '@/components/portal/ui'
 import styles from './tenant-detail.module.css'
-import { resolveTenantTabKey, tenantTabHref } from './TenantDetailTabs.tabs'
+import {
+  resolveTenantTabKey,
+  tenantTabHref,
+  type TenantTabKey,
+} from './TenantDetailTabs.tabs'
+import type { IconName } from '@/lib/ui-icons'
 
 /**
  * Kund-detalj SubTabs — pill rail (icon + label, active pill forest-filled).
  *
  * Children-as-props, NOT a client page: the server `page.tsx` does every read
  * (RLS-bypass, server-only) and renders each tab's content — INCLUDING the existing
- * `'use client'` forms (PlatformBrandingForm, BillingForm, StatusControl,
+ * `'use client'` forms (BillingForm, StatusControl,
  * OperativeControls …) — to ReactNode, then hands those nodes here. This component
  * only toggles which is visible. So the page stays a server component, the reads
  * never round-trip through the client, and the existing form components work
@@ -24,25 +29,8 @@ import { resolveTenantTabKey, tenantTabHref } from './TenantDetailTabs.tabs'
  * customer's own admin nav. The rail renders exactly the keys it was handed.
  */
 
-export type TenantTabKey =
-  | 'Översikt'
-  | 'Tjänster'
-  | 'Kunder'
-  | 'Personal'
-  | 'Kurser'
-  // goal-64: klubbens nivåer (lojalitet-modulen). Visas bara när modulen är på.
-  | 'Klubben'
-  | 'Webshop'
-  | 'Blogg'
-  | 'Offerter'
-  | 'Meddelanden'
-  | 'Bildbibliotek'
-  | 'Sida'
-  | 'Integrationer'
-  | 'Drift'
-
 // Logiska flikar — en entitet/område per flik. Modul-flikarnas ikoner speglar
-// kund-adminens nav (PortalSidebar) så samma verktyg känns igen på båda ytorna.
+// kund-adminens navigation så samma verktyg känns igen på båda ytorna.
 const TABS: { key: TenantTabKey; icon: IconName }[] = [
   { key: 'Översikt', icon: 'grid' },
   { key: 'Tjänster', icon: 'star' },

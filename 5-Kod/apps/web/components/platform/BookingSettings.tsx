@@ -3,8 +3,8 @@
 import { useActionState, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { accentForeground, type TenantBranding } from '@corevo/ui'
-import { updateBookingSettings } from '@/lib/platform/actions'
-import type { ActionState } from '@/lib/platform/actions'
+import { updateBookingSettings } from '@/lib/platform/actions/data'
+import type { ActionState } from '@/lib/platform/actions/shared'
 import type {
   BookingVariant,
   BookingVerificationMode,

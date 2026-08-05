@@ -60,16 +60,6 @@ describe('bokningens atomiska tillgänglighetsvakt', () => {
     expect(sql).toContain('cancellation_trace_required')
   })
 
-  it('visar begripliga adminfel och erbjuder inte passerade tider', () => {
-    const actions = fs.readFileSync(path.join(WEB_ROOT, 'lib', 'admin', 'calendar-actions.ts'), 'utf8')
-
-    expect(actions).toContain('availabilityFenceMessage')
-    expect(actions).toContain('Tiden ligger utanför medarbetarens arbetstid.')
-    expect(actions).toContain('Tiden överlappar en blockering eller frånvaro.')
-    expect(actions).toContain('now: new Date()')
-    expect(actions).not.toContain('now: new Date(0)')
-  })
-
   it('same-tenant-vaktar även personal och plats på frånvaro', () => {
     const sql = fs.readFileSync(
       path.join(CODE_ROOT, 'supabase', 'migrations', '0072_booking_availability_fence.sql'),

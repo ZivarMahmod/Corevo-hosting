@@ -51,20 +51,23 @@ function firstRow<T>(data: T[] | T | null): T | null {
   return Array.isArray(data) ? (data[0] ?? null) : data
 }
 
-export function retainOwnedMediaUrls(
-  submittedUrls: Array<string | null | undefined>,
-  storedUrls: Array<string | null | undefined>,
-  limit: number,
-): string[] {
-  const allowed = new Set(storedUrls.filter((value): value is string => Boolean(value)))
-  const retained: string[] = []
-  for (const submitted of submittedUrls) {
-    const url = submitted?.trim()
-    if (!url || !allowed.has(url) || retained.includes(url)) continue
-    retained.push(url)
-    if (retained.length >= limit) break
-  }
-  return retained
+export async function resolveReadyTenantAssetId(
+  supabase: SupabaseClient,
+  tenantId: string,
+  raw: string,
+): Promise<string | null> {
+  const id = raw.trim()
+  if (!id) return null
+
+  const { data } = await supabase
+    .from('media_assets')
+    .select('id')
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .eq('status', 'ready')
+    .maybeSingle()
+
+  return data ? id : null
 }
 
 function isTenantOwnedLegacyKey(key: string | null, tenantId: string): boolean {

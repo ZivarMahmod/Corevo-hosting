@@ -1,12 +1,5 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { getTenantDetail } from '@/lib/platform/tenants'
-
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const page = fs.readFileSync(path.join(HERE, 'page.tsx'), 'utf8')
-const tenantLoader = fs.readFileSync(path.join(process.cwd(), 'lib/platform/tenants.ts'), 'utf8')
 
 type CountMetric = 'active services' | 'active staff' | 'working hours' | 'bookings' | 'completed bookings'
 type FailingRead = CountMetric | 'primary address' | 'primary location'
@@ -120,61 +113,6 @@ function detailClient(failingRead: FailingRead | null, legacyAddress: string | n
 }
 
 describe('goal-72 S3 kunddetalj', () => {
-  it('wires the primary location booking frame into the platform Personal tab', () => {
-    expect(page).toContain('LocationOpeningHours')
-    expect(page).toContain('savePlatformLocationBookingSettings')
-    expect(page).toContain('primaryLocation')
-    expect(tenantLoader).toMatch(
-      /from\('locations'\)[\s\S]{0,300}eq\('tenant_id', tenantId\)[\s\S]{0,120}eq\('active', true\)[\s\S]{0,120}eq\('is_primary', true\)[\s\S]{0,120}order\('created_at', \{ ascending: true \}\)[\s\S]{0,120}order\('id', \{ ascending: true \}\)[\s\S]{0,80}limit\(1\)/,
-    )
-  })
-
-  it('keeps the tolerant primary-address lookup deterministic', () => {
-    const addressQuery = tenantLoader.match(
-      /supabase\s+\.from\('locations'\)\s+\.select\('address'\)[\s\S]*?\.maybeSingle\(\),/,
-    )?.[0]
-
-    expect(addressQuery).toMatch(
-      /\.select\('address'\)\s+\.eq\('tenant_id', tenantId\)\s+\.order\('is_primary', \{ ascending: false \}\)\s+\.order\('created_at', \{ ascending: true \}\)\s+\.order\('id', \{ ascending: true \}\)\s+\.limit\(1\)\s+\.maybeSingle\(\),/,
-    )
-  })
-
-  it('degrades only the opening-hours card when its read fails', () => {
-    expect(page).toMatch(
-      /listLocationOpeningHours\(id, primaryLocation\.id\)[\s\S]{0,80}catch\(\(\) => null\)/,
-    )
-    expect(page).toContain('Öppettiderna kunde inte läsas')
-    expect(page).toContain('Övriga delar av kundkortet fungerar fortfarande.')
-    expect(page).toContain('<PersonalCard')
-  })
-
-  it('shows an honest empty state when the customer has no primary location', () => {
-    expect(page).toContain('Ingen primärplats')
-    expect(page).toContain('Kunden saknar en aktiv primärplats.')
-    expect(page).toMatch(/!primaryLocation[\s\S]{0,500}locationOpeningHours === null/)
-  })
-
-  it('läser uteblivna exakt och tenant-scopat på servern', () => {
-    expect(page).toMatch(
-      /from\('bookings'\)[\s\S]{0,180}select\('id', \{ count: 'exact', head: true \}\)[\s\S]{0,120}eq\('tenant_id', id\)[\s\S]{0,80}eq\('status', 'no_show'\)/,
-    )
-    expect(page).toContain('if (noShowError)')
-    expect(page).toContain('const noShows = noShowCount ?? 0')
-  })
-
-  it('renderar den delade Stat-raden med fyra sanningsbaserade mått och utan trendcopy', () => {
-    expect(page).toContain('Stat,')
-    expect(page).toContain('EmptyState,')
-    expect(page).toContain('const hasOverviewData = counts.bookings > 0 || noShows > 0 || counts.activeStaff > 0')
-    expect(page).toContain('<Stat label="Bokningar" value={counts.bookings} icon="calendar" />')
-    expect(page).toContain('<Stat label="Genomförda" value={counts.completed} icon="checkCircle" />')
-    expect(page).toContain('<Stat label="Uteblivna" value={noShows} icon="clock" />')
-    expect(page).toContain('<Stat label="Personal" value={counts.activeStaff} icon="users" />')
-    expect(page).toContain('<EmptyState')
-    expect(page).toContain('title="Ingen statistik ännu"')
-    expect(page).not.toContain('Math.round((counts.completed / counts.bookings) * 100)')
-  })
-
   it.each<CountMetric>([
     'active services',
     'active staff',

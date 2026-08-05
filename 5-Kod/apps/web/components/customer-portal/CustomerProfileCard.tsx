@@ -10,7 +10,7 @@ import {
   useTransition,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { updatePortalNameAction } from '@/app/(customer-portal)/mina/actions'
+import { updatePortalNameAction } from '@/lib/customer-portal/server-actions'
 import type {
   PortalContactChangeAction,
   PortalSecondaryContact,

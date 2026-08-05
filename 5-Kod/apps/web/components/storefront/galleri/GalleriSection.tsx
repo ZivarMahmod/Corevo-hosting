@@ -1,13 +1,12 @@
 // Galleri — DEN DELADE SEKTIONEN (goal-64).
 //
 // SERVER-komponent (får vara async — den laddar sin egen data, precis som BloggSection).
-// Detta är FALLBACKEN: mallar som deklarerar `moduleViews.galleri` i sin <key>.theme.ts
+// Detta är FALLBACKEN: mallar som har en galleri-vy i den kanoniska runtime-mappen
 // äger formen själva (vektor-regeln) och når aldrig hit. Mallar utan egen galleri-vy får
 // den här — token-driven (var(--color-*) / var(--sf-*)), så den ärver vilken mall som
 // helst utan egen palett.
 //
-// GATINGEN ÄR ANROPARENS JOBB: /galleri 404:ar när modulen inte är live/paused. Den här
-// sektionen antar att gaten redan passerats.
+// Gating is the caller's job; this section only receives a live module.
 //
 // RENDER-ON-PRESENT: en rad utan bild renderas INTE (en tom ruta är sämre än ingen ruta),
 // och bildtext/tagg/år skrivs bara ut när kunden faktiskt fyllt i dem. Vi hittar aldrig på.
@@ -30,7 +29,7 @@ function GalleryCard({ item }: { item: GalleryItem }) {
           // bilden laddar (CLS).
           style={item.aspectRatio ? { aspectRatio: item.aspectRatio } : undefined}
         >
-          {/* Plain <img> — storefrontens remote-image-config är fryst (aldrig next/image). */}
+          {/* Plain <img> — fjärrkällan är inte konfigurerad för next/image. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.imageUrl}
@@ -58,13 +57,10 @@ function GalleryCard({ item }: { item: GalleryItem }) {
 export async function GalleriSection({
   tenantId,
   slug,
-  paused = false,
   pageHero = false,
 }: {
   tenantId: string
   slug: string
-  /** tenant_modules.state = 'paused' → bilderna visas, men som ett arkiv. */
-  paused?: boolean
   /** Modulens EGEN sida: hero-bandet i stället för SectionHeader (samma som bloggen). */
   pageHero?: boolean
 }) {
@@ -82,13 +78,6 @@ export async function GalleriSection({
         <div className="section-inner">
           {!pageHero ? (
             <SectionHeader eyebrow="— Galleri" title="Galleriet" lead="Ett urval av vårt arbete." />
-          ) : null}
-
-          {paused ? (
-            <p role="status" className={s.notice}>
-              Galleriet är pausat just nu — äldre bilder visas, men inga nya läggs till för
-              tillfället.
-            </p>
           ) : null}
 
           {items.length === 0 ? (

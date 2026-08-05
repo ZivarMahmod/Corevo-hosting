@@ -1,30 +1,19 @@
 // Display + small domain helpers for the salon-admin portal (G07). Self-contained
 // so the admin revir does not couple to the kund/personal portals' own helpers.
 
+import {
+  formatTenantMoney,
+  parseTenantMoneyInput,
+  tenantMoneyInputValue,
+} from '@/lib/tenant-region'
+
 /** öre → "1 234 kr" (Swedish currency, no decimals). */
 export function formatPrice(cents: number | null): string {
-  if (cents == null) return ''
-  return new Intl.NumberFormat('sv-SE', {
-    style: 'currency',
-    currency: 'SEK',
-    maximumFractionDigits: 0,
-  }).format(cents / 100)
+  return cents == null ? '' : formatTenantMoney(cents)
 }
 
-/** "1234,50" (kr) string from a form field → integer öre, or null if blank/invalid. */
-export function kronorToCents(raw: string): number | null {
-  const s = raw.trim().replace(/\s/g, '').replace(',', '.')
-  if (s === '') return null
-  const n = Number(s)
-  if (!Number.isFinite(n) || n < 0) return null
-  return Math.round(n * 100)
-}
-
-/** integer öre → "1234.50" for a kr-denominated <input>. */
-export function centsToKronorInput(cents: number | null): string {
-  if (cents == null) return ''
-  return (cents / 100).toString()
-}
+export { parseTenantMoneyInput as kronorToCents }
+export { tenantMoneyInputValue as centsToKronorInput }
 
 export function formatDateTime(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat('sv-SE', {
@@ -101,31 +90,6 @@ export function restoreBlockedByRefund(
   paymentStatus: string | null | undefined,
 ): boolean {
   return currentStatus === 'cancelled' && paymentStatus === 'refunded'
-}
-
-/** Avbokningsspåret (B-24): vad som ska skrivas på bookings-raden vid en statusändring.
- *  In i cancelled → stämpla när+vem. Ut ur cancelled → NOLLA spåret (annars ligger
- *  bokningen kvar i ångraloggen fast den är aktiv igen). Övriga övergångar rör det inte. */
-export function cancellationTrace(
-  currentStatus: string,
-  targetStatus: string,
-  now = new Date(),
-): { cancelled_at: string | null; cancelled_by: string | null } | Record<string, never> {
-  if (targetStatus === 'cancelled')
-    return { cancelled_at: now.toISOString(), cancelled_by: 'business' }
-  if (currentStatus === 'cancelled') return { cancelled_at: null, cancelled_by: null }
-  return {}
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Ej bekräftad',
-  confirmed: 'Bekräftad',
-  completed: 'Genomförd',
-  cancelled: 'Avbokad',
-  no_show: 'Uteblev',
-}
-export function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status
 }
 
 /** working_hours.weekday: 0 = Sunday … 6 = Saturday. */

@@ -4,10 +4,16 @@ import { notFound } from 'next/navigation'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
-import { getCustomerDetail, getCustomerContact, getCustomerLoyalty } from '@/lib/admin/data'
+import {
+  CUSTOMER_TIER_LABELS,
+  getCustomerDetail,
+  getCustomerContact,
+  getCustomerLoyalty,
+} from '@/lib/admin/data'
 import { getMyFavorites } from '@/lib/kund/favorites'
 import { getCustomerNotes } from '@/lib/personal/customer'
-import { formatDateTime, formatPrice, statusLabel } from '@/lib/admin/format'
+import { formatDateTime, formatPrice } from '@/lib/admin/format'
+import { bookingStatusLabel } from '@/lib/booking/confirmation-status'
 import { todayInTz } from '@/lib/admin/dates'
 import { staffColor } from '@/lib/admin/staff-colors'
 import { CustomerNoteEditor } from '@/components/admin/CustomerNoteEditor'
@@ -20,13 +26,6 @@ import styles from '@/components/admin/kunder-v2.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kund · Adminpanel' }
-
-const TIER_LABEL: Record<'guld' | 'silver' | 'brons' | 'ny', string> = {
-  guld: 'Guld',
-  silver: 'Silver',
-  brons: 'Brons',
-  ny: 'Ny',
-}
 
 const NON_VISIT = new Set(['pending', 'confirmed', 'cancelled', 'no_show'])
 
@@ -62,16 +61,15 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
   const totalCents = customer.history
     .filter((b) => b.status === 'completed')
     .reduce((s, b) => s + (b.priceCents ?? 0), 0)
-  const cancelCount = customer.history.filter((b) =>
-    b.status === 'cancelled' || b.status === 'no_show',
+  const cancelCount = customer.history.filter(
+    (b) => b.status === 'cancelled' || b.status === 'no_show',
   ).length
 
   // NÄSTA = tidigaste kommande aktiva bokning (historiken är fallande sorterad).
   const upcoming = customer.history
     .filter(
       (b) =>
-        (b.status === 'pending' || b.status === 'confirmed') &&
-        new Date(b.endTs).getTime() > now,
+        (b.status === 'pending' || b.status === 'confirmed') && new Date(b.endTs).getTime() > now,
     )
     .sort((a, b) => new Date(a.startTs).getTime() - new Date(b.startTs).getTime())[0]
 
@@ -96,7 +94,7 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
   const exportRow: ExportRow[] = [
     {
       shownName: customer.shownName,
-      tier: loyalty ? TIER_LABEL[loyalty.tier] : '—',
+      tier: loyalty ? CUSTOMER_TIER_LABELS[loyalty.tier] : '—',
       visits: customer.visits,
       lastVisit: customer.lastVisitTs ? formatDateTime(customer.lastVisitTs, tz) : '—',
       favStaff: favStaff?.name ?? '—',
@@ -133,7 +131,10 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
           </div>
           <div className={styles.headActions}>
             {phone && (
-              <a href={`tel:${phone.replace(/\s/g, '')}`} className={`${styles.btnGhost} ${styles.btnRing}`}>
+              <a
+                href={`tel:${phone.replace(/\s/g, '')}`}
+                className={`${styles.btnGhost} ${styles.btnRing}`}
+              >
                 ✆ Ring
               </a>
             )}
@@ -158,7 +159,9 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
             <div className={styles.statLbl}>avbokat / uteblivet</div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.statNum}>{loyalty ? loyalty.loyaltyPoints.toLocaleString('sv-SE') : '—'}</div>
+            <div className={styles.statNum}>
+              {loyalty ? loyalty.loyaltyPoints.toLocaleString('sv-SE') : '—'}
+            </div>
             <div className={styles.statLbl}>lojalitetspoäng</div>
           </div>
         </div>
@@ -191,7 +194,11 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
                 Ingen kommande tid
               </span>
               <div style={{ flex: 1 }} />
-              <Link href="/admin/bokningar" className={styles.btnPrimary} style={{ padding: '8px 14px' }}>
+              <Link
+                href="/admin/bokningar"
+                className={styles.btnPrimary}
+                style={{ padding: '8px 14px' }}
+              >
                 Boka in
               </Link>
             </>
@@ -225,7 +232,9 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
                   )}
                 </div>
               ) : (
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--c-ink-3)', fontStyle: 'italic' }}>
+                <p
+                  style={{ margin: 0, fontSize: 13, color: 'var(--c-ink-3)', fontStyle: 'italic' }}
+                >
                   Kunden har inte sparat någon favorit ännu.
                 </p>
               )}
@@ -241,7 +250,11 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
                 <span className={styles.kvVal}>
                   <span
                     className={styles.dot}
-                    style={{ background: customer.isLinkedAccount ? 'var(--c-ok, #9ac4a5)' : 'var(--c-ink-3)' }}
+                    style={{
+                      background: customer.isLinkedAccount
+                        ? 'var(--c-ok, #9ac4a5)'
+                        : 'var(--c-ink-3)',
+                    }}
                   />
                   <span style={{ fontSize: 13, color: 'var(--c-ink-2)' }}>
                     {customer.isLinkedAccount ? 'Aktivt konto' : 'Gäst — inget konto'}
@@ -286,7 +299,7 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
                       <span className={styles.hDate}>{formatDateTime(b.startTs, tz)}</span>
                       <span className={`${styles.hService} ${nonVisit ? styles.hCancelled : ''}`}>
                         {b.serviceName}
-                        {nonVisit ? ` — ${statusLabel(b.status).toLowerCase()}` : ''}
+                        {nonVisit ? ` — ${bookingStatusLabel(b.status).toLowerCase()}` : ''}
                       </span>
                       <span className={styles.hStaff}>
                         <span
@@ -296,7 +309,9 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
                         />
                         {b.staffTitle}
                       </span>
-                      <span className={`${styles.hPrice} ${nonVisit ? styles.hPriceCancelled : ''}`}>
+                      <span
+                        className={`${styles.hPrice} ${nonVisit ? styles.hPriceCancelled : ''}`}
+                      >
                         {nonVisit ? '—' : formatPrice(b.priceCents)}
                       </span>
                     </div>

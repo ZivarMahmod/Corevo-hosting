@@ -102,7 +102,7 @@ export function AbsencePanel({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <label style={{ display: 'block' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-ink)' }}>Från</span>
-              {/* datetime-local: the frozen addTimeOff splits on 'T', so a bare
+              {/* datetime-local: addTimeOff splits on 'T', so a bare
                   date would be rejected — keep the time component. */}
               <input name="start" type="datetime-local" required style={fieldStyle} />
             </label>

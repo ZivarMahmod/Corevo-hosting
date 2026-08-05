@@ -13,7 +13,7 @@ import { useBooking } from '@/components/storefront/BookingProvider'
  *  Fallback: with no provider (e.g. the standalone `/boka` route) it renders a
  *  real <Link href="/boka">, so the route keeps working.
  *
- *  Accent pill (.btn-accent). In back-office .btn-accent is the FROZEN Corevo gold
+ *  Accent pill (.btn-accent). In back-office .btn-accent is the shared Corevo gold
  *  (hardcoded in portal-global.css, never tenant-tinted). On the storefront
  *  --color-accent is re-pointed to the theme's own --color-primary (never Corevo
  *  gold — a brand leak), and a tenant's branding.color_accent still overrides it

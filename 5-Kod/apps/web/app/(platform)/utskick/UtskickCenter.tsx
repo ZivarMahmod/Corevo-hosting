@@ -84,7 +84,7 @@ export function UtskickCenter({
       <section className={styles.section}>
         <SectionHead
           title="Adoption per företag"
-          text="Preferensrader och aktiva push-prenumerationer mot aktiva slutkunder."
+          text="Preferensrader mot aktiva slutkunder."
         />
         {summaryError ? (
           <EmptyState
@@ -103,8 +103,7 @@ export function UtskickCenter({
                     <th>Misslyckade</th>
                     <th>Överhoppade</th>
                     <th>SMS-kostnad</th>
-                    <th>Preferenser</th>
-                    <th data-last="">Aktiv push</th>
+                    <th data-last="">Preferenser</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -118,13 +117,9 @@ export function UtskickCenter({
                       <td className="num">{NUMBER.format(row.failed_30d)}</td>
                       <td className="num">{NUMBER.format(row.skipped_30d)}</td>
                       <td className="num">{formatOre(row.sms_cost_ore_30d)}</td>
-                      <td>
+                      <td data-last="">
                         <span className="num">{NUMBER.format(row.prefs_rows)} / {NUMBER.format(row.customers_total)}</span>
                         <span className={styles.sub}>{adoptionPercent(row.prefs_rows, row.customers_total)}</span>
-                      </td>
-                      <td data-last="">
-                        <span className="num">{NUMBER.format(row.push_subs_active)} / {NUMBER.format(row.customers_total)}</span>
-                        <span className={styles.sub}>{adoptionPercent(row.push_subs_active, row.customers_total)}</span>
                       </td>
                     </tr>
                   ))}
@@ -136,7 +131,7 @@ export function UtskickCenter({
           <EmptyState
             icon="building"
             title="Ingen adoption att sammanställa"
-            text="När det finns aktiva företag visas deras preferens- och push-adoption här."
+            text="När det finns aktiva företag visas deras preferensadoption här."
           />
         )}
       </section>

@@ -14,10 +14,12 @@ vi.mock('@/lib/admin/tenant', () => ({
 vi.mock('@/lib/admin/modules', () => ({
   getAdminModuleStates: vi.fn(),
 }))
+vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }))
 
-import { moduleCtx } from './module-ctx'
+import { moduleCtx, organizationOwnerCtx } from './module-ctx'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminModuleStates } from '@/lib/admin/modules'
+import { createClient } from '@/lib/supabase/server'
 import {
   getAdminTenant,
   loadAdminTenantById,
@@ -29,6 +31,7 @@ const mByJwt = vi.mocked(getAdminTenant)
 const mById = vi.mocked(loadAdminTenantById)
 const mRequireActive = vi.mocked(requireActiveTenantMutation)
 const mModuleStates = vi.mocked(getAdminModuleStates)
+const mCreateClient = vi.mocked(createClient)
 
 const OWN = { id: 't-own', slug: 'own', name: 'Egen' }
 const OTHER = { id: 't-other', slug: 'other', name: 'Annan' }
@@ -37,6 +40,15 @@ function fd(entries: Record<string, string>): FormData {
   const f = new FormData()
   for (const [k, v] of Object.entries(entries)) f.set(k, v)
   return f
+}
+
+function locationScope(accessScope: 'organization' | 'locations' | null) {
+  const maybeSingle = vi.fn().mockResolvedValue({
+    data: { access_scope: accessScope, primary_location_id: null },
+  })
+  const eq = vi.fn(() => ({ maybeSingle }))
+  const select = vi.fn(() => ({ eq }))
+  mCreateClient.mockResolvedValue({ from: vi.fn(() => ({ select })) } as never)
 }
 
 beforeEach(() => {
@@ -87,6 +99,19 @@ describe('moduleCtx — salon_admin (JWT-forced tenant)', () => {
     expect(await moduleCtx(fd({}))).not.toBeNull()
     expect(mModuleStates).not.toHaveBeenCalled()
   })
+
+  it('organizationOwnerCtx denies a location-scoped admin', async () => {
+    locationScope('locations')
+
+    expect(await organizationOwnerCtx(fd({}))).toBeNull()
+    expect(mCreateClient).toHaveBeenCalledOnce()
+  })
+
+  it('organizationOwnerCtx allows an organization-scoped admin', async () => {
+    locationScope('organization')
+
+    expect((await organizationOwnerCtx(fd({})))?.tenant.id).toBe('t-own')
+  })
 })
 
 describe('moduleCtx — platform_admin (tenant from the form)', () => {
@@ -115,6 +140,13 @@ describe('moduleCtx — platform_admin (tenant from the form)', () => {
     mById.mockResolvedValue(null as never)
     expect(await moduleCtx(fd({ tenantId: 'nope' }))).toBeNull()
   })
+
+  it('organizationOwnerCtx keeps platform tenant selection without a user-scope lookup', async () => {
+    mById.mockResolvedValue(OTHER as never)
+
+    expect((await organizationOwnerCtx(fd({ tenantId: 't-other' })))?.tenant.id).toBe('t-other')
+    expect(mCreateClient).not.toHaveBeenCalled()
+  })
 })
 
 describe('moduleCtx — partner operator (RLS-scoped tenant from the form)', () => {
@@ -134,5 +166,19 @@ describe('moduleCtx — partner operator (RLS-scoped tenant from the form)', () 
     expect(ctx?.tenant.id).toBe('t-other')
     expect(mById).toHaveBeenCalledWith('t-other')
     expect(mByJwt).not.toHaveBeenCalled()
+  })
+
+  it('organizationOwnerCtx keeps the partner RLS tenant path', async () => {
+    mRequire.mockResolvedValue({
+      id: 'partner-user',
+      platformAdmin: false,
+      partnerAdmin: true,
+      partnerId: 'partner-a',
+      tenantId: null,
+    } as never)
+    mById.mockResolvedValue(OTHER as never)
+
+    expect((await organizationOwnerCtx(fd({ tenantId: 't-other' })))?.tenant.id).toBe('t-other')
+    expect(mCreateClient).not.toHaveBeenCalled()
   })
 })

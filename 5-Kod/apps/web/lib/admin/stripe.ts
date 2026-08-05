@@ -3,19 +3,18 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { moduleCtx } from '@/lib/admin/module-ctx'
+import { organizationOwnerCtx } from '@/lib/admin/module-ctx'
 import { revalidateTenant } from './tenant'
 import { getStripe } from '@/lib/stripe/client'
 import { createExpressAccount, createOnboardingLink, fetchConnectStatus } from '@/lib/stripe/connect'
 import { requestOrigin } from '@/lib/url'
-import { createAdminServiceClient } from './service'
+import { createServiceClient } from '@/lib/platform/service'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 
 // Stripe Connect onboarding actions (G09 step 2), delade mellan kund-adminens
 // /admin/installningar och super-admin-kundkortet /kunder/[id] (goal-54 körning 5)
-// via moduleCtx-dual-guarden: platform_admin väljer tenant ur formulärets hidden
-// tenantId, salon_admin tvingas ur JWT. RLS isolates tenants but is not role-aware —
-// the role gate lives here; platform-adminens writes går via platform_admin-claimet.
+// via organizationOwnerCtx: operators select an RLS-scoped tenant from the form;
+// tenant admins are forced to their JWT tenant and must have organization scope.
 
 export type StripeActionState = { error?: string; success?: string }
 
@@ -32,13 +31,13 @@ export async function startStripeOnboarding(
   _prev: StripeActionState,
   _fd: FormData,
 ): Promise<StripeActionState> {
-  const ctx = await moduleCtx(_fd)
+  const ctx = await organizationOwnerCtx(_fd)
   if (!ctx) return { error: NO_TENANT }
   const { user, tenant } = ctx
 
   const stripe = getStripe()
   if (!stripe) return { error: NO_STRIPE }
-  const service = createAdminServiceClient()
+  const service = createServiceClient()
   if (!service) return { error: 'Stripe kan inte uppdateras just nu. Kontakta Corevo.' }
 
   const supabase = await createClient()
@@ -85,13 +84,13 @@ export async function refreshStripeStatus(
   _prev: StripeActionState,
   _fd: FormData,
 ): Promise<StripeActionState> {
-  const ctx = await moduleCtx(_fd)
+  const ctx = await organizationOwnerCtx(_fd)
   if (!ctx) return { error: NO_TENANT }
   const { tenant } = ctx
 
   const stripe = getStripe()
   if (!stripe) return { error: NO_STRIPE }
-  const service = createAdminServiceClient()
+  const service = createServiceClient()
   if (!service) return { error: 'Stripe kan inte uppdateras just nu. Kontakta Corevo.' }
 
   const supabase = await createClient()
@@ -140,7 +139,7 @@ export async function setPaymentsEnabled(
   _prev: StripeActionState,
   fd: FormData,
 ): Promise<StripeActionState> {
-  const ctx = await moduleCtx(fd)
+  const ctx = await organizationOwnerCtx(fd)
   if (!ctx) return { error: NO_TENANT }
   const { tenant } = ctx
 
@@ -149,7 +148,7 @@ export async function setPaymentsEnabled(
     return { error: 'Onlinebetalning är inte frisläppt ännu. Betala på plats används under pilotdriften.' }
   }
   const supabase = await createClient()
-  const service = createAdminServiceClient()
+  const service = createServiceClient()
   if (!service) return { error: 'Betalningsläget kan inte uppdateras just nu. Kontakta Corevo.' }
 
   if (enabled) {

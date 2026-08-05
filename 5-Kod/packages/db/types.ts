@@ -3959,6 +3959,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      cancel_verified_customer_booking: {
+        Args: {
+          p_booking: string
+          p_customer: string | null
+          p_customer_profile: string | null
+          p_tenant: string
+        }
+        Returns: {
+          booking_status: string
+          outcome: string
+          refund_job_id: string | null
+        }[]
+      }
       cancel_media_upload: {
         Args: {
           p_asset: string
@@ -4419,7 +4432,7 @@ export type Database = {
         Returns: {
           booking_status: string
           outcome: string
-          refund_job_id: string
+          refund_job_id: string | null
         }[]
       }
       customer_portal_contact_change_context: {
@@ -4455,6 +4468,8 @@ export type Database = {
       }
       customer_portal_exchange_link: {
         Args: {
+          p_existing_session_digest?: string
+          p_existing_session_public_id?: string
           p_key_version: number
           p_link_public_id: string
           p_new_session_digest: string
@@ -4462,9 +4477,10 @@ export type Database = {
           p_token_digest: string
         }
         Returns: {
+          booking_id: string | null
           outcome: string
-          session_public_id: string
-          tenant_slug: string
+          session_public_id: string | null
+          tenant_slug: string | null
         }[]
       }
       customer_portal_finalize_contact_change: {
@@ -5726,6 +5742,10 @@ export type Database = {
         Returns: undefined
       }
       set_primary_location: { Args: { p_location: string }; Returns: undefined }
+      set_customer_portal_mode: {
+        Args: { p_mode: string; p_tenant: string }
+        Returns: { mode: string }[]
+      }
       set_staff_active: {
         Args: { p_active: boolean; p_staff: string }
         Returns: boolean
