@@ -409,7 +409,13 @@ function PanelSetup(props: PanelProps) {
   )
 }
 
-function PanelContent({ cfg, dispatch }: PanelProps) {
+function PanelContent({ cfg, dispatch, presets }: PanelProps) {
+  const booking = resolveModuleState(cfg, 'booking', presets) === 'live'
+  const media = ['media_library', 'galleri'].some(
+    (key) => resolveModuleState(cfg, key, presets) === 'live',
+  )
+  const products = resolveModuleState(cfg, 'shop', presets) === 'live'
+  const courses = resolveModuleState(cfg, 'kurser', presets) === 'live'
   const setService = (index: number, patch: Partial<{ name: string; price: string }>) => {
     const services = cfg.services.length ? [...cfg.services] : [{ name: '', price: '' }]
     services[index] = { ...(services[index] ?? { name: '', price: '' }), ...patch }
@@ -421,22 +427,28 @@ function PanelContent({ cfg, dispatch }: PanelProps) {
   return (
     <Panel title="Förbered innehåll" sub="Allt här är valfritt. Skippa det som kunden eller du vill fylla i senare.">
       <div style={{ display: 'grid', gap: 18 }}>
-        <div style={{ display: 'grid', gap: 10 }}>
-          <div style={labelStyle}>Starttjänster</div>
-          {services.map((service, index) => (
-            <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(120px, .6fr)', gap: 10 }}>
-              <input value={service.name} onChange={(e) => setService(index, { name: e.target.value })} placeholder="Tjänst" style={{ padding: 12, borderRadius: 10, border: '1px solid var(--c-line)', background: 'var(--c-paper)', color: 'var(--c-ink)' }} />
-              <input value={service.price} onChange={(e) => setService(index, { price: e.target.value })} placeholder="Pris" style={{ padding: 12, borderRadius: 10, border: '1px solid var(--c-line)', background: 'var(--c-paper)', color: 'var(--c-ink)' }} />
-            </div>
-          ))}
-          <Button variant="ghost" size="sm" icon="plus" onClick={addService}>Lägg till tjänst</Button>
-        </div>
+        {booking ? (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div style={labelStyle}>Starttjänster</div>
+            {services.map((service, index) => (
+              <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(120px, .6fr)', gap: 10 }}>
+                <input value={service.name} onChange={(e) => setService(index, { name: e.target.value })} placeholder="Tjänst" style={{ minWidth: 0, padding: 12, borderRadius: 10, border: '1px solid var(--c-line)', background: 'var(--c-paper)', color: 'var(--c-ink)' }} />
+                <input value={service.price} onChange={(e) => setService(index, { price: e.target.value })} placeholder="Pris" style={{ minWidth: 0, padding: 12, borderRadius: 10, border: '1px solid var(--c-line)', background: 'var(--c-paper)', color: 'var(--c-ink)' }} />
+              </div>
+            ))}
+            <Button variant="ghost" size="sm" icon="plus" onClick={addService}>Lägg till tjänst</Button>
+          </div>
+        ) : null}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-          <InfoCard title="Personal" text="Kan fyllas i senare från kundkortet/admin. Inget krav i onboarding." icon="users" />
-          <InfoCard title="Bildbibliotek" text="Kommande uppladdningsyta. Just nu läggs bilder säkrast in i sidredigeraren efter att kunden skapats." icon="upload" />
-          <InfoCard title="Produkter & kurser" text="Kan förberedas senare per modul. Onboarding ska inte blockera skapandet." icon="layers" />
-          <InfoCard title="Arbetstider" text="Bokningsbara tider styrs av personal, tjänster och öppettider efter skapandet." icon="calendar" />
+          {booking ? <InfoCard title="Personal" text="Kan fyllas i senare från kundkortet/admin. Inget krav i onboarding." icon="users" /> : null}
+          {booking ? <InfoCard title="Arbetstider" text="Bokningsbara tider styrs av personal, tjänster och öppettider efter skapandet." icon="calendar" /> : null}
+          {media ? <InfoCard title="Bildbibliotek" text="Bilder läggs säkrast in i sidredigeraren efter att kunden skapats." icon="upload" /> : null}
+          {products ? <InfoCard title="Produkter" text="Produkter kan läggas in senare i kundens admin. Onboarding blockerar inte skapandet." icon="layers" /> : null}
+          {courses ? <InfoCard title="Kurser" text="Kurser kan läggas in senare i kundens admin. Onboarding blockerar inte skapandet." icon="calendar" /> : null}
+          {!booking && !media && !products && !courses ? (
+            <InfoCard title="Inget moduldata behövs" text="De valda modulerna kräver inget förarbete i det här steget. Du kan gå vidare direkt." icon="checkCircle" />
+          ) : null}
         </div>
       </div>
     </Panel>

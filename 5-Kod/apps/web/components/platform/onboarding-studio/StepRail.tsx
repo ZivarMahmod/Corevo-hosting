@@ -65,7 +65,7 @@ export function StepRail({
             {current?.label ?? 'Onboarding'}
           </div>
           <div style={{ color: 'var(--c-ink-3)', fontSize: 12.5, lineHeight: 1.45 }}>
-            {doneCount} av {steps.length} delar klara. Bara relevanta steg visas.
+            {doneCount} av {steps.length} delar klara. En slide i taget.
           </div>
           <div style={{ height: 6, borderRadius: 999, background: 'var(--c-paper-2)', overflow: 'hidden' }}>
             <div style={{ width: `${progress}%`, height: '100%', borderRadius: 999, background: 'var(--c-gold)' }} />

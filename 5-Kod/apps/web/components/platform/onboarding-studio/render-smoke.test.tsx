@@ -46,8 +46,10 @@ const presets: VerticalPresetData = {
   ],
   modules: [
     { key: 'booking', name: 'Bokning' },
+    { key: 'media_library', name: 'Bildbibliotek' },
     { key: 'lojalitet', name: 'Lojalitet' },
     { key: 'shop', name: 'Webshop' },
+    { key: 'kurser', name: 'Kurser' },
   ],
   templatesByVertical: { frisor: [{ key: 'kalla', name: 'Källa' }], generell: [{ key: 'edit', name: 'Edit' }] },
 }
@@ -147,6 +149,31 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     )
     expect(html).toContain('Ange en fullständig https-länk.')
     expect(html).toContain('aria-invalid="true"')
+  })
+
+  it('content slide only shows preparation for enabled modules', () => {
+    const bookingOnly = mounts(
+      <PanelHost cfg={branched} step="content" stepOrder={allSteps} dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+    )
+    expect(bookingOnly).toContain('Starttjänster')
+    expect(bookingOnly).toContain('Personal')
+    expect(bookingOnly).not.toContain('Bildbibliotek')
+    expect(bookingOnly).not.toContain('>Produkter<')
+
+    const shopOnly = mounts(
+      <PanelHost
+        cfg={{ ...branched, moduleStates: { ...branched.moduleStates, booking: 'off', shop: 'live' } }}
+        step="content"
+        stepOrder={allSteps}
+        dispatch={noopDispatch}
+        presets={presets}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    expect(shopOnly).not.toContain('Starttjänster')
+    expect(shopOnly).toContain('>Produkter<')
   })
 
   it('onboardingen har modulval och startcopy utan att lägga tillbaka tjänste-steget', () => {

@@ -137,7 +137,7 @@ function StudioMachine({
         // spans the whole content area below the topbar — no border, no rounded card.
         // flex grows it to fill; the minHeight is a floor for browsers without :has().
         flex: '1 1 auto',
-        minHeight: 'calc(100vh - 160px)',
+        minHeight: 'calc(100dvh - 160px)',
         overflow: 'hidden',
         background: 'var(--c-paper-2)',
       }}
