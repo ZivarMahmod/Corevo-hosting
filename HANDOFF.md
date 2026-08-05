@@ -60,10 +60,11 @@ Körda från `5-Kod/` efter sista runtimeändringen:
 - `pnpm build`: optimerad Next 15.5.18-produktionsbuild grön.
 - Den faktiska OpenNext/Cloudflare-paketeringen har **inte** passerat lokalt:
   Next-kompileringen blir grön, men adaptern faller på Windows när dess
-  edge-konfiguration kopieras. Den lokala maskinen kör Node 24 medan release-CI
-  kör Linux/Node 22, och WSL saknar Node. Detta är en lokal adaptermiljöspärr,
-  inte bevis på ett fel i appkoden; Linux-CI eller WSL med Node 22 krävs för
-  deployartefaktens slutliga bevis.
+  edge-konfiguration kopieras. Felet är reproducerat både med maskinens Node 24
+  och en hashverifierad tillfällig Node 22.23.2, medan release-CI kör Linux/Node
+  22 och WSL saknar Node. Detta är en lokal adaptermiljöspärr, inte bevis på ett
+  fel i appkoden; Linux-CI eller WSL med Node 22 krävs för deployartefaktens
+  slutliga bevis.
 - Fokuserade outbox-, bokningsleverans- och plattformstester: 77/77 gröna.
 - `node --test apps/web/scripts/primary-scheduler.test.mjs apps/web/scripts/primary-scheduler-config.test.mjs`:
   15/15 gröna.
