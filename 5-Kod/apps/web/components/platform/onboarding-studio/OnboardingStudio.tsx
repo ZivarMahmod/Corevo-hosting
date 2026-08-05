@@ -38,6 +38,7 @@ import { PanelHost } from './PanelHost'
 import { type PreviewDevice } from './PreviewPane'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
 import { tenantStorefrontHost } from '@/lib/storefront-url'
+import styles from './OnboardingStudio.module.css'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -129,6 +130,8 @@ function StudioMachine({
 
   return (
     <div
+      className={styles.root}
+      data-onboarding-root
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -137,8 +140,6 @@ function StudioMachine({
         // spans the whole content area below the topbar — no border, no rounded card.
         // flex grows it to fill; the minHeight is a floor for browsers without :has().
         flex: '1 1 auto',
-        minHeight: 'calc(100dvh - 160px)',
-        overflow: 'hidden',
         background: 'var(--c-paper-2)',
       }}
     >
@@ -148,12 +149,12 @@ function StudioMachine({
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <StepRail cfg={cfg} step={step} onStep={setStep} presets={presets} />
           <div
+            className={styles.panelViewport}
             style={{
               flex: 1,
               minHeight: 0,
               display: 'flex',
               justifyContent: 'center',
-              overflow: 'hidden',
               padding: 'clamp(14px, 2vw, 28px)',
             }}
           >

@@ -18,6 +18,7 @@ import { type StepId } from '@/lib/platform/onboarding-studio/phases'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { PANEL_BY_STEP } from './StudioPanels'
 import { PreviewPane, type PreviewDevice } from './PreviewPane'
+import styles from './OnboardingStudio.module.css'
 
 export type PanelHostProps = {
   cfg: StudioCfg
@@ -93,9 +94,10 @@ export function PanelHost({
   const withPreview = step === 'site' || step === 'review'
   return (
     <div
+      className={styles.panelHost}
+      data-onboarding-panel
       style={{
         width: 'min(1180px, 100%)',
-        maxHeight: '100%',
         boxSizing: 'border-box',
         flex: '0 1 1180px',
         border: '1px solid var(--c-line)',
@@ -104,13 +106,11 @@ export function PanelHost({
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
-        overflow: 'hidden',
         boxShadow: '0 24px 70px rgba(0,0,0,.18)',
       }}
     >
-      {/* Scroll lives HERE so the FooterNav stays pinned at the column bottom — without
-          overflow:auto a tall panel pushes «Nästa» off-screen (Zivar: had to scroll far). */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      {/* Desktop scroll lives here so FooterNav stays pinned. Mobile uses document scroll. */}
+      <div className={styles.panelScroll} data-onboarding-panel-scroll style={{ flex: 1, minHeight: 0 }}>
         <ActivePanel cfg={cfg} dispatch={dispatch} presets={presets} onLaunch={onLaunch} />
         {withPreview ? (
           <div style={{ padding: '0 clamp(18px, 4vw, 42px) clamp(22px, 4vw, 42px)' }}>

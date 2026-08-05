@@ -1,0 +1,47 @@
+.root {
+  min-height: calc(100dvh - 160px);
+  overflow: hidden;
+}
+
+.panelViewport,
+.panelHost {
+  overflow: hidden;
+}
+
+.panelHost {
+  max-height: 100%;
+}
+
+.panelScroll,
+.stepScroll {
+  overflow-y: auto;
+}
+
+.step {
+  height: 100%;
+}
+
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+  .root {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .panelViewport,
+  .panelHost {
+    overflow: visible;
+  }
+
+  .panelHost {
+    max-height: none;
+  }
+
+  .panelScroll,
+  .stepScroll {
+    overflow-y: visible;
+  }
+
+  .step {
+    height: auto;
+  }
+}

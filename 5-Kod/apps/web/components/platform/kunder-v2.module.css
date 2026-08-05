@@ -419,6 +419,17 @@
     min-height: 360px;
     border-radius: 0;
   }
+  .board[data-create] {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .board[data-create] .pane:has(:global(.onboarding-host)) {
+    overflow: visible;
+  }
+  .board[data-create] .paneInner:has(:global(.onboarding-host)) {
+    height: auto;
+  }
   .board[data-mobile-view='list'] .pane {
     display: none;
   }
