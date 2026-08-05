@@ -4,7 +4,7 @@
 // work area gives the live preview the width previously occupied by the 248px sidebar.
 import type { MouseEvent } from 'react'
 import { Icon } from '@/components/portal/ui/Icon'
-import { PHASES, stepDone, type StepId } from '@/lib/platform/onboarding-studio/phases'
+import { stepDone, type StepId, visiblePhases } from '@/lib/platform/onboarding-studio/phases'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 
@@ -19,6 +19,7 @@ export function StepRail({
   onStep: (stepId: StepId) => void
   presets: VerticalPresetData
 }) {
+  const phases = visiblePhases(cfg, presets)
   return (
     <div
       style={{
@@ -32,7 +33,7 @@ export function StepRail({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 14, minWidth: 'max-content' }}>
-        {PHASES.map((ph, pi) => (
+        {phases.map((ph, pi) => (
           <div
             key={ph.id}
             style={{
@@ -40,7 +41,7 @@ export function StepRail({
               alignItems: 'center',
               gap: 8,
               paddingRight: 14,
-              borderRight: pi < PHASES.length - 1 ? '1px solid var(--c-line)' : 'none',
+              borderRight: pi < phases.length - 1 ? '1px solid var(--c-line)' : 'none',
             }}
           >
             <div

@@ -1,6 +1,5 @@
-// Onboarding-studio — static step-rail config for the three phases and four steps.
-// FLAT_STEP_ORDER drives navigation; stepDone derives completion from
-// the real StudioCfg.
+// Onboarding-studio — step-rail config. Navigation can filter steps from
+// the real StudioCfg; stepDone derives completion from the same cfg.
 import type { IconName } from '@/lib/ui-icons'
 import type { StudioCfg } from './model'
 import { resolveModuleState } from './model'
@@ -13,7 +12,9 @@ import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url
 export type StepId =
   | 'branch'
   | 'namn'
+  | 'modules'
   | 'bokning'
+  | 'appearance'
   | 'live'
 
 /** One step in a phase. `req:true` = required before Skapa.
@@ -37,7 +38,7 @@ export type StudioPhase = {
 }
 
 /**
- * Three phases and four steps. Data, not behaviour: presets and themes own the
+ * Three phases and available steps. Data, not behaviour: presets and themes own the
  * actual tenant defaults; this list only orders and names the steps.
  */
 export const PHASES: StudioPhase[] = [
@@ -51,11 +52,13 @@ export const PHASES: StudioPhase[] = [
     ],
   },
   {
-    id: 'bokning',
-    name: 'Bokning',
-    sub: 'Corevo eller extern leverantör',
+    id: 'innehall',
+    name: 'Innehåll',
+    sub: 'Moduler, bokning och startcopy',
     steps: [
+      { id: 'modules', label: 'Moduler', icon: 'layers', req: false, hint: 'Välj bara moduler kunden använder' },
       { id: 'bokning', label: 'Bokning', icon: 'calendar', req: false, hint: 'Corevo eller extern leverantör' },
+      { id: 'appearance', label: 'Utseende', icon: 'palette', req: false, hint: 'Startcopy och accent' },
     ],
   },
   {
@@ -71,11 +74,27 @@ export const PHASES: StudioPhase[] = [
 /** Flat step order for prev/next navigation (PHASES.flatMap of step ids). */
 export const FLAT_STEP_ORDER: StepId[] = PHASES.flatMap((p) => p.steps.map((s) => s.id))
 
+export function visiblePhases(cfg: StudioCfg, presets: VerticalPresetData): StudioPhase[] {
+  const bookingVisible = resolveModuleState(cfg, 'booking', presets) !== 'off'
+  return PHASES
+    .map((phase) => ({
+      ...phase,
+      steps: phase.steps.filter((step) => step.id !== 'bokning' || bookingVisible),
+    }))
+    .filter((phase) => phase.steps.length > 0)
+}
+
+export function visibleStepOrder(cfg: StudioCfg, presets: VerticalPresetData): StepId[] {
+  return visiblePhases(cfg, presets).flatMap((phase) => phase.steps.map((step) => step.id))
+}
+
 /**
  * PURE per-step "done" derivation from the REAL StudioCfg (build-contract §4):
  *   branch  → a bransch is picked
  *   namn    → a slug exists
+ *   modules → a bransch is picked so defaults are loaded
  *   bokning → off is complete; live external requires a valid HTTPS URL
+ *   appearance → optional; theme exists
  *   live    → never a checkmark because it is the submit step
  */
 export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPresetData): boolean {
@@ -84,9 +103,13 @@ export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPreset
       return !!cfg.branch
     case 'namn':
       return !!cfg.slug
+    case 'modules':
+      return !!cfg.branch
     case 'bokning':
       if (resolveModuleState(cfg, 'booking', presets) === 'off') return true
       return cfg.bookingProvider === 'corevo' || normalizeBookingExternalUrl(cfg.bookingExternalUrl) !== null
+    case 'appearance':
+      return !!cfg.theme
     case 'live':
       return false
     default: {

@@ -31,6 +31,7 @@ import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
 import { tenantHostSuffix, tenantStorefrontHost } from '@/lib/storefront-url'
 import type { IconName } from '@/lib/ui-icons'
+import { modulesForVertical } from '@/lib/platform/verticals-shared'
 
 /**
  * The prop bag every panel in the registry receives. Extends PanelProps
@@ -267,6 +268,63 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
   )
 }
 
+function PanelModules({ cfg, dispatch, presets }: PanelProps) {
+  const modules = modulesForVertical(presets, cfg.branch)
+
+  return (
+    <Panel
+      title="Moduler"
+      sub="Branschens förval är redan satta. Slå bara av eller på det kunden faktiskt ska använda."
+    >
+      {!cfg.branch ? (
+        <div style={{ padding: 14, border: '1px solid var(--c-line)', borderRadius: 10, background: 'var(--c-paper)' }}>
+          <strong style={{ display: 'block', color: 'var(--c-ink)' }}>Välj bransch först</strong>
+          <span style={{ display: 'block', marginTop: 5, color: 'var(--c-ink-3)', fontSize: 12.5 }}>
+            Modulerna hämtas från branschens förval.
+          </span>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {modules.map((module) => {
+            const state = resolveModuleState(cfg, module.key, presets)
+            return (
+              <div
+                key={module.key}
+                style={{
+                  padding: 14,
+                  border: '1px solid var(--c-line)',
+                  borderRadius: 12,
+                  background: 'var(--c-paper)',
+                  display: 'grid',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <strong style={{ display: 'block', color: 'var(--c-ink)', fontSize: 14 }}>{module.name}</strong>
+                    <span style={{ display: 'block', color: 'var(--c-ink-3)', fontSize: 12 }}>
+                      Förval: {module.defaultState === 'live' ? 'På' : 'Av'}
+                    </span>
+                  </div>
+                  <ModuleStatePills
+                    label={`${module.name} På eller Av`}
+                    value={state}
+                    choices={[...MODULE_STATES]}
+                    onChange={(next) => dispatch({ type: 'setModule', key: module.key, state: next })}
+                  />
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: 0 }}>
+                  {MODULE_STATE_HINTS[state]}
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Panel>
+  )
+}
+
 function PanelBokning({ cfg, dispatch, presets }: PanelProps) {
   const state = resolveModuleState(cfg, 'booking', presets)
   const live = state === 'live'
@@ -381,6 +439,43 @@ function PanelBokning({ cfg, dispatch, presets }: PanelProps) {
             </span>
           </div>
         )}
+      </div>
+    </Panel>
+  )
+}
+
+function PanelAppearance({ cfg, dispatch }: PanelProps) {
+  return (
+    <Panel
+      title="Utseende"
+      sub="Små startvärden. Kundens fulla sida finjusteras i redigeringsvyn efter skapandet."
+    >
+      <div style={{ display: 'grid', gap: 18 }}>
+        <Field
+          label="Tagline"
+          ph="Kort rad under varumärket"
+          value={cfg.tagline}
+          onChange={(value) => dispatch({ type: 'setTagline', value })}
+        />
+        <Field
+          label="Hero-rubrik"
+          ph="Lämna tomt för mallens rubrik"
+          value={cfg.heroTitle}
+          onChange={(value) => dispatch({ type: 'setHeroTitle', value })}
+        />
+        <Field
+          label="Hero-ingress"
+          ph="Lämna tomt för mallens ingress"
+          value={cfg.heroLede}
+          onChange={(value) => dispatch({ type: 'setHeroLede', value })}
+        />
+        <Field
+          label="Accentfärg"
+          ph="#173529"
+          value={cfg.accent}
+          onChange={(hex) => dispatch({ type: 'setAccent', hex })}
+          hint={`Tema: ${cfg.theme}. Tomt betyder att temat styr färgen.`}
+        />
       </div>
     </Panel>
   )
@@ -540,6 +635,8 @@ function PanelLive({ cfg, dispatch, presets, onLaunch }: StudioPanelProps) {
 export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
   branch: PanelBranch,
   namn: PanelNamn,
+  modules: PanelModules,
   bokning: PanelBokning,
+  appearance: PanelAppearance,
   live: PanelLive,
 }

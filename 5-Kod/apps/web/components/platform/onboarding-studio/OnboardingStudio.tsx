@@ -31,7 +31,7 @@ import {
   makeStudioReducer,
   type StudioStage,
 } from '@/lib/platform/onboarding-studio/state'
-import { FLAT_STEP_ORDER, type StepId } from '@/lib/platform/onboarding-studio/phases'
+import { FLAT_STEP_ORDER, type StepId, visibleStepOrder } from '@/lib/platform/onboarding-studio/phases'
 import { JourneyBar } from './JourneyBar'
 import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
@@ -81,12 +81,23 @@ function StudioMachine({
 
   // The single real write. useActionState surfaces { success } / { error } + isPending.
   const [result, formAction, isPending] = useActionState(createTenant, {})
+  const stepOrder = useMemo(() => visibleStepOrder(cfg, presets), [cfg, presets])
 
   // On a real success, advance to the result stage (port app.jsx finishLaunch, but
   // driven by the REAL ActionState rather than a faked LaunchSequence onDone).
   useEffect(() => {
     if (result.success) setStage('result')
   }, [result.success])
+
+  useEffect(() => {
+    if (stepOrder.includes(step)) return
+    const oldIndex = FLAT_STEP_ORDER.indexOf(step)
+    setStep(
+      stepOrder.find((candidate) => FLAT_STEP_ORDER.indexOf(candidate) > oldIndex)
+      ?? stepOrder.at(-1)
+      ?? 'branch',
+    )
+  }, [step, stepOrder])
 
   // Which journey pills the operator may jump to (port app.jsx:77 verbatim):
   // super always; studio once a bransch is picked; result once launched.
@@ -96,13 +107,13 @@ function StudioMachine({
     result: stage === 'result',
   }
 
-  // FooterNav prev/next over the flat step order (noUncheckedIndexedAccess-safe).
+  // FooterNav prev/next over the cfg-filtered step order (noUncheckedIndexedAccess-safe).
   const onPrev = () => {
-    const prev = FLAT_STEP_ORDER[FLAT_STEP_ORDER.indexOf(step) - 1]
+    const prev = stepOrder[stepOrder.indexOf(step) - 1]
     if (prev) setStep(prev)
   }
   const onNext = () => {
-    const next = FLAT_STEP_ORDER[FLAT_STEP_ORDER.indexOf(step) + 1]
+    const next = stepOrder[stepOrder.indexOf(step) + 1]
     if (next) setStep(next)
   }
 
@@ -140,6 +151,7 @@ function StudioMachine({
             <PanelHost
               cfg={cfg}
               step={step}
+              stepOrder={stepOrder}
               dispatch={dispatch}
               presets={presets}
               onPrev={onPrev}

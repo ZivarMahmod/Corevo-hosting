@@ -6,7 +6,7 @@
 // (resolved via PANEL_BY_STEP[step]) over a global Föregående/Nästa footer. The
 // StepRail (left) + PreviewPane (right) + the stage machine live in their own files
 // (parallel agents) — this column only renders the panel for the current step and the
-// nav. Föregående/Nästa are driven by FLAT_STEP_ORDER, but the actual setStep lives in
+// nav. Föregående/Nästa are driven by the parent's visible stepOrder, but the actual setStep lives in
 // the parent (OnboardingStudio), which passes onPrev/onNext; here we only derive
 // whether we're at the first/last step to disable/hide the buttons (exact design
 // behavior). onLaunch is threaded down to the `live` panel's Lansera button.
@@ -14,13 +14,14 @@ import type { Dispatch } from 'react'
 import { Button } from '@/components/portal/ui'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import type { StudioAction } from '@/lib/platform/onboarding-studio/state'
-import { type StepId, FLAT_STEP_ORDER } from '@/lib/platform/onboarding-studio/phases'
+import { type StepId } from '@/lib/platform/onboarding-studio/phases'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { PANEL_BY_STEP } from './StudioPanels'
 
 export type PanelHostProps = {
   cfg: StudioCfg
   step: StepId
+  stepOrder: StepId[]
   dispatch: Dispatch<StudioAction>
   presets: VerticalPresetData
   /** Go to the previous step (FooterNav «Föregående»). */
@@ -68,11 +69,11 @@ function FooterNav({ isFirst, isLast, onPrev, onNext }: { isFirst: boolean; isLa
   )
 }
 
-export function PanelHost({ cfg, step, dispatch, presets, onPrev, onNext, onLaunch }: PanelHostProps) {
+export function PanelHost({ cfg, step, stepOrder, dispatch, presets, onPrev, onNext, onLaunch }: PanelHostProps) {
   const ActivePanel = PANEL_BY_STEP[step]
-  const idx = FLAT_STEP_ORDER.indexOf(step)
+  const idx = stepOrder.indexOf(step)
   const isFirst = idx === 0
-  const isLast = idx === FLAT_STEP_ORDER.length - 1
+  const isLast = idx === stepOrder.length - 1
   return (
     <div
       style={{
