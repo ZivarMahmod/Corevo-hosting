@@ -37,7 +37,7 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
   const shopReachable = modules?.shopReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
-  const deliveryPhoto = content.galleryImages[0] ?? content.heroImages[1] ?? ''
+  const deliveryPhoto = content.heroImages[1] ?? ''
   const [titleLine1, titleLine2] = content.heroTitle.split('\n')
 
   // Filens tre steg i marknadsbandet. Fetstilen sitter på handlingen, resten är löftet.
@@ -182,8 +182,8 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
           <span
             className={styles.cxDeliveryPhoto}
             style={deliveryPhoto ? { backgroundImage: `url(${deliveryPhoto})` } : undefined}
-            data-corevo-editor-field="gallery_images.0"
-            data-corevo-editor-stable-field="gallery_images.0"
+            data-corevo-editor-field="hero_images.1"
+            data-corevo-editor-stable-field="hero_images.1"
             aria-hidden="true"
           />
           <div>

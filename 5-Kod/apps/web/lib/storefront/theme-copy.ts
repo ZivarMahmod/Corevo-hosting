@@ -25,6 +25,8 @@ export const COPY_OVERRIDE_KEYS = [
   'resultImage1Caption', 'resultImage2Caption', 'resultImage3Caption',
   'studioImageCaption', 'studioEyebrow', 'studioPoint1', 'studioPoint2', 'studioPoint3',
   'contactLede',
+  'aboutFact1Value', 'aboutFact1Label', 'aboutFact2Value', 'aboutFact2Label',
+  'aboutFact3Value', 'aboutFact3Label',
 ] as const
 
 export type CopyOverride = Partial<Record<(typeof COPY_OVERRIDE_KEYS)[number], string>>

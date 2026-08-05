@@ -79,7 +79,7 @@ export const calytrix: StorefrontThemeDefinition = {
     // kundmallen (Hantverksfloristerna), som är live. Ordningen i Calytrix egen bank
     // är mallägd, och mallväljaren
     // visar heroImages[0]. IMG.hero ligger kvar och används fortfarande av layouten.
-    heroImages: [IMG.about, IMG.hero, IMG.closing],
+    heroImages: [IMG.about, IMG.g1, IMG.closing],
     galleryImages: [IMG.g1, IMG.g2, IMG.g3, IMG.g4, IMG.g5, IMG.g6, IMG.g7, IMG.g8],
     aboutImage: IMG.about,
     closingImage: IMG.closing,
@@ -93,7 +93,7 @@ export const calytrix: StorefrontThemeDefinition = {
     ],
   },
   // Manifestets `caps`, oförändrade.
-  caps: { heroEyebrow: true, homeStats: false, homeGallery: true, homeAbout: true },
+  caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   // Designens bekräftelse skriver ordernumret som "#C48213".
   // Siffrorna är plattformens löpnummer; prefixet är mallens.
   orderPrefix: '#C',

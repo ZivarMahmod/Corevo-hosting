@@ -90,7 +90,7 @@ describe('Generic storefront SidaStudio markers', () => {
     ['eloria', EloriaLayout, ['hero_images.0', 'hero_images.1', 'italic']],
     ['aurora', AuroraLayout, ['heroEyebrow', 'heroTitle', 'heroLede', 'hero_images.0', 'italic', 'about_image', 'teamEyebrow', 'aboutTitle', 'aboutCopy', 'closing_image']],
     ['blomstertorget', BlomstertorgetLayout, ['heroEyebrow', 'heroTitle', 'hero_images.0', 'homeGalleryEyebrow', 'findEyebrow', 'heroLede', 'shopCta', 'pillar1Title', 'pillar2Title', 'pillar2Body', 'pillar3Title', 'pillar3Body']],
-    ['calytrix', CalytrixLayout, ['heroEyebrow', 'heroTitle', 'heroLede', 'hero_images.0', 'tagline', 'gallery_images.0', 'findEyebrow', 'about_image', 'teamEyebrow', 'aboutTitle', 'aboutCopyHome', 'closing_image', 'closingTitle', 'closingLede']],
+    ['calytrix', CalytrixLayout, ['heroEyebrow', 'heroTitle', 'heroLede', 'hero_images.0', 'tagline', 'hero_images.1', 'findEyebrow', 'about_image', 'teamEyebrow', 'aboutTitle', 'aboutCopyHome', 'closing_image', 'closingTitle', 'closingLede']],
     ['lunaria', LunariaLayout, ['heroEyebrow', 'heroTitle', 'heroLede', 'hero_images.0', 'italic', 'pillar1Title', 'pillar1Body', 'pillar2Title', 'pillar2Body', 'pillar3Title', 'pillar3Body']],
     ['sivsav', SivSavLayout, ['heroEyebrow', 'heroTitle', 'heroLede', 'hero_images.0', 'pillar1Title', 'pillar1Body', 'pillar2Title', 'pillar2Body', 'pillar3Title', 'pillar3Body', 'homeGalleryEyebrow', 'aboutTitle', 'aboutCopyHome', 'about_image']],
     ['solsalt', SolSaltLayout, ['heroEyebrow', 'heroTitle', 'heroLede', 'hero_images.0', 'utility', 'about_image', 'teamTitle', 'aboutCopyHome']],
