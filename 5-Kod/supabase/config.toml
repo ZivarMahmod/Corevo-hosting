@@ -4,6 +4,7 @@
 project_id = "clylvowtowbtotrahuad"
 
 [db]
+port = 55432
 major_version = 17
 
 [db.migrations]
