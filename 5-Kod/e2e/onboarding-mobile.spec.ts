@@ -30,11 +30,20 @@ test.describe('@readonly platform onboarding', () => {
     }
 
     await page.setViewportSize({ width: 390, height: 844 })
+    await page.getByRole('radio', { name: /Extern bokningsmotor/ }).click()
     await page.getByLabel('Företagsnamn').fill('Mobilgranskning')
     await page.getByLabel('E-post', { exact: true }).fill('mobilgranskning@example.test')
 
+    await page.getByRole('button', { name: 'Nästa' }).click()
+    await expect(page.getByRole('heading', { name: 'Bransch, mall & moduler' })).toBeVisible()
+    const branchSection = page.locator('section').filter({
+      has: page.getByRole('heading', { name: 'Bransch', exact: true }),
+    })
+    await branchSection.getByRole('radio').first().click()
+    await expect(page.getByLabel('Extern bokningslänk')).toBeVisible()
+    await expectViewportFit(page)
+
     for (const heading of [
-      'Bransch, mall & moduler',
       'Förbered innehåll',
       'Utseende',
       'Subdomän & Cloudflare',

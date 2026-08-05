@@ -70,14 +70,21 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
         return {
           ...cfg,
           onboardingMode: action.mode,
-          bookingProvider: action.mode === 'external' ? 'external' : cfg.bookingProvider,
+          bookingProvider: action.mode === 'external' ? 'external' : 'corevo',
+          moduleStates: action.mode === 'external'
+            ? { ...cfg.moduleStates, booking: 'live' }
+            : cfg.moduleStates,
         }
-      case 'applyBranch':
+      case 'applyBranch': {
         // Bransch FÖRFYLLER (Zivar 2026-07-11, "hjärndött att starta en kund"): valet
         // seedar tema (vertical.default_template) + modul-states från bransch-förvalen
         // (VerticalEditor på /branscher äger dem). Efter skapandet ändras de i
         // kundkortet; onboardingen ska bara skapa en korrekt startpunkt.
-        return applyBranch(cfg, action.key, presets)
+        const next = applyBranch(cfg, action.key, presets)
+        return cfg.onboardingMode === 'external'
+          ? { ...next, bookingProvider: 'external', moduleStates: { ...next.moduleStates, booking: 'live' } }
+          : next
+      }
       case 'setName':
         return cfg.slugTouched
           ? { ...cfg, name: action.value }
