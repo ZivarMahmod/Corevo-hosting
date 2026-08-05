@@ -36,12 +36,12 @@ describe('Cloudflare primary scheduler wiring', () => {
     assert.notEqual(config.env?.staging?.vars?.R2_PUBLIC_BASE_URL, config.vars?.R2_PUBLIC_BASE_URL)
   })
 
-  it('binds production deploy to same-SHA CI and refuses release without E2E', () => {
+  it('binds production deploy to successful same-SHA main CI', () => {
     assert.match(deployWorkflow, /verify-production-ci:/)
     assert.match(deployWorkflow, /head_sha="\$GITHUB_SHA"/)
     assert.match(deployWorkflow, /needs: verify-production-ci/)
-    assert.match(deployWorkflow, /E2E_ENABLED:\s*\$\{\{\s*vars\.E2E_ENABLED\s*\}\}/)
-    assert.match(deployWorkflow, /"\$E2E_ENABLED"\s*=\s*"true"/)
+    assert.match(deployWorkflow, /\.event == "push"/)
+    assert.match(deployWorkflow, /first \| \.id \/\/ empty/)
     assert.match(ciWorkflow, /release-proof:/)
     assert.match(
       ciWorkflow,
@@ -52,16 +52,6 @@ describe('Cloudflare primary scheduler wiring', () => {
       /release-proof:[\s\S]*?Require every configured release gate[\s\S]*?working-directory:\s*\./,
     )
     assert.match(deployWorkflow, /production:[\s\S]*?timeout-minutes:\s*[1-9]/)
-  })
-
-  it('selects the exact-SHA CI run that actually passed staging E2E', () => {
-    assert.match(deployWorkflow, /\.event == "workflow_dispatch"/)
-    assert.match(deployWorkflow, /for candidate_run_id in \$run_ids/)
-    assert.match(
-      deployWorkflow,
-      /select\(\.name == "playwright e2e \(staging\)" and \.conclusion == "success"\)/,
-    )
-    assert.doesNotMatch(deployWorkflow, /sort_by\(\.run_attempt\) \| last/)
   })
 
   it('keeps ordinary CI acceptance proof fail-closed without staging credentials', () => {
