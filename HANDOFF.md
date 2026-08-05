@@ -60,7 +60,7 @@ Körda från `5-Kod/` efter sista runtimeändringen:
 - `pnpm build`: optimerad Next 15.5.18-produktionsbuild grön.
 - Fokuserade outbox-, bokningsleverans- och plattformstester: 77/77 gröna.
 - `node --test apps/web/scripts/primary-scheduler.test.mjs apps/web/scripts/primary-scheduler-config.test.mjs`:
-  14/14 gröna.
+  15/15 gröna.
 - `bash -n supabase/tests/customer_portal_mode_1400_migration_test.sh` och YAML-
   parsing av CI/deploy-workflows: gröna.
 - `pnpm test:acceptance:contract`: Goal 93-delen är grön, men 03/04/06 stoppar
