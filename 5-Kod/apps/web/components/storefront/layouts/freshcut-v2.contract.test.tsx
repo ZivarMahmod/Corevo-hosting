@@ -195,4 +195,17 @@ describe('FreshCut v2 customer-locked website', () => {
     expect(html).toContain('FreshCut Linköping — kundens rubrik')
     expect(html).not.toContain('Klippt.<')
   })
+
+  it('marks every editable section of the actual one-page layout for SidaStudio', () => {
+    const html = renderFreshCut()
+
+    for (const field of [
+      'heroEyebrow', 'heroTitle', 'heroLede', 'servicesEyebrow', 'servicesTitle', 'servicesIntro',
+      'resultsEyebrow', 'homeSecondTitle', 'resultsLede', 'resultImage1Caption',
+      'studioImageCaption', 'studioEyebrow', 'aboutTitle', 'aboutCopyHome', 'studioPoint1',
+      'whySub', 'whyTitle', 'contactEyebrow', 'contactTitle', 'contactLede',
+    ]) {
+      expect(html).toContain(`data-corevo-editor-field="${field}"`)
+    }
+  })
 })

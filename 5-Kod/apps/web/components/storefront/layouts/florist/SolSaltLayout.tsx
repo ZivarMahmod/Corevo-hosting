@@ -94,9 +94,9 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
         <section className={styles.slHero}>
           <div className={styles.slHeroCard}>
             <Reveal className={styles.slHeroText}>
-              <p className={styles.slHeroBadge}>{content.heroEyebrow}</p>
-              <h1 className={styles.slHeroTitle}>{content.heroTitle}</h1>
-              <p className={styles.slHeroLede}>{content.heroLede}</p>
+              <p className={styles.slHeroBadge} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+              <h1 className={styles.slHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+              <p className={styles.slHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
               <div className={styles.slHeroCtas}>
                 {shopReachable ? (
                   <Link href="/shop" className={styles.slPillSun}>
@@ -106,13 +106,13 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
                 <BookCta enabled={bookingReachable} className={styles.slPillGhost} label="Boka" />
               </div>
             </Reveal>
-            <div className={styles.slHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />
+            <div className={styles.slHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} data-corevo-editor-field="hero_images.0" data-corevo-editor-stable-field="hero_images.0" />
           </div>
         </section>
 
         {/* (2) SOLREMSAN — filens gula annonsband (mallens Nav äger utility-raden, se chrome) */}
         <section className={styles.slStrip}>
-          <p className={styles.slStripText}>{content.utility}</p>
+          <p className={styles.slStripText} data-corevo-editor-field="utility" data-corevo-editor-stable-field="utility">{content.utility}</p>
         </section>
 
         {/* (3) VECKANS FAVORITER — ur boden */}
@@ -120,11 +120,11 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
           <section className={styles.slSection}>
             <div className={styles.slSecHead}>
               <div>
-                <p className={styles.slEyebrow}>{content.shopEyebrow ?? 'Ur boden'}</p>
-                <h2 className={styles.slSecTitle}>{content.shopTitle ?? 'Veckans favoriter'}</h2>
+                <p className={styles.slEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Ur boden'}</p>
+                <h2 className={styles.slSecTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Veckans favoriter'}</h2>
               </div>
               <Link href="/shop" className={styles.slLink}>
-                {content.shopCta ?? 'Hela sortimentet →'}
+                <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Hela sortimentet →'}</span>
               </Link>
             </div>
             <ul className={styles.slGrid3}>
@@ -174,8 +174,8 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
                   <p className={styles.slTileEmoji} aria-hidden="true">
                     {t.emoji}
                   </p>
-                  <h3 className={styles.slTileTitle}>{t.title}</h3>
-                  <p className={styles.slTileDesc}>{t.desc}</p>
+                  <h3 className={styles.slTileTitle} data-corevo-editor-field={`pillar${i + 1}Title`} data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{t.title}</h3>
+                  <p className={styles.slTileDesc} data-corevo-editor-field={`pillar${i + 1}Body`} data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{t.desc}</p>
                   <span className={styles.slTileCta}>{t.cta} →</span>
                 </Link>
               </Reveal>
@@ -189,12 +189,14 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
             <div
               className={styles.slAboutPhoto}
               style={aboutPhoto ? { backgroundImage: `url(${aboutPhoto})` } : undefined}
+              data-corevo-editor-field="about_image"
+              data-corevo-editor-stable-field="about_image"
             />
           </Reveal>
           <Reveal delay={140}>
             <p className={styles.slAboutEyebrow}>{content.teamEyebrow}</p>
-            <h2 className={styles.slAboutTitle}>{content.teamTitle}</h2>
-            <p className={styles.slAboutBody}>{aboutHome}</p>
+            <h2 className={styles.slAboutTitle} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle}</h2>
+            <p className={styles.slAboutBody} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{aboutHome}</p>
             <Link href="/om" className={styles.slLink}>
               Mer om oss →
             </Link>
@@ -204,7 +206,7 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
         {/* (6) FRÅN BODEN — blogg-teasers */}
         {posts.length > 0 ? (
           <section className={styles.slBlogBand}>
-            <h2 className={styles.slBlogBandTitle}>{content.blogTitle ?? 'Från boden'}</h2>
+            <h2 className={styles.slBlogBandTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Från boden'}</h2>
             <ul className={styles.slGrid3}>
               {posts.map((b, i) => (
                 <li key={b.id}>

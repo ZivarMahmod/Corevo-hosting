@@ -32,13 +32,15 @@ export function EloriaOm({ content, tenant }: ThemePageProps) {
         <div className={styles.elAbout}>
           <div
             className={styles.elAboutImg}
+            data-corevo-editor-field="about_image"
+            data-corevo-editor-stable-field="about_image"
             style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
           />
           <div>
-            <p className={styles.elEyebrow}>{content.teamEyebrow ?? 'Om oss'}</p>
-            <h1 className={styles.elAboutTitle}>{content.aboutTitle}</h1>
-            <p className={styles.elAboutCopy}>{content.aboutCopy}</p>
-            <p className={styles.elAboutItalic}>”{content.italic}”</p>
+            <p className={styles.elEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow ?? 'Om oss'}</p>
+            <h1 className={styles.elAboutTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+            <p className={styles.elAboutCopy} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
+            <p className={styles.elAboutItalic} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">”{content.italic}”</p>
           </div>
         </div>
 
@@ -47,8 +49,8 @@ export function EloriaOm({ content, tenant }: ThemePageProps) {
           <div className={styles.elStats}>
             {stats.map(([num, label], i) => (
               <div key={`${num}-${label}`} className={i === 1 ? styles.elStatMid : undefined}>
-                <p className={styles.elStatNum}>{num}</p>
-                <p className={styles.elStatLabel}>{label}</p>
+                <p className={styles.elStatNum} data-corevo-editor-field={`stats.${i}.value`} data-corevo-editor-stable-field={`stats.${i}.value`}>{num}</p>
+                <p className={styles.elStatLabel} data-corevo-editor-field={`stats.${i}.label`} data-corevo-editor-stable-field={`stats.${i}.label`}>{label}</p>
               </div>
             ))}
           </div>
@@ -64,8 +66,8 @@ export function EloriaTjanster({ content, services, modules }: ThemePageProps) {
   const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.elPageNarrow}>
-      <p className={styles.elBandEyebrow}>{content.servicesEyebrow}</p>
-      <h1 className={styles.elPageTitle}>{content.servicesTitle}</h1>
+      <p className={styles.elBandEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+      <h1 className={styles.elPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
 
       {services.length === 0 ? (
         <p className={styles.elEmpty}>Tjänsterna visas snart.</p>
@@ -96,9 +98,9 @@ export function EloriaKontakt({ content, location, contact }: ThemePageProps) {
 
   return (
     <section className={styles.elPageNarrow}>
-      <p className={styles.elBandEyebrow}>{content.contactEyebrow ?? 'Kontakt & förfrågan'}</p>
-      <h1 className={styles.elPageTitle}>{content.closingTitle ?? 'Skriv till oss'}</h1>
-      <p className={styles.elContactProse}>
+      <p className={styles.elBandEyebrow} data-corevo-editor-field="contactEyebrow" data-corevo-editor-stable-field="contactEyebrow">{content.contactEyebrow ?? 'Kontakt & förfrågan'}</p>
+      <h1 className={styles.elPageTitle} data-corevo-editor-field="closingTitle" data-corevo-editor-stable-field="closingTitle">{content.closingTitle ?? 'Skriv till oss'}</h1>
+      <p className={styles.elContactProse} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">
         {content.closingLede ??
           'Berätta kort om tillfället, datumet och era önskemål — vi återkommer inom en timme under öppettid.'}
       </p>
@@ -139,21 +141,21 @@ export function EloriaKontakt({ content, location, contact }: ThemePageProps) {
           <div>
             <p className={styles.elFactLabel}>Telefon</p>
             <p className={styles.elFactValue}>
-              <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+              <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
             </p>
           </div>
         ) : null}
         {location?.address ? (
           <div>
             <p className={styles.elFactLabel}>Butik</p>
-            <p className={styles.elFactValue}>{location.address}</p>
+            <p className={styles.elFactValue} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</p>
           </div>
         ) : null}
         {hours ? (
           <div>
             <p className={styles.elFactLabel}>Öppet</p>
             <p className={styles.elFactValue}>
-              {hours.map((h) => `${h.day} ${h.time}`).join(' · ')}
+              {hours.map((h, index) => <span key={h.day}>{index > 0 ? ' · ' : null}{h.day} <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span></span>)}
             </p>
           </div>
         ) : null}

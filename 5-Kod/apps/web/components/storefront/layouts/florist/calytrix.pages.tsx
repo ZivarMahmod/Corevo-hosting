@@ -45,14 +45,16 @@ export function CalytrixOm({ content, tenant }: ThemePageProps) {
     <section className={styles.cxPage}>
       <div className={styles.cxOmSplit}>
         <div>
-          <h1 className={styles.cxPageTitle}>{content.aboutTitle}</h1>
+          <h1 className={styles.cxPageTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
           <div className={styles.cxOmProse}>
-            <p>{content.aboutCopy}</p>
-            <p>{content.italic}</p>
+            <p data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
+            <p data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
           </div>
         </div>
         <div
           className={styles.cxOmPhoto}
+          data-corevo-editor-field="about_image"
+          data-corevo-editor-stable-field="about_image"
           style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
           role="img"
           aria-label={`Ur ${tenant.name}`}
@@ -60,10 +62,10 @@ export function CalytrixOm({ content, tenant }: ThemePageProps) {
       </div>
 
       <ul className={styles.cxOmCols}>
-        {pelare.map((p) => (
+        {pelare.map((p, index) => (
           <li key={p.title} className={styles.cxOmCol}>
-            <p className={styles.cxOmColTitle}>{p.title}</p>
-            <p className={styles.cxOmColText}>{p.body}</p>
+            <p className={styles.cxOmColTitle} data-corevo-editor-field={`pillar${index + 1}Title`} data-corevo-editor-stable-field={`pillar${index + 1}Title`}>{p.title}</p>
+            <p className={styles.cxOmColText} data-corevo-editor-field={`pillar${index + 1}Body`} data-corevo-editor-stable-field={`pillar${index + 1}Body`}>{p.body}</p>
           </li>
         ))}
       </ul>
@@ -75,8 +77,8 @@ export function CalytrixTjanster({ content, services, modules }: ThemePageProps)
   const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.cxPageNarrow}>
-      <h1 className={styles.cxPageTitle}>{content.servicesTitle}</h1>
-      <p className={styles.cxPageLede}>
+      <h1 className={styles.cxPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
+      <p className={styles.cxPageLede} data-corevo-editor-field="servicesIntro" data-corevo-editor-stable-field="servicesIntro">
         {content.servicesIntro ??
           'Vi levererar med eget bud inom staden och med ombud i hela landet. Så här funkar det.'}
       </p>
@@ -106,9 +108,9 @@ export function CalytrixKontakt({ content, location, contact }: ThemePageProps) 
     <section className={styles.cxPage}>
       <div className={styles.cxContact}>
         <div>
-          <h1 className={styles.cxPageTitle}>{content.contactTitle ?? 'Kontakt'}</h1>
-          <p className={styles.cxPageLede}>
-            Frågor om en order? Ange ordernumret så går det fortare.
+          <h1 className={styles.cxPageTitle} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle ?? 'Kontakt'}</h1>
+          <p className={styles.cxPageLede} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">
+            {content.closingLede ?? 'Frågor om en order? Ange ordernumret så går det fortare.'}
           </p>
 
           <div className={styles.cxContactRows}>
@@ -116,7 +118,7 @@ export function CalytrixKontakt({ content, location, contact }: ThemePageProps) 
               <p className={styles.cxContactRow}>
                 <span className={styles.cxContactLabel}>Telefon&nbsp;&nbsp;</span>
                 <span className={styles.cxContactValue}>
-                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
                 </span>
               </p>
             ) : null}
@@ -124,24 +126,24 @@ export function CalytrixKontakt({ content, location, contact }: ThemePageProps) 
               <p className={styles.cxContactRow}>
                 <span className={styles.cxContactLabel}>E-post&nbsp;&nbsp;</span>
                 <span className={styles.cxContactValue}>
-                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                  <a href={`mailto:${contact.email}`} data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{contact.email}</a>
                 </span>
               </p>
             ) : null}
             {address ? (
               <p className={styles.cxContactRow}>
                 <span className={styles.cxContactLabel}>Butik&nbsp;&nbsp;</span>
-                <span className={styles.cxContactValue}>{address}</span>
+                <span className={styles.cxContactValue} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{address}</span>
               </p>
             ) : null}
           </div>
 
           {hours ? (
             <div className={styles.cxHours}>
-              {hours.map((h) => (
+              {hours.map((h, index) => (
                 <div key={h.day} className={styles.cxHoursRow}>
                   <span className={styles.cxHoursDay}>{h.day}</span>
-                  <span className={styles.cxHoursTime}>{h.time}</span>
+                  <span className={styles.cxHoursTime} data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span>
                 </div>
               ))}
             </div>
@@ -150,10 +152,10 @@ export function CalytrixKontakt({ content, location, contact }: ThemePageProps) 
 
         <aside className={styles.cxContactCard}>
           <h2 className={styles.cxContactCardTitle}>
-            {content.closingTitle ?? 'Någon blir glad idag.'}
+            <span data-corevo-editor-field="closingTitle" data-corevo-editor-stable-field="closingTitle">{content.closingTitle ?? 'Någon blir glad idag.'}</span>
           </h2>
           <p className={styles.cxContactCardText}>
-            {content.closingLede ?? 'Vi svarar vardagar 9–18.'}
+            <span data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? 'Vi svarar vardagar 9–18.'}</span>
           </p>
           {/* Filens vita platta = kontaktformuläret (Namn · E-post · Meddelande · SKICKA).
               Den var amputerad till en mailto tills motorn fick sin kontakt-räls; nu

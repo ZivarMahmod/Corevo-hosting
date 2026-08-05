@@ -119,40 +119,6 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     }
   })
 
-  it('keeps module visibility separate from booking presentation', () => {
-    const html = mounts(
-      <PanelHost
-        cfg={branched}
-        step="modval"
-        dispatch={noopDispatch}
-        presets={presets}
-        onPrev={noop}
-        onNext={noop}
-        onLaunch={noop}
-      />,
-    )
-    expect(html).toContain('Bokning')
-    expect(html).toContain('På')
-    expect(html).not.toContain('Bokningssätt')
-  })
-
-  it('the modval panel keeps booking off and hides its variant picker', () => {
-    const html = mounts(
-      <PanelHost
-        cfg={{ ...branched, moduleStates: { ...branched.moduleStates, booking: 'off' } }}
-        step="modval"
-        dispatch={noopDispatch}
-        presets={presets}
-        onPrev={noop}
-        onNext={noop}
-        onLaunch={noop}
-      />,
-    )
-    expect(html).toContain('Av')
-    expect(html).not.toContain('Bokningsvariant')
-    expect(html).toContain('Av och dold för kunden.')
-  })
-
   it('the booking step shows Corevo and external provider choices', () => {
     const html = mounts(
       <PanelHost cfg={branched} step="bokning" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
@@ -182,19 +148,12 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
   // (Zivar: "superlätt att komma igång — jag ska inte skriva in tjänster eller rubriker").
   // Texten kommer från branschens mall-text + mallens evergreen-copy; tjänster och
   // accent/logga läggs upp i kundens admin efteråt.
-  it('onboardingen har 7 steg och kräver varken tjänster eller rubriker', () => {
-    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'tema', 'modval', 'bokning', 'agare', 'live'])
+  it('onboardingen har fyra steg och kräver varken tjänster, mallval eller modulval', () => {
+    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'bokning', 'live'])
     expect(FLAT_STEP_ORDER).not.toContain('tjanster')
     expect(FLAT_STEP_ORDER).not.toContain('brand')
-  })
-
-  it('mall-steget visar det kategoriserade galleriet (inte en platt namnlista)', () => {
-    const html = mounts(
-      <PanelHost cfg={branched} step="tema" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
-    )
-    expect(html).toContain('Blomsterhandel') // kategori-fliken
-    expect(html).toContain('Bokning &amp; behandling')
-    expect(html).toContain('Sök mall') // fritextsöket
+    expect(FLAT_STEP_ORDER).not.toContain('tema')
+    expect(FLAT_STEP_ORDER).not.toContain('modval')
   })
 
   it('storefronten visar mallens egen copy utan att operatören skrivit något (branched cfg)', () => {
@@ -224,16 +183,16 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('Under konfiguration')
   })
 
-  it('marks the owner step as required', () => {
-    const ownerStep = PHASES.flatMap((phase) => phase.steps).find((candidate) => candidate.id === 'agare')
-    expect(ownerStep?.req).toBe(true)
+  it('marks the final owner-and-create step as required', () => {
+    const finalStep = PHASES.flatMap((phase) => phase.steps).find((candidate) => candidate.id === 'live')
+    expect(finalStep?.req).toBe(true)
   })
 
   it('associates the required owner email field with its label', () => {
     const html = mounts(
       <PanelHost
         cfg={branched}
-        step="agare"
+        step="live"
         dispatch={noopDispatch}
         presets={presets}
         onPrev={noop}
@@ -303,14 +262,4 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('Grunden') // step-rail phase 1 → wizarden är startskärmen
   })
 
-  // goal-58: tema-steget är INTE längre en platt namnlista ("Temamall") — det renderar
-  // ThemeGallery, samma kategoriserade väljare som kundkortets Sida-flik.
-  it('tema-steget renderar mall-galleriet med branschens förval markerat', () => {
-    const html = mounts(
-      <PanelHost cfg={branched} step="tema" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
-    )
-    expect(html).toContain('Välj mall')
-    expect(html).not.toContain('Temamall') // gamla platta listans rubrik
-    expect(html).toContain('Branschens förval') // kalla = frisör-branschens default i presets
-  })
 })

@@ -79,9 +79,9 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
               <div className={styles.lnHeroInner}>
                 <div className={styles.lnHeroText}>
                   <div className={styles.lnHeroCorner} aria-hidden="true" />
-                  <p className={styles.lnHeroEyebrow}>{content.heroEyebrow}</p>
-                  <h1 className={styles.lnHeroTitle}>{content.heroTitle}</h1>
-                  <p className={styles.lnHeroLede}>{content.heroLede}</p>
+                  <p className={styles.lnHeroEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+                  <h1 className={styles.lnHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+                  <p className={styles.lnHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
                   <div className={styles.lnHeroCtas}>
                     <Link href={shopReachable ? '/shop' : '/tjanster'} className={styles.lnSolid}>
                       Kliv in i butiken
@@ -100,6 +100,8 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
                 <div
                   className={styles.lnHeroPhoto}
                   style={heroPhoto ? { backgroundImage: `url(${heroPhoto})` } : undefined}
+                  data-corevo-editor-field="hero_images.0"
+                  data-corevo-editor-stable-field="hero_images.0"
                 />
               </div>
             </div>
@@ -111,7 +113,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
           <>
             <section className={styles.lnDivider}>
               <span className={styles.lnRuleGold} />
-              <span className={styles.lnDividerLabel}>
+              <span className={styles.lnDividerLabel} data-corevo-editor-field="homeGalleryEyebrow" data-corevo-editor-stable-field="homeGalleryEyebrow">
                 {content.homeGalleryEyebrow ?? '◆ Floristens urval ◆'}
               </span>
               <span className={styles.lnRuleGold} />
@@ -148,7 +150,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
               </ul>
               <p className={styles.lnMore}>
                 <Link href="/shop" className={styles.lnUnderline}>
-                  {content.shopCta ?? 'Hela samlingen →'}
+                  <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Hela samlingen →'}</span>
                 </Link>
               </p>
             </section>
@@ -159,7 +161,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
         <section className={styles.lnManifest}>
           <Reveal>
             <div className={styles.lnManifestInner}>
-              <p className={styles.lnManifestText}>{content.italic}</p>
+              <p className={styles.lnManifestText} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
             </div>
           </Reveal>
         </section>
@@ -173,15 +175,15 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
               {s.href ? (
                 <Link href={s.href} className={styles.lnSalon}>
                   <p className={styles.lnSalonNo}>{s.no}</p>
-                  <h3 className={styles.lnSalonTitle}>{s.title}</h3>
-                  <p className={styles.lnSalonDesc}>{s.desc}</p>
+                  <h3 className={styles.lnSalonTitle} data-corevo-editor-field={`pillar${i + 1}Title`} data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{s.title}</h3>
+                  <p className={styles.lnSalonDesc} data-corevo-editor-field={`pillar${i + 1}Body`} data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{s.desc}</p>
                   <span className={styles.lnSalonCta}>{s.cta} →</span>
                 </Link>
               ) : (
                 <div className={styles.lnSalon}>
                   <p className={styles.lnSalonNo}>{s.no}</p>
-                  <h3 className={styles.lnSalonTitle}>{s.title}</h3>
-                  <p className={styles.lnSalonDesc}>{s.desc}</p>
+                  <h3 className={styles.lnSalonTitle} data-corevo-editor-field={`pillar${i + 1}Title`} data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{s.title}</h3>
+                  <p className={styles.lnSalonDesc} data-corevo-editor-field={`pillar${i + 1}Body`} data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{s.desc}</p>
                 </div>
               )}
             </Reveal>
@@ -193,7 +195,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
           <section className={styles.lnJournal}>
             <div className={styles.lnDividerThin}>
               <span className={styles.lnRuleThin} />
-              <span className={styles.lnDividerThinLabel}>{content.blogTitle ?? 'Krönikan'}</span>
+              <span className={styles.lnDividerThinLabel} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Krönikan'}</span>
               <span className={styles.lnRuleThin} />
             </div>
             <ul className={styles.lnJournalGrid}>

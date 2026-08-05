@@ -93,7 +93,7 @@ export const calytrix: StorefrontThemeDefinition = {
     ],
   },
   // Manifestets `caps`, oförändrade.
-  caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
+  caps: { heroEyebrow: true, homeStats: false, homeGallery: true, homeAbout: true },
   // Designens bekräftelse skriver ordernumret som "#C48213".
   // Siffrorna är plattformens löpnummer; prefixet är mallens.
   orderPrefix: '#C',

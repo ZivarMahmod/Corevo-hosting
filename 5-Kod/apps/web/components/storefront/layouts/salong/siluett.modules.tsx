@@ -48,10 +48,10 @@ export function SiluettShop({ data, limit, moreHref, content }: ThemeShopViewPro
 
   return (
     <section className={styles.siShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.siEyebrow}>
+      <p className={styles.siEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">
         {content.shopEyebrow ?? 'Det vi själva använder vid stolen'}
       </p>
-      <h1 className={styles.siShopTitle}>{content.shopTitle ?? 'Butiken'}</h1>
+      <h1 className={styles.siShopTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Butiken'}</h1>
 
       {/* FILTERRADEN — filens form: bara text, versal mikroskrift, 2px understrykning i
           elviolett under den valda. Ingen ram, ingen platta. */}
@@ -108,7 +108,7 @@ export function SiluettShop({ data, limit, moreHref, content }: ThemeShopViewPro
       )}
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
-        <a href={moreHref} className={`${styles.siUnderline} ${styles.siMoreLink}`}>
+        <a href={moreHref} className={`${styles.siUnderline} ${styles.siMoreLink}`} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
           {content.shopCta ?? 'Hela butiken →'}
         </a>
       ) : null}
@@ -126,7 +126,7 @@ export function SiluettBlogg({ posts: allPosts, limit, moreHref, content }: Them
 
   return (
     <section className={styles.siBlogg} data-module="blogg">
-      <h1 className={styles.siPageTitle}>{content.blogTitle ?? 'Journal'}</h1>
+      <h1 className={styles.siPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Journal'}</h1>
 
       {posts.length === 0 ? (
         <p className={styles.siEmpty}>Inga texter är publicerade ännu.</p>
@@ -164,7 +164,7 @@ export function SiluettBlogg({ posts: allPosts, limit, moreHref, content }: Them
       )}
 
       {moreHref && teaser && allPosts.length > 0 ? (
-        <a href={moreHref} className={`${styles.siUnderline} ${styles.siMoreLink}`}>
+        <a href={moreHref} className={`${styles.siUnderline} ${styles.siMoreLink}`} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
           {content.blogCta ?? 'Alla texter →'}
         </a>
       ) : null}
@@ -187,8 +187,8 @@ export function SiluettTeam({ members, content }: ThemeTeamViewProps) {
 
   return (
     <section className={styles.siTeamPage} data-module="team">
-      <p className={styles.siPageEyebrow}>{content.teamEyebrow}</p>
-      <h1 className={styles.siPageTitle}>{content.teamTitle}</h1>
+      <p className={styles.siPageEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow}</p>
+      <h1 className={styles.siPageTitle} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle}</h1>
       <div className={styles.siTeamGrid}>
         {members.map((m) => (
           <article key={m.id} className={styles.siTeamRow}>
@@ -230,8 +230,8 @@ export function SiluettTeam({ members, content }: ThemeTeamViewProps) {
 export function SiluettGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.siGalleri} data-module="galleri">
-      <p className={styles.siPageEyebrow}>{content.galleryEyebrow ?? 'Utvalda arbeten · SS26'}</p>
-      <h1 className={styles.siPageTitle}>{content.galleryTitle ?? 'Arkivet'}</h1>
+      <p className={styles.siPageEyebrow} data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">{content.galleryEyebrow ?? 'Utvalda arbeten · SS26'}</p>
+      <h1 className={styles.siPageTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Arkivet'}</h1>
 
       {items.length === 0 ? (
         <p className={styles.siEmptyLine}>Inga arbeten är publicerade ännu.</p>
@@ -284,8 +284,8 @@ export function SiluettLojalitet({ config, plans, content, tenantName }: ThemeLo
 
   return (
     <section className={styles.siClub} data-module="lojalitet" data-variant={config.variant}>
-      <h1 className={styles.siPageTitle}>{title}</h1>
-      <p className={styles.siClubLede}>
+      <h1 className={styles.siPageTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{title}</h1>
+      <p className={styles.siClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">
         {content.clubLede ??
           'Vår kundkrets med plats längst fram. Gratis att stå med — men kön är verklig.'}
       </p>
@@ -329,7 +329,7 @@ export function SiluettLojalitet({ config, plans, content, tenantName }: ThemeLo
           ))}
 
           <div className={styles.siClubJoin}>
-            <JoinClubForm cta={content.clubCta ?? 'Ställ mig på listan'} />
+            <JoinClubForm cta={content.clubCta ?? 'Ställ mig på listan'} editorField="clubCta" />
           </div>
         </div>
       </div>

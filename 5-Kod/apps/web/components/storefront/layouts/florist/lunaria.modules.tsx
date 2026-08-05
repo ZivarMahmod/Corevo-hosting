@@ -44,8 +44,8 @@ export function LunariaShop({ data, limit, moreHref, content }: ThemeShopViewPro
 
   return (
     <section className={styles.lnShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.lnPageEyebrow}>{content.shopEyebrow ?? 'Kollektion VII'}</p>
-      <h1 className={styles.lnPageTitle}>{content.shopTitle ?? 'Blomsterboden'}</h1>
+      <p className={styles.lnPageEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Kollektion VII'}</p>
+      <h1 className={styles.lnPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Blomsterboden'}</h1>
 
       {/* KATEGORI-CHIPS (goal-64, migration 0057) — filens rad 149-152: centrerad rad,
           rätvinkliga chips med GULDKANT alltid (även ovald), 11.5px versal med 0.16em spärr.
@@ -102,7 +102,7 @@ export function LunariaShop({ data, limit, moreHref, content }: ThemeShopViewPro
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
         <p className={styles.lnMore}>
-          <a href={moreHref} className={styles.lnUnderline}>
+          <a href={moreHref} className={styles.lnUnderline} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
             {content.shopCta ?? 'Hela samlingen →'}
           </a>
         </p>
@@ -121,7 +121,7 @@ export function LunariaBlogg({ posts: allPosts, limit, moreHref, content }: Them
 
   return (
     <section className={styles.lnBlogg} data-module="blogg">
-      <h1 className={styles.lnPageTitle}>{content.blogTitle ?? 'Krönikan'}</h1>
+      <h1 className={styles.lnPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Krönikan'}</h1>
 
       {posts.length === 0 ? (
         <p className={styles.lnEmpty}>Inga krönikor är publicerade ännu.</p>
@@ -159,7 +159,7 @@ export function LunariaBlogg({ posts: allPosts, limit, moreHref, content }: Them
 
       {moreHref && teaser && allPosts.length > 0 ? (
         <p className={styles.lnMore}>
-          <a href={moreHref} className={styles.lnUnderline}>
+          <a href={moreHref} className={styles.lnUnderline} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
             {content.blogCta ?? 'Hela krönikan →'}
           </a>
         </p>
@@ -177,7 +177,7 @@ export function LunariaBlogg({ posts: allPosts, limit, moreHref, content }: Them
 export function LunariaGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.lnGalleri} data-module="galleri">
-      <h1 className={styles.lnGalTitle}>{content.galleryTitle ?? 'Galleriet'}</h1>
+      <h1 className={styles.lnGalTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Galleriet'}</h1>
 
       {items.length === 0 ? (
         <p className={styles.lnGalEmpty}>Inga bilder är publicerade ännu.</p>
@@ -223,8 +223,8 @@ export function LunariaLojalitet({ config, plans, content, tenantName }: ThemeLo
 
   return (
     <section className={styles.lnClub} data-module="lojalitet" data-variant={config.variant}>
-      <h1 className={styles.lnGalTitle}>{content.clubTitle ?? 'Cirkeln'}</h1>
-      <p className={styles.lnClubLede}>
+      <h1 className={styles.lnGalTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'Cirkeln'}</h1>
+      <p className={styles.lnClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">
         {content.clubLede ??
           'Lunarias inre krets. Kostnadsfritt medlemskap med förtur, förmåner och butikens privata kvällar.'}
       </p>
@@ -269,7 +269,7 @@ export function LunariaLojalitet({ config, plans, content, tenantName }: ThemeLo
       ) : null}
 
       <div className={styles.lnClubJoin}>
-        <JoinClubForm cta={content.clubCta ?? 'Ansök om medlemskap'} />
+        <JoinClubForm cta={content.clubCta ?? 'Ansök om medlemskap'} editorField="clubCta" />
       </div>
     </section>
   )

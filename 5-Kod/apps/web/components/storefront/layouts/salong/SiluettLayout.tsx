@@ -56,16 +56,16 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
       {/* (1) HERO */}
       <section className={styles.siHero}>
         <Reveal>
-          <p className={styles.siHeroEyebrow}>{content.heroEyebrow}</p>
-          <h1 className={styles.siHeroTitle}>{content.heroTitle}</h1>
-          <p className={styles.siHeroLede}>{content.heroLede}</p>
+          <p className={styles.siHeroEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={styles.siHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={styles.siHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.siHeroCtas}>
             <BookCta enabled={bookingReachable} className={styles.siSolid} label="Boka en stol" />
             <Link href="/tjanster" className={styles.siUnderline}>
               Hela prislistan
             </Link>
           </div>
-          <p className={styles.siHeroMeta}>
+          <p className={styles.siHeroMeta} data-corevo-editor-field="pillar2Title" data-corevo-editor-stable-field="pillar2Title">
             {content.pillar2Title ?? 'Drottninggatan 4 · Stockholm · Tis–Lör'}
           </p>
         </Reveal>
@@ -73,19 +73,21 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
           <div
             className={styles.siHeroPhoto}
             style={heroPhoto ? { backgroundImage: `url(${heroPhoto})` } : undefined}
+            data-corevo-editor-field="hero_images.0"
+            data-corevo-editor-stable-field="hero_images.0"
           />
           <div className={styles.siHeroCap}>
-            <p className={styles.siHeroCapLabel}>
+            <p className={styles.siHeroCapLabel} data-corevo-editor-field="pillar1Title" data-corevo-editor-stable-field="pillar1Title">
               {content.pillar1Title ?? 'N°01 — Klippning & form'}
             </p>
-            <p className={styles.siHeroCapSeason}>{content.pillar1Body ?? 'SS26'}</p>
+            <p className={styles.siHeroCapSeason} data-corevo-editor-field="pillar1Body" data-corevo-editor-stable-field="pillar1Body">{content.pillar1Body ?? 'SS26'}</p>
           </div>
         </Reveal>
       </section>
 
       {/* (2) REMSAN */}
       <section className={styles.siTicker}>
-        <div className={styles.siTickerRow}>
+        <div className={styles.siTickerRow} data-corevo-editor-field="pillar3Title" data-corevo-editor-stable-field="pillar3Title">
           {ticker.map((word, i) => (
             <span key={word}>
               {word}
@@ -100,8 +102,8 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
         <section className={styles.siSection}>
           <Reveal className={styles.siSecHead}>
             <div>
-              <p className={styles.siEyebrow}>{content.servicesEyebrow}</p>
-              <h2 className={styles.siSecTitle}>{content.servicesTitle}</h2>
+              <p className={styles.siEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+              <h2 className={styles.siSecTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h2>
             </div>
             <Link href="/tjanster" className={styles.siUnderline}>
               Prislistan →
@@ -140,13 +142,15 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
             <div
               className={styles.siAboutPhoto}
               style={aboutPhoto ? { backgroundImage: `url(${aboutPhoto})` } : undefined}
+              data-corevo-editor-field="about_image"
+              data-corevo-editor-stable-field="about_image"
             />
           </Reveal>
           <Reveal delay={120}>
-            <p className={styles.siAboutEyebrow}>{content.homeGalleryEyebrow ?? 'Salongen'}</p>
-            <h2 className={styles.siAboutTitle}>{content.aboutTitle}</h2>
-            <p className={styles.siAboutBodyTight}>{content.aboutCopyHome}</p>
-            <p className={styles.siAboutBody}>{content.italic}</p>
+            <p className={styles.siAboutEyebrow} data-corevo-editor-field="homeGalleryEyebrow" data-corevo-editor-stable-field="homeGalleryEyebrow">{content.homeGalleryEyebrow ?? 'Salongen'}</p>
+            <h2 className={styles.siAboutTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h2>
+            <p className={styles.siAboutBodyTight} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
+            <p className={styles.siAboutBody} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
             <Link href="/om" className={styles.siUnderline}>
               Om oss →
             </Link>
@@ -158,7 +162,7 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
       {team.length > 0 ? (
         <section className={styles.siSectionWide}>
           <Reveal className={styles.siSecHead}>
-            <h2 className={styles.siSecTitle}>{content.teamTitle}</h2>
+            <h2 className={styles.siSecTitle} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle}</h2>
             <Link href="/om" className={styles.siUnderline}>
               Hela teamet →
             </Link>
@@ -187,9 +191,9 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
       {bloggReachable && posts.length > 0 ? (
         <section className={styles.siJournal}>
           <div className={styles.siJournalHead}>
-            <h2 className={styles.siSecTitle}>{content.blogTitle ?? 'Journal'}</h2>
+            <h2 className={styles.siSecTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Journal'}</h2>
             <Link href="/blogg" className={styles.siUnderline}>
-              {content.blogCta ?? 'Alla texter →'}
+              <span data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">{content.blogCta ?? 'Alla texter →'}</span>
             </Link>
           </div>
           {posts.map((p, i) => (

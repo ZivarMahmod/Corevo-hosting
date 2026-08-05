@@ -45,9 +45,9 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
           images={content.heroImages.map((src) => ({ src, alt: '' }))}
           align="center"
         >
-          <p className={`${styles.heroEyebrow} ${ld.heroEyebrowWide}`}>{content.heroEyebrow}</p>
-          <h1 className={`${styles.heroTitle} ${ld.heroTitleCentered}`}>{content.heroTitle}</h1>
-          <p className={`${styles.heroLead} ${ld.heroLeadNarrow}`}>{content.heroLede}</p>
+          <p className={`${styles.heroEyebrow} ${ld.heroEyebrowWide}`} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={`${styles.heroTitle} ${ld.heroTitleCentered}`} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={`${styles.heroLead} ${ld.heroLeadNarrow}`} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.heroActions}>
             <BookCta enabled={bookingReachable} className={styles.heroCta} />
           </div>
@@ -104,12 +104,12 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
       {/* italic quote + centered stats */}
       <section className={styles.sfQuoteBand}>
         <Reveal>
-          <p className={`sf-italic ${styles.sfQuote}`}>&ldquo;{content.italic}&rdquo;</p>
+          <p className={`sf-italic ${styles.sfQuote}`} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">&ldquo;{content.italic}&rdquo;</p>
           <ul className={styles.sfStatRowCenter}>
-            {content.stats.map(([n, l]) => (
+            {content.stats.map(([n, l], index) => (
               <li key={l}>
-                <span className={styles.sfStatValueLg}>{n}</span>
-                <span className={styles.sfStatLabel}>{l}</span>
+                <span className={styles.sfStatValueLg} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{n}</span>
+                <span className={styles.sfStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{l}</span>
               </li>
             ))}
           </ul>

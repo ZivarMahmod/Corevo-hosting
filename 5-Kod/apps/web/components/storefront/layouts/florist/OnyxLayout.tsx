@@ -79,9 +79,9 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
       <section className={styles.onHero}>
         <div className={styles.onHeroText}>
           <Reveal>
-            <p className={styles.onHeroEyebrow}>{content.heroEyebrow}</p>
-            <h1 className={styles.onHeroTitle}>{content.heroTitle}</h1>
-            <p className={styles.onHeroLede}>{content.heroLede}</p>
+            <p className={styles.onHeroEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+            <h1 className={styles.onHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+            <p className={styles.onHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
             <div className={styles.onHeroCtas}>
               {shopReachable ? (
                 <Link href="/shop" className={styles.onSolid}>
@@ -91,7 +91,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
               {/* "BOKA STUDION" är en HANDLING → plattformens boknings-CTA, aldrig egen logik. */}
               <BookCta enabled={bookingReachable} className={styles.onGhost} label="BOKA STUDION" />
             </div>
-            <p className={styles.onHeroNote}>
+            <p className={styles.onHeroNote} data-corevo-editor-field="findEyebrow" data-corevo-editor-stable-field="findEyebrow">
               {content.findEyebrow ?? 'KVÄLLSLEVERANS 18–23 · BESTÄLL FÖRE 20:00'}
             </p>
           </Reveal>
@@ -99,8 +99,10 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
         <div
           className={styles.onHeroPhoto}
           style={heroPhoto ? { backgroundImage: `url(${heroPhoto})` } : undefined}
+          data-corevo-editor-field="hero_images.0"
+          data-corevo-editor-stable-field="hero_images.0"
         >
-          <span className={styles.onFig}>{content.homeGalleryEyebrow ?? 'FIG. 01 — MAGNOLIA NOIR'}</span>
+          <span className={styles.onFig} data-corevo-editor-field="homeGalleryEyebrow" data-corevo-editor-stable-field="homeGalleryEyebrow">{content.homeGalleryEyebrow ?? 'FIG. 01 — MAGNOLIA NOIR'}</span>
         </div>
       </section>
 
@@ -108,9 +110,9 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
       {drop.length > 0 ? (
         <section className={styles.onSection}>
           <div className={styles.onSecHead}>
-            <h2 className={styles.onSecTitle}>{content.shopTitle ?? 'Veckans drop'}</h2>
+            <h2 className={styles.onSecTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Veckans drop'}</h2>
             <Link href="/shop" className={styles.onLink}>
-              {content.shopCta ?? 'SE ALLT →'}
+              <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'SE ALLT →'}</span>
             </Link>
           </div>
           <ul className={styles.onGrid}>
@@ -151,7 +153,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
       {/* (3) MANIFEST-BANDET */}
       <section className={styles.onManifest}>
         <Reveal>
-          <p className={styles.onManifestText}>{content.italic}</p>
+          <p className={styles.onManifestText} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
         </Reveal>
       </section>
 
@@ -162,14 +164,14 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
             {t.href ? (
               <Link href={t.href} className={styles.onPath}>
                 <p className={styles.onPathNum}>{t.num}</p>
-                <h3 className={styles.onPathTitle}>{t.title}</h3>
-                <p className={styles.onPathDesc}>{t.desc}</p>
+                <h3 className={styles.onPathTitle} data-corevo-editor-field={`pillar${i + 1}Title`} data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{t.title}</h3>
+                <p className={styles.onPathDesc} data-corevo-editor-field={`pillar${i + 1}Body`} data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{t.desc}</p>
               </Link>
             ) : (
               <div className={styles.onPath}>
                 <p className={styles.onPathNum}>{t.num}</p>
-                <h3 className={styles.onPathTitle}>{t.title}</h3>
-                <p className={styles.onPathDesc}>{t.desc}</p>
+                <h3 className={styles.onPathTitle} data-corevo-editor-field={`pillar${i + 1}Title`} data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{t.title}</h3>
+                <p className={styles.onPathDesc} data-corevo-editor-field={`pillar${i + 1}Body`} data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{t.desc}</p>
               </div>
             )}
           </Reveal>
@@ -180,9 +182,9 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
       {posts.length > 0 ? (
         <section className={styles.onSection}>
           <div className={styles.onSecHead}>
-            <h2 className={styles.onSecTitle}>{content.blogTitle ?? 'Journal'}</h2>
+            <h2 className={styles.onSecTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Journal'}</h2>
             <Link href="/blogg" className={styles.onLink}>
-              {content.blogCta ?? 'ALLA INLÄGG →'}
+              <span data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">{content.blogCta ?? 'ALLA INLÄGG →'}</span>
             </Link>
           </div>
           <ul className={styles.onJournalList}>
@@ -203,14 +205,16 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
       <section
         className={styles.onClosing}
         style={closingPhoto ? { backgroundImage: `url(${closingPhoto})` } : undefined}
+        data-corevo-editor-field="closing_image"
+        data-corevo-editor-stable-field="closing_image"
       >
         <div className={styles.onClosingVeil} />
         <div className={styles.onClosingInner}>
           <Reveal>
-            <h2 className={styles.onClosingTitle}>
+            <h2 className={styles.onClosingTitle} data-corevo-editor-field="closingTitle" data-corevo-editor-stable-field="closingTitle">
               {content.closingTitle ?? 'Ikväll, före 23:00.'}
             </h2>
-            <p className={styles.onClosingLede}>
+            <p className={styles.onClosingLede} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">
               {content.closingLede ?? 'Beställ före 20:00 så cyklar budet ut buketten samma kväll.'}
             </p>
             {shopReachable ? (

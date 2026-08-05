@@ -85,11 +85,11 @@ export function CalytrixShop({ data, limit, moreHref, content }: ThemeShopViewPr
       <section className={styles.cxTeaser} data-module="shop" data-fulfilment={config.fulfilment}>
         <div className={styles.cxSecHead}>
           <div>
-            <p className={styles.cxSecEyebrow}>{content.shopEyebrow ?? 'Mest sålda'}</p>
-            <h2 className={styles.cxSecTitle}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
+            <p className={styles.cxSecEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Mest sålda'}</p>
+            <h2 className={styles.cxSecTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
           </div>
           {moreHref ? (
-            <Link href={moreHref} className={styles.cxSecLink}>
+            <Link href={moreHref} className={styles.cxSecLink} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
               {content.shopCta ?? 'Visa hela butiken →'}
             </Link>
           ) : null}
@@ -105,7 +105,7 @@ export function CalytrixShop({ data, limit, moreHref, content }: ThemeShopViewPr
   return (
     <section className={styles.cxShop} data-module="shop" data-fulfilment={config.fulfilment}>
       <div className={styles.cxShopHead}>
-        <h1 className={styles.cxShopTitle}>{content.shopTitle ?? 'Butiken'}</h1>
+        <h1 className={styles.cxShopTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Butiken'}</h1>
         {/* Filens `filterInfo`: "8 produkter · Alla" — räknaren gäller det SYNLIGA urvalet. */}
         <p className={styles.cxShopCount}>
           {all.length} {all.length === 1 ? 'produkt' : 'produkter'}
@@ -197,18 +197,18 @@ export function CalytrixBlogg({ posts: all, limit, moreHref, content }: ThemeBlo
       {teaser ? (
         <div className={styles.cxSecHead}>
           <div>
-            <p className={styles.cxSecEyebrow}>{content.blogEyebrow ?? 'Blogg'}</p>
-            <h2 className={styles.cxSecTitle}>{content.blogTitle ?? 'Nytt från butiken'}</h2>
+            <p className={styles.cxSecEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'Blogg'}</p>
+            <h2 className={styles.cxSecTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Nytt från butiken'}</h2>
           </div>
           {moreHref ? (
-            <Link href={moreHref} className={styles.cxSecLink}>
+            <Link href={moreHref} className={styles.cxSecLink} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
               {content.blogCta ?? 'Läs hela bloggen →'}
             </Link>
           ) : null}
         </div>
       ) : (
         <>
-          <h1 className={styles.cxBloggTitle}>{content.blogTitle ?? 'Blogg'}</h1>
+          <h1 className={styles.cxBloggTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Blogg'}</h1>
           <p className={styles.cxBloggLede}>
             Skötselråd, säsongsnytt och det som händer i butiken.
           </p>
@@ -234,8 +234,8 @@ export function CalytrixBlogg({ posts: all, limit, moreHref, content }: ThemeBlo
 export function CalytrixGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.cxGalleri} data-module="galleri">
-      <h1 className={styles.cxGalTitle}>{content.galleryTitle ?? 'Galleri'}</h1>
-      <p className={styles.cxGalLede}>
+      <h1 className={styles.cxGalTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Galleri'}</h1>
+      <p className={styles.cxGalLede} data-corevo-editor-field="galleryLede" data-corevo-editor-stable-field="galleryLede">
         {content.galleryLede ?? 'Senaste leveranserna ur butiken — uppdateras varje vecka.'}
       </p>
 
@@ -277,8 +277,8 @@ export function CalytrixGalleri({ items, content }: ThemeGalleriViewProps) {
 export function CalytrixLojalitet({ config, plans, content }: ThemeLojalitetViewProps) {
   return (
     <section className={styles.cxClub} data-module="lojalitet" data-variant={config.variant}>
-      <h1 className={styles.cxGalTitle}>{content.clubTitle ?? 'Calytrix Club'}</h1>
-      <p className={styles.cxClubLede}>{content.clubLede ?? config.perkText}</p>
+      <h1 className={styles.cxGalTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'Calytrix Club'}</h1>
+      <p className={styles.cxClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">{content.clubLede ?? config.perkText}</p>
 
       {plans.length > 0 ? (
         <div className={styles.cxTiers}>
@@ -312,7 +312,7 @@ export function CalytrixLojalitet({ config, plans, content }: ThemeLojalitetView
       ) : null}
 
       <div className={styles.cxClubJoin}>
-        <JoinClubForm cta={content.clubCta ?? 'GÅ MED GRATIS'} />
+        <JoinClubForm cta={content.clubCta ?? 'GÅ MED GRATIS'} editorField="clubCta" />
       </div>
     </section>
   )

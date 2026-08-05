@@ -45,11 +45,13 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
         <div
           className={styles.sfEditHeroImg}
           style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
+          data-corevo-editor-field="hero_images.0"
+          data-corevo-editor-stable-field="hero_images.0"
         />
         <div className={styles.sfEditCard}>
-          <p className="sf-eyebrow">{content.heroEyebrow}</p>
-          <h1 className={`${styles.heroTitle} ${ed.heroTitle}`}>{content.heroTitle}</h1>
-          <p className={`sf-lede ${ed.heroLede}`}>{content.heroLede}</p>
+          <p className="sf-eyebrow" data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={`${styles.heroTitle} ${ed.heroTitle}`} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={`sf-lede ${ed.heroLede}`} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={ed.heroActions}>
             <BookCta enabled={bookingReachable} className={styles.sfSquareCta} />
           </div>
@@ -124,17 +126,19 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
             <div
               className={styles.sfEditAboutPhoto}
               style={{ backgroundImage: `url(${content.aboutImage})` }}
+              data-corevo-editor-field="about_image"
+              data-corevo-editor-stable-field="about_image"
             />
           </Reveal>
           <Reveal delay={100}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <p className={`sf-italic ${styles.sfEditQuote}`}>&ldquo;{content.italic}&rdquo;</p>
-            <p className={`sf-body ${ed.aboutBody}`}>{content.aboutCopyHome}</p>
+            <p className={`sf-italic ${styles.sfEditQuote}`} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">&ldquo;{content.italic}&rdquo;</p>
+            <p className={`sf-body ${ed.aboutBody}`} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
             <ul className={styles.sfStatInline}>
-              {content.stats.map(([n, l]) => (
+              {content.stats.map(([n, l], index) => (
                 <li key={l}>
-                  <span className={styles.sfStatValue}>{n}</span>
-                  <span className={styles.sfStatLabel}>{l}</span>
+                  <span className={styles.sfStatValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{n}</span>
+                  <span className={styles.sfStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{l}</span>
                 </li>
               ))}
             </ul>

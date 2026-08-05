@@ -7,7 +7,7 @@
  */
 /** Whitelist shared by tenant copy and vertical default copy. */
 export const COPY_OVERRIDE_KEYS = [
-  'heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'aboutCopyHome', 'tagline',
+  'heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'aboutCopyHome', 'tagline', 'utility',
   'italic', 'aboutTitle', 'homeSecondTitle', 'whyTitle', 'whySub', 'whyBody',
   'servicesEyebrow', 'servicesTitle', 'servicesIntro', 'teamEyebrow', 'teamTitle',
   'teamLead', 'closingEyebrow', 'closingTitle', 'closingLede', 'contactEyebrow',
@@ -21,6 +21,10 @@ export const COPY_OVERRIDE_KEYS = [
   'homeGalleryEyebrow', 'galleryEyebrow', 'findEyebrow',
   'clubEyebrow', 'clubTitle', 'clubLede', 'clubCta', 'clubNote',
   'galleryTitle', 'galleryLede',
+  'resultsEyebrow', 'resultsLede',
+  'resultImage1Caption', 'resultImage2Caption', 'resultImage3Caption',
+  'studioImageCaption', 'studioEyebrow', 'studioPoint1', 'studioPoint2', 'studioPoint3',
+  'contactLede',
 ] as const
 
 export type CopyOverride = Partial<Record<(typeof COPY_OVERRIDE_KEYS)[number], string>>

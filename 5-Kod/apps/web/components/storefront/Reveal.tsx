@@ -25,6 +25,8 @@ export function Reveal({
   style,
   hidden,
   'data-corevo-map-group': mapGroup,
+  'data-corevo-editor-field': editorField,
+  'data-corevo-editor-stable-field': stableEditorField,
 }: {
   children: ReactNode
   as?: ElementType
@@ -35,6 +37,8 @@ export function Reveal({
   style?: CSSProperties
   hidden?: boolean
   'data-corevo-map-group'?: boolean
+  'data-corevo-editor-field'?: string
+  'data-corevo-editor-stable-field'?: string
 }) {
   const ref = useRef<HTMLElement | null>(null)
   const [shown, setShown] = useState(false)
@@ -71,6 +75,8 @@ export function Reveal({
       style={delay ? { transitionDelay: `${delay}ms`, ...style } : style}
       hidden={hidden}
       data-corevo-map-group={mapGroup}
+      data-corevo-editor-field={editorField}
+      data-corevo-editor-stable-field={stableEditorField}
     >
       {children}
     </Tag>

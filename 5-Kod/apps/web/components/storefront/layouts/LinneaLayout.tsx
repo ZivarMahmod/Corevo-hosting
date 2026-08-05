@@ -38,9 +38,9 @@ export function LinneaLayout({ content, services, modules }: StorefrontLayoutPro
       {/* side-by-side hero */}
       <section className={styles.sfSideHero}>
         <div className={styles.sfSideText}>
-          <span className={styles.sfPillEyebrow}>{content.heroEyebrow}</span>
-          <h1 className={`${styles.heroTitle} ${ln.heroTitle}`}>{content.heroTitle}</h1>
-          <p className={`sf-lede ${ln.heroLede}`}>{content.heroLede}</p>
+          <span className={styles.sfPillEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</span>
+          <h1 className={`${styles.heroTitle} ${ln.heroTitle}`} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={`sf-lede ${ln.heroLede}`} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.sfSideActions}>
             <BookCta enabled={bookingReachable} className={styles.heroCta} />
             <span className={styles.sfSideNote}>eller drop in →</span>
@@ -52,6 +52,8 @@ export function LinneaLayout({ content, services, modules }: StorefrontLayoutPro
           <div
             className={styles.sfSidePhoto}
             style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
+            data-corevo-editor-field="hero_images.0"
+            data-corevo-editor-stable-field="hero_images.0"
           />
         </div>
       </section>
@@ -85,10 +87,10 @@ export function LinneaLayout({ content, services, modules }: StorefrontLayoutPro
         )}
 
         <ul className={styles.sfChips}>
-          {content.stats.map(([n, l]) => (
+          {content.stats.map(([n, l], index) => (
             <li key={l} className={styles.sfChip}>
-              <span className={styles.sfChipValue}>{n}</span>
-              <span className={styles.sfStatLabel}>{l}</span>
+              <span className={styles.sfChipValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{n}</span>
+              <span className={styles.sfStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{l}</span>
             </li>
           ))}
         </ul>

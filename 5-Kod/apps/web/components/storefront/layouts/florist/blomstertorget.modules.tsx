@@ -40,7 +40,7 @@ export function BlomstertorgetShop({ data, limit, moreHref, content }: ThemeShop
 
   return (
     <section className={styles.btShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <h1 className={styles.btPageTitle}>{content.shopTitle ?? 'Torgpriser'}</h1>
+      <h1 className={styles.btPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Torgpriser'}</h1>
       <p className={styles.btLede}>
         Satta 06:45 i morse. Beställ här eller kom till ståndet — samma pris, ingen skillnad.
       </p>
@@ -77,7 +77,7 @@ export function BlomstertorgetShop({ data, limit, moreHref, content }: ThemeShop
       )}
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
-        <a href={moreHref} className={styles.btMoreLink}>
+        <a href={moreHref} className={styles.btMoreLink} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
           {content.shopCta ?? 'Till torgpriserna →'}
         </a>
       ) : (
@@ -104,7 +104,7 @@ export function BlomstertorgetBlogg({
 
   return (
     <section className={styles.btBlogg} data-module="blogg">
-      <h1 className={styles.btPageTitle}>{content.blogTitle ?? 'Notiser'}</h1>
+      <h1 className={styles.btPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Notiser'}</h1>
       <p className={styles.btLede}>Smått och gott från torget, i kronologisk oordning.</p>
 
       {posts.length === 0 ? (
@@ -119,14 +119,14 @@ export function BlomstertorgetBlogg({
                   {/* Filens "{{ b.tag }} · {{ b.date }}": taggen är INLÄGGETS egen (blog_posts.tag,
                       0057), inte en gemensam rubrik. Saknar inlägget tagg faller vi tillbaka på
                       ägarens egen sektionsetikett — hans text, aldrig en påhittad. */}
-                  <p className={styles.btPostTag}>
+                  <p className={styles.btPostTag} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">
                     {p.tag ?? content.blogEyebrow ?? 'Notis'}
                     {date ? ` · ${date}` : ''}
                   </p>
                   <h2 className={styles.btPostTitle}>{p.title}</h2>
                   {p.excerpt ? <p className={styles.btPostExcerpt}>{p.excerpt}</p> : null}
                   {p.slug ? (
-                    <a href={`/blogg/${p.slug}`} className={styles.btItalicLink}>
+                    <a href={`/blogg/${p.slug}`} className={styles.btItalicLink} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
                       {content.blogCta ?? 'läs mer →'}
                     </a>
                   ) : null}
@@ -138,7 +138,7 @@ export function BlomstertorgetBlogg({
       )}
 
       {moreHref && teaser && allPosts.length > 0 ? (
-        <a href={moreHref} className={styles.btMoreLink}>
+        <a href={moreHref} className={styles.btMoreLink} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
           {content.blogCta ?? 'läs mer →'}
         </a>
       ) : null}
@@ -156,8 +156,8 @@ export function BlomstertorgetBlogg({
 export function BlomstertorgetGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.btGalleri} data-module="galleri">
-      <h1 className={styles.btPageTitle}>{content.galleryTitle ?? 'Bildsidan'}</h1>
-      <p className={styles.btPageLede}>
+      <h1 className={styles.btPageTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Bildsidan'}</h1>
+      <p className={styles.btPageLede} data-corevo-editor-field="galleryLede" data-corevo-editor-stable-field="galleryLede">
         {content.galleryLede ??
           'Veckans bilder från torget — insända av kunder och tagna av ståndets egna.'}
       </p>
@@ -201,15 +201,15 @@ export function BlomstertorgetLojalitet({ config, plans, content }: ThemeLojalit
 
   return (
     <section className={styles.btClub} data-module="lojalitet" data-variant={config.variant}>
-      <h1 className={styles.btPageTitle}>{content.clubTitle ?? 'Stamkund'}</h1>
-      <p className={styles.btPageLede}>
+      <h1 className={styles.btPageTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'Stamkund'}</h1>
+      <p className={styles.btPageLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">
         {content.clubLede ??
           'Torgets trognaste förtjänar torgets bästa. Registreringen är gratis och gäller för alltid.'}
       </p>
 
       {perks.length > 0 ? (
         <div className={styles.btCoupon}>
-          <p className={styles.btCouponHead}>
+          <p className={styles.btCouponHead} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">
             {content.clubEyebrow ?? '✂ Klipp ut och spara — stamkundens förmåner'}
           </p>
           <div className={styles.btCouponList}>
@@ -245,7 +245,7 @@ export function BlomstertorgetLojalitet({ config, plans, content }: ThemeLojalit
       ) : null}
 
       <div className={styles.btClubJoin}>
-        <JoinClubForm cta={content.clubCta ?? 'Registrera mig'} />
+        <JoinClubForm cta={content.clubCta ?? 'Registrera mig'} editorField="clubCta" />
       </div>
     </section>
   )

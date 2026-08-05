@@ -58,23 +58,25 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
         <section className={styles.btLeadSection}>
           <Reveal>
             <article>
-              <p className={styles.btTag}>{content.heroEyebrow}</p>
-              <h2 className={styles.btLeadTitle}>{content.heroTitle}</h2>
+              <p className={styles.btTag} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+              <h2 className={styles.btLeadTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h2>
               <div
                 className={styles.btLeadPhoto}
                 style={heroPhoto ? { backgroundImage: `url(${heroPhoto})` } : undefined}
+                data-corevo-editor-field="hero_images.0"
+                data-corevo-editor-stable-field="hero_images.0"
                 role="img"
                 aria-label={content.heroTitle}
               />
-              <p className={styles.btCred}>
+              <p className={styles.btCred} data-corevo-editor-field="homeGalleryEyebrow" data-corevo-editor-stable-field="homeGalleryEyebrow">
                 {content.homeGalleryEyebrow ?? 'Foto: Torgets egen — morgonens leverans, gång 3'}
               </p>
               <p className={styles.btLeadBody}>
-                <span className={styles.btDateline}>{content.findEyebrow ?? 'Hötorget.'}</span>{' '}
-                {content.heroLede}
+                <span className={styles.btDateline} data-corevo-editor-field="findEyebrow" data-corevo-editor-stable-field="findEyebrow">{content.findEyebrow ?? 'Hötorget.'}</span>{' '}
+                <span data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</span>
               </p>
               <Link href={priceHref} className={styles.btBtn}>
-                {content.shopCta ?? 'Till torgpriserna →'}
+                <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Till torgpriserna →'}</span>
               </Link>
             </article>
           </Reveal>
@@ -84,7 +86,7 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
               {/* DAGENS PRISER — noteringarna är shop-modulens riktiga produkter. */}
               {ticker.length > 0 ? (
                 <>
-                  <p className={styles.btAsideHead}>{content.shopEyebrow ?? 'Dagens priser'}</p>
+                  <p className={styles.btAsideHead} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Dagens priser'}</p>
                   {/* KURSTAVLAN (goal-64, migration 0057): filens `tickerRows` bar en HÅRDKODAD
                       pil per rad. Nu HÄRLEDS den ur verkligheten — compare_at_price_cents mot
                       dagens pris via den delade priceMovement(): dyrare än igår → ▲ (röd, filens
@@ -101,19 +103,19 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
                       </div>
                     )
                   })}
-                  <p className={styles.btTickerNote}>{content.italic}</p>
+                  <p className={styles.btTickerNote} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
                 </>
               ) : null}
 
               {/* STAMKUNDSKUPONGEN — lojalitetsmodulens kanoniska väg in (/klubb). */}
               <div className={styles.btCoupon}>
-                <p className={styles.btCouponHead}>{content.pillar3Title ?? '✂ Stamkundskupong'}</p>
-                <p className={styles.btCouponBody}>
+                <p className={styles.btCouponHead} data-corevo-editor-field="pillar3Title" data-corevo-editor-stable-field="pillar3Title">{content.pillar3Title ?? '✂ Stamkundskupong'}</p>
+                <p className={styles.btCouponBody} data-corevo-editor-field="pillar3Body" data-corevo-editor-stable-field="pillar3Body">
                   {content.pillar3Body ?? 'Var 8:e bunt gratis för registrerade stamkunder.'}
                 </p>
                 {klubbReachable ? (
                   <Link href="/klubb" className={styles.btCouponCta}>
-                    {content.pillar3Link ?? 'Registrera dig →'}
+                    <span data-corevo-editor-field="pillar3Link" data-corevo-editor-stable-field="pillar3Link">{content.pillar3Link ?? 'Registrera dig →'}</span>
                   </Link>
                 ) : null}
               </div>
@@ -128,14 +130,14 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
               <li key={n.id} className={styles.btNotis}>
                 <Reveal delay={i * 90}>
                   <article>
-                    <p className={styles.btTag}>{content.blogEyebrow ?? 'Notis'}</p>
+                    <p className={styles.btTag} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'Notis'}</p>
                     <h3 className={styles.btNotisTitle}>{n.title}</h3>
                     {n.excerpt ? <p className={styles.btNotisText}>{n.excerpt}</p> : null}
                     <Link
                       href={n.slug ? `/blogg/${n.slug}` : '/blogg'}
                       className={styles.btItalicLink}
                     >
-                      {content.blogCta ?? 'läs mer →'}
+                      <span data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">{content.blogCta ?? 'läs mer →'}</span>
                     </Link>
                   </article>
                 </Reveal>
@@ -149,7 +151,7 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
           {kungorelser.length > 0 ? (
             <Reveal>
               <div>
-                <p className={styles.btColHead}>{content.pillar1Title ?? 'Kungörelser'}</p>
+                <p className={styles.btColHead} data-corevo-editor-field="pillar1Title" data-corevo-editor-stable-field="pillar1Title">{content.pillar1Title ?? 'Kungörelser'}</p>
                 {kungorelser.map((k) => (
                   <div key={k.id} className={styles.btKungRow}>
                     <span className={styles.btKungMeta}>{formatPrice(k)}</span>
@@ -160,7 +162,7 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
                 ))}
                 {kurserReachable ? (
                   <Link href="/kurser" className={styles.btMoreLink}>
-                    {content.pillar1Link ?? 'alla kungörelser →'}
+                    <span data-corevo-editor-field="pillar1Link" data-corevo-editor-stable-field="pillar1Link">{content.pillar1Link ?? 'alla kungörelser →'}</span>
                   </Link>
                 ) : null}
               </div>
@@ -169,18 +171,18 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
 
           <Reveal delay={120}>
             <div>
-              <p className={styles.btColHead}>{content.pillar2Title ?? 'Bildsidan'}</p>
+              <p className={styles.btColHead} data-corevo-editor-field="pillar2Title" data-corevo-editor-stable-field="pillar2Title">{content.pillar2Title ?? 'Bildsidan'}</p>
               <div className={styles.btPicGrid}>
-                {picks.map((src) => (
-                  <div key={src} className={styles.btPic} style={{ backgroundImage: `url(${src})` }} />
+                {picks.map((src, index) => (
+                  <div key={src} className={styles.btPic} style={{ backgroundImage: `url(${src})` }} data-corevo-editor-field={`gallery_images.${index + 1}`} data-corevo-editor-stable-field={`gallery_images.${index + 1}`} />
                 ))}
               </div>
-              <p className={styles.btCred}>
+              <p className={styles.btCred} data-corevo-editor-field="pillar2Body" data-corevo-editor-stable-field="pillar2Body">
                 {content.pillar2Body ?? 'Ur veckans arkiv — tulpanlasset & lördagens hjärtbukett'}
               </p>
               {galleriReachable ? (
                 <Link href="/galleri" className={styles.btItalicLink}>
-                  {content.pillar2Link ?? 'hela bildsidan →'}
+                  <span data-corevo-editor-field="pillar2Link" data-corevo-editor-stable-field="pillar2Link">{content.pillar2Link ?? 'hela bildsidan →'}</span>
                 </Link>
               ) : null}
             </div>

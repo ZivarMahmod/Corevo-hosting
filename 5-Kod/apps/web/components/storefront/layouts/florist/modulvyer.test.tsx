@@ -12,7 +12,11 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }))
 
 import { THEME_SUITES } from '@/lib/storefront/themes/registry'
 import { themeModuleViews } from '../runtime'
+import { buildSiteEditorManifest } from '@/lib/platform/site-editor-manifest'
+import { editorFieldTargets } from '@/components/platform/SidaStudioV2.pick'
+import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import type { ResolvedThemeContent } from '@/lib/storefront/theme-content.types'
+import type { StorefrontTheme } from '@/lib/tenant-data'
 import { CartProvider } from '../../shop/CartProvider'
 import type { ShopData } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
@@ -133,6 +137,20 @@ describe.each(WITH_VIEWS.map(({ theme, views }) => [theme.key, theme, views] as 
           <Shop data={data} content={content} tenantName="Blomsterhandeln" />
         </CartProvider>,
       )
+
+    it('page-copy on the visible shop and blog views leads to an existing SidaStudio control', () => {
+      const themeKey = theme.key as StorefrontTheme
+      const manifest = buildSiteEditorManifest('generic', resolveThemeContent(themeKey, null, null), themeKey)
+      const fields = new Set(
+        editorFieldTargets([...manifest.tabs, ...(manifest.modules ?? [])], 'shop').map(({ field }) => field),
+      )
+      const blogHtml = renderToStaticMarkup(<Blogg posts={POSTS} content={content} tenantName="Blomsterhandeln" />)
+
+      for (const [html, field] of [[shopHtml(), 'shopTitle'], [blogHtml, 'blogTitle']] as const) {
+        expect(html).toContain(`data-corevo-editor-field="${field}"`)
+        expect(fields).toContain(field)
+      }
+    })
 
     it('öppen butik: köpknappen finns för varje produkt', () => {
       const html = shopHtml()

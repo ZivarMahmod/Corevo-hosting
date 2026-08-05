@@ -85,6 +85,6 @@ export const zentum: StorefrontThemeDefinition = {
     // Ingen statistik-grid i designen → tomt + caps.homeStats:false.
     stats: [],
   },
-  caps: { heroEyebrow: false, homeStats: false, homeGallery: false, homeAbout: true },
+  caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   // moduleViews: MEDVETET utelämnat — zentum v1 väver inga moduler.
 }

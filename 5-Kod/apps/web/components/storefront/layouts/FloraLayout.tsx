@@ -72,22 +72,22 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       {/* HERO — centrerad italisk serif över valv-trion */}
       <section className={styles.flHero}>
         <div className={styles.flHeroInner}>
-          <span className={styles.sfPillEyebrow}>{content.heroEyebrow}</span>
-          <h1 className={styles.flHeroTitle}>{content.heroTitle}</h1>
-          <p className={`sf-lede ${fl.heroLede}`}>{content.heroLede}</p>
+          <span className={styles.sfPillEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</span>
+          <h1 className={styles.flHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={`sf-lede ${fl.heroLede}`} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={fl.heroCtaRow}>
             <BookCta enabled={bookingReachable} className={styles.heroCta} />
           </div>
         </div>
         <div className={styles.flArches}>
           {/* backgroundImage = enda kvarvarande inline: bild-URL:en är dynamisk data. */}
-          <Reveal className={styles.flArch} style={{ backgroundImage: `url(${arch2})` }}>
+          <Reveal className={styles.flArch} style={{ backgroundImage: `url(${arch2})` }} data-corevo-editor-field="hero_images.1" data-corevo-editor-stable-field="hero_images.1">
             <span />
           </Reveal>
-          <Reveal delay={100} className={styles.flArch} style={{ backgroundImage: `url(${arch1})` }}>
+          <Reveal delay={100} className={styles.flArch} style={{ backgroundImage: `url(${arch1})` }} data-corevo-editor-field="hero_images.0" data-corevo-editor-stable-field="hero_images.0">
             <span />
           </Reveal>
-          <Reveal delay={200} className={styles.flArch} style={{ backgroundImage: `url(${arch3})` }}>
+          <Reveal delay={200} className={styles.flArch} style={{ backgroundImage: `url(${arch3})` }} data-corevo-editor-field="hero_images.2" data-corevo-editor-stable-field="hero_images.2">
             <span />
           </Reveal>
         </div>
@@ -104,10 +104,12 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
                 <div
                   className={`${styles.flPillarImg} ${fl.pillarImg}`}
                   style={{ backgroundImage: `url(${content.galleryImages[0] ?? arch1})` }}
+                  data-corevo-editor-field="gallery_images.0"
+                  data-corevo-editor-stable-field="gallery_images.0"
                 />
-                <h3 className={styles.flPillarName}>{content.pillar1Title ?? 'Beställ blommor'}</h3>
-                <p className={styles.flPillarText}>{content.pillar1Body ?? 'Buketter i säsong — floristen väljer det finaste. Hämta i butik eller skicka bud.'}</p>
-                <span className={styles.flPillarLink}>{content.pillar1Link ?? 'Till butiken'}</span>
+                <h3 className={styles.flPillarName} data-corevo-editor-field="pillar1Title" data-corevo-editor-stable-field="pillar1Title">{content.pillar1Title ?? 'Beställ blommor'}</h3>
+                <p className={styles.flPillarText} data-corevo-editor-field="pillar1Body" data-corevo-editor-stable-field="pillar1Body">{content.pillar1Body ?? 'Buketter i säsong — floristen väljer det finaste. Hämta i butik eller skicka bud.'}</p>
+                <span className={styles.flPillarLink} data-corevo-editor-field="pillar1Link" data-corevo-editor-stable-field="pillar1Link">{content.pillar1Link ?? 'Till butiken'}</span>
               </Link>
             </Reveal>
           ) : null}
@@ -117,10 +119,12 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
                 <div
                   className={`${styles.flPillarImg} ${fl.pillarImg}`}
                   style={{ backgroundImage: `url(${content.galleryImages[1] ?? arch2})` }}
+                  data-corevo-editor-field="gallery_images.1"
+                  data-corevo-editor-stable-field="gallery_images.1"
                 />
-                <h3 className={styles.flPillarName}>{content.pillar2Title ?? 'Bröllop & avsked'}</h3>
-                <p className={styles.flPillarText}>{content.pillar2Body ?? 'Handbundna brudbuketter, corsage och binderier — eller ett personligt, vackert farväl.'}</p>
-                <span className={styles.flPillarLink}>{content.pillar2Link ?? 'Begär offert'}</span>
+                <h3 className={styles.flPillarName} data-corevo-editor-field="pillar2Title" data-corevo-editor-stable-field="pillar2Title">{content.pillar2Title ?? 'Bröllop & avsked'}</h3>
+                <p className={styles.flPillarText} data-corevo-editor-field="pillar2Body" data-corevo-editor-stable-field="pillar2Body">{content.pillar2Body ?? 'Handbundna brudbuketter, corsage och binderier — eller ett personligt, vackert farväl.'}</p>
+                <span className={styles.flPillarLink} data-corevo-editor-field="pillar2Link" data-corevo-editor-stable-field="pillar2Link">{content.pillar2Link ?? 'Begär offert'}</span>
               </a>
             </Reveal>
           ) : null}
@@ -130,19 +134,23 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
                 <div
                   className={`${styles.flPillarImg} ${fl.pillarImg}`}
                   style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }}
+                  data-corevo-editor-field="gallery_images.2"
+                  data-corevo-editor-stable-field="gallery_images.2"
                 />
-                <h3 className={styles.flPillarName}>{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
-                <p className={styles.flPillarText}>{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
-                <span className={styles.flPillarLink}>{content.pillar3Link ?? 'Boka kurs'}</span>
+                <h3 className={styles.flPillarName} data-corevo-editor-field="pillar3Title" data-corevo-editor-stable-field="pillar3Title">{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
+                <p className={styles.flPillarText} data-corevo-editor-field="pillar3Body" data-corevo-editor-stable-field="pillar3Body">{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
+                <span className={styles.flPillarLink} data-corevo-editor-field="pillar3Link" data-corevo-editor-stable-field="pillar3Link">{content.pillar3Link ?? 'Boka kurs'}</span>
               </Link>
             ) : (
               <div className={`${styles.flPillar} ${fl.pillar}`}>
                 <div
                   className={`${styles.flPillarImg} ${fl.pillarImg}`}
                   style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }}
+                  data-corevo-editor-field="gallery_images.2"
+                  data-corevo-editor-stable-field="gallery_images.2"
                 />
-                <h3 className={styles.flPillarName}>{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
-                <p className={styles.flPillarText}>{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
+                <h3 className={styles.flPillarName} data-corevo-editor-field="pillar3Title" data-corevo-editor-stable-field="pillar3Title">{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
+                <p className={styles.flPillarText} data-corevo-editor-field="pillar3Body" data-corevo-editor-stable-field="pillar3Body">{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
               </div>
             )}
           </Reveal>
@@ -154,8 +162,8 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       {shopTeasers.length > 0 ? (
         <section className={fl.section}>
           <Reveal className={styles.flSecHead}>
-            <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-            <h2 className={`sf-h2 ${fl.secTitle}`}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
+            <p className="sf-eyebrow" data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
+            <h2 className={`sf-h2 ${fl.secTitle}`} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Beställ något vackert'}</h2>
           </Reveal>
           <div className={styles.flCardGrid}>
             {shopTeasers.map((p, i) => (
@@ -173,7 +181,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
           </div>
           <Reveal className={styles.flSecHead}>
             <Link href="/shop" className={`${styles.flBandCta} ${fl.bandCta}`}>
-              {content.shopCta ?? 'Visa hela butiken'}
+              <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Visa hela butiken'}</span>
             </Link>
           </Reveal>
         </section>
@@ -182,7 +190,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       {/* CITAT — andhämtning i accent-ytan */}
       <section className={fl.quoteBand}>
         <Reveal>
-          <p className={`sf-italic ${fl.quote}`}>”{content.italic}”</p>
+          <p className={`sf-italic ${fl.quote}`} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">”{content.italic}”</p>
         </Reveal>
       </section>
 
@@ -194,8 +202,8 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
           <section className={styles.sfServices}>
             <div className={styles.sfNarrow}>
               <Reveal className={fl.center}>
-                <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-                <h2 className={`sf-h1 ${fl.srvTitle}`}>{content.servicesTitle}</h2>
+                <p className="sf-eyebrow" data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+                <h2 className={`sf-h1 ${fl.srvTitle}`} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h2>
               </Reveal>
               <div className={styles.sfRowList}>
                 {rows.map((s, i) => (
@@ -233,17 +241,17 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       <section className={fl.section}>
         <div className={`${styles.sfWide} ${styles.sfAboutGrid}`}>
           <Reveal>
-            <div className={styles.flPortrait} style={{ backgroundImage: `url(${content.aboutImage})` }} />
+            <div className={styles.flPortrait} style={{ backgroundImage: `url(${content.aboutImage})` }} data-corevo-editor-field="about_image" data-corevo-editor-stable-field="about_image" />
           </Reveal>
           <Reveal delay={120}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className={`sf-h2 ${fl.secTitle}`}>{content.aboutTitle}</h2>
-            <p className={`sf-body ${fl.aboutBody}`}>{content.aboutCopyHome}</p>
+            <h2 className={`sf-h2 ${fl.secTitle}`} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h2>
+            <p className={`sf-body ${fl.aboutBody}`} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
             <ul className={styles.sfStatTrio}>
-              {content.stats.map(([n, l]) => (
+              {content.stats.map(([n, l], index) => (
                 <li key={l}>
-                  <span className={styles.sfStatValue}>{n}</span>
-                  <span className={styles.sfStatLabel}>{l}</span>
+                  <span className={styles.sfStatValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{n}</span>
+                  <span className={styles.sfStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -257,8 +265,8 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
           <Ornament />
           <section className={fl.section}>
             <Reveal className={styles.flSecHead}>
-              <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-              <h2 className={`sf-h2 ${fl.secTitle}`}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+              <p className="sf-eyebrow" data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
+              <h2 className={`sf-h2 ${fl.secTitle}`} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
             </Reveal>
             <div className={styles.flCardGrid}>
               {bloggTeasers.map((p, i) => (
@@ -276,7 +284,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
             </div>
             <Reveal className={styles.flSecHead}>
               <Link href="/blogg" className={`${styles.flBandCta} ${fl.bandCta}`}>
-                {content.blogCta ?? 'Läs hela bloggen'}
+                <span data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">{content.blogCta ?? 'Läs hela bloggen'}</span>
               </Link>
             </Reveal>
           </section>
@@ -287,12 +295,12 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       {presentkortReachable ? (
         <section className={fl.giftBand}>
           <Reveal className={fl.giftInner}>
-            <p className={`sf-eyebrow ${fl.giftEyebrow}`}>{content.giftEyebrow ?? '— Presentkort'}</p>
-            <p className={`sf-italic ${fl.giftLede}`}>
+            <p className={`sf-eyebrow ${fl.giftEyebrow}`} data-corevo-editor-field="giftEyebrow" data-corevo-editor-stable-field="giftEyebrow">{content.giftEyebrow ?? '— Presentkort'}</p>
+            <p className={`sf-italic ${fl.giftLede}`} data-corevo-editor-field="giftLede" data-corevo-editor-stable-field="giftLede">
               {content.giftLede ?? 'Ge bort en blomstrande stund.'}
             </p>
             <a href="/presentkort" className={`${styles.flBandCta} ${fl.bandCta} ${fl.giftCta}`}>
-              {content.giftCta ?? 'Till presentkorten'}
+              <span data-corevo-editor-field="giftCta" data-corevo-editor-stable-field="giftCta">{content.giftCta ?? 'Till presentkorten'}</span>
             </a>
           </Reveal>
         </section>
@@ -302,7 +310,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       <section className={styles.sfGalleryBand}>
         <div className={styles.sfWide}>
           <Reveal>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
+            <p className="sf-eyebrow" data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
@@ -314,21 +322,21 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       <section className={styles.sfLocBand}>
         <div className={`${styles.sfWide} ${styles.sfLocGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <p className="sf-eyebrow" data-corevo-editor-field="findEyebrow" data-corevo-editor-stable-field="findEyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
             <h2 className={`sf-h2 ${fl.locTitle}`}>
-              {location?.address ? location.address.split(',')[0] : tenant.name}
+              <span data-corevo-editor-field={location?.address ? 'location.address' : 'tenant.name'} data-corevo-editor-stable-field={location?.address ? 'location.address' : 'tenant.name'}>{location?.address ? location.address.split(',')[0] : tenant.name}</span>
             </h2>
             {location?.address ? (
-              <p className={`sf-body ${fl.locBody}`}>{location.address}</p>
+              <p className={`sf-body ${fl.locBody}`} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</p>
             ) : (
               <p className={`sf-body ${fl.locBody}`}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={styles.sfHours}>
-                {location.hours.map((h) => (
+                {location.hours.map((h, index) => (
                   <div key={h.day} className={styles.sfHoursRow}>
                     <span>{h.day}</span>
-                    <span>{h.time}</span>
+                    <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span>
                   </div>
                 ))}
               </div>
@@ -355,10 +363,10 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
 
       <section className={styles.sfClosing}>
         <Reveal>
-          <h2 className={`sf-h1 ${fl.closingTitle}`}>
+          <h2 className={`sf-h1 ${fl.closingTitle}`} data-corevo-editor-field="closingTitle" data-corevo-editor-stable-field="closingTitle">
             {content.closingTitle ?? 'Blommor för din dag?'}
           </h2>
-          <p className={styles.sfClosingLead}>{content.closingLede ?? 'Beställ, boka en kurs eller hör av dig — vi hjälper dig gärna.'}</p>
+          <p className={styles.sfClosingLead} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? 'Beställ, boka en kurs eller hör av dig — vi hjälper dig gärna.'}</p>
           <div className={fl.closingActions}>
             <BookCta enabled={bookingReachable} className={styles.sfClosingCta} />
           </div>

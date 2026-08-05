@@ -48,6 +48,7 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
           title: 'Katalogen',
           cta: 'Se kompositionerna',
           img: content.galleryImages[2] ?? spreadA,
+          imageField: 'gallery_images.2',
           href: '/shop',
         }
       : null,
@@ -56,6 +57,7 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
           title: 'Bröllop',
           cta: 'Er stora dag',
           img: content.galleryImages[0] ?? spreadA,
+          imageField: 'gallery_images.0',
           href: '/offert',
         }
       : null,
@@ -64,20 +66,21 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
           title: 'Journalen',
           cta: 'Ord om blommor',
           img: content.galleryImages[5] ?? spreadB,
+          imageField: 'gallery_images.5',
           href: '/blogg',
         }
       : null,
-  ].filter((t): t is { title: string; cta: string; img: string; href: string } => t !== null)
+  ].filter((t): t is { title: string; cta: string; img: string; imageField: string; href: string } => t !== null)
 
   return (
     <div className={styles.elRoot}>
       {/* (1) TEXTLÖST UPPSLAG */}
       <section className={styles.elSpread}>
         <Reveal>
-          <div className={styles.elSpreadA} style={{ backgroundImage: `url(${spreadA})` }} />
+          <div className={styles.elSpreadA} style={{ backgroundImage: `url(${spreadA})` }} data-corevo-editor-field="hero_images.0" data-corevo-editor-stable-field="hero_images.0" />
         </Reveal>
         <Reveal delay={140}>
-          <div className={styles.elSpreadB} style={{ backgroundImage: `url(${spreadB})` }} />
+          <div className={styles.elSpreadB} style={{ backgroundImage: `url(${spreadB})` }} data-corevo-editor-field="hero_images.1" data-corevo-editor-stable-field="hero_images.1" />
         </Reveal>
       </section>
 
@@ -85,8 +88,8 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
       <section className={styles.elQuote}>
         <Reveal>
           <div className={styles.elQuoteRule} />
-          <p className={styles.elQuoteText}>{content.italic}</p>
-          <p className={styles.elQuoteBy}>— huset {tenant.name}</p>
+          <p className={styles.elQuoteText} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
+          <p className={styles.elQuoteBy}>— huset <span data-corevo-editor-field="tenant.name" data-corevo-editor-stable-field="tenant.name">{tenant.name}</span></p>
           <div className={styles.elQuoteRuleEnd} />
         </Reveal>
       </section>
@@ -101,6 +104,8 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
                   <span
                     className={styles.elTileImg}
                     style={t.img ? { backgroundImage: `url(${t.img})` } : undefined}
+                    data-corevo-editor-field={t.imageField}
+                    data-corevo-editor-stable-field={t.imageField}
                   />
                 </span>
                 <span className={styles.elTileTitle}>{t.title}</span>
@@ -118,14 +123,14 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
             <div className={styles.elPlate}>
               <div className={styles.elPlateInner}>
                 <p className={styles.elPlateEyebrow}>
-                  {content.closingEyebrow ?? 'Livets stora stunder'}
+                  <span data-corevo-editor-field="closingEyebrow" data-corevo-editor-stable-field="closingEyebrow">{content.closingEyebrow ?? 'Livets stora stunder'}</span>
                 </p>
                 <h2 className={styles.elPlateTitle}>
-                  {content.pillar1Title ?? 'Blommor för bröllop, fest och avsked'}
+                  <span data-corevo-editor-field="pillar1Title" data-corevo-editor-stable-field="pillar1Title">{content.pillar1Title ?? 'Blommor för bröllop, fest och avsked'}</span>
                 </h2>
                 <p className={styles.elPlateLede}>
-                  {content.pillar1Body ??
-                    'Varje arrangemang komponeras personligen, efter samtal med er. Vi tar emot ett begränsat antal uppdrag per helg — förfrågan kostar ingenting.'}
+                  <span data-corevo-editor-field="pillar1Body" data-corevo-editor-stable-field="pillar1Body">{content.pillar1Body ??
+                    'Varje arrangemang komponeras personligen, efter samtal med er. Vi tar emot ett begränsat antal uppdrag per helg — förfrågan kostar ingenting.'}</span>
                 </p>
                 <Link href="/offert" className={styles.elPlateCta}>
                   Läs om bröllop
@@ -140,9 +145,9 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
       {catalog.length > 0 ? (
         <section className={styles.elBand}>
           <Reveal>
-            <p className={styles.elBandEyebrow}>{content.shopEyebrow ?? 'Ur katalogen'}</p>
+            <p className={styles.elBandEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Ur katalogen'}</p>
             <h2 className={styles.elBandTitle}>
-              {content.shopTitle ?? 'Säsongens kompositioner'}
+              <span data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Säsongens kompositioner'}</span>
             </h2>
           </Reveal>
           <ul className={styles.elHomeCatalog}>
@@ -168,7 +173,7 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
           </ul>
           <p className={styles.elBandFoot}>
             <Link href="/shop" className={styles.elBtnLine}>
-              {content.shopCta ?? 'Se hela katalogen'}
+              <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Se hela katalogen'}</span>
             </Link>
           </p>
         </section>
@@ -178,8 +183,8 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
       {posts.length > 0 ? (
         <section className={styles.elJournalBand}>
           <Reveal>
-            <p className={styles.elBandEyebrow}>{content.blogEyebrow ?? 'Journalen'}</p>
-            <h2 className={styles.elJournalBandTitle}>{content.blogTitle ?? 'Ord om blommor'}</h2>
+            <p className={styles.elBandEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'Journalen'}</p>
+            <h2 className={styles.elJournalBandTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Ord om blommor'}</h2>
           </Reveal>
           <ul className={styles.elJournalList}>
             {posts.map((p, i) => (

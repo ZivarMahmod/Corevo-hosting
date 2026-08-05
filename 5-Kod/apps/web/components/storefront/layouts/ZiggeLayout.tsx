@@ -40,9 +40,9 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
       {/* split hero: color panel + photo */}
       <section className={styles.sfSplitHero}>
         <div className={styles.sfSplitPanel}>
-          <p className={`sf-eyebrow ${zg.heroEyebrow}`}>{content.heroEyebrow}</p>
-          <h1 className={`${styles.sfSplitTitle} ${zg.heroTitle}`}>{content.heroTitle}</h1>
-          <p className={`sf-lede ${zg.heroLede}`}>{content.heroLede}</p>
+          <p className={`sf-eyebrow ${zg.heroEyebrow}`} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={`${styles.sfSplitTitle} ${zg.heroTitle}`} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={`sf-lede ${zg.heroLede}`} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.sfSplitActions}>
             <BookCta enabled={bookingReachable} className={styles.sfSquareCta} />
             <span className={styles.sfSplitNote}>eller drop in</span>
@@ -54,6 +54,8 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
         <div
           className={styles.sfSplitPhoto}
           style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
+          data-corevo-editor-field="hero_images.0"
+          data-corevo-editor-stable-field="hero_images.0"
         />
       </section>
 
@@ -112,10 +114,10 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
 
       {/* stat strip */}
       <section className={`${styles.sfStatStrip} ${zg.blockSeam}`}>
-        {content.stats.map(([n, l]) => (
+        {content.stats.map(([n, l], index) => (
           <div key={l} className={styles.sfStatStripCell}>
-            <span className={styles.sfStatValueLg}>{n}</span>
-            <span className={styles.sfStatStripLabel}>{l}</span>
+            <span className={styles.sfStatValueLg} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{n}</span>
+            <span className={styles.sfStatStripLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{l}</span>
           </div>
         ))}
       </section>

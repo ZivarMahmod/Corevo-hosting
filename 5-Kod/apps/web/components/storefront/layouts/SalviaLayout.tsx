@@ -50,9 +50,9 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
           images={content.heroImages.map((src) => ({ src, alt: '' }))}
           align="left"
         >
-          <p className={styles.heroEyebrow}>{content.heroEyebrow}</p>
-          <h1 className={`${styles.heroTitle} ${sv.heroTitle}`}>{content.heroTitle}</h1>
-          <p className={styles.heroLead}>{content.heroLede}</p>
+          <p className={styles.heroEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={`${styles.heroTitle} ${sv.heroTitle}`} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={styles.heroLead} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.heroActions}>
             <BookCta enabled={bookingReachable} className={styles.heroCta} />
           </div>
@@ -63,8 +63,8 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
       <section className={styles.sfServices}>
         <div className={styles.sfNarrow}>
           <Reveal>
-            <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-            <h2 className={`sf-h1 ${sv.srvTitle}`}>{content.servicesTitle}</h2>
+            <p className="sf-eyebrow" data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+            <h2 className={`sf-h1 ${sv.srvTitle}`} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h2>
           </Reveal>
           {rows.length > 0 ? (
             <div className={styles.sfRowList}>
@@ -144,17 +144,19 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
             <div
               className={styles.sfAboutPhoto}
               style={{ backgroundImage: `url(${content.aboutImage})` }}
+              data-corevo-editor-field="about_image"
+              data-corevo-editor-stable-field="about_image"
             />
           </Reveal>
           <Reveal delay={120}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <p className={`sf-italic ${styles.sfAboutItalic}`}>{content.italic}</p>
-            <p className={`sf-body ${sv.aboutBody}`}>{content.aboutCopyHome}</p>
+            <p className={`sf-italic ${styles.sfAboutItalic}`} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
+            <p className={`sf-body ${sv.aboutBody}`} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
             <ul className={styles.sfStatTrio}>
-              {content.stats.map(([n, l]) => (
+              {content.stats.map(([n, l], index) => (
                 <li key={l}>
-                  <span className={styles.sfStatValue}>{n}</span>
-                  <span className={styles.sfStatLabel}>{l}</span>
+                  <span className={styles.sfStatValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{n}</span>
+                  <span className={styles.sfStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -169,8 +171,8 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
         <section className={styles.sfTeam}>
           <div className={styles.sfWide}>
             <Reveal className={sv.center}>
-              <p className="sf-eyebrow">{content.teamEyebrow}</p>
-              <h2 className={`sf-h1 ${sv.secTitle}`}>{content.teamTitle}</h2>
+              <p className="sf-eyebrow" data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow}</p>
+              <h2 className={`sf-h1 ${sv.secTitle}`} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle}</h2>
             </Reveal>
             <ul className={styles.sfTeamGrid}>
               {content.team.map((m, i) => (

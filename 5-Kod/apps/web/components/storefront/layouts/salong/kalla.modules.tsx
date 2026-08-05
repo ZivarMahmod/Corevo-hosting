@@ -49,10 +49,10 @@ export function KallaShop({ data, limit, moreHref, content }: ThemeShopViewProps
   return (
     <section className={styles.kaPageShop} data-module="shop" data-fulfilment={config.fulfilment}>
       <div className={styles.kaPageHead}>
-        <p className={styles.kaEyebrow}>
+        <p className={styles.kaEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">
           {content.shopEyebrow ?? 'Det vi använder i behandlingarna'}
         </p>
-        <h1 className={styles.kaPageTitle}>{content.shopTitle ?? 'Apoteket'}</h1>
+        <h1 className={styles.kaPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Apoteket'}</h1>
       </div>
 
       {/* KATEGORI-CHIPS — filens rad 247-250: centrerad rad, mjukt rundade (6px) chips i
@@ -111,7 +111,7 @@ export function KallaShop({ data, limit, moreHref, content }: ThemeShopViewProps
       )}
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
-        <a href={moreHref} className={`${styles.kaGhost} ${styles.kaShopMore}`}>
+        <a href={moreHref} className={`${styles.kaGhost} ${styles.kaShopMore}`} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
           {content.shopCta ?? 'Till apoteket'}
         </a>
       ) : null}
@@ -130,7 +130,7 @@ export function KallaBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
   return (
     <section className={styles.kaPage} data-module="blogg">
       <div className={styles.kaPageHead}>
-        <h1 className={styles.kaPageTitle}>{content.blogTitle ?? 'Anteckningar'}</h1>
+        <h1 className={styles.kaPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Anteckningar'}</h1>
       </div>
 
       {posts.length === 0 ? (
@@ -168,7 +168,7 @@ export function KallaBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
       )}
 
       {moreHref && teaser && allPosts.length > 0 ? (
-        <a href={moreHref} className={`${styles.kaTextLink} ${styles.kaShopMore}`}>
+        <a href={moreHref} className={`${styles.kaTextLink} ${styles.kaShopMore}`} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
           {content.blogCta ?? 'Alla →'}
         </a>
       ) : null}
@@ -195,8 +195,8 @@ export function KallaTeam({ members, content }: ThemeTeamViewProps) {
   return (
     <section className={styles.kaTeamPage} data-module="team">
       <div className={styles.kaPageHead}>
-        <p className={styles.kaPageEyebrow}>{content.teamEyebrow}</p>
-        <h1 className={styles.kaPageTitle}>{content.teamTitle}</h1>
+        <p className={styles.kaPageEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow}</p>
+        <h1 className={styles.kaPageTitle} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle}</h1>
       </div>
       <div className={styles.kaTeamGrid}>
         {members.map((m) => (
@@ -244,7 +244,7 @@ export function KallaGalleri({ items, content }: ThemeGalleriViewProps) {
         >
           {content.galleryEyebrow ?? ''}
         </p>
-        <h1 className={styles.kaPageTitle}>{content.galleryTitle ?? 'Rummet'}</h1>
+        <h1 className={styles.kaPageTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Rummet'}</h1>
       </div>
 
       {items.length === 0 ? (
@@ -286,11 +286,11 @@ export function KallaLojalitet({ config, plans, content }: ThemeLojalitetViewPro
   return (
     <section className={styles.kaClub} data-module="lojalitet" data-variant={config.variant}>
       <div className={styles.kaPageHead}>
-        <p className={styles.kaPageEyebrow}>
+        <p className={styles.kaPageEyebrow} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">
           {content.clubEyebrow ?? 'Månadsvis · Ingen bindningstid'}
         </p>
-        <h1 className={styles.kaPageTitle}>{content.clubTitle ?? 'Ritualklubben'}</h1>
-        <p className={styles.kaClubLede}>
+        <h1 className={styles.kaPageTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'Ritualklubben'}</h1>
+        <p className={styles.kaClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">
           {content.clubLede ??
             'Håret mår bäst av regelbundenhet. Välj en rytm — pausa när livet vill annat.'}
         </p>

@@ -26,8 +26,8 @@ export function SolSaltShop({ data, limit, moreHref, content }: ThemeShopViewPro
 
   return (
     <section className={styles.slShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.slEyebrow}>{content.shopEyebrow ?? 'Sortiment'}</p>
-      <h1 className={styles.slPageTitle}>{content.shopTitle ?? 'Boden'}</h1>
+      <p className={styles.slEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Sortiment'}</p>
+      <h1 className={styles.slPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Boden'}</h1>
 
       {/* KATEGORI-PILLREN — filens rad 147-150: helrunda (999px) pills, 14px/600, ingen kant.
           Vald = kobolt platta med sandvit text. */}
@@ -84,7 +84,7 @@ export function SolSaltShop({ data, limit, moreHref, content }: ThemeShopViewPro
       )}
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
-        <a href={moreHref} className={`${styles.slLink} ${styles.slMore}`}>
+        <a href={moreHref} className={`${styles.slLink} ${styles.slMore}`} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
           {content.shopCta ?? 'Hela sortimentet →'}
         </a>
       ) : null}
@@ -102,7 +102,7 @@ export function SolSaltBlogg({ posts: allPosts, limit, moreHref, content }: Them
 
   return (
     <section className={styles.slBlogg} data-module="blogg">
-      <h1 className={styles.slPageTitle}>{content.blogTitle ?? 'Från boden'}</h1>
+      <h1 className={styles.slPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Från boden'}</h1>
 
       {posts.length === 0 ? (
         <p className={styles.slEmpty}>Inga inlägg är publicerade ännu.</p>
@@ -147,7 +147,7 @@ export function SolSaltBlogg({ posts: allPosts, limit, moreHref, content }: Them
       )}
 
       {moreHref && teaser && allPosts.length > 0 ? (
-        <a href={moreHref} className={`${styles.slLink} ${styles.slMore}`}>
+        <a href={moreHref} className={`${styles.slLink} ${styles.slMore}`} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
           {content.blogCta ?? 'Läs allt från boden →'}
         </a>
       ) : null}
@@ -163,7 +163,7 @@ export function SolSaltBlogg({ posts: allPosts, limit, moreHref, content }: Them
 export function SolSaltGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.slGalleri} data-module="galleri">
-      <h1 className={styles.slGalTitle}>{content.galleryTitle ?? 'Galleri'}</h1>
+      <h1 className={styles.slGalTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Galleri'}</h1>
 
       {items.length === 0 ? (
         <p className={styles.slGalEmpty}>Inga bilder är publicerade ännu.</p>
@@ -206,8 +206,8 @@ export function SolSaltLojalitet({ config, plans, content }: ThemeLojalitetViewP
 
   return (
     <section className={styles.slClub} data-module="lojalitet" data-variant={config.variant}>
-      <h1 className={styles.slGalTitle}>{content.clubTitle ?? 'Solklubben'}</h1>
-      <p className={styles.slClubLede}>{content.clubLede ?? config.perkText}</p>
+      <h1 className={styles.slGalTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'Solklubben'}</h1>
+      <p className={styles.slClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">{content.clubLede ?? config.perkText}</p>
 
       {stamps.length > 0 ? (
         <div className={styles.slSunCard}>
@@ -245,7 +245,7 @@ export function SolSaltLojalitet({ config, plans, content }: ThemeLojalitetViewP
       ) : null}
 
       <div className={styles.slClubJoin}>
-        <JoinClubForm cta={content.clubCta ?? 'Gå med gratis'} />
+        <JoinClubForm cta={content.clubCta ?? 'Gå med gratis'} editorField="clubCta" />
       </div>
     </section>
   )

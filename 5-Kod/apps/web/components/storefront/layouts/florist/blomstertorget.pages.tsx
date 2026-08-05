@@ -23,30 +23,32 @@ import styles from './blomstertorget.module.css'
 export function BlomstertorgetOm({ content, tenant }: ThemePageProps) {
   return (
     <section className={styles.btPage}>
-      <h1 className={styles.btPageTitle}>{content.aboutTitle}</h1>
-      <p className={styles.btLede}>{content.teamTitle ?? tenant.name}</p>
+      <h1 className={styles.btPageTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+      <p className={styles.btLede} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle ?? tenant.name}</p>
 
       <div className={styles.btSplit}>
         <div
           className={styles.btSplitPhoto}
+          data-corevo-editor-field="about_image"
+          data-corevo-editor-stable-field="about_image"
           style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
         />
         <div className={styles.btProse}>
           <p>
-            <span className={styles.btDateline}>{content.findEyebrow ?? 'Hötorget.'}</span>{' '}
-            {content.aboutCopy}
+            <span className={styles.btDateline} data-corevo-editor-field="findEyebrow" data-corevo-editor-stable-field="findEyebrow">{content.findEyebrow ?? 'Hötorget.'}</span>{' '}
+            <span data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</span>
           </p>
-          {content.whyBody ? <p>{content.whyBody}</p> : null}
-          {content.whySub ? <p>{content.whySub}</p> : null}
+          {content.whyBody ? <p data-corevo-editor-field="whyBody" data-corevo-editor-stable-field="whyBody">{content.whyBody}</p> : null}
+          {content.whySub ? <p data-corevo-editor-field="whySub" data-corevo-editor-stable-field="whySub">{content.whySub}</p> : null}
         </div>
       </div>
 
       {content.stats.length > 0 ? (
         <ul className={styles.btStats}>
-          {content.stats.map(([varde, etikett]) => (
+          {content.stats.map(([varde, etikett], index) => (
             <li key={etikett} className={styles.btStat}>
-              <span className={styles.btStatValue}>{varde}</span>
-              <span className={styles.btStatLabel}>{etikett}</span>
+              <span className={styles.btStatValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{varde}</span>
+              <span className={styles.btStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{etikett}</span>
             </li>
           ))}
         </ul>
@@ -59,8 +61,8 @@ export function BlomstertorgetTjanster({ content, services, modules }: ThemePage
   const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.btPageNarrow}>
-      <h1 className={styles.btPageTitle}>{content.servicesTitle}</h1>
-      <p className={styles.btLede}>{content.servicesEyebrow}</p>
+      <h1 className={styles.btPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
+      <p className={styles.btLede} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
 
       {services.length === 0 ? (
         <p className={styles.btEmpty}>Inga kungörelser är införda ännu.</p>
@@ -87,8 +89,8 @@ export function BlomstertorgetKontakt({ content, location, contact }: ThemePageP
 
   return (
     <section className={styles.btPage}>
-      <h1 className={styles.btPageTitle}>{content.contactTitle ?? 'Till redaktionen'}</h1>
-      <p className={styles.btLede}>
+      <h1 className={styles.btPageTitle} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle ?? 'Till redaktionen'}</h1>
+      <p className={styles.btLede} data-corevo-editor-field="contactEyebrow" data-corevo-editor-stable-field="contactEyebrow">
         {content.contactEyebrow ?? 'Frågor, beröm eller klagomål — allt läses, det mesta besvaras.'}
       </p>
 
@@ -98,7 +100,7 @@ export function BlomstertorgetKontakt({ content, location, contact }: ThemePageP
             {location?.address ? (
               <>
                 <p className={styles.btFactHead}>Ståndet</p>
-                <p className={styles.btFactText}>{location.address}</p>
+                <p className={styles.btFactText} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</p>
               </>
             ) : null}
             {contact.phone || contact.email ? (
@@ -107,11 +109,11 @@ export function BlomstertorgetKontakt({ content, location, contact }: ThemePageP
                 <p className={styles.btFactText}>
                   {contact.phone ? (
                     <>
-                      <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                      <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
                       <br />
                     </>
                   ) : null}
-                  {contact.email ? <a href={`mailto:${contact.email}`}>{contact.email}</a> : null}
+                  {contact.email ? <a href={`mailto:${contact.email}`} data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{contact.email}</a> : null}
                 </p>
               </>
             ) : null}
@@ -119,9 +121,9 @@ export function BlomstertorgetKontakt({ content, location, contact }: ThemePageP
               <>
                 <p className={styles.btFactHead}>Öppet</p>
                 <p className={styles.btFactText}>
-                  {hours.map((h) => (
+                  {hours.map((h, index) => (
                     <span key={h.day}>
-                      {h.day} {h.time}
+                      {h.day} <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span>
                       <br />
                     </span>
                   ))}
@@ -137,7 +139,7 @@ export function BlomstertorgetKontakt({ content, location, contact }: ThemePageP
             heter "Skicka insändaren" — inte "Skicka". Redaktionens röst, inte vår. */}
         <div className={styles.btBox}>
           <p className={styles.btBoxHead}>Insändare</p>
-          <p className={styles.btBoxText}>{content.closingLede ?? content.aboutCopy}</p>
+          <p className={styles.btBoxText} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? content.aboutCopy}</p>
           <ContactForm
             rows={[
               [{ key: 'name', placeholder: 'namn', required: true }],

@@ -27,16 +27,18 @@ export function LunariaOm({ content, tenant }: ThemePageProps) {
     <section className={styles.lnPage}>
       <div className={styles.lnAbout}>
         <div>
-          <p className={styles.lnAboutEyebrow}>{content.teamEyebrow ?? 'Om butiken'}</p>
-          <h1 className={styles.lnAboutTitle}>{content.aboutTitle}</h1>
-          <p className={styles.lnAboutCopy}>{content.aboutCopy}</p>
+          <p className={styles.lnAboutEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow ?? 'Om butiken'}</p>
+          <h1 className={styles.lnAboutTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+          <p className={styles.lnAboutCopy} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
           {content.closingLede ? (
-            <p className={styles.lnAboutCopy}>{content.closingLede}</p>
+            <p className={styles.lnAboutCopy} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede}</p>
           ) : null}
         </div>
         <div className={styles.lnAboutFrame}>
           <div
             className={styles.lnAboutPhoto}
+            data-corevo-editor-field="about_image"
+            data-corevo-editor-stable-field="about_image"
             style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
             role="img"
             aria-label={tenant.name}
@@ -46,10 +48,10 @@ export function LunariaOm({ content, tenant }: ThemePageProps) {
 
       {stats.length > 0 ? (
         <div className={styles.lnStats}>
-          {stats.map(([value, label]) => (
+          {stats.map(([value, label], index) => (
             <div key={label} className={styles.lnStat}>
-              <p className={styles.lnStatValue}>{value}</p>
-              <p className={styles.lnStatLabel}>{label}</p>
+              <p className={styles.lnStatValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{value}</p>
+              <p className={styles.lnStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{label}</p>
             </div>
           ))}
         </div>
@@ -62,14 +64,14 @@ export function LunariaTjanster({ content, services, modules }: ThemePageProps) 
   const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.lnPageNarrow}>
-      <h1 className={styles.lnPageTitle}>{content.servicesTitle}</h1>
-      <p className={styles.lnPageLede}>
+      <h1 className={styles.lnPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
+      <p className={styles.lnPageLede} data-corevo-editor-field="servicesIntro" data-corevo-editor-stable-field="servicesIntro">
         {content.servicesIntro ??
           'Konsultation för bröllop, större arrangemang eller ett samtal om det ni drömmer om.'}
       </p>
 
       <div className={styles.lnPanel}>
-        <p className={styles.lnPanelLabel}>{content.servicesEyebrow}</p>
+        <p className={styles.lnPanelLabel} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
         {services.length === 0 ? (
           <p className={styles.lnEmpty}>Butikens tjänster visas snart.</p>
         ) : (
@@ -96,14 +98,14 @@ export function LunariaKontakt({ content, location, contact }: ThemePageProps) {
 
   return (
     <section className={styles.lnPage}>
-      <h1 className={styles.lnPageTitle}>{content.contactTitle ?? 'Kontakt'}</h1>
+      <h1 className={styles.lnPageTitle} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle ?? 'Kontakt'}</h1>
 
       <div className={styles.lnContact}>
         <div className={styles.lnContactBox}>
           {location?.address ? (
             <>
               <p className={styles.lnFactLabel}>Butiken</p>
-              <p className={styles.lnFactValue}>{location.address}</p>
+              <p className={styles.lnFactValue} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</p>
             </>
           ) : null}
           {contact.email || contact.phone ? (
@@ -112,12 +114,12 @@ export function LunariaKontakt({ content, location, contact }: ThemePageProps) {
               <p className={styles.lnFactValue}>
                 {contact.email ? (
                   <>
-                    <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                    <a href={`mailto:${contact.email}`} data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{contact.email}</a>
                     <br />
                   </>
                 ) : null}
                 {contact.phone ? (
-                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
                 ) : null}
               </p>
             </>
@@ -126,14 +128,14 @@ export function LunariaKontakt({ content, location, contact }: ThemePageProps) {
             <>
               <p className={styles.lnFactLabel}>Öppet</p>
               <p className={styles.lnFactValue}>
-                {hours.map((h) => `${h.day} ${h.time}`).join(' · ')}
+                {hours.map((h, index) => <span key={h.day}>{index > 0 ? ' · ' : null}{h.day} <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span></span>)}
               </p>
             </>
           ) : null}
         </div>
 
         <div className={styles.lnContactBox}>
-          <p className={styles.lnContactProse}>{content.closingLede ?? content.aboutCopy}</p>
+          <p className={styles.lnContactProse} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? content.aboutCopy}</p>
           {/* Filens formulär, nu kopplat till kontakt-rälsen (goal-64). Lunarias knapp
               heter "Sänd" — inte "Skicka" — och meddelandefältet "Er hälsning". Art déco
               tilltalar i ni-form; den rösten är designens, inte vår att normalisera. */}
