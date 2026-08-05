@@ -60,6 +60,7 @@ const branched = applyBranch(initStudioCfg('salvia'), 'frisor', presets)
 const fresh = initStudioCfg('salvia')
 // W4: a cfg with a typed service → tjanster panel rows + live preview reflect it.
 const withServices = { ...branched, services: [{ name: 'Klippning', price: '350' }] }
+const allSteps = FLAT_STEP_ORDER
 
 /** Render and assert it produced real (non-trivial) markup without throwing. */
 function mounts(node: React.ReactElement): string {
@@ -92,6 +93,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
         <PanelHost
           cfg={branched}
           step={step}
+          stepOrder={allSteps}
           dispatch={noopDispatch}
           presets={presets}
           onPrev={noop}
@@ -109,6 +111,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
         <PanelHost
           cfg={fresh}
           step={step}
+          stepOrder={allSteps}
           dispatch={noopDispatch}
           presets={presets}
           onPrev={noop}
@@ -121,7 +124,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
 
   it('the booking step shows Corevo and external provider choices', () => {
     const html = mounts(
-      <PanelHost cfg={branched} step="bokning" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+      <PanelHost cfg={branched} step="bokning" stepOrder={allSteps} dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
     )
     expect(html).toContain('Corevo-bokning')
     expect(html).toContain('Extern bokning')
@@ -133,6 +136,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       <PanelHost
         cfg={{ ...branched, bookingProvider: 'external', bookingExternalUrl: 'http://fel.test' }}
         step="bokning"
+        stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
         onPrev={noop}
@@ -144,16 +148,11 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('aria-invalid="true"')
   })
 
-  // 2026-07-11: stegen "Tjänster & priser" och "Utseende & text" är BORTA ur onboardingen
-  // (Zivar: "superlätt att komma igång — jag ska inte skriva in tjänster eller rubriker").
-  // Texten kommer från branschens mall-text + mallens evergreen-copy; tjänster och
-  // accent/logga läggs upp i kundens admin efteråt.
-  it('onboardingen har fyra steg och kräver varken tjänster, mallval eller modulval', () => {
-    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'bokning', 'live'])
+  it('onboardingen har modulval och startcopy utan att lägga tillbaka tjänste-steget', () => {
+    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'modules', 'bokning', 'appearance', 'live'])
     expect(FLAT_STEP_ORDER).not.toContain('tjanster')
     expect(FLAT_STEP_ORDER).not.toContain('brand')
     expect(FLAT_STEP_ORDER).not.toContain('tema')
-    expect(FLAT_STEP_ORDER).not.toContain('modval')
   })
 
   it('storefronten visar mallens egen copy utan att operatören skrivit något (branched cfg)', () => {
@@ -172,6 +171,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       <PanelHost
         cfg={branched}
         step="live"
+        stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
         onPrev={noop}
@@ -193,6 +193,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       <PanelHost
         cfg={branched}
         step="live"
+        stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
         onPrev={noop}
@@ -220,6 +221,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
           ownerEmail: '',
         }}
         step="live"
+        stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
         onPrev={noop}

@@ -89,6 +89,8 @@ export function FreshCutLayout({
   const phone = contact?.phone?.trim() || null
   const email = contact?.email?.trim() || null
   const instagram = social?.instagram?.trim() || null
+  const facebook = social?.facebook?.trim() || null
+  const tiktok = social?.tiktok?.trim() || null
   const heroImage = content.heroImages[0]
   const gallery = content.galleryImages.slice(0, 3)
   const studioImage = content.aboutImage
@@ -345,28 +347,42 @@ export function FreshCutLayout({
                 rel="noopener noreferrer"
               >
                 <span>Besök</span>
-                <strong>{address.join(', ')}</strong>
+                <strong data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{address.join(', ')}</strong>
                 <i aria-hidden="true">↗</i>
               </a>
             ) : null}
             {phone ? (
               <a href={phoneHref(phone)}>
                 <span>Ring</span>
-                <strong>{phone}</strong>
+                <strong data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{phone}</strong>
                 <i aria-hidden="true">↗</i>
               </a>
             ) : null}
             {email ? (
               <a href={`mailto:${email}`}>
                 <span>Mejl</span>
-                <strong>{email}</strong>
+                <strong data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{email}</strong>
                 <i aria-hidden="true">↗</i>
               </a>
             ) : null}
             {instagram ? (
               <a href={instagram} target="_blank" rel="noopener noreferrer">
                 <span>Följ</span>
-                <strong>{instagramLabel(instagram)}</strong>
+                <strong data-corevo-editor-field="social.instagram" data-corevo-editor-stable-field="social.instagram">{instagramLabel(instagram)}</strong>
+                <i aria-hidden="true">↗</i>
+              </a>
+            ) : null}
+            {facebook ? (
+              <a href={facebook} target="_blank" rel="noopener noreferrer">
+                <span>Facebook</span>
+                <strong data-corevo-editor-field="social.facebook" data-corevo-editor-stable-field="social.facebook">Facebook</strong>
+                <i aria-hidden="true">↗</i>
+              </a>
+            ) : null}
+            {tiktok ? (
+              <a href={tiktok} target="_blank" rel="noopener noreferrer">
+                <span>TikTok</span>
+                <strong data-corevo-editor-field="social.tiktok" data-corevo-editor-stable-field="social.tiktok">TikTok</strong>
                 <i aria-hidden="true">↗</i>
               </a>
             ) : null}

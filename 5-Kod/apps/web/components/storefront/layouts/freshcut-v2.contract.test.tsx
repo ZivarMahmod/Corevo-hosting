@@ -220,6 +220,7 @@ describe('FreshCut v2 customer-locked website', () => {
       'resultsEyebrow', 'homeSecondTitle', 'resultsLede', 'resultImage1Caption',
       'studioImageCaption', 'studioEyebrow', 'aboutTitle', 'aboutCopyHome', 'studioPoint1',
       'whySub', 'whyTitle', 'contactEyebrow', 'contactTitle', 'contactLede',
+      'location.address', 'contact.phone', 'contact.email', 'social.instagram',
     ]) {
       expect(html).toContain(`data-corevo-editor-field="${field}"`)
     }

@@ -180,9 +180,10 @@
   display: grid;
   grid-template-columns: 470px minmax(0, 1fr);
   flex: 1;
+  overflow: hidden;
 }
 .embedded .workspace {
-  grid-template-columns: minmax(400px, 1fr) minmax(480px, 1.15fr);
+  grid-template-columns: minmax(360px, 0.95fr) minmax(0, 1.05fr);
   gap: 16px;
   align-items: start;
 }
@@ -321,7 +322,7 @@
 .stats { display: grid; gap: 8px; }
 .statRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-.hours { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.hours { margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 8px; }
 .history { margin: 10px 0 0; padding: 0; display: grid; gap: 7px; list-style: none; }
 .history li { display: flex; align-items: center; justify-content: space-between; color: var(--editor-text-3); font-family: var(--font-plexmono), 'IBM Plex Mono', monospace; font-size: 10px; }
 .history button { border: 0; background: transparent; color: var(--editor-text-2); cursor: pointer; }
@@ -342,6 +343,16 @@
   height: calc(100vh - 220px);
   min-height: 420px;
   overflow: hidden;
+}
+
+@media (max-width: 1180px) {
+  .embedded .workspace {
+    grid-template-columns: 1fr;
+  }
+  .embedded .preview {
+    position: static;
+    height: min(720px, calc(100vh - 180px));
+  }
 }
 .previewUrl {
   display: none;
