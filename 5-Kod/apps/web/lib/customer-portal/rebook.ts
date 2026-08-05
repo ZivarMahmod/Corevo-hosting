@@ -1,7 +1,6 @@
 import { buildTenantBookingPath } from '@/lib/booking/preselection'
 import { DEFAULT_RESERVED_SUBDOMAINS } from '@/lib/tenant'
 import {
-  legacyTenantStorefrontHost,
   normalizeTenantStorefrontOrigin,
   tenantStorefrontHost,
 } from '@/lib/storefront-url'
@@ -82,9 +81,8 @@ export function validatePortalBookingOrigin({
     ) return null
 
     const canonicalHost = tenantStorefrontHost(tenantSlug)
-    const legacyHost = legacyTenantStorefrontHost(tenantSlug)
-    if (!canonicalHost || !legacyHost) return null
-    if (url.hostname === canonicalHost || url.hostname === legacyHost) {
+    if (!canonicalHost) return null
+    if (url.hostname === canonicalHost) {
       return normalizeTenantStorefrontOrigin(tenantSlug, bookingOrigin)
     }
     return safeDnsHostname(url.hostname) ? bookingOrigin : null

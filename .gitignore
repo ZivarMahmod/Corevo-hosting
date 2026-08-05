@@ -56,7 +56,8 @@ node_modules/
 *.log
 # goal-32: generated PROD deploy config (wrangler.jsonc routes ∪ DB customer
 # domains). Build artifact — produced by scripts/gen-deploy-config.mjs at deploy
-# time, never hand-edited, never committed. Source of truth = wrangler.jsonc.
+# time, never hand-edited, never committed. Source of truth = fixed routes plus
+# the live Cloudflare Worker Domains list.
 5-Kod/apps/web/wrangler.deploy.json
 2-Byggplan/.design-canvas.state.json
 4-Dokument-Underlag/01-acceptans/.design-canvas.state.json

@@ -7,7 +7,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 
 const snapshot: PortalSessionSnapshot = {
   tenantSlug: 'freshcut', tenantName: 'FreshCut', logoUrl: null, verticalLabel: null,
-  phone: null, address: null, mapUrl: null, bookingOrigin: 'https://freshcut.boka.corevo.se',
+  phone: null, address: null, mapUrl: null, bookingOrigin: 'https://freshcut.corevo.se',
   timezone: 'Europe/Stockholm', locale: 'sv-SE', defaultCountry: 'SE', currency: 'SEK',
   cancellationCutoffHours: 24, customerName: 'Alex', lastSeenAt: '2026-07-22T10:00:00.000Z',
   absoluteExpiresAt: '2027-07-22T10:00:00.000Z',
@@ -19,7 +19,7 @@ const base: PortalBookingProjection = {
   serviceName: 'Klippning', durationMinutes: 30, staffTitle: null, location: null,
   priceCents: null, currency: 'SEK', canCancel: true,
   cancelDeadline: '2099-07-31T10:00:00.000Z',
-  publicRebookUrl: 'https://freshcut.boka.corevo.se/boka?plats=223e4567-e89b-42d3-a456-426614174000&tjanst=323e4567-e89b-42d3-a456-426614174000',
+  publicRebookUrl: 'https://freshcut.corevo.se/boka?plats=223e4567-e89b-42d3-a456-426614174000&tjanst=323e4567-e89b-42d3-a456-426614174000',
 }
 
 const countCopy = (html: string, copy: string) => html.split(copy).length - 1
@@ -45,7 +45,7 @@ describe('portal rebook placement and status matrix', () => {
       <NextBookingCard snapshot={snapshot} items={[]} hasHistory={hasHistory} />,
     )
     expect(countCopy(html, 'Boka ny tid')).toBe(1)
-    expect(html).toContain('href="https://freshcut.boka.corevo.se/boka"')
+    expect(html).toContain('href="https://freshcut.corevo.se/boka"')
   })
 
   it.each([
@@ -79,7 +79,7 @@ describe('portal rebook placement and status matrix', () => {
       <BookingDetail snapshot={snapshot} booking={{ ...base, publicRebookUrl: null }} />,
     )
     expect(html).toContain('Boka en tid till')
-    expect(html).toContain('href="https://freshcut.boka.corevo.se/boka"')
+    expect(html).toContain('href="https://freshcut.corevo.se/boka"')
   })
 
   it('preserves validated service/location context for an active detail', () => {

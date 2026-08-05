@@ -142,12 +142,12 @@ beforeEach(() => {
   mocks.createServiceClient.mockReturnValue(service())
   mocks.createCustomerClaimLink.mockResolvedValue({
     ok: true,
-    url: 'https://demo.boka.corevo.se/konto/koppla/claim-secret',
+    url: 'https://demo.corevo.se/konto/koppla/claim-secret',
     expiresAt: '2030-01-02T09:00:00.000Z',
   })
   mocks.buildCancelToken.mockResolvedValue('cancel-secret')
   mocks.buildManageUrl.mockReturnValue(
-    'https://demo.boka.corevo.se/avboka/20000000-0000-4000-8000-000000000001?t=cancel-secret',
+    'https://demo.corevo.se/avboka/20000000-0000-4000-8000-000000000001?t=cancel-secret',
   )
   mocks.portalDeliverySecret.mockResolvedValue('P'.repeat(43))
   mocks.portalLinkDigest.mockResolvedValue('a'.repeat(64))
@@ -212,10 +212,10 @@ describe('prepareBookingDelivery', () => {
     expect(mocks.createCustomerClaimLink).toHaveBeenCalledWith({
       tenantId: row.tenant_id,
       customerId: row.customer_id,
-      origin: 'https://demo.boka.corevo.se',
+      origin: 'https://demo.corevo.se',
     })
     expect(mocks.buildManageUrl).toHaveBeenCalledWith(
-      'https://demo.boka.corevo.se',
+      'https://demo.corevo.se',
       row.booking_id,
       'cancel-secret',
     )

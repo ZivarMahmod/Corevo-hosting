@@ -1,4 +1,5 @@
 import 'server-only'
+import { RESERVED_SUBDOMAINS } from '@/lib/tenant'
 
 // goal-23: thin client for the Cloudflare for SaaS "Custom Hostnames" API — the
 // WRITE half of custom-domain support (the read half = 0019 resolve_tenant_by_domain
@@ -17,6 +18,8 @@ const cfToken = () => process.env.CF_API_TOKEN
 const cfZone = () => process.env.CF_ZONE_ID
 /** Optional: the SaaS fallback origin the customer CNAMEs their hostname to. */
 const cfFallbackOrigin = () => process.env.CF_FALLBACK_ORIGIN
+const cfAccountId = () => process.env.CF_ACCOUNT_ID
+const cfWorkerName = () => process.env.CF_WORKER_NAME ?? 'bokningsplatformen'
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4'
 
 /** A DNS record the customer must create for routing or SSL validation (DCV). */
@@ -41,6 +44,8 @@ export type CustomHostname = {
 
 /** Result wrapper — callers branch on `ok`; no throw on the expected CF/secret paths. */
 export type CfResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+export type TenantPlatformHostname = { hostname: string }
 
 /** A fetch with the same shape as the global — injectable so tests need no network. */
 export type FetchLike = (
@@ -93,6 +98,62 @@ function authHeaders(): Record<string, string> {
 function cfErrorMessage(env: CfEnvelope, fallback: string): string {
   const first = env.errors?.find((e) => e?.message)?.message
   return first ? `Cloudflare: ${first}` : fallback
+}
+
+function tenantPlatformHostname(slug: string): string | null {
+  const label = String(slug ?? '').trim().toLowerCase()
+  const root = String(process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').trim().toLowerCase()
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)) return null
+  if (RESERVED_SUBDOMAINS.includes(label)) return null
+  if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(root)) return null
+  return `${label}.${root}`
+}
+
+/**
+ * Attach the exact, Corevo-owned public host for one tenant. This is intentionally
+ * separate from customer custom domains: no customer DNS is involved here.
+ *
+ * The PUT is idempotent. A later deploy reads this same Cloudflare Worker-Domains
+ * list, so the hostname cannot disappear because it was omitted from a static file.
+ */
+export async function ensureTenantPlatformHostname(
+  slug: string,
+  fetchImpl: FetchLike = fetch as unknown as FetchLike,
+): Promise<CfResult<TenantPlatformHostname>> {
+  if (!hasCloudflareCredentials()) return { ok: false, error: MISSING_CREDS }
+  const hostname = tenantPlatformHostname(slug)
+  if (!hostname) return { ok: false, error: 'Ogiltig eller reserverad kundsubdomän.' }
+
+  let accountId = cfAccountId()
+  try {
+    if (!accountId) {
+      const zoneRes = await fetchImpl(`${CF_API_BASE}/zones/${cfZone()}`, {
+        method: 'GET',
+        headers: authHeaders(),
+      })
+      const zone = await readEnvelope(zoneRes, 'Kunde inte läsa Cloudflare-zonen')
+      if (!zone.ok) return zone
+      const value = zone.data as CfHostnameResult & { account?: { id?: string } }
+      accountId = value.account?.id
+    }
+    if (!accountId) return { ok: false, error: 'Cloudflare-konto saknas för kundsubdomänen.' }
+
+    const res = await fetchImpl(`${CF_API_BASE}/accounts/${accountId}/workers/domains`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        environment: 'production',
+        hostname,
+        service: cfWorkerName(),
+        zone_id: cfZone(),
+      }),
+    })
+    const parsed = await readEnvelope(res, 'Kunde inte skapa kundsubdomänen')
+    if (!parsed.ok) return parsed
+    return { ok: true, data: { hostname } }
+  } catch {
+    return { ok: false, error: 'Kunde inte nå Cloudflare. Kundsubdomänen skapades inte.' }
+  }
 }
 
 /** Map a CF hostname result → our CustomHostname (extract DCV records defensively). */

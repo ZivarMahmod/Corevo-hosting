@@ -4,7 +4,6 @@ import { createServiceClient } from '@/lib/platform/service'
 import { logger } from '@/lib/observability'
 import { isSafeCustomerClaimOrigin } from '@/lib/kund/customer-claim'
 import {
-  legacyTenantStorefrontHost,
   normalizeTenantStorefrontOrigin,
   tenantStorefrontHost,
   tenantStorefrontUrl,
@@ -122,15 +121,13 @@ async function canonicalTenantOrigin(
   if (tenantError || domainsError || !tenant?.slug) throw new Error('tenant_origin_unavailable')
 
   const canonicalHost = tenantStorefrontHost(tenant.slug)
-  const legacyHost = legacyTenantStorefrontHost(tenant.slug)
-  if (!canonicalHost || !legacyHost) throw new Error('tenant_origin_unavailable')
+  if (!canonicalHost) throw new Error('tenant_origin_unavailable')
   const verifiedDomains = (domains ?? [])
     .map(({ domain }) => domain.trim().toLowerCase())
     .filter(Boolean)
     .sort()
   const allowedHosts = new Set([
     canonicalHost,
-    legacyHost,
     ...verifiedDomains,
   ])
   if (

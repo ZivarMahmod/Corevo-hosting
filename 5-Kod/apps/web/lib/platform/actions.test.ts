@@ -72,6 +72,7 @@ type CfHost = { id: string; hostname: string; status: string; sslStatus: string 
 type CfCreateResult = { ok: boolean; error?: string; data?: CfHost }
 type CfGetResult = { ok: boolean; error?: string; data?: CfHost | null }
 type CfDelResult = { ok: boolean; error?: string; data?: true }
+type CfPlatformResult = { ok: boolean; error?: string; data?: { hostname: string } }
 const cfCreate = vi.fn(
   async (): Promise<CfCreateResult> => ({
     ok: true,
@@ -80,10 +81,15 @@ const cfCreate = vi.fn(
 )
 const cfGet = vi.fn(async (): Promise<CfGetResult> => ({ ok: true, data: null }))
 const cfDelete = vi.fn(async (): Promise<CfDelResult> => ({ ok: true, data: true }))
+const cfPlatform = vi.fn(async (slug: string): Promise<CfPlatformResult> => ({
+  ok: true,
+  data: { hostname: `${slug}.corevo.se` },
+}))
 vi.mock('@/lib/cloudflare/custom-hostnames', () => ({
   createCustomHostname: (...a: unknown[]) => cfCreate(...(a as [])),
   getCustomHostnameByName: (...a: unknown[]) => cfGet(...(a as [])),
   deleteCustomHostname: (...a: unknown[]) => cfDelete(...(a as [])),
+  ensureTenantPlatformHostname: (...a: [string]) => cfPlatform(...a),
 }))
 // Top-level imports in the action modules that pull server-only/cloudflare deps — never
 // exercised by createTenant without a logo File, but must import cleanly.
@@ -144,6 +150,7 @@ function fd(entries: Record<string, string>): FormData {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  cfPlatform.mockResolvedValue({ ok: true, data: { hostname: 'freshcut.corevo.se' } })
 })
 
 describe('setServiceStaff', () => {
@@ -859,7 +866,7 @@ describe('setTenantStatus readiness publication', () => {
           ready: true,
           tenant_status: 'active',
           transitioned: true,
-          canonical_host: 'freshcut.boka.corevo.se',
+          canonical_host: 'freshcut.corevo.se',
           missing: [],
         },
         error: null,
@@ -879,6 +886,7 @@ describe('setTenantStatus readiness publication', () => {
 
   it('keeps provisioning unchanged when the DB readiness gate rejects', async () => {
     const { client, captured } = makeSupabase({
+      tenants: { data: { slug: 'freshcut' }, error: null },
       'rpc.publish_tenant': {
         data: null,
         error: { code: '55000', message: 'tenant_not_ready' },

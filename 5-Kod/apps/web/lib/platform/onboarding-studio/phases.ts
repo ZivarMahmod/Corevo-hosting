@@ -55,7 +55,7 @@ export const PHASES: StudioPhase[] = [
     sub: 'Bransch, namn, mall — resten förfylls',
     steps: [
       { id: 'branch', label: 'Bransch', icon: 'building', req: true, hint: 'Förfyller mall, moduler & ord' },
-      { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.boka.corevo.se' },
+      { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.corevo.se' },
       { id: 'tema', label: 'Temamall', icon: 'palette', req: true, hint: 'Förvald av branschen — byt fritt' },
     ],
   },

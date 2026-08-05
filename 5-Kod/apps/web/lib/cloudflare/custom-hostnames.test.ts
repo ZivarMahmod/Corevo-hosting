@@ -4,6 +4,7 @@ import {
   createCustomHostname,
   getCustomHostnameByName,
   deleteCustomHostname,
+  ensureTenantPlatformHostname,
   type FetchLike,
 } from './custom-hostnames'
 
@@ -11,7 +12,7 @@ import {
 // stub process.env per case. fetch is injected, so no network. Two invariants matter
 // most: FAIL-CLOSED without creds (never throw, never fetch), and DCV extraction.
 
-const ENV_KEYS = ['CF_API_TOKEN', 'CF_ZONE_ID', 'CF_FALLBACK_ORIGIN'] as const
+const ENV_KEYS = ['CF_API_TOKEN', 'CF_ZONE_ID', 'CF_FALLBACK_ORIGIN', 'CF_ACCOUNT_ID', 'CF_WORKER_NAME'] as const
 const saved: Record<string, string | undefined> = {}
 
 beforeEach(() => {
@@ -178,5 +179,35 @@ describe('deleteCustomHostname', () => {
     expect(res.ok).toBe(true)
     expect(calls[0]!.url).toContain('/custom_hostnames/ch-1')
     expect(calls[0]!.init).toMatchObject({ method: 'DELETE' })
+  })
+})
+
+describe('ensureTenantPlatformHostname', () => {
+  it('attaches exactly <slug>.corevo.se with the runtime Worker identity', async () => {
+    withCreds()
+    process.env.CF_ACCOUNT_ID = 'account-123'
+    process.env.CF_WORKER_NAME = 'booking-worker'
+    const { fn, calls } = mockFetch({ success: true, result: {} })
+
+    const res = await ensureTenantPlatformHostname('freshcut', fn)
+
+    expect(res).toEqual({ ok: true, data: { hostname: 'freshcut.corevo.se' } })
+    expect(calls).toHaveLength(1)
+    expect(calls[0]!.url).toContain('/accounts/account-123/workers/domains')
+    expect(calls[0]!.init).toMatchObject({ method: 'PUT' })
+    expect(JSON.parse((calls[0]!.init as { body: string }).body)).toMatchObject({
+      environment: 'production',
+      hostname: 'freshcut.corevo.se',
+      service: 'booking-worker',
+      zone_id: 'zone-123',
+    })
+  })
+
+  it('fails closed for a reserved label without calling Cloudflare', async () => {
+    withCreds()
+    const { fn, calls } = mockFetch({ success: true, result: {} })
+    const res = await ensureTenantPlatformHostname('booking', fn)
+    expect(res.ok).toBe(false)
+    expect(calls).toHaveLength(0)
   })
 })

@@ -576,3 +576,20 @@ select
       )
   ) as passed,
   'validated cutoff constraint and no cancelled paid booking without refund job' as evidence;
+
+select
+  '20260805034145' as version,
+  'exact Corevo tenant hosts' as check_name,
+  not exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where (n.nspname, p.proname) in (
+      ('private', 'customer_portal_booking_origin'),
+      ('public', 'finalize_verified_storefront_booking'),
+      ('public', 'tenant_launch_readiness'),
+      ('public', 'publish_tenant')
+    )
+      and pg_get_functiondef(p.oid) like '%.boka.corevo.se%'
+  ) as passed,
+  'tenant URL functions use the exact <slug>.corevo.se host, never the retired Boka branch' as evidence;

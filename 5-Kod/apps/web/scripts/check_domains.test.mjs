@@ -2,11 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { buildFixedProbeTargets, buildProbeTargets, isHealthyStatus } from './check_domains.mjs'
 
 describe('buildProbeTargets', () => {
-  it('always probes the canonical booking host and any published compatibility domain', () => {
-    expect(buildProbeTargets(['FreshCut', ' demo '], ['freshcut.corevo.se'])).toEqual([
-      { host: 'freshcut.boka.corevo.se', path: '/boka' },
-      { host: 'freshcut.corevo.se', path: '/' },
-      { host: 'demo.boka.corevo.se', path: '/boka' },
+  it('probes every exact tenant host attached to this worker, never a wildcard or fixed door', () => {
+    expect(buildProbeTargets(['FreshCut.corevo.se', ' demo.corevo.se ', 'booking.corevo.se'])).toEqual([
+      { host: 'demo.corevo.se', path: '/boka' },
+      { host: 'freshcut.corevo.se', path: '/boka' },
     ])
   })
 })

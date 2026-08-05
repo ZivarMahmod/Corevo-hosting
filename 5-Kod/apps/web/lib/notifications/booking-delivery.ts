@@ -25,7 +25,6 @@ import {
 import type { ClaimedNotificationOutboxRow } from './outbox'
 import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
 import {
-  legacyTenantStorefrontHost,
   normalizeTenantStorefrontOrigin,
   tenantStorefrontHost,
 } from '@/lib/storefront-url'
@@ -120,11 +119,9 @@ async function tenantOrigin(
     .eq('tenant_id', tenantId)
     .eq('verified', true)
   const canonicalHost = tenantStorefrontHost(slug)
-  const legacyHost = legacyTenantStorefrontHost(slug)
-  if (!canonicalHost || !legacyHost) return null
+  if (!canonicalHost) return null
   const allowed = new Set([
     canonicalHost,
-    legacyHost,
     ...(domains ?? []).map((item) => item.domain.toLowerCase()),
   ])
   if (!isSafeCustomerClaimOrigin(raw, allowed, process.env.NODE_ENV !== 'production')) return null

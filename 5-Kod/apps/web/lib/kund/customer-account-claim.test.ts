@@ -38,14 +38,14 @@ describe('customer account claim', () => {
   })
 
   it('requires HTTPS and the default port for non-local claim origins', () => {
-    const allowedHosts = new Set(['freshcut.boka.corevo.se'])
-    expect(isSafeCustomerClaimOrigin('https://freshcut.boka.corevo.se', allowedHosts, false)).toBe(true)
-    expect(isSafeCustomerClaimOrigin('http://freshcut.boka.corevo.se', allowedHosts, false)).toBe(false)
-    expect(isSafeCustomerClaimOrigin('https://freshcut.boka.corevo.se:8443', allowedHosts, false)).toBe(
+    const allowedHosts = new Set(['freshcut.corevo.se'])
+    expect(isSafeCustomerClaimOrigin('https://freshcut.corevo.se', allowedHosts, false)).toBe(true)
+    expect(isSafeCustomerClaimOrigin('http://freshcut.corevo.se', allowedHosts, false)).toBe(false)
+    expect(isSafeCustomerClaimOrigin('https://freshcut.corevo.se:8443', allowedHosts, false)).toBe(
       false,
     )
     expect(
-      isSafeCustomerClaimOrigin('https://user:pass@freshcut.boka.corevo.se', allowedHosts, false),
+      isSafeCustomerClaimOrigin('https://user:pass@freshcut.corevo.se', allowedHosts, false),
     ).toBe(false)
     expect(isSafeCustomerClaimOrigin('https://evil.example', allowedHosts, false)).toBe(false)
     expect(isSafeCustomerClaimOrigin('http://freshcut.localhost:3000', new Set(), true)).toBe(true)

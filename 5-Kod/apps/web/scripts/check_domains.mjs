@@ -1,42 +1,31 @@
 // goal-32 F4 — domain health guard (offline; NEVER runs in the Worker).
 //
-// Lists every active tenant (the SAME source the deploy generator uses) and asserts:
-//   1. each active tenant's canonical booking host responds,
-//   2. every published compatibility domain responds,
-//   3. the fixed application hosts are alive.
+// Lists every live exact tenant hostname (the SAME Cloudflare source the deploy
+// generator uses) and asserts that it and the fixed application hosts are alive.
 // Exit 0 = all up, 1 = something drifted. Run after every prod deploy:
 //   node scripts/check_domains.mjs
 //
 // This is the LIVE-HTTP truth that the super-admin Domäner view (F3) deliberately
 // does not do (that view reads CF/DB state); together they cover config + reality.
 
-import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
-import { fetchActiveSlugs, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
-import { readCustomDomainPatterns, ROOT_DOMAIN } from './domain-routes.mjs'
+import { resolve } from 'node:path'
+import { REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
+import { cfApi, listWorkerDomains, resolveAccountId } from './cf-domains.mjs'
 
-const TENANT_SUFFIX = 'boka.corevo.se'
 const TIMEOUT_MS = 12000
+const WORKER = process.env.CF_WORKER_NAME || 'bokningsplatformen'
 
 export function buildFixedProbeTargets(hosts) {
   return hosts.map((host) => ({ host, path: host === 'mina.corevo.se' ? '/mina' : '/' }))
 }
 
-export function buildProbeTargets(slugs, customDomains = []) {
-  const custom = new Set(customDomains.map((host) => String(host).trim().toLowerCase()))
-  return slugs
-    .map((slug) =>
-      String(slug || '')
-        .trim()
-        .toLowerCase(),
-    )
-    .filter(Boolean)
-    .flatMap((slug) => {
-      const customHost = `${slug}.${ROOT_DOMAIN}`
-      const canonical = { host: `${slug}.${TENANT_SUFFIX}`, path: '/boka' }
-      return custom.has(customHost) ? [canonical, { host: customHost, path: '/' }] : [canonical]
-    })
+export function buildProbeTargets(liveDomains) {
+  const fixed = new Set(REQUIRED_FIXED_HOSTS)
+  return [...new Set((liveDomains || []).map((host) => String(host).trim().toLowerCase()))]
+    .filter((host) => host.endsWith('.corevo.se') && !fixed.has(host))
+    .sort()
+    .map((host) => ({ host, path: '/boka' }))
 }
 
 export function isHealthyStatus(status) {
@@ -63,20 +52,11 @@ async function probe({ host, path = '/' }) {
 }
 
 async function main() {
-  const { parse: parseJsonc } = await import('jsonc-parser')
-  const here = dirname(fileURLToPath(import.meta.url))
-  const raw = readFileSync(resolve(here, '..', 'wrangler.jsonc'), 'utf8')
-  const config = parseJsonc(raw, [], { allowTrailingComma: true }) || {}
-  const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || config.vars?.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || config.vars?.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!supaUrl || !anonKey) throw new Error('check_domains: missing Supabase URL / anon key')
-
-  const slugs = await fetchActiveSlugs(supaUrl, anonKey)
-  const tenantTargets = buildProbeTargets(
-    slugs,
-    readCustomDomainPatterns(resolve(here, '..', 'wrangler.jsonc')),
-  )
+  const token = process.env.CLOUDFLARE_API_TOKEN
+  if (!token) throw new Error('check_domains: CLOUDFLARE_API_TOKEN is required')
+  const request = cfApi(token)
+  const accountId = await resolveAccountId(request, process.env.CLOUDFLARE_ACCOUNT_ID)
+  const tenantTargets = buildProbeTargets(await listWorkerDomains(request, accountId, WORKER))
   const targets = [...buildFixedProbeTargets(REQUIRED_FIXED_HOSTS), ...tenantTargets]
 
   const results = await Promise.all(targets.map(probe))

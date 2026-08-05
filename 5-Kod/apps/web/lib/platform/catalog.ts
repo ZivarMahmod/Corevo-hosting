@@ -62,7 +62,7 @@ const INTEGRATION_CATALOG: Integration[] = [
   {
     id: 'domain',
     name: 'Cloudflare / Domän',
-    desc: 'Subdomän kundnamn.boka.corevo.se. Egen domän = parkerat spår.',
+    desc: 'Subdomän kundnamn.corevo.se. Egen domän = parkerat spår.',
     color: '#F38020',
     letter: 'C',
     flow: 'tenant_domains',

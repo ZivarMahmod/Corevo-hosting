@@ -14,14 +14,14 @@ describe('tenant launch readiness presentation', () => {
       parseTenantLaunchReadiness({
         ready: false,
         booking_required: true,
-        canonical_host: 'freshcut.boka.corevo.se',
+        canonical_host: 'freshcut.corevo.se',
         tenant_status: 'provisioning',
         missing: ['owner', 'working_hours'],
       }),
     ).toEqual({
       ready: false,
       bookingRequired: true,
-      canonicalHost: 'freshcut.boka.corevo.se',
+      canonicalHost: 'freshcut.corevo.se',
       tenantStatus: 'provisioning',
       missing: ['owner', 'working_hours'],
       moduleReadiness: unavailableTenantModuleReadiness(),
