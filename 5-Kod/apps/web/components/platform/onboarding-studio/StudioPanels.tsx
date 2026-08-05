@@ -32,6 +32,7 @@ import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
 import { tenantHostSuffix, tenantStorefrontHost } from '@/lib/storefront-url'
 import type { IconName } from '@/lib/ui-icons'
 import { modulesForVertical } from '@/lib/platform/verticals-shared'
+import { SELECTABLE_THEMES } from '@/lib/platform/theme-palettes'
 
 /**
  * The prop bag every panel in the registry receives. Extends PanelProps
@@ -79,6 +80,32 @@ function Panel({ title, sub, children }: { title: string; sub?: ReactNode; child
   )
 }
 
+function InfoCard({ title, text, icon = 'checkCircle' }: { title: string; text: string; icon?: IconName }) {
+  return (
+    <div style={{ display: 'flex', gap: 12, padding: 16, border: '1px solid var(--c-line)', borderRadius: 14, background: 'var(--c-paper)' }}>
+      <span style={{ width: 34, height: 34, flex: 'none', borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--c-paper-2)', color: 'var(--c-forest)' }}>
+        <Icon name={icon} size={17} />
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <strong style={{ display: 'block', color: 'var(--c-ink)', fontSize: 14 }}>{title}</strong>
+        <span style={{ display: 'block', marginTop: 4, color: 'var(--c-ink-3)', fontSize: 12.5, lineHeight: 1.5 }}>{text}</span>
+      </span>
+    </div>
+  )
+}
+
+function Section({ title, sub, children }: { title: string; sub?: ReactNode; children: ReactNode }) {
+  return (
+    <section style={{ display: 'grid', gap: 12, padding: 18, border: '1px solid var(--c-line)', borderRadius: 18, background: 'var(--c-paper)' }}>
+      <div>
+        <h3 style={{ margin: 0, color: 'var(--c-ink)', fontSize: 17, fontWeight: 750 }}>{title}</h3>
+        {sub ? <p style={{ margin: '6px 0 0', color: 'var(--c-ink-3)', fontSize: 12.5, lineHeight: 1.5 }}>{sub}</p> : null}
+      </div>
+      {children}
+    </section>
+  )
+}
+
 /* ════════════════════════════ step panels ════════════════════════════ */
 
 /** Ikon per bransch-nyckel (fallback 'building'). Korten kommer från DB
@@ -97,12 +124,9 @@ const BRANSCH_ICONS: Record<string, IconName> = {
 /** branch — kort per RIKTIG bransch (DB verticals, inga roadmap-stubbar). Valet
  *  FÖRFYLLER mall + moduler + ord från bransch-förvalen (/branscher äger dem);
  *  allt går att ändra i stegen efter. */
-function PanelBranch({ cfg, dispatch, presets }: PanelProps) {
+function BranchSection({ cfg, dispatch, presets }: PanelProps) {
   return (
-    <Panel
-      title="Vilken bransch?"
-      sub="Valet förfyller mall, moduler och ord enligt branschens förval — du kan ändra allt i stegen efter. Branschens förval styr du under Branscher."
-    >
+    <Section title="Bransch" sub="Kategorisering och förval. Du kan ändra mall och moduler direkt efter valet.">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
         {presets.verticals.map((b) => {
           const on = cfg.branch === b.key
@@ -158,13 +182,70 @@ function PanelBranch({ cfg, dispatch, presets }: PanelProps) {
           )
         })}
       </div>
-    </Panel>
+    </Section>
   )
 }
 
 /** namn — W1-REAL. Företagsnamn → setName (auto-syncs slug until touched); subdomän
  *  → setSlug (sets slugTouched, §10-risk-1); reserved-slug warning vs the REAL list. */
-function PanelNamn({ cfg, dispatch }: PanelProps) {
+function PanelStart({ cfg, dispatch }: PanelProps) {
+  return (
+    <Panel
+      title="Starta kunden"
+      sub="Välj arbetssätt och fyll i de viktigaste uppgifterna först. Resten kan du göra själv eller låta kunden komplettera senare."
+    >
+      <div style={{ display: 'grid', gap: 22 }}>
+        <div role="radiogroup" aria-label="Onboardingsätt" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          {([
+            ['corevo', 'Corevo-moduler', 'Kunden startas med Corevos egna moduler och kan kompletteras i admin.'],
+            ['external', 'Extern bokningsmotor', 'Webbplatsen och modulerna finns i Corevo, men Boka-knappar går till extern tjänst.'],
+          ] as const).map(([mode, title, text]) => {
+            const selected = cfg.onboardingMode === mode
+            return (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => dispatch({ type: 'setOnboardingMode', mode })}
+                style={{
+                  minHeight: 128,
+                  padding: 18,
+                  borderRadius: 18,
+                  border: `2px solid ${selected ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                  background: selected ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                  color: 'var(--c-ink)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'grid',
+                  gap: 8,
+                }}
+              >
+                <strong style={{ fontSize: 18 }}>{title}</strong>
+                <span style={{ color: 'var(--c-ink-3)', fontSize: 13, lineHeight: 1.5 }}>{text}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+          <Field label="Företagsnamn" ph="t.ex. Freshcut" value={cfg.name} onChange={(v) => dispatch({ type: 'setName', value: v })} />
+          <Field label="Stad" ph="t.ex. Linköping" value={cfg.city} onChange={(v) => dispatch({ type: 'setCity', value: v })} />
+          <Field label="Kontaktperson" ph="Förnamn Efternamn" value={cfg.ownerName} onChange={(v) => dispatch({ type: 'setOwnerName', value: v })} />
+          <Field label="E-post" type="email" required ph="kund@foretag.se" value={cfg.ownerEmail} onChange={(v) => dispatch({ type: 'setOwnerEmail', value: v })} />
+        </div>
+
+        <InfoCard
+          icon="mail"
+          title="Skicka insamling till kund — förberett, inte aktivt än"
+          text="Här ska kunden senare kunna få en säker länk, fylla i sina uppgifter och skicka tillbaka. Backend för token, mail och returstatus är inte byggd ännu, så vi låtsas inte att knappen fungerar."
+        />
+      </div>
+    </Panel>
+  )
+}
+
+function PanelDomain({ cfg, dispatch }: PanelProps) {
   const reserved = cfg.slug ? isReservedSlug(cfg.slug) : false
   // Inline upptagen-koll (Dunder-fix): debounce → isSlugTaken-servern. Tidigare
   // small en dubblettslug först vid Lansera. Kollen är rådgivande — createTenant
@@ -180,17 +261,10 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
   }, [cfg.slug, reserved])
   return (
     <Panel
-      title="Namn & subdomän"
-      sub="Kundens företagsnamn och adressen de får. Egen domän är ett parkerat spår — subdomän räcker tills du säger KÖR."
+      title="Subdomän & Cloudflare"
+      sub="Välj kundens Corevo-adress och bocka av det manuella som måste vara sant innan kunden kan bli publik."
     >
       <div style={{ display: 'grid', gap: 18 }}>
-        <Field
-          label="Företagsnamn"
-          ph="t.ex. Klippoteket"
-          value={cfg.name}
-          onChange={(v) => dispatch({ type: 'setName', value: v })}
-          hint="Går att ändra när som helst. Syns i header, footer, mail."
-        />
         <div>
           <label style={labelStyle}>Subdomän</label>
           <div
@@ -266,19 +340,130 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
             </div>
           ) : null}
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          <InfoCard title="Wrangler-skydd" text="Subdomänen ska finnas i deploy-konfigen innan framtida deploy, så aktiva kunder inte tappas av misstag." icon="shield" />
+          <InfoCard title="Cloudflare DNS" text="Om kundens riktiga domän ska peka hit görs DNS manuellt hos kundens provider. Ingen wildcard-kostnad krävs för detta flöde." icon="globe" />
+          <InfoCard title="Publicering" text="Kunden skapas under konfiguration. Den blir aktiv när sista kontrollen och DNS är klar." icon="checkCircle" />
+        </div>
       </div>
     </Panel>
   )
 }
 
-function PanelModules({ cfg, dispatch, presets }: PanelProps) {
-  const modules = modulesForVertical(presets, cfg.branch)
+function PanelSetup(props: PanelProps) {
+  const { cfg, dispatch, presets } = props
+  const branchTemplates = cfg.branch ? presets.templatesByVertical[cfg.branch] ?? [] : []
+  const templates = (branchTemplates.length ? branchTemplates : SELECTABLE_THEMES).slice(0, 8)
 
   return (
     <Panel
-      title="Moduler"
-      sub="Branschens förval är redan satta. Slå bara av eller på det kunden faktiskt ska använda."
+      title="Bransch, mall & moduler"
+      sub="Branschen är kategorisering och förval. Mallen och modulerna är kundens faktiska startpunkt."
     >
+      <div style={{ display: 'grid', gap: 22 }}>
+        <BranchSection {...props} />
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div style={labelStyle}>Temamall</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            {templates.map((template) => {
+              const selected = cfg.theme === template.key
+              return (
+                <button
+                  key={template.key}
+                  type="button"
+                  onClick={() => dispatch({ type: 'setTheme', value: template.key })}
+                  style={{
+                    minHeight: 132,
+                    padding: 14,
+                    borderRadius: 16,
+                    border: `2px solid ${selected ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                    background: 'var(--c-paper)',
+                    color: 'var(--c-ink)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'grid',
+                    alignContent: 'space-between',
+                    gap: 12,
+                  }}
+                >
+                  <span style={{ display: 'flex', gap: 6 }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 999, background: 'var(--c-forest)' }} />
+                    <span style={{ width: 28, height: 28, borderRadius: 999, background: 'var(--c-gold)' }} />
+                    <span style={{ width: 28, height: 28, borderRadius: 999, background: 'var(--c-paper-2)', border: '1px solid var(--c-line)' }} />
+                  </span>
+                  <span>
+                    <strong style={{ display: 'block', fontSize: 15 }}>{template.name}</strong>
+                    <span style={{ color: 'var(--c-ink-3)', fontSize: 12 }}>{template.key}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <ModulesSection {...props} />
+        <BookingSection {...props} />
+      </div>
+    </Panel>
+  )
+}
+
+function PanelContent({ cfg, dispatch, presets }: PanelProps) {
+  const booking = resolveModuleState(cfg, 'booking', presets) === 'live'
+  const media = ['media_library', 'galleri'].some(
+    (key) => resolveModuleState(cfg, key, presets) === 'live',
+  )
+  const products = resolveModuleState(cfg, 'shop', presets) === 'live'
+  const courses = resolveModuleState(cfg, 'kurser', presets) === 'live'
+  const setService = (index: number, patch: Partial<{ name: string; price: string }>) => {
+    const services = cfg.services.length ? [...cfg.services] : [{ name: '', price: '' }]
+    services[index] = { ...(services[index] ?? { name: '', price: '' }), ...patch }
+    dispatch({ type: 'setServices', services })
+  }
+  const addService = () => dispatch({ type: 'setServices', services: [...cfg.services, { name: '', price: '' }] })
+  const services = cfg.services.length ? cfg.services : [{ name: '', price: '' }]
+
+  return (
+    <Panel title="Förbered innehåll" sub="Allt här är valfritt. Skippa det som kunden eller du vill fylla i senare.">
+      <div style={{ display: 'grid', gap: 18 }}>
+        {booking ? (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div style={labelStyle}>Starttjänster</div>
+            {services.map((service, index) => (
+              <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(120px, .6fr)', gap: 10 }}>
+                <input value={service.name} onChange={(e) => setService(index, { name: e.target.value })} placeholder="Tjänst" style={{ minWidth: 0, padding: 12, borderRadius: 10, border: '1px solid var(--c-line)', background: 'var(--c-paper)', color: 'var(--c-ink)' }} />
+                <input value={service.price} onChange={(e) => setService(index, { price: e.target.value })} placeholder="Pris" style={{ minWidth: 0, padding: 12, borderRadius: 10, border: '1px solid var(--c-line)', background: 'var(--c-paper)', color: 'var(--c-ink)' }} />
+              </div>
+            ))}
+            <Button variant="ghost" size="sm" icon="plus" onClick={addService}>Lägg till tjänst</Button>
+          </div>
+        ) : null}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          {booking ? <InfoCard title="Personal" text="Kan fyllas i senare från kundkortet/admin. Inget krav i onboarding." icon="users" /> : null}
+          {booking ? <InfoCard title="Arbetstider" text="Bokningsbara tider styrs av personal, tjänster och öppettider efter skapandet." icon="calendar" /> : null}
+          {media ? <InfoCard title="Bildbibliotek" text="Bilder läggs säkrast in i sidredigeraren efter att kunden skapats." icon="upload" /> : null}
+          {products ? <InfoCard title="Produkter" text="Produkter kan läggas in senare i kundens admin. Onboarding blockerar inte skapandet." icon="layers" /> : null}
+          {courses ? <InfoCard title="Kurser" text="Kurser kan läggas in senare i kundens admin. Onboarding blockerar inte skapandet." icon="calendar" /> : null}
+          {!booking && !media && !products && !courses ? (
+            <InfoCard title="Inget moduldata behövs" text="De valda modulerna kräver inget förarbete i det här steget. Du kan gå vidare direkt." icon="checkCircle" />
+          ) : null}
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
+function PanelSite(props: PanelProps) {
+  return <PanelAppearance {...props} />
+}
+
+function ModulesSection({ cfg, dispatch, presets }: PanelProps) {
+  const modules = modulesForVertical(presets, cfg.branch)
+
+  return (
+    <Section title="Moduler" sub="Alla moduler är vanliga På/Av-val. Inget är låst som måste.">
       {!cfg.branch ? (
         <div style={{ padding: 14, border: '1px solid var(--c-line)', borderRadius: 10, background: 'var(--c-paper)' }}>
           <strong style={{ display: 'block', color: 'var(--c-ink)' }}>Välj bransch först</strong>
@@ -324,20 +509,17 @@ function PanelModules({ cfg, dispatch, presets }: PanelProps) {
           })}
         </div>
       )}
-    </Panel>
+    </Section>
   )
 }
 
-function PanelBokning({ cfg, dispatch, presets }: PanelProps) {
+function BookingSection({ cfg, dispatch, presets }: PanelProps) {
   const state = resolveModuleState(cfg, 'booking', presets)
   const live = state === 'live'
   const externalValid = normalizeBookingExternalUrl(cfg.bookingExternalUrl) !== null
 
   return (
-    <Panel
-      title="Bokning"
-      sub="Först styr På eller Av om bokning syns. När den är På väljer du Corevo eller en extern bokningstjänst."
-    >
+    <Section title="Bokning" sub="Corevo eller extern motor styr bara Boka-knapparna. Andra moduler kan fortfarande vara på.">
       <div style={{ display: 'grid', gap: 18 }}>
         <div>
           <div style={{ ...labelStyle, marginBottom: 8 }}>Bokningsmodul</div>
@@ -443,7 +625,7 @@ function PanelBokning({ cfg, dispatch, presets }: PanelProps) {
           </div>
         )}
       </div>
-    </Panel>
+    </Section>
   )
 }
 
@@ -487,7 +669,7 @@ function PanelAppearance({ cfg, dispatch }: PanelProps) {
 /** live — «Granska & lansera» (granska+live ihopslagna 2026-07-11, UX-order): kompakt
  *  checklista härledd ur REAL cfg + «vad kunden får»-kortet + den enda createTenant-
  *  triggern. Gold Lansera (disabled tills klart) → onLaunch; ActionState ytas av parent. */
-function PanelLive({ cfg, dispatch, presets, onLaunch }: StudioPanelProps) {
+function PanelReview({ cfg, dispatch, presets, onLaunch }: StudioPanelProps) {
   const activeModules = presets.modules.filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off')
   const activeCount = activeModules.length
   const namedServices = cfg.services.filter((s) => s.name.trim() !== '')
@@ -525,7 +707,7 @@ function PanelLive({ cfg, dispatch, presets, onLaunch }: StudioPanelProps) {
     && !!cfg.ownerEmail.trim()
     && bookingReady
   return (
-    <Panel title="Granska & skapa" sub="Sista koll — kunden skapas under konfiguration och publiceras från kundkortet.">
+    <Panel title="Förhandsgranska & skapa" sub="Sista kontrollen innan kunden skapas. Skippade delar syns som valfria luckor, inte som stopp.">
       <div style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'grid', gap: 18 }}>
           <Field
@@ -636,10 +818,10 @@ function PanelLive({ cfg, dispatch, presets, onLaunch }: StudioPanelProps) {
  * contravariance; live takes the extra onLaunch callback via StudioPanelProps.
  */
 export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
-  branch: PanelBranch,
-  namn: PanelNamn,
-  modules: PanelModules,
-  bokning: PanelBokning,
-  appearance: PanelAppearance,
-  live: PanelLive,
+  start: PanelStart,
+  setup: PanelSetup,
+  content: PanelContent,
+  site: PanelSite,
+  domain: PanelDomain,
+  review: PanelReview,
 }

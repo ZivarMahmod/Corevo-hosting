@@ -17,6 +17,7 @@ import type { StudioAction } from '@/lib/platform/onboarding-studio/state'
 import { type StepId } from '@/lib/platform/onboarding-studio/phases'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { PANEL_BY_STEP } from './StudioPanels'
+import { PreviewPane, type PreviewDevice } from './PreviewPane'
 
 export type PanelHostProps = {
   cfg: StudioCfg
@@ -24,6 +25,9 @@ export type PanelHostProps = {
   stepOrder: StepId[]
   dispatch: Dispatch<StudioAction>
   presets: VerticalPresetData
+  device?: PreviewDevice
+  onDevice?: (device: PreviewDevice) => void
+  branchName?: string | null
   /** Go to the previous step (FooterNav «Föregående»). */
   onPrev: () => void
   /** Go to the next step (FooterNav «Nästa» + granska's "Gå till lansering"). */
@@ -69,29 +73,50 @@ function FooterNav({ isFirst, isLast, onPrev, onNext }: { isFirst: boolean; isLa
   )
 }
 
-export function PanelHost({ cfg, step, stepOrder, dispatch, presets, onPrev, onNext, onLaunch }: PanelHostProps) {
+export function PanelHost({
+  cfg,
+  step,
+  stepOrder,
+  dispatch,
+  presets,
+  device = 'desktop',
+  onDevice = () => {},
+  branchName = null,
+  onPrev,
+  onNext,
+  onLaunch,
+}: PanelHostProps) {
   const ActivePanel = PANEL_BY_STEP[step]
   const idx = stepOrder.indexOf(step)
   const isFirst = idx === 0
   const isLast = idx === stepOrder.length - 1
+  const withPreview = step === 'site' || step === 'review'
   return (
     <div
       style={{
-        width: 'min(500px, 100%)',
+        width: 'min(1180px, 100%)',
+        maxHeight: '100%',
         boxSizing: 'border-box',
-        flex: 'none',
-        borderRight: '1px solid rgba(255,255,255,.12)',
+        flex: '0 1 1180px',
+        border: '1px solid var(--c-line)',
+        borderRadius: 26,
         background: 'linear-gradient(180deg, var(--c-cream) 0%, var(--c-paper) 100%)',
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
-        boxShadow: '18px 0 45px rgba(0,0,0,.12)',
+        overflow: 'hidden',
+        boxShadow: '0 24px 70px rgba(0,0,0,.18)',
       }}
     >
       {/* Scroll lives HERE so the FooterNav stays pinned at the column bottom — without
           overflow:auto a tall panel pushes «Nästa» off-screen (Zivar: had to scroll far). */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <ActivePanel cfg={cfg} dispatch={dispatch} presets={presets} onLaunch={onLaunch} />
+        {withPreview ? (
+          <div style={{ padding: '0 clamp(18px, 4vw, 42px) clamp(22px, 4vw, 42px)' }}>
+            <PreviewPane cfg={cfg} device={device} onDevice={onDevice} branchName={branchName} />
+          </div>
+        ) : null}
       </div>
       <FooterNav isFirst={isFirst} isLast={isLast} onPrev={onPrev} onNext={onNext} />
     </div>

@@ -9,7 +9,7 @@ import type { ReactNode } from 'react'
  */
 export function Table({ cols, rows }: { cols: ReactNode[]; rows: ReactNode[][] }) {
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'auto' }}>
       <table className="ptable">
         <thead>
           <tr>

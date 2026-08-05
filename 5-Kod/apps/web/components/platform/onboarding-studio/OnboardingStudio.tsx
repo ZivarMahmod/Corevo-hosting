@@ -35,7 +35,7 @@ import { FLAT_STEP_ORDER, type StepId, visibleStepOrder } from '@/lib/platform/o
 import { JourneyBar } from './JourneyBar'
 import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
-import { PreviewPane, type PreviewDevice } from './PreviewPane'
+import { type PreviewDevice } from './PreviewPane'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
 import { tenantStorefrontHost } from '@/lib/storefront-url'
 
@@ -76,7 +76,7 @@ function StudioMachine({
   // dubblett av /kunder-listan (med två döda stat-kort) som man tvingades
   // klicka sig förbi — "Onboarda kund" i menyn ska öppna wizarden, punkt.
   const [stage, setStage] = useState<StudioStage>('studio')
-  const [step, setStep] = useState<StepId>('branch')
+  const [step, setStep] = useState<StepId>('start')
   const [device, setDevice] = useState<PreviewDevice>('desktop')
 
   // The single real write. useActionState surfaces { success } / { error } + isPending.
@@ -95,7 +95,7 @@ function StudioMachine({
     setStep(
       stepOrder.find((candidate) => FLAT_STEP_ORDER.indexOf(candidate) > oldIndex)
       ?? stepOrder.at(-1)
-      ?? 'branch',
+      ?? 'start',
     )
   }, [step, stepOrder])
 
@@ -137,7 +137,7 @@ function StudioMachine({
         // spans the whole content area below the topbar — no border, no rounded card.
         // flex grows it to fill; the minHeight is a floor for browsers without :has().
         flex: '1 1 auto',
-        minHeight: 'calc(100vh - 160px)',
+        minHeight: 'calc(100dvh - 160px)',
         overflow: 'hidden',
         background: 'var(--c-paper-2)',
       }}
@@ -147,23 +147,29 @@ function StudioMachine({
       {stage === 'studio' && (
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <StepRail cfg={cfg} step={step} onStep={setStep} presets={presets} />
-          <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              padding: 'clamp(14px, 2vw, 28px)',
+            }}
+          >
             <PanelHost
               cfg={cfg}
               step={step}
               stepOrder={stepOrder}
               dispatch={dispatch}
               presets={presets}
+              device={device}
+              onDevice={setDevice}
+              branchName={branchName}
               onPrev={onPrev}
               onNext={onNext}
               onLaunch={onLaunch}
             />
-            {/* right — live preview (riktig StorefrontPreview-render) */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-paper-2)', minHeight: 0 }}>
-              <div style={{ flex: 1, minHeight: 0, padding: '18px' }}>
-                <PreviewPane cfg={cfg} device={device} onDevice={setDevice} branchName={branchName} />
-              </div>
-            </div>
           </div>
 
           {/* honest error strip (§9.2) — the REAL createTenant error, no fake success */}

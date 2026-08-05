@@ -10,12 +10,12 @@ import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url
 // Branschen sätter mall och modul-förval. Tjänster, logga, moduler och mall ändras i
 // kundkortet efter skapandet, där de har en verklig skrivväg och förhandsvisning.
 export type StepId =
-  | 'branch'
-  | 'namn'
-  | 'modules'
-  | 'bokning'
-  | 'appearance'
-  | 'live'
+  | 'start'
+  | 'setup'
+  | 'content'
+  | 'site'
+  | 'domain'
+  | 'review'
 
 /** One step in a phase. `req:true` = required before Skapa.
  *  `hint` is verbatim design data (additive over the documented {id,label,icon,req});
@@ -43,30 +43,51 @@ export type StudioPhase = {
  */
 export const PHASES: StudioPhase[] = [
   {
-    id: 'grund',
-    name: 'Grunden',
-    sub: 'Bransch, namn, mall — resten förfylls',
+    id: 'start',
+    name: 'Start',
+    sub: 'Kundtyp och viktigaste uppgifter',
     steps: [
-      { id: 'branch', label: 'Bransch', icon: 'building', req: true, hint: 'Förfyller mall, moduler & ord' },
-      { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.corevo.se' },
+      { id: 'start', label: 'Starta kund', icon: 'user', req: true, hint: 'Namn, kontakt och arbetssätt' },
     ],
   },
   {
-    id: 'innehall',
+    id: 'setup',
+    name: 'Setup',
+    sub: 'Bransch, mall och moduler',
+    steps: [
+      { id: 'setup', label: 'Bransch & mall', icon: 'layers', req: true, hint: 'Kategori, template och aktiva moduler' },
+    ],
+  },
+  {
+    id: 'content',
     name: 'Innehåll',
-    sub: 'Moduler, bokning och startcopy',
+    sub: 'Det som kan förberedas',
     steps: [
-      { id: 'modules', label: 'Moduler', icon: 'layers', req: false, hint: 'Välj bara moduler kunden använder' },
-      { id: 'bokning', label: 'Bokning', icon: 'calendar', req: false, hint: 'Corevo eller extern leverantör' },
-      { id: 'appearance', label: 'Utseende', icon: 'palette', req: false, hint: 'Startcopy och accent' },
+      { id: 'content', label: 'Tjänster & data', icon: 'calendar', req: false, hint: 'Tjänster, personal, bilder och produkter' },
     ],
   },
   {
-    id: 'lansera',
-    name: 'Klart',
-    sub: 'Ägare, sista koll och skapa',
+    id: 'site',
+    name: 'Sida',
+    sub: 'Mallens innehåll och känsla',
     steps: [
-      { id: 'live', label: 'Ägare & skapa', icon: 'rocket', req: true, hint: 'Magic-link → eget lösen, skapa under konfiguration' },
+      { id: 'site', label: 'Redigera sida', icon: 'palette', req: false, hint: 'Startcopy, accent och live-preview' },
+    ],
+  },
+  {
+    id: 'domain',
+    name: 'Domän',
+    sub: 'Subdomän och extern driftcheck',
+    steps: [
+      { id: 'domain', label: 'Subdomän & CF', icon: 'globe', req: true, hint: 'Adress och manuell Cloudflare-check' },
+    ],
+  },
+  {
+    id: 'review',
+    name: 'Review',
+    sub: 'Förhandsgranska och skapa',
+    steps: [
+      { id: 'review', label: 'Granska & skapa', icon: 'rocket', req: true, hint: 'Klarhetsgrad, checklistor och skapande' },
     ],
   },
 ]
@@ -75,12 +96,9 @@ export const PHASES: StudioPhase[] = [
 export const FLAT_STEP_ORDER: StepId[] = PHASES.flatMap((p) => p.steps.map((s) => s.id))
 
 export function visiblePhases(cfg: StudioCfg, presets: VerticalPresetData): StudioPhase[] {
-  const bookingVisible = resolveModuleState(cfg, 'booking', presets) !== 'off'
+  void cfg
+  void presets
   return PHASES
-    .map((phase) => ({
-      ...phase,
-      steps: phase.steps.filter((step) => step.id !== 'bokning' || bookingVisible),
-    }))
     .filter((phase) => phase.steps.length > 0)
 }
 
@@ -90,27 +108,28 @@ export function visibleStepOrder(cfg: StudioCfg, presets: VerticalPresetData): S
 
 /**
  * PURE per-step "done" derivation from the REAL StudioCfg (build-contract §4):
- *   branch  → a bransch is picked
- *   namn    → a slug exists
- *   modules → a bransch is picked so defaults are loaded
- *   bokning → off is complete; live external requires a valid HTTPS URL
- *   appearance → optional; theme exists
- *   live    → never a checkmark because it is the submit step
+ *   start   → customer name and owner email exist
+ *   setup   → branch + theme exist
+ *   content → optional; any service is enough to mark prepared
+ *   site    → optional; theme exists
+ *   domain  → slug exists
+ *   review  → never a checkmark because it is the submit step
  */
 export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPresetData): boolean {
   switch (stepId) {
-    case 'branch':
-      return !!cfg.branch
-    case 'namn':
-      return !!cfg.slug
-    case 'modules':
-      return !!cfg.branch
-    case 'bokning':
+    case 'start':
+      return !!cfg.name.trim() && !!cfg.ownerEmail.trim()
+    case 'setup':
+      if (!cfg.branch || !cfg.theme) return false
       if (resolveModuleState(cfg, 'booking', presets) === 'off') return true
-      return cfg.bookingProvider === 'corevo' || normalizeBookingExternalUrl(cfg.bookingExternalUrl) !== null
-    case 'appearance':
+      return !!cfg.branch && !!cfg.theme && (cfg.bookingProvider === 'corevo' || normalizeBookingExternalUrl(cfg.bookingExternalUrl) !== null)
+    case 'content':
+      return cfg.services.some((service) => service.name.trim() !== '')
+    case 'site':
       return !!cfg.theme
-    case 'live':
+    case 'domain':
+      return !!cfg.slug
+    case 'review':
       return false
     default: {
       const _exhaustive: never = stepId

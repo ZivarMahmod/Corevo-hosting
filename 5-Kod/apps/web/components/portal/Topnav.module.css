@@ -36,6 +36,7 @@
 
   display: block;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--c-cream);
   color: var(--c-ink);
   font-family: var(--font-ui);
@@ -721,6 +722,7 @@
 .shell[data-world='backoffice'] .main {
   width: min(100%, 1320px);
   max-width: 1320px;
+  min-width: 0;
   margin: 0 auto;
   padding: 26px 24px 90px;
   box-sizing: border-box;
@@ -1270,7 +1272,7 @@
     min-height: calc(72px + env(safe-area-inset-bottom));
     padding: 8px 6px calc(18px + env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: end;
     border-top: 1px solid var(--c-line);
     background: var(--c-cream);
@@ -1784,7 +1786,7 @@
    men med cirkelram så den läses som handling, inte flik. */
 @media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
   .mobileNavSixCol {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .mobileNavSearch {

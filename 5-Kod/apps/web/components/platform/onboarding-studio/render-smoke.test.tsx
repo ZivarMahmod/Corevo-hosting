@@ -46,8 +46,10 @@ const presets: VerticalPresetData = {
   ],
   modules: [
     { key: 'booking', name: 'Bokning' },
+    { key: 'media_library', name: 'Bildbibliotek' },
     { key: 'lojalitet', name: 'Lojalitet' },
     { key: 'shop', name: 'Webshop' },
+    { key: 'kurser', name: 'Kurser' },
   ],
   templatesByVertical: { frisor: [{ key: 'kalla', name: 'Källa' }], generell: [{ key: 'edit', name: 'Edit' }] },
 }
@@ -79,8 +81,8 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
   })
 
   it('StepRail mounts with the booking provider step', () => {
-    const html = mounts(<StepRail cfg={branched} step="branch" onStep={noop} presets={presets} />)
-    expect(html).toContain('Grunden')
+    const html = mounts(<StepRail cfg={branched} step="start" onStep={noop} presets={presets} />)
+    expect(html).toContain('Starta kund')
   })
 
   it('PreviewPane mounts the real themed storefront render (W2)', () => {
@@ -125,7 +127,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
 
   it('the booking step shows Corevo and external provider choices', () => {
     const html = mounts(
-      <PanelHost cfg={branched} step="bokning" stepOrder={allSteps} dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+      <PanelHost cfg={branched} step="setup" stepOrder={allSteps} dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
     )
     expect(html).toContain('Corevo-bokning')
     expect(html).toContain('Extern bokning')
@@ -136,7 +138,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     const html = mounts(
       <PanelHost
         cfg={{ ...branched, bookingProvider: 'external', bookingExternalUrl: 'http://fel.test' }}
-        step="bokning"
+        step="setup"
         stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
@@ -149,11 +151,36 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('aria-invalid="true"')
   })
 
+  it('content slide only shows preparation for enabled modules', () => {
+    const bookingOnly = mounts(
+      <PanelHost cfg={branched} step="content" stepOrder={allSteps} dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+    )
+    expect(bookingOnly).toContain('Starttjänster')
+    expect(bookingOnly).toContain('Personal')
+    expect(bookingOnly).not.toContain('Bildbibliotek')
+    expect(bookingOnly).not.toContain('>Produkter<')
+
+    const shopOnly = mounts(
+      <PanelHost
+        cfg={{ ...branched, moduleStates: { ...branched.moduleStates, booking: 'off', shop: 'live' } }}
+        step="content"
+        stepOrder={allSteps}
+        dispatch={noopDispatch}
+        presets={presets}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    expect(shopOnly).not.toContain('Starttjänster')
+    expect(shopOnly).toContain('>Produkter<')
+  })
+
   it('onboardingen har modulval och startcopy utan att lägga tillbaka tjänste-steget', () => {
-    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'modules', 'bokning', 'appearance', 'live'])
-    expect(FLAT_STEP_ORDER).not.toContain('tjanster')
-    expect(FLAT_STEP_ORDER).not.toContain('brand')
-    expect(FLAT_STEP_ORDER).not.toContain('tema')
+    expect(FLAT_STEP_ORDER).toEqual(['start', 'setup', 'content', 'site', 'domain', 'review'])
+    expect(FLAT_STEP_ORDER).not.toContain('branch')
+    expect(FLAT_STEP_ORDER).not.toContain('bokning')
+    expect(FLAT_STEP_ORDER).not.toContain('live')
   })
 
   it('storefronten visar mallens egen copy utan att operatören skrivit något (branched cfg)', () => {
@@ -171,7 +198,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     const html = mounts(
       <PanelHost
         cfg={branched}
-        step="live"
+        step="review"
         stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
@@ -185,7 +212,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
   })
 
   it('marks the final owner-and-create step as required', () => {
-    const finalStep = PHASES.flatMap((phase) => phase.steps).find((candidate) => candidate.id === 'live')
+    const finalStep = PHASES.flatMap((phase) => phase.steps).find((candidate) => candidate.id === 'review')
     expect(finalStep?.req).toBe(true)
   })
 
@@ -193,7 +220,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     const html = mounts(
       <PanelHost
         cfg={branched}
-        step="live"
+        step="review"
         stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
@@ -221,7 +248,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
           ownerName: '',
           ownerEmail: '',
         }}
-        step="live"
+        step="review"
         stepOrder={allSteps}
         dispatch={noopDispatch}
         presets={presets}
@@ -262,7 +289,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
 
   it('OnboardingStudio (root machine) mounts DIRECTLY in the studio stage', () => {
     const html = mounts(<OnboardingStudio presets={presets} />)
-    expect(html).toContain('Grunden') // step-rail phase 1 → wizarden är startskärmen
+    expect(html).toContain('Starta kund') // step-rail phase 1 → wizarden är startskärmen
   })
 
 })

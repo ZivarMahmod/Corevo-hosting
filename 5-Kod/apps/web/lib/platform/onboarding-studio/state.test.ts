@@ -79,6 +79,25 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     expect(cfg.moduleStates.booking).toBeUndefined()
   })
 
+  it('keeps external booking live when a later branch preset has booking off', () => {
+    let cfg = reducer(initStudioCfg('salvia'), { type: 'setOnboardingMode', mode: 'external' })
+    expect(cfg.bookingProvider).toBe('external')
+    expect(cfg.moduleStates.booking).toBe('live')
+
+    cfg = reducer(cfg, { type: 'applyBranch', key: 'generell' })
+    expect(cfg.bookingProvider).toBe('external')
+    expect(cfg.moduleStates.booking).toBe('live')
+
+    const modules = JSON.parse(String(buildTenantOnboardingFormData(cfg).get('modules')))
+    expect(modules.booking).toBe('live')
+  })
+
+  it('switching back to Corevo also switches the booking provider', () => {
+    let cfg = reducer(initStudioCfg('salvia'), { type: 'setOnboardingMode', mode: 'external' })
+    cfg = reducer(cfg, { type: 'setOnboardingMode', mode: 'corevo' })
+    expect(cfg.bookingProvider).toBe('corevo')
+  })
+
   it('setServices replaces the onboarding service list (W4)', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setServices', services: [{ name: 'Klippning', price: '350' }] })
     expect(cfg.services).toEqual([{ name: 'Klippning', price: '350' }])

@@ -90,6 +90,7 @@
   display: flex;
   flex-direction: row; /* override .tenant-root's column (globals.css) */
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--c-cream);
   color: var(--c-ink);
   font-family: var(--font-ui);
@@ -133,6 +134,8 @@
   margin: 0;
   padding: 30px;
   flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* Onboarding-studions host fyller den kanoniska Topnav-ytan. */
@@ -402,26 +405,29 @@
    bo-brand: branding editor 390px/1fr. All collapse at 920px. */
 [data-world="backoffice"] .bo-stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin: 0 0 22px;
 }
 [data-world="backoffice"] .bo-2col {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 [data-world="backoffice"] .bo-brand {
   display: grid;
-  grid-template-columns: 390px 1fr;
+  grid-template-columns: minmax(0, 390px) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
 @media (max-width: 920px) {
-  [data-world="backoffice"] .bo-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  [data-world="backoffice"] .bo-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   [data-world="backoffice"] .bo-2col,
   [data-world="backoffice"] .bo-brand { grid-template-columns: 1fr; }
+}
+@media (max-width: 479px) {
+  [data-world="backoffice"] .bo-stat-grid { grid-template-columns: 1fr; }
 }
 
 /* ---- primitive: Drawer (§4.9 — shared right-anchored detail surface) ---- */

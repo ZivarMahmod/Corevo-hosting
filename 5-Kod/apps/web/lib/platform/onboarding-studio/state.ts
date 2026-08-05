@@ -22,6 +22,7 @@ export type StudioStage = 'super' | 'studio' | 'result'
  * the leaner W1 StudioCfg). Discriminated on `type`; the leaves match these literals
  * EXACTLY, so the payload field names are part of the action contract:
  *   applyBranch  { key }      — tag the customer's category ONLY (no theme/module seeding)
+ *   setOnboardingMode { mode } — Corevo-led onboarding or external booking-led setup
  *   setName      { value }    — set name; auto-syncs slug until slugTouched
  *   setSlug      { value }    — set slug by hand → locks slugTouched=true
  *   setModule    { key, state }— set one module's lifecycle state
@@ -33,9 +34,12 @@ export type StudioStage = 'super' | 'studio' | 'result'
  *   setOwnerEmail{ value }
  */
 export type StudioAction =
+  | { type: 'setOnboardingMode'; mode: StudioCfg['onboardingMode'] }
   | { type: 'applyBranch'; key: string }
   | { type: 'setName'; value: string }
   | { type: 'setSlug'; value: string }
+  | { type: 'setCity'; value: string }
+  | { type: 'setTheme'; value: string }
   | { type: 'setModule'; key: string; state: ModuleState }
   | { type: 'setVariant'; variant: BookingVariant }
   | { type: 'setBookingProvider'; provider: BookingProviderKind }
@@ -62,18 +66,35 @@ export type StudioReducer = (cfg: StudioCfg, action: StudioAction) => StudioCfg
 export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
   return function studioReducer(cfg: StudioCfg, action: StudioAction): StudioCfg {
     switch (action.type) {
-      case 'applyBranch':
+      case 'setOnboardingMode':
+        return {
+          ...cfg,
+          onboardingMode: action.mode,
+          bookingProvider: action.mode === 'external' ? 'external' : 'corevo',
+          moduleStates: action.mode === 'external'
+            ? { ...cfg.moduleStates, booking: 'live' }
+            : cfg.moduleStates,
+        }
+      case 'applyBranch': {
         // Bransch FÖRFYLLER (Zivar 2026-07-11, "hjärndött att starta en kund"): valet
         // seedar tema (vertical.default_template) + modul-states från bransch-förvalen
         // (VerticalEditor på /branscher äger dem). Efter skapandet ändras de i
         // kundkortet; onboardingen ska bara skapa en korrekt startpunkt.
-        return applyBranch(cfg, action.key, presets)
+        const next = applyBranch(cfg, action.key, presets)
+        return cfg.onboardingMode === 'external'
+          ? { ...next, bookingProvider: 'external', moduleStates: { ...next.moduleStates, booking: 'live' } }
+          : next
+      }
       case 'setName':
         return cfg.slugTouched
           ? { ...cfg, name: action.value }
           : { ...cfg, name: action.value, slug: studioSlugify(action.value) }
       case 'setSlug':
         return { ...cfg, slug: action.value, slugTouched: true }
+      case 'setCity':
+        return { ...cfg, city: action.value }
+      case 'setTheme':
+        return { ...cfg, theme: action.value }
       case 'setModule':
         return { ...cfg, moduleStates: { ...cfg.moduleStates, [action.key]: action.state } }
       case 'setVariant':
@@ -133,6 +154,7 @@ export function buildTenantOnboardingFormData(cfg: StudioCfg): FormData {
   fd.set('vertical_id', cfg.branch ?? '')
   fd.set('name', cfg.name)
   fd.set('slug', cfg.slug)
+  fd.set('city', cfg.city)
   fd.set('theme', cfg.theme)
   fd.set('booking_variant', cfg.variant)
   fd.set('booking_provider', cfg.bookingProvider)
