@@ -2,15 +2,15 @@ import styles from './platform.module.css'
 import type { DomainOverview as Overview, DomainRow } from '@/lib/platform/domain-overview'
 
 // goal-32 F3 — super-admin "Domäner" overview. Lists the 3 fixed infra hosts + every
-// tenantens <slug>.boka.corevo.se with an honest status pill. Presentational only;
+// tenantens <slug>.corevo.se with an honest status pill. Presentational only;
 // reuses the platform.module.css domain primitives (.domainList/.domainRow/.pillOk/
 // .pillPending) that the per-tenant DomänPanel already uses.
 
 function StatusPill({ status }: { status: DomainRow['status'] }) {
   if (status === 'live') return <span className={styles.pillOk}>Live</span>
   if (status === 'cert_pending') return <span className={styles.pillPending}>Cert väntar</span>
-  // 'managed' — DB-driven, re-asserted on every deploy. We can't read CF without a
-  // token, so we don't claim "live"; check_domains verifies live HTTP offline.
+  // 'managed' — attached by Cloudflare at onboarding. We can't read CF here without
+  // a token, so we don't claim "live"; check_domains verifies live HTTP after deploy.
   return <span className={styles.pillOk}>Hanteras · deploy</span>
 }
 
@@ -21,9 +21,9 @@ export function DomainOverview({ overview }: { overview: Overview }) {
     <div>
       <div className={styles.section}>
         <p className={styles.muted} style={{ marginTop: 0 }}>
-          Standardadresserna går genom den committade, POS-isolerade wildcard-routen
-          <code className={styles.code}> *.boka.corevo.se</code>. Live-HTTP verifieras av
-          check_domains efter deploy.
+          Varje standardadress är en egen Cloudflare-domän, exempelvis
+          <code className={styles.code}> velo.corevo.se</code>. Den skapas vid
+          kundupplägg och verifieras efter deploy.
         </p>
       </div>
 

@@ -7,13 +7,13 @@ const OPTS = {
   platformHost: 'booking.corevo.se',
   superadminHost: 'superbooking.corevo.se',
   customerPortalHost: 'mina.corevo.se',
-  tenantHostSuffix: 'boka.corevo.se',
+  tenantHostSuffix: 'corevo.se',
 }
 
 afterEach(() => vi.unstubAllEnvs())
 
 describe('getTenantFromHost — host suffix classification', () => {
-  it('accepts an already-published root-zone tenant host as legacy input', () => {
+  it('accepts an exact Corevo tenant host', () => {
     expect(getTenantFromHost('freshcut.corevo.se', OPTS)).toEqual({
       kind: 'tenant',
       slug: 'freshcut',
@@ -61,15 +61,15 @@ describe('getTenantFromHost — host suffix classification', () => {
     expect(getTenantFromHost('boka.minsalong.se', OPTS)).toEqual({ kind: 'unknown' })
   })
 
-  it('goal-28: <slug>.boka.corevo.se resolves to the salon storefront tenant', () => {
-    expect(getTenantFromHost('demo.boka.corevo.se', OPTS)).toEqual({ kind: 'tenant', slug: 'demo' })
-    expect(getTenantFromHost('freshcut.boka.corevo.se', OPTS)).toEqual({
+  it('goal-28: <slug>.corevo.se resolves to the salon storefront tenant', () => {
+    expect(getTenantFromHost('demo.corevo.se', OPTS)).toEqual({ kind: 'tenant', slug: 'demo' })
+    expect(getTenantFromHost('freshcut.corevo.se', OPTS)).toEqual({
       kind: 'tenant',
       slug: 'freshcut',
     })
   })
 
-  it('goal-28: the bare boka.corevo.se branch apex is NOT a tenant', () => {
+  it('the reserved boka.corevo.se label is NOT a tenant', () => {
     expect(getTenantFromHost('boka.corevo.se', OPTS)).toEqual({
       kind: 'reserved',
       subdomain: 'boka',
@@ -77,13 +77,12 @@ describe('getTenantFromHost — host suffix classification', () => {
     expect(getTenantFromHost('boka.corevo.se', OPTS)).not.toMatchObject({ kind: 'tenant' })
   })
 
-  it('fix-29: a non-reserved subdomain that merely STARTS with "boka" is still a tenant', () => {
-    // 'boka' is reserved, but 'xboka' is not — the bare apex check is exact, so
-    // xboka.corevo.se must resolve to tenant(xboka), never collide with the branch.
+  it('a non-reserved subdomain that starts with "boka" is still a tenant', () => {
+    // 'boka' is reserved, but 'xboka' is not.
     expect(getTenantFromHost('xboka.corevo.se', OPTS)).toEqual({ kind: 'tenant', slug: 'xboka' })
   })
 
-  it('fix-29: an external custom domain never becomes a tenant via the boka branch', () => {
+  it('an external custom domain never becomes a Corevo tenant', () => {
     expect(getTenantFromHost('app.evil.com', OPTS)).toEqual({ kind: 'unknown' })
     expect(getTenantFromHost('boka.evil.com', OPTS)).toEqual({ kind: 'unknown' })
   })
@@ -100,7 +99,7 @@ describe('getTenantFromHost — host suffix classification', () => {
     expect(RESERVED_SUBDOMAINS).toContain('minbooking')
   })
 
-  it('goal-28: the boka branch is read from env, not hardcoded (suffix override honored)', () => {
+  it('the tenant suffix is read from env, not hardcoded (override honored)', () => {
     expect(
       getTenantFromHost('demo.book.example.com', { ...OPTS, tenantHostSuffix: 'book.example.com' }),
     ).toEqual({
@@ -117,8 +116,7 @@ describe('getTenantFromHost — host suffix classification', () => {
     })
   })
 
-  it('POS-SAFETY: a bare *.corevo.se subdomain is unchanged by the boka branch', () => {
-    // The boka block must NEVER hijack a plain POS subdomain on the shared zone.
+  it('POS-SAFETY: reserved Corevo subdomains never resolve as tenants', () => {
     expect(getTenantFromHost('admin.corevo.se', OPTS)).toEqual({
       kind: 'reserved',
       subdomain: 'admin',

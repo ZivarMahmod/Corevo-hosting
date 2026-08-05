@@ -1,12 +1,11 @@
 /**
  * Public storefront URL for a tenant — ALWAYS the real public host
- * (`https://<slug>.boka.corevo.se`, or the tenant's verified custom domain), computed
+ * (`https://<slug>.corevo.se`, or the tenant's verified custom domain), computed
  * from tenant data. It is deliberately NOT derived from NEXT_PUBLIC_SITE_URL /
  * the request host. `tenantStorefrontAppUrl` is the explicit localhost seam for
  * back-office preview links; canonical display never changes with the dev host.
  */
-const DEFAULT_TENANT_HOST_SUFFIX = 'boka.corevo.se'
-const LEGACY_TENANT_HOST_SUFFIX = 'corevo.se'
+const DEFAULT_TENANT_HOST_SUFFIX = 'corevo.se'
 
 function cleanHost(value?: string | null): string | null {
   const host = value?.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '')
@@ -33,7 +32,7 @@ export function tenantStorefrontUrl(
   return clean ? `https://${clean}.${tenantHostSuffix()}` : null
 }
 
-/** Bare canonical host for display, e.g. "freshcut.boka.corevo.se". */
+/** Bare canonical host for display, e.g. "freshcut.corevo.se". */
 export function tenantStorefrontHost(
   slug?: string | null,
   customDomain?: string | null,
@@ -42,25 +41,16 @@ export function tenantStorefrontHost(
   return url ? url.replace(/^https?:\/\//, '') : null
 }
 
-/** Accepted only while already-published `<slug>.corevo.se` links still exist. */
-export function legacyTenantStorefrontHost(slug?: string | null): string | null {
-  const clean = cleanSlug(slug)
-  return clean ? `${clean}.${LEGACY_TENANT_HOST_SUFFIX}` : null
-}
-
 /** Canonicalizes Corevo-owned origins; verified external origins pass through unchanged. */
 export function normalizeTenantStorefrontOrigin(
   slug: string,
   origin: string,
 ): string | null {
   const canonicalHost = tenantStorefrontHost(slug)
-  const legacyHost = legacyTenantStorefrontHost(slug)
-  if (!canonicalHost || !legacyHost) return null
+  if (!canonicalHost) return null
   try {
     const parsed = new URL(origin)
-    return parsed.hostname === canonicalHost || parsed.hostname === legacyHost
-      ? `https://${canonicalHost}`
-      : parsed.origin
+    return parsed.hostname === canonicalHost ? `https://${canonicalHost}` : parsed.origin
   } catch {
     return null
   }

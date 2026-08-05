@@ -3,7 +3,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
 import { createServiceClient } from '@/lib/platform/service'
 import {
-  legacyTenantStorefrontHost,
   normalizeTenantStorefrontOrigin,
   tenantStorefrontHost,
 } from '@/lib/storefront-url'
@@ -107,11 +106,9 @@ export async function createCustomerClaimLink(args: {
   ])
   if (!tenant?.slug) return { ok: false, reason: 'error' }
   const canonicalHost = tenantStorefrontHost(tenant.slug)
-  const legacyHost = legacyTenantStorefrontHost(tenant.slug)
-  if (!canonicalHost || !legacyHost) return { ok: false, reason: 'error' }
+  if (!canonicalHost) return { ok: false, reason: 'error' }
   const allowedHosts = new Set([
     canonicalHost,
-    legacyHost,
     ...(domains ?? []).map((row) => row.domain.toLowerCase()),
   ])
   if (

@@ -6,7 +6,7 @@
 //    internal `/platform` route, via rewrite); `/kunder`, `/fakturering`,
 //    `/admin/*`, `/personal/*`, `/login` are served as-is. The bare `/platform*`
 //    prefix is redirected to `/` so it never appears in the URL.
-//  • TENANT host (frisorN.boka.corevo.se) = storefront only: `(public)`, `/boka`,
+//  • TENANT host (frisorN.corevo.se) = storefront only: `(public)`, `/boka`,
 //    `/konto`, `/registrera`, `/login`. Back-office paths are bounced to `/`.
 //
 // Tenant identity: the storefront resolves it from the HOST (the header set below);

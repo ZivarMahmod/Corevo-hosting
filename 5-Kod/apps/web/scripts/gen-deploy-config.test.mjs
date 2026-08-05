@@ -1,193 +1,44 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   buildRoutes,
-  fetchActiveSlugs,
-  validateDomains,
+  createDeployConfig,
   REQUIRED_FIXED_HOSTS,
 } from './gen-deploy-config.mjs'
-import { RESERVED } from './domain-routes.mjs'
 
-// The fixed infra routes as they appear in wrangler.jsonc (the generator's base).
 const BASE = [
   { pattern: 'booking.corevo.se', custom_domain: true },
   { pattern: 'superbooking.corevo.se', custom_domain: true },
   { pattern: 'minbooking.corevo.se', custom_domain: true },
   { pattern: 'mina.corevo.se', custom_domain: true },
-  { pattern: '*.boka.corevo.se/*', zone_name: 'corevo.se' },
 ]
 
-describe('buildRoutes', () => {
-  it('keeps the fixed hosts + wildcard without minting one domain per active slug', () => {
-    const routes = buildRoutes(BASE, ['test-barber', 'klippstudio'])
-    const patterns = routes.map((r) => r.pattern)
-    for (const h of REQUIRED_FIXED_HOSTS) expect(patterns).toContain(h)
-    expect(patterns).toContain('*.boka.corevo.se/*')
-    expect(patterns).not.toContain('test-barber.corevo.se')
-    expect(patterns).not.toContain('klippstudio.corevo.se')
-    expect(routes).toHaveLength(BASE.length)
+describe('production deploy domain union', () => {
+  it('includes every live tenant host, so a rebuild cannot detach it', () => {
+    const routes = buildRoutes(BASE, ['freshcut.corevo.se', 'velo.corevo.se'])
+    expect(routes.map((route) => route.pattern)).toEqual([
+      ...REQUIRED_FIXED_HOSTS,
+      'freshcut.corevo.se',
+      'velo.corevo.se',
+    ])
   })
 
-  it('does not let duplicate slug input alter the canonical wildcard routes', () => {
-    const routes = buildRoutes(BASE, ['  Test-Barber ', 'test-barber'])
-    expect(routes).toEqual(BASE)
+  it('deduplicates Cloudflare output without changing fixed routes', () => {
+    const routes = buildRoutes(BASE, ['VELO.COREVO.SE', 'velo.corevo.se', 'booking.corevo.se'])
+    expect(routes.map((route) => route.pattern)).toEqual([...REQUIRED_FIXED_HOSTS, 'velo.corevo.se'])
   })
 
-  it('NEVER mints a reserved/POS label as a tenant domain', () => {
-    const routes = buildRoutes(BASE, [...RESERVED, 'realsalon'])
-    const patterns = routes.map((r) => r.pattern)
-    expect(patterns).not.toContain('realsalon.corevo.se')
-    // Reserved fixed hosts survive exactly once; every other reserved label is absent.
-    for (const label of RESERVED) {
-      const expected = BASE.some((route) => route.pattern === `${label}.corevo.se`) ? 1 : 0
-      expect(patterns.filter((p) => p === `${label}.corevo.se`)).toHaveLength(expected)
-    }
-  })
-
-  it('handles an empty slug list — just the fixed infra survives', () => {
-    const routes = buildRoutes(BASE, [])
-    expect(routes).toHaveLength(BASE.length)
-  })
-
-  it('THROWS (fail-closed) if a required fixed host is missing from the base', () => {
-    for (const required of ['superbooking.corevo.se', 'minbooking.corevo.se']) {
-      const broken = BASE.filter((r) => r.pattern !== required)
-      expect(() => buildRoutes(broken, ['test-barber'])).toThrow(new RegExp(required.replaceAll('.', '\\.')))
-    }
-  })
-})
-
-describe('fetchActiveSlugs', () => {
-  const fakeFetch = (status, body) => async () => ({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  })
-
-  it('returns slugs from a 200 response', async () => {
-    const slugs = await fetchActiveSlugs(
-      'https://x',
-      'anon',
-      fakeFetch(200, [{ slug: 'a' }, { slug: 'b' }]),
-    )
-    expect(slugs).toEqual(['a', 'b'])
-  })
-
-  it('THROWS on a non-OK response (fail-closed, never silently drops domains)', async () => {
-    await expect(fetchActiveSlugs('https://x', 'anon', fakeFetch(500, {}))).rejects.toThrow(
-      /HTTP 500/,
+  it('fails before deploy when a committed platform door is missing', () => {
+    expect(() => buildRoutes(BASE.filter((route) => route.pattern !== 'mina.corevo.se'), [])).toThrow(
+      /mina\.corevo\.se/,
     )
   })
 
-  it('THROWS on a non-array body', async () => {
-    await expect(
-      fetchActiveSlugs('https://x', 'anon', fakeFetch(200, { error: 'x' })),
-    ).rejects.toThrow(/non-array/)
-  })
-
-  it('filters out null/empty slugs', async () => {
-    const slugs = await fetchActiveSlugs(
-      'https://x',
-      'anon',
-      fakeFetch(200, [{ slug: 'a' }, { slug: null }, {}]),
+  it('keeps config fields while replacing only routes with the live union', () => {
+    const config = createDeployConfig(
+      JSON.stringify({ name: 'worker', main: './worker.mjs', routes: BASE }),
+      ['freshcut.corevo.se'],
     )
-    expect(slugs).toEqual(['a'])
-  })
-})
-
-describe('validateDomains', () => {
-  const FILE = [
-    'booking.corevo.se',
-    'superbooking.corevo.se',
-    'minbooking.corevo.se',
-    'mina.corevo.se',
-    'test-barber.corevo.se',
-  ]
-
-  it('passes when committed ⊇ live; active tenants ride the canonical wildcard', () => {
-    const out = validateDomains({
-      committedPatterns: FILE,
-      liveDomains: ['booking.corevo.se', 'test-barber.corevo.se'],
-      activeSlugs: ['test-barber'],
-    })
-    expect(out.missingLive).toEqual([])
-    expect(out.missingActive).toEqual([])
-  })
-
-  it('does not require a root-domain route for an active tenant', () => {
-    const out = validateDomains({
-      committedPatterns: REQUIRED_FIXED_HOSTS,
-      liveDomains: [],
-      activeSlugs: ['new-salon'],
-    })
-    expect(out.missingActive).toEqual([])
-  })
-
-  it('flags a LIVE customer domain missing from the committed file (deploy would detach it)', () => {
-    const out = validateDomains({
-      committedPatterns: FILE,
-      liveDomains: ['booking.corevo.se', 'orphan.corevo.se'],
-      activeSlugs: [],
-    })
-    expect(out.missingLive).toEqual(['orphan.corevo.se'])
-  })
-
-  it('ignores fixed hosts and reserved labels', () => {
-    const out = validateDomains({
-      committedPatterns: FILE,
-      liveDomains: [
-        'booking.corevo.se',
-        'superbooking.corevo.se',
-        'minbooking.corevo.se',
-        'mina.corevo.se',
-      ],
-      activeSlugs: ['booking', 'admin', 'boka', 'mina'], // reserved → never required
-    })
-    expect(out.missingLive).toEqual([])
-    expect(out.missingActive).toEqual([])
-  })
-
-  // The RLS-trap regression — the whole root cause from the spec.
-  it('PAUSED salon: guard #1 (live) catches it even though anon-DB read hides it', async () => {
-    // RLS: anon policy `USING (status='active')` → a paused salon is INVISIBLE to anon,
-    // even though the query asks neq.deleted. Model the two reads:
-    const anonFetch = (_url, _init) =>
-      Promise.resolve({ ok: true, status: 200, json: async () => [{ slug: 'test-barber' }] }) // paused 'klippstudio' hidden
-    const serviceRoleFetch = (_url, _init) =>
-      Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => [{ slug: 'test-barber' }, { slug: 'klippstudio' }],
-      })
-
-    const anonSlugs = await fetchActiveSlugs('https://x', 'anon', anonFetch)
-    const srSlugs = await fetchActiveSlugs('https://x', 'sr', serviceRoleFetch)
-    expect(anonSlugs).not.toContain('klippstudio') // proves the trap exists
-    expect(srSlugs).toContain('klippstudio')
-
-    // Committed file HAS the active salon (test-barber) but is MISSING the paused one
-    // (klippstudio). The anon-only active guard PASSES — it never saw klippstudio — so
-    // the old DB-gen path would have detached it. That blindness is the FX-14 trap.
-    const fileHasActiveNotPaused = [
-      'booking.corevo.se',
-      'superbooking.corevo.se',
-      'minbooking.corevo.se',
-      'mina.corevo.se',
-      'test-barber.corevo.se',
-    ]
-    const anonOnly = validateDomains({
-      committedPatterns: fileHasActiveNotPaused,
-      liveDomains: [],
-      activeSlugs: anonSlugs,
-    })
-    expect(anonOnly.missingActive).toEqual([]) // trap: DB-read alone is blind to the paused domain
-
-    // But the paused salon is LIVE-attached in Cloudflare (CF API sees it regardless of
-    // DB status) → guard #1 catches it. THIS is why the live⊆file guard cures FX-14.
-    const withLive = validateDomains({
-      committedPatterns: fileHasActiveNotPaused,
-      liveDomains: ['booking.corevo.se', 'klippstudio.corevo.se'],
-      activeSlugs: anonSlugs,
-    })
-    expect(withLive.missingLive).toEqual(['klippstudio.corevo.se'])
+    expect(config).toMatchObject({ name: 'worker', main: './worker.mjs' })
+    expect(config.routes.map((route) => route.pattern)).toContain('freshcut.corevo.se')
   })
 })

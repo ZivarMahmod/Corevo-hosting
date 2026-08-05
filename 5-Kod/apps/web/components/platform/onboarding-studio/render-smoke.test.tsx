@@ -287,7 +287,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       />,
     )
     expect(html).toContain('href="/kunder/t9"') // real, working platform link
-    expect(html).toContain('klippoteket.boka.corevo.se') // canonical reserved address shown
+    expect(html).toContain('klippoteket.corevo.se') // canonical reserved address shown
     expect(html).toContain('Onboarda nästa kund')
     expect(html).toContain('är skapad') // honest header, NOT "är live" (host doesn't resolve yet)
     expect(html).not.toContain('byggs i senare vågor') // old placeholder copy is gone

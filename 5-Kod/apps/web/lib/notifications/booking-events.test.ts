@@ -156,7 +156,7 @@ describe('queueBookingEvent', () => {
     })
 
     const args = rpc.mock.calls[0]?.[1] as { p_payload: { origin: string } }
-    expect(args.p_payload.origin).toBe('https://demo.boka.corevo.se')
+    expect(args.p_payload.origin).toBe('https://demo.corevo.se')
   })
 
   it('normalizes the published root-zone compatibility host to the canonical branch', async () => {
@@ -173,7 +173,7 @@ describe('queueBookingEvent', () => {
     })
 
     const args = rpc.mock.calls[0]?.[1] as { p_payload: { origin: string } }
-    expect(args.p_payload.origin).toBe('https://demo.boka.corevo.se')
+    expect(args.p_payload.origin).toBe('https://demo.corevo.se')
   })
 
   it('prefers a verified external domain when no trusted origin was supplied', async () => {

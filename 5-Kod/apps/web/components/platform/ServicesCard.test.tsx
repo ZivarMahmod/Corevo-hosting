@@ -17,7 +17,7 @@ describe('ServicesCard assignment summary', () => {
     const html = renderToStaticMarkup(
       <ServicesCard
         tenantId="tenant-1"
-        storefrontUrl="https://tenant-1.boka.corevo.se"
+        storefrontUrl="https://tenant-1.corevo.se"
         staff={[{ id: 'staff-1', title: 'Medarbetare', active: true }]}
         services={[
           {

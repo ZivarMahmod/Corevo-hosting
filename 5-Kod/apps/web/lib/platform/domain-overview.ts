@@ -2,11 +2,11 @@ import 'server-only'
 import { platformCtx } from './guard'
 import { tenantStorefrontHost } from '@/lib/storefront-url'
 
-// Goal 76 — every tenant's canonical wildcard host + the fixed infra hosts.
+// Goal 76 — every tenant's exact Corevo host + the fixed infra hosts.
 // Distinct from
 // lib/platform/domains.ts (that reads tenant_domains = customer-OWNED external
-// domains). Every tenant host rides the committed *.boka.corevo.se route; no
-// per-tenant Cloudflare object exists or is required.
+// domains). Every tenant host is an exact Cloudflare Worker Domain, created at
+// onboarding and preserved by the production deploy generator.
 
 const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').toLowerCase()
 const FIXED_HOSTS = ['booking', 'superbooking', 'minbooking', 'mina'].map((h) => `${h}.${ROOT}`)

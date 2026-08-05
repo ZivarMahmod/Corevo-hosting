@@ -22,6 +22,7 @@ import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
 import { reportActionError } from './observe'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
 import { DEFAULT_TENANT_REGION } from '@/lib/tenant-region'
+import { ensureTenantPlatformHostname } from '@/lib/cloudflare/custom-hostnames'
 
 /**
  * Onboarding-studions inline slug-koll (Dunder-fix 2026-07-11): tidigare
@@ -412,6 +413,11 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     }
   }
 
+  // Create the exact <slug>.corevo.se Worker domain now. A failure leaves the
+  // tenant safely in provisioning; publishing retries and refuses to go live until
+  // the host exists. No Git/Wrangler edit is needed: deploy reads Cloudflare's list.
+  const platformHost = await ensureTenantPlatformHostname(slug)
+
   await logPlatformAction(supabase, {
     action: 'tenant.create',
     tenantId,
@@ -431,11 +437,14 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // boundary explicitly so a create performed on /kunder/ny cannot leave the
   // persistent master pane stale during the next client navigation.
   revalidatePath('/kunder', 'layout')
-  // Provisioning and publishing are deliberately separate. The canonical storefront
-  // already rides the isolated *.boka.corevo.se wildcard, but public RLS keeps this
+  // Provisioning and publishing are deliberately separate. The exact Corevo host is
+  // attached before this returns when Cloudflare is reachable; public RLS keeps this
   // tenant hidden until the DB-owned readiness gate transitions it to active.
   return {
     success: `Kund "${name}" skapad under konfiguration (${tenantStorefrontHost(slug)}).${inviteNote}`,
+    ...(platformHost.ok
+      ? {}
+      : { warning: `Kundsubdomänen kunde inte kopplas ännu: ${platformHost.error}. Försök publicera igen när driftanslutningen är tillgänglig.` }),
     tenant: { id: tenantId, slug },
   }
 }

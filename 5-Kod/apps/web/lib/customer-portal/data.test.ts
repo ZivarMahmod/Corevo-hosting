@@ -135,7 +135,7 @@ describe('customer portal server DAL', () => {
         phone: '+46 70 000 00 00',
         address: 'Testgatan 1',
         mapUrl: null,
-        bookingOrigin: 'https://freshcut.boka.corevo.se',
+        bookingOrigin: 'https://freshcut.corevo.se',
         timezone: 'Europe/Stockholm',
         locale: 'sv-SE',
         defaultCountry: 'SE',

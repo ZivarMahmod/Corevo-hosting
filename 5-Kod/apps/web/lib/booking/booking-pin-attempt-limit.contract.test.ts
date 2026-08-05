@@ -8,7 +8,7 @@ const attemptLimitMigration = readdirSync(migrationsDir)
   .sort()
   .reverse()
   .map((name) => readFileSync(`${migrationsDir}/${name}`, 'utf8').toLowerCase())
-  .find((source) => source.includes('goal 74: three pin attempts'))
+  .find((source) => source.includes('create or replace function public.finalize_verified_storefront_booking'))
 
 describe('booking PIN attempt limit migration', () => {
   it('locks the deployed finalize function to three failed attempts', () => {
@@ -19,7 +19,7 @@ describe('booking PIN attempt limit migration', () => {
   })
 
   it('uses the canonical booking host in durable notification links', () => {
-    expect(attemptLimitMigration).toContain("'.boka.corevo.se'")
-    expect(attemptLimitMigration).not.toContain("'.corevo.se'")
+    expect(attemptLimitMigration).toContain("'.corevo.se'")
+    expect(attemptLimitMigration).not.toContain("'.boka.corevo.se'")
   })
 })

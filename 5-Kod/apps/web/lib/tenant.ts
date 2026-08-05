@@ -1,8 +1,7 @@
 // Tenant resolution — host → slug (ADR 01 §2). Pure + dependency-free so it can
 // run in middleware (edge), Server Components, and a plain Node test.
 //
-//   live: frisor1.boka.corevo.se   → { tenant, frisor1 }
-//   legacy: frisor1.corevo.se      → { tenant, frisor1 }
+//   live: frisor1.corevo.se        → { tenant, frisor1 }
 //   dev:  frisor1.localhost:3000   → { tenant, frisor1 }
 //   dev:  ?tenant=frisor1          → { tenant, frisor1 }
 //   dev:  /t/frisor1               → { tenant, frisor1 }
@@ -37,8 +36,7 @@ export type ResolveOptions = {
   platformHost?: string
   superadminHost?: string
   customerPortalHost?: string
-  /** goal-28 — dedicated salon-storefront branch suffix (e.g. boka.corevo.se).
-   *  <slug>.<suffix> → tenant; the bare <suffix> apex → reserved (not a tenant). */
+  /** Optional dedicated tenant suffix for a non-production environment. */
   tenantHostSuffix?: string
   search?: URLSearchParams
   pathname?: string
@@ -47,10 +45,7 @@ export type ResolveOptions = {
 const DEFAULT_ROOT = 'localhost:3000'
 // Fixed hosts join the reserved list so the slug validator cannot mint them as
 // tenant names. Exact hosts are classified before the generic suffix path.
-// fix-29 — 'boka' is the salon-storefront BRANCH apex (boka.corevo.se, goal-28), never
-// a tenant. Reserving it stops the slug validator (lib/platform/slug.ts) from ever
-// minting a salon named 'boka'. The branch apex is also caught by host-equality in
-// getTenantFromHost (so <slug>.boka.corevo.se still resolves the <slug>, not 'boka').
+// `boka` remains reserved so an old public label cannot be minted as a tenant.
 export const DEFAULT_RESERVED_SUBDOMAINS = [
   'booking',
   'admin',
@@ -81,7 +76,7 @@ const DEFAULT_CUSTOMER_PORTAL = 'mina.corevo.se'
 // are injected into process.env per request — NOT necessarily when this module
 // is first evaluated. Reading these as top-level consts made
 // NEXT_PUBLIC_ROOT_DOMAIN fall back to 'localhost:3000' on the Worker, so real
-// storefront hosts (demo.boka.corevo.se) resolved to `unknown` → storefront 404. Resolving
+// storefront hosts (demo.corevo.se) resolved to `unknown` → storefront 404. Resolving
 // inside the function (which runs per request) sees the live vars.
 const splitReserved = (v: string): string[] =>
   v
@@ -203,14 +198,7 @@ export function getTenantFromHost(
     return { kind: 'root' }
   }
 
-  // goal-28 — salon storefronts on the dedicated branch <slug>.boka.corevo.se.
-  // Checked BEFORE the generic rootSuffix below because <slug>.boka.corevo.se ends
-  // with BOTH '.boka.corevo.se' AND '.corevo.se' — the generic path would read the
-  // last label before the root ('boka') as the slug. classify() is reused so reserved
-  // names can't become tenants on this branch either. The bare apex (boka.corevo.se)
-  // is NOT a tenant: it's reserved so the generic path never resolves it to a 'boka'
-  // tenant. POS protection is intact — this only matches the boka branch, never a
-  // bare POS subdomain.
+  // An optional non-production suffix is checked before the root suffix.
   const tenantSuffix = stripPort(tenantSuffixOption).toLowerCase()
   if (tenantSuffix) {
     const tenantSuffixDot = '.' + tenantSuffix
@@ -225,8 +213,7 @@ export function getTenantFromHost(
 
   const rootSuffix = '.' + root
   if (hostname.endsWith(rootSuffix)) {
-    // Compatibility for already-published <slug>.corevo.se links. New links are
-    // generated exclusively through lib/storefront-url.ts on the boka branch.
+    // Exact <slug>.corevo.se tenant hosts are attached individually in Cloudflare.
     const label = hostname.slice(0, -rootSuffix.length).split('.').pop() ?? ''
     return classify(label)
   }

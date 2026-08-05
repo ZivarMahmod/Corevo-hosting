@@ -19,7 +19,7 @@ begin
   select pg_get_functiondef(v_function) into v_definition;
   if v_definition not like '%attempt_count >= 3%'
      or v_definition not like '%attempt_count + 1 >= 3%'
-     or v_definition not like '%.boka.corevo.se%' then
+     or v_definition not like '%.corevo.se%' then
     raise exception 'booking_pin_three_attempt_contract_invalid';
   end if;
 end

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Domäner' }
 
 /**
- * Domäner — super-admin overview of every tenant's <slug>.boka.corevo.se + fixed
+ * Domäner — super-admin overview of every tenant's <slug>.corevo.se + fixed
  * infra hosts (goal-32 F3). Self-gates with requirePlatformAdmin (the (platform)
  * layout also gates; getDomainOverview → platformCtx re-checks the role before the
  * cross-tenant read). Status is honest: 'live'/'cert pending' when the Cloudflare

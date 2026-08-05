@@ -6,6 +6,7 @@ import { logPlatformAction } from '../audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
+import { ensureTenantPlatformHostname } from '@/lib/cloudflare/custom-hostnames'
 
 // ── Step 6: launch / suspend ────────────────────────────────────────────────────
 export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -20,6 +21,21 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
   let tenant: { slug: string } | null = null
   let transitioned = true
   if (status === 'active') {
+    // Create/reassert the exact Corevo hostname BEFORE the database gate exposes a
+    // public tenant. PUT is idempotent, so this also repairs a transient creation
+    // failure from onboarding without a special recovery path.
+    const tenantRead = await supabase
+      .from('tenants')
+      .select('slug')
+      .eq('id', tenantId)
+      .maybeSingle()
+    tenant = tenantRead.data
+    if (!tenant) return { error: 'Kunden finns inte.' }
+    const platformHost = await ensureTenantPlatformHostname(tenant.slug)
+    if (!platformHost.ok) {
+      return { error: `Kundsubdomänen kunde inte kopplas: ${platformHost.error}` }
+    }
+
     const { data: publishData, error: publishError } = await supabase.rpc(
       'publish_tenant' as never,
       { p_tenant: tenantId } as never,
@@ -39,12 +55,6 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
     }
     transitioned =
       (publishData as unknown as { transitioned?: unknown } | null)?.transitioned === true
-    const tenantRead = await supabase
-      .from('tenants')
-      .select('slug')
-      .eq('id', tenantId)
-      .maybeSingle()
-    tenant = tenantRead.data
   } else {
     const update = await supabase
       .from('tenants')

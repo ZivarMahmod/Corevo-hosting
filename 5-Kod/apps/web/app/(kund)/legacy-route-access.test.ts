@@ -85,7 +85,7 @@ describe('legacy customer route fences', () => {
     vi.clearAllMocks()
     mocks.currentTenant.mockResolvedValue(passwordlessBundle)
     mocks.currentRequestTenant.mockResolvedValue(passwordlessBundle.tenant)
-    mocks.headers.mockResolvedValue(new Headers({ host: 'freshcut.boka.corevo.se' }))
+    mocks.headers.mockResolvedValue(new Headers({ host: 'freshcut.corevo.se' }))
     mocks.getTenantFromHost.mockReturnValue({ kind: 'tenant', slug: 'freshcut' })
     mocks.getCurrentUser.mockResolvedValue(null)
   })

@@ -330,7 +330,7 @@ export function deriveOnboarding(f: OnboardingFacts): OnboardingStep[] {
       step: 5,
       label: 'Egen domän',
       status: 'locked',
-      detail: 'Standardadressen kör på *.boka.corevo.se. Egen domän hanteras separat.',
+      detail: 'Standardadressen är en egen adress, exempelvis kund.corevo.se. Egen domän hanteras separat.',
     },
     {
       key: 'launch',
@@ -426,7 +426,7 @@ export type TenantDetail = {
     minNoticeMin: number
     maxAdvanceDays: number
   } | null
-  /** Verifierad egen domän, primär först. null → slug.boka.corevo.se. */
+  /** Verifierad egen domän, primär först. null → slug.corevo.se. */
   primaryDomain: string | null
 }
 

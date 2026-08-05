@@ -35,11 +35,11 @@ begin
     raise exception 'verified_non_primary_custom_domain_not_selected';
   end if;
   if private.customer_portal_booking_origin(v_fallback)
-       <> 'https://portal-rebook-fallback.boka.corevo.se' then
+       <> 'https://portal-rebook-fallback.corevo.se' then
     raise exception 'canonical_booking_fallback_invalid';
   end if;
   if private.customer_portal_booking_origin(v_hostile)
-       <> 'https://portal-rebook-hostile.boka.corevo.se' then
+       <> 'https://portal-rebook-hostile.corevo.se' then
     raise exception 'corevo_custom_claim_not_rejected';
   end if;
   if private.customer_portal_booking_origin(v_invalid_slug) is not null then
@@ -110,7 +110,7 @@ begin
     true
   );
   if private.customer_portal_booking_origin(v_fallback)
-       <> 'https://portal-rebook-fallback.boka.corevo.se' then
+       <> 'https://portal-rebook-fallback.corevo.se' then
     raise exception 'request_host_influenced_booking_origin';
   end if;
 
