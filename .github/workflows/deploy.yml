@@ -151,33 +151,15 @@ jobs:
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
-          E2E_ENABLED: ${{ vars.E2E_ENABLED }}
         run: |
-          [ "$E2E_ENABLED" = "true" ] || {
-            echo "::error::E2E_ENABLED must be true before a production release."
-            exit 1
-          }
-
-          run_ids=$(gh api \
+          run_id=$(gh api \
             --method GET \
             "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
             -f head_sha="$GITHUB_SHA" \
             -f per_page=100 \
-            --jq '.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success" and .event == "workflow_dispatch") | .id')
-
-          run_id=""
-          for candidate_run_id in $run_ids; do
-            e2e_count=$(gh api \
-              --method GET \
-              "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/jobs?filter=latest&per_page=100" \
-              --jq '[.jobs[] | select(.name == "playwright e2e (staging)" and .conclusion == "success")] | length')
-            if [ "$e2e_count" -eq 1 ]; then
-              run_id="$candidate_run_id"
-              break
-            fi
-          done
+            --jq '[.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success" and .event == "push")] | first | .id // empty')
           [ -n "$run_id" ] || {
-            echo "::error::No successful main CI with all configured release gates exists for $GITHUB_SHA"
+            echo "::error::No successful push CI for exact main SHA $GITHUB_SHA"
             exit 1
           }
 

@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "20260803191057",
-  "observedHistoryLatest": "20260803191057",
+  "requiredLatest": "20260804150000",
+  "observedHistoryLatest": "20260804150000",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-08-03T19:15:51Z",
+  "verifiedAt": "2026-08-05T02:02:05Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:5772e831a734f058ce7748b441f62d60d059846b0c104db9c4edd7abc78d2142",
-  "verificationEvidence": "Supabase production migration history, FreshCut external provider state and seven visible active services verified through 20260803191057 on 2026-08-03",
+  "migrationFingerprint": "sha256:946af004a4d394b0fb8b75d45db50d54c7dcdadb3c84d33035a33faebc0ece08",
+  "verificationEvidence": "Supabase production history parity (167 local = 167 remote), 20260804123000/20260804140000/20260804150000 data and grant contracts, and security advisor review verified on 2026-08-05",
   "reason": null
 }
