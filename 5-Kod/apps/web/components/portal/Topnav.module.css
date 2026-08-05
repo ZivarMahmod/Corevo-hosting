@@ -1049,7 +1049,7 @@
     justify-self: center;
   }
 
-  .shell[data-world='backoffice']:has(.main > :global(.onboarding-host)) .main,
+.shell[data-world='backoffice']:has(.main :global(.onboarding-host)) .main,
   .shell[data-world='backoffice']:has(.main > :global(.sida-studio-host)) .main,
   .shell[data-world='backoffice']:has(.main :global(.workbench)) .main {
     min-height: 100dvh;
@@ -1064,7 +1064,7 @@
   font-family: var(--font-mono);
 }
 
-.shell[data-world='backoffice']:has(.main > :global(.onboarding-host)) .main {
+.shell[data-world='backoffice']:has(.main :global(.onboarding-host)) .main {
   width: 100%;
   max-width: none;
   padding: 0;

@@ -88,9 +88,9 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
       {/* (1) HERO */}
       <section className={styles.auHero}>
         <Reveal>
-          <p className={styles.auEyebrow}>{content.heroEyebrow}</p>
-          <h1 className={styles.auHeroTitle}>{content.heroTitle}</h1>
-          <p className={styles.auHeroLede}>{content.heroLede}</p>
+          <p className={styles.auEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={styles.auHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={styles.auHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.auHeroCtas}>
             {shopReachable ? (
               <Link href="/shop" className={styles.auBtn}>
@@ -114,7 +114,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
           </div>
         </Reveal>
         <Reveal delay={140}>
-          <div className={styles.auHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />
+          <div className={styles.auHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} data-corevo-editor-field="hero_images.0" data-corevo-editor-stable-field="hero_images.0" />
           <p className={styles.auHeroCaption}>ur studion, bunden i morse</p>
         </Reveal>
       </section>
@@ -149,7 +149,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
       {/* (3) CITAT-BANDET */}
       <section className={styles.auQuote}>
         <Reveal>
-          <p className={styles.auQuoteText}>{content.italic}</p>
+          <p className={styles.auQuoteText} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
           <div className={styles.auQuoteRule} />
         </Reveal>
       </section>
@@ -161,8 +161,8 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
       {favorites.length > 0 ? (
         <section className={styles.auSection}>
           <Reveal className={styles.auSecHead}>
-            <p className={styles.auEyebrow}>{content.shopEyebrow ?? 'Veckans favoriter'}</p>
-            <h2 className={styles.auSecTitle}>{content.shopTitle ?? 'Mest älskade just nu'}</h2>
+            <p className={styles.auEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Veckans favoriter'}</p>
+            <h2 className={styles.auSecTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Mest älskade just nu'}</h2>
           </Reveal>
           <ul className={styles.auGrid3} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {favorites.map((p, i) => (
@@ -190,7 +190,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
           </ul>
           <p className={styles.auSecFoot}>
             <Link href="/shop" className={styles.auBtnOutline}>
-              {content.shopCta ?? 'Hela sortimentet'}
+              <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Hela sortimentet'}</span>
             </Link>
           </p>
         </section>
@@ -207,16 +207,16 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
             <Reveal>
               <Link href="/presentkort" className={styles.auBand}>
                 <span className={styles.auEyebrow} style={{ display: 'block' }}>
-                  {content.giftEyebrow ?? 'Presentkort'}
+                  <span data-corevo-editor-field="giftEyebrow" data-corevo-editor-stable-field="giftEyebrow">{content.giftEyebrow ?? 'Presentkort'}</span>
                 </span>
                 <span className={styles.auBandTitle} style={{ display: 'block' }}>
                   Ge bort blomsterglädje
                 </span>
                 <span className={styles.auBandText} style={{ display: 'block' }}>
-                  {content.giftLede ??
-                    'Valfritt belopp, giltigt ett år — skickas vackert inslaget eller digitalt.'}
+                  <span data-corevo-editor-field="giftLede" data-corevo-editor-stable-field="giftLede">{content.giftLede ??
+                    'Valfritt belopp, giltigt ett år — skickas vackert inslaget eller digitalt.'}</span>
                 </span>
-                <span className={styles.auLink}>{content.giftCta ?? 'till presentkorten →'}</span>
+                <span className={styles.auLink} data-corevo-editor-field="giftCta" data-corevo-editor-stable-field="giftCta">{content.giftCta ?? 'till presentkorten →'}</span>
               </Link>
             </Reveal>
             <Reveal delay={90}>
@@ -272,12 +272,14 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
             style={
               content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined
             }
+            data-corevo-editor-field="about_image"
+            data-corevo-editor-stable-field="about_image"
           />
         </Reveal>
         <Reveal delay={140}>
-          <p className={styles.auEyebrow}>{content.teamEyebrow ?? 'Studion'}</p>
-          <h2 className={styles.auAboutTitle}>{content.aboutTitle}</h2>
-          <p className={styles.auAboutText}>{content.aboutCopy}</p>
+          <p className={styles.auEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow ?? 'Studion'}</p>
+          <h2 className={styles.auAboutTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h2>
+          <p className={styles.auAboutText} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
           <p className={styles.auAboutText}>
             Kom förbi på en kaffe, boka en kurs, eller beställ online — det blir fint, det lovar vi.
           </p>
@@ -291,8 +293,8 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
       {posts.length > 0 ? (
         <section className={styles.auSectionNarrow}>
           <Reveal className={styles.auSecHead}>
-            <p className={styles.auEyebrow}>{content.blogEyebrow ?? 'Bloggen'}</p>
-            <h2 className={styles.auSecTitle}>{content.blogTitle ?? 'Från studion'}</h2>
+            <p className={styles.auEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'Bloggen'}</p>
+            <h2 className={styles.auSecTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Från studion'}</h2>
           </Reveal>
           <ul className={styles.auPostList}>
             {posts.map((post, i) => (
@@ -339,6 +341,8 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
         style={
           content.closingImage ? { backgroundImage: `url(${content.closingImage})` } : undefined
         }
+        data-corevo-editor-field="closing_image"
+        data-corevo-editor-stable-field="closing_image"
       >
         <div className={styles.auClosingScrim} />
         <div className={styles.auClosingInner}>

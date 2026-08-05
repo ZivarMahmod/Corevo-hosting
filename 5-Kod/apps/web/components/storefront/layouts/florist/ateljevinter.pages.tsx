@@ -21,16 +21,18 @@ import styles from './ateljevinter.module.css'
 export function AteljeVinterOm({ content, tenant }: ThemePageProps) {
   return (
     <section className={styles.avPage}>
-      <p className={styles.avEyebrow}>{content.teamEyebrow ?? 'ateljén'}</p>
-      <h1 className={styles.avPageTitle}>{content.aboutTitle}</h1>
+      <p className={styles.avEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow ?? 'ateljén'}</p>
+      <h1 className={styles.avPageTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
       <div className={styles.avSplit}>
         <div
           className={styles.avSplitPhoto}
+          data-corevo-editor-field="about_image"
+          data-corevo-editor-stable-field="about_image"
           style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
         />
         <div className={styles.avProse}>
-          <p>{content.aboutCopy}</p>
-          <p>{content.italic}</p>
+          <p data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
+          <p data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
           <p>— {tenant.name}</p>
         </div>
       </div>
@@ -42,8 +44,8 @@ export function AteljeVinterTjanster({ content, services, modules }: ThemePagePr
   const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.avPageNarrow}>
-      <p className={styles.avEyebrow}>{content.servicesEyebrow}</p>
-      <h1 className={styles.avPageTitle}>{content.servicesTitle}</h1>
+      <p className={styles.avEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+      <h1 className={styles.avPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
       {services.length === 0 ? (
         <p className={styles.avEmpty}>tjänsterna visas snart.</p>
       ) : (
@@ -68,14 +70,14 @@ export function AteljeVinterKontakt({ content, location, contact }: ThemePagePro
 
   return (
     <section className={styles.avPageNarrow}>
-      <p className={styles.avEyebrow}>kontakt</p>
-      <h1 className={styles.avPageTitle}>{content.closingTitle ?? 'skriv en rad'}</h1>
+      <p className={styles.avEyebrow} data-corevo-editor-field="contactEyebrow" data-corevo-editor-stable-field="contactEyebrow">{content.contactEyebrow ?? 'kontakt'}</p>
+      <h1 className={styles.avPageTitle} data-corevo-editor-field="closingTitle" data-corevo-editor-stable-field="closingTitle">{content.closingTitle ?? 'skriv en rad'}</h1>
 
       <div className={styles.avFacts}>
         {location?.address ? (
           <div>
             <p className={styles.avFactLabel}>ateljén</p>
-            <p className={styles.avFactValue}>{location.address}</p>
+            <p className={styles.avFactValue} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</p>
           </div>
         ) : null}
         {contact.email || contact.phone || hours ? (
@@ -84,23 +86,23 @@ export function AteljeVinterKontakt({ content, location, contact }: ThemePagePro
             <p className={styles.avFactValue}>
               {contact.email ? (
                 <>
-                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                  <a href={`mailto:${contact.email}`} data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{contact.email}</a>
                   <br />
                 </>
               ) : null}
               {contact.phone ? (
                 <>
-                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
                   <br />
                 </>
               ) : null}
-              {hours ? hours.map((h) => `${h.day} ${h.time}`).join(' · ') : null}
+              {hours ? hours.map((h, index) => <span key={h.day}>{index > 0 ? ' · ' : null}{h.day} <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span></span>) : null}
             </p>
           </div>
         ) : null}
       </div>
 
-      <p className={styles.avProse}>{content.closingLede ?? content.aboutCopy}</p>
+      <p className={styles.avProse} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? content.aboutCopy}</p>
 
       {/* Filens formulär (goal-64 regression): egen understruken markup i stället
           för det delade boxade ContactForm-fältet — samma understrykning som

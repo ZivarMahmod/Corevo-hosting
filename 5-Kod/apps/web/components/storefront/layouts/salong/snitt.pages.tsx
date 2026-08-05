@@ -66,14 +66,14 @@ export function SnittTjanster({ content, services, modules }: ThemePageProps) {
 
   return (
     <section className={styles.snPageNarrow}>
-      <p className={styles.snEyebrow}>
+      <p className={styles.snEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">
         <span className={styles.snDash}>—</span> {content.servicesEyebrow}
       </p>
-      <h1 className={styles.snPageTitle}>
+      <h1 className={styles.snPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">
         {content.servicesTitle}
         <span className={styles.snDot} data-corevo-editor-decoration>.</span>
       </h1>
-      <p className={styles.snPageLede}>
+      <p className={styles.snPageLede} data-corevo-editor-field="servicesIntro" data-corevo-editor-stable-field="servicesIntro">
         {content.servicesIntro ??
           'Konsultation ingår alltid. Behöver vi mer tid än bokat kostar det inget extra — det är vårt problem, inte ditt.'}
       </p>
@@ -101,12 +101,12 @@ export function SnittOm({ content }: ThemePageProps) {
     <section className={styles.snPageOm}>
       <div className={styles.snOmSplit}>
         <div>
-          <p className={styles.snEyebrow}>
+          <p className={styles.snEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">
             <span className={styles.snDash}>—</span> {content.teamEyebrow}
           </p>
-          <h1 className={styles.snOmTitle}>{content.aboutTitle}</h1>
-          <p className={styles.snOmBody}>{content.aboutCopy}</p>
-          <p className={styles.snOmBody}>{content.italic}</p>
+          <h1 className={styles.snOmTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+          <p className={styles.snOmBody} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
+          <p className={styles.snOmBody} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
         </div>
         <div
           className={styles.snOmPhoto}
@@ -122,8 +122,8 @@ export function SnittOm({ content }: ThemePageProps) {
         <div className={styles.snStatCards}>
           {content.stats.map(([value, label], i) => (
             <div key={`${value}-${label}`} className={styles.snStatCard}>
-              <p className={`${styles.snStatCardValue} ${i === 0 ? styles.snStatFirst : ''}`}>{value}</p>
-              <p className={styles.snStatCardLabel}>{label}</p>
+              <p className={`${styles.snStatCardValue} ${i === 0 ? styles.snStatFirst : ''}`} data-corevo-editor-field={`stats.${i}.value`} data-corevo-editor-stable-field={`stats.${i}.value`}>{value}</p>
+              <p className={styles.snStatCardLabel} data-corevo-editor-field={`stats.${i}.label`} data-corevo-editor-stable-field={`stats.${i}.label`}>{label}</p>
             </div>
           ))}
         </div>
@@ -141,7 +141,7 @@ export function SnittKontakt({ content, location, contact }: ThemePageProps) {
 
   return (
     <section className={styles.snPageOm}>
-      <h1 className={styles.snPageTitleAlone}>
+      <h1 className={styles.snPageTitleAlone} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">
         {content.contactTitle ?? 'Kontakt'}
         <span className={styles.snDot} data-corevo-editor-decoration>.</span>
       </h1>
@@ -180,8 +180,8 @@ export function SnittKontakt({ content, location, contact }: ThemePageProps) {
         </div>
 
         <div>
-          <p className={styles.snProse}>{content.closingLede ?? content.aboutCopy}</p>
-          <p className={styles.snProse}>{content.italic}</p>
+          <p className={styles.snProse} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? content.aboutCopy}</p>
+          <p className={styles.snProse} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
           {/* Filens formulär (goal-64): Namn · E-post · "Vad kan vi hjälpa till med?" ·
               Skicka. Svart studio — rutan var prosa, .dc.html ville ha en submit. */}
           <ContactForm

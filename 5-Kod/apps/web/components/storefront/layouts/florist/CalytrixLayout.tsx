@@ -37,7 +37,7 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
   const shopReachable = modules?.shopReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
-  const deliveryPhoto = content.galleryImages[0] ?? content.heroImages[1] ?? ''
+  const deliveryPhoto = content.heroImages[1] ?? ''
   const [titleLine1, titleLine2] = content.heroTitle.split('\n')
 
   // Filens tre steg i marknadsbandet. Fetstilen sitter på handlingen, resten är löftet.
@@ -52,8 +52,8 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
       {/* ══ (1) SPLIT-HERO ══ */}
       <section className={styles.cxHero}>
         <Reveal className={styles.cxHeroText}>
-          <p className={styles.cxEyebrow}>{content.heroEyebrow}</p>
-          <h1 className={styles.cxHeroTitle}>
+          <p className={styles.cxEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={styles.cxHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">
             {titleLine1}
             {titleLine2 ? (
               <>
@@ -62,7 +62,7 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
               </>
             ) : null}
           </h1>
-          <p className={styles.cxHeroLede}>{content.heroLede}</p>
+          <p className={styles.cxHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.cxHeroCtas}>
             {/* Butiken av → CTA:n leder ALDRIG till en sida kunden inte har. */}
             <Link href={shopReachable ? '/shop' : '/tjanster'} className={styles.cxBtn}>
@@ -74,16 +74,16 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
           </div>
           {content.stats.length > 0 ? (
             <div className={styles.cxHeroStats}>
-              {content.stats.map(([value, label]) => (
+              {content.stats.map(([value, label], index) => (
                 <div key={label}>
-                  <p className={styles.cxStatValue}>{value}</p>
-                  <p className={styles.cxStatLabel}>{label}</p>
+                  <p className={styles.cxStatValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{value}</p>
+                  <p className={styles.cxStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{label}</p>
                 </div>
               ))}
             </div>
           ) : null}
         </Reveal>
-        <div className={styles.cxHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />
+        <div className={styles.cxHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} data-corevo-editor-field="hero_images.0" data-corevo-editor-stable-field="hero_images.0" />
       </section>
 
       {/* ══ (2) MEST SÅLDA — modulens data, mallens form ══ */}
@@ -91,13 +91,13 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
         <section className={styles.cxSection} data-module="shop">
           <Reveal className={styles.cxSecHead} as="div">
             <div>
-              <p className={styles.cxSecEyebrow}>{content.shopEyebrow ?? 'Mest sålda'}</p>
+              <p className={styles.cxSecEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Mest sålda'}</p>
               <h2 className={styles.cxSecTitle}>
-                {content.shopTitle ?? 'Beställ det alla vill ha'}
+                <span data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Beställ det alla vill ha'}</span>
               </h2>
             </div>
             <Link href="/shop" className={styles.cxSecLink}>
-              {content.shopCta ?? 'Visa hela butiken →'}
+              <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Visa hela butiken →'}</span>
             </Link>
           </Reveal>
           <ul className={styles.cxGrid4}>
@@ -149,7 +149,7 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
       <section className={styles.cxBand} id="leverans">
         <div className={styles.cxBandInner}>
           <Reveal>
-            <h2 className={styles.cxBandTitle}>{content.tagline}</h2>
+            <h2 className={styles.cxBandTitle} data-corevo-editor-field="tagline" data-corevo-editor-stable-field="tagline">{content.tagline}</h2>
             <p className={styles.cxBandLede}>
               Vi binder din beställning samma dag som den går ut. Beställer du innan kl 14 en
               vardag står budet utanför dörren innan kvällen.
@@ -182,10 +182,12 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
           <span
             className={styles.cxDeliveryPhoto}
             style={deliveryPhoto ? { backgroundImage: `url(${deliveryPhoto})` } : undefined}
+            data-corevo-editor-field="hero_images.1"
+            data-corevo-editor-stable-field="hero_images.1"
             aria-hidden="true"
           />
           <div>
-            <p className={styles.cxSecEyebrow}>{content.findEyebrow ?? 'Leveranskoll'}</p>
+            <p className={styles.cxSecEyebrow} data-corevo-editor-field="findEyebrow" data-corevo-editor-stable-field="findEyebrow">{content.findEyebrow ?? 'Leveranskoll'}</p>
             <h2 className={styles.cxDeliveryTitle}>Levererar vi till dig?</h2>
             <p className={styles.cxDeliveryText}>
               Hämta i butiken eller få buketten hemlevererad — leveranssätten står i butiken,
@@ -207,12 +209,14 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
             <div
               className={styles.cxAboutPhoto}
               style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
+              data-corevo-editor-field="about_image"
+              data-corevo-editor-stable-field="about_image"
             />
           </Reveal>
           <Reveal delay={120}>
-            <p className={styles.cxSecEyebrow}>{content.teamEyebrow ?? 'Om butiken'}</p>
-            <h2 className={styles.cxAboutTitle}>{content.aboutTitle}</h2>
-            <p className={styles.cxAboutCopy}>{content.aboutCopyHome ?? content.aboutCopy}</p>
+            <p className={styles.cxSecEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow ?? 'Om butiken'}</p>
+            <h2 className={styles.cxAboutTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h2>
+            <p className={styles.cxAboutCopy} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome ?? content.aboutCopy}</p>
             <Link href="/om" className={styles.cxBtnOutline}>
               Mer om oss
             </Link>
@@ -224,12 +228,14 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
       <section
         className={styles.cxClosing}
         style={content.closingImage ? { backgroundImage: `url(${content.closingImage})` } : undefined}
+        data-corevo-editor-field="closing_image"
+        data-corevo-editor-stable-field="closing_image"
       >
         <div className={styles.cxClosingVeil} aria-hidden="true" />
         <div className={styles.cxClosingInner}>
-          <h2 className={styles.cxClosingTitle}>{content.closingTitle ?? 'Någon blir glad idag.'}</h2>
+          <h2 className={styles.cxClosingTitle} data-corevo-editor-field="closingTitle" data-corevo-editor-stable-field="closingTitle">{content.closingTitle ?? 'Någon blir glad idag.'}</h2>
           <p className={styles.cxClosingLede}>
-            {content.closingLede ?? 'Beställ före kl 14 så levererar vi innan kvällen.'}
+            <span data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? 'Beställ före kl 14 så levererar vi innan kvällen.'}</span>
           </p>
           <Link href={shopReachable ? '/shop' : '/tjanster'} className={styles.cxBtnLight}>
             {shopReachable ? 'Handla nu' : 'Se sortimentet'}

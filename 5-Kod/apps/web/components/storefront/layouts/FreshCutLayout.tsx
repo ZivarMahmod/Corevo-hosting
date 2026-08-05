@@ -109,14 +109,14 @@ export function FreshCutLayout({
           />
         </div>
         <div className={fc.heroGrid}>
-          <p className={fc.heroKicker}>
-            Hår <span>/</span> Skägg <span>/</span> Finish
+          <p className={fc.heroKicker} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">
+            {content.heroEyebrow}
           </p>
           <div className={fc.heroTitleWrap}>
-            <h1 id="freshcut-hero-title">{heroTitle(content.heroTitle)}</h1>
+            <h1 id="freshcut-hero-title" data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{heroTitle(content.heroTitle)}</h1>
           </div>
           <div className={fc.heroSidecopy}>
-            <p>{content.heroLede}</p>
+            <p data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
             <div className={fc.heroActions}>
               <BookCta
                 slotId="hero"
@@ -158,11 +158,11 @@ export function FreshCutLayout({
       <section className={fc.servicesSection} id="tjanster" aria-labelledby="freshcut-services-title">
         <div className={`${fc.sectionLabel} ${fc.sectionLabelLight}`}>
           <span>01</span>
-          <p>{content.servicesEyebrow.replace(/^—\s*/, '')}</p>
+          <p data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow.replace(/^—\s*/, '')}</p>
         </div>
         <div className={fc.servicesHeading}>
-          <h2 id="freshcut-services-title">{content.servicesTitle}</h2>
-          <p>Rätt behandling och rätt tid. Aktuella priser visas i bokningen.</p>
+          <h2 id="freshcut-services-title" data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h2>
+          <p data-corevo-editor-field="servicesIntro" data-corevo-editor-stable-field="servicesIntro">{content.servicesIntro}</p>
         </div>
 
         {services.length > 0 ? (
@@ -215,12 +215,10 @@ export function FreshCutLayout({
         <div className={fc.resultsIntro}>
           <div className={fc.sectionLabel}>
             <span>02</span>
-            <p>Resultatet</p>
+            <p data-corevo-editor-field="resultsEyebrow" data-corevo-editor-stable-field="resultsEyebrow">{content.resultsEyebrow}</p>
           </div>
-          <h2 id="freshcut-results-title">
-            {content.homeSecondTitle ?? 'Detaljerna gör skillnaden.'}
-          </h2>
-          <p>Fade, sax eller skarpa skägglinjer. Uttrycket varierar, nivån ska vara densamma.</p>
+          <h2 id="freshcut-results-title" data-corevo-editor-field="homeSecondTitle" data-corevo-editor-stable-field="homeSecondTitle">{content.homeSecondTitle}</h2>
+          <p data-corevo-editor-field="resultsLede" data-corevo-editor-stable-field="resultsLede">{content.resultsLede}</p>
           <BookCta
             slotId="results"
             enabled={bookingReachable}
@@ -248,7 +246,12 @@ export function FreshCutLayout({
                 data-corevo-editor-field={`gallery_images.${index}`}
                 data-corevo-editor-stable-field={`gallery_images.${index}`}
               />
-              <figcaption>{['01 / Fade', '02 / Sax', '03 / Skägg'][index]}</figcaption>
+              <figcaption
+                data-corevo-editor-field={['resultImage1Caption', 'resultImage2Caption', 'resultImage3Caption'][index]}
+                data-corevo-editor-stable-field={['resultImage1Caption', 'resultImage2Caption', 'resultImage3Caption'][index]}
+              >
+                {[content.resultImage1Caption, content.resultImage2Caption, content.resultImage3Caption][index]}
+              </figcaption>
             </figure>
           ))}
         </div>
@@ -266,24 +269,27 @@ export function FreshCutLayout({
             data-corevo-editor-field="about_image"
             data-corevo-editor-stable-field="about_image"
           />
-          <p>Hantverk / Precision / Personligt</p>
+          <p data-corevo-editor-field="studioImageCaption" data-corevo-editor-stable-field="studioImageCaption">{content.studioImageCaption}</p>
         </div>
         <div className={fc.studioCopy}>
           <div className={`${fc.sectionLabel} ${fc.sectionLabelLight}`}>
             <span>03</span>
-            <p>FreshCut Linköping</p>
+            <p data-corevo-editor-field="studioEyebrow" data-corevo-editor-stable-field="studioEyebrow">{content.studioEyebrow}</p>
           </div>
-          <h2 id="freshcut-studio-title">{content.aboutTitle}</h2>
-          <p className={fc.studioLede}>{content.aboutCopyHome}</p>
+          <h2 id="freshcut-studio-title" data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h2>
+          <p className={fc.studioLede} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
           <div className={fc.studioPoints}>
             {[
-              'Erfarenhet av herrhår, fade och skägg.',
-              'Vi lyssnar först och klipper sedan.',
-              `Mitt i city${address[0] ? ` på ${address[0]}` : '.'}`,
+              content.studioPoint1,
+              content.studioPoint2,
+              `${content.studioPoint3}${address[0] ? ` på ${address[0]}` : '.'}`,
             ].map((point, index) => (
               <div key={point}>
                 <span>0{index + 1}</span>
-                <p>{point}</p>
+                <p
+                  data-corevo-editor-field={index === 2 ? 'location.address' : `studioPoint${index + 1}`}
+                  data-corevo-editor-stable-field={index === 2 ? 'location.address' : `studioPoint${index + 1}`}
+                >{point}</p>
               </div>
             ))}
           </div>
@@ -303,10 +309,10 @@ export function FreshCutLayout({
 
       <section className={fc.finalCta} aria-labelledby="freshcut-final-title">
         <div className={fc.finalCtaTop}>
-          <p>{content.whySub ?? 'Nästa lediga tid är bara några klick bort.'}</p>
+          <p data-corevo-editor-field="whySub" data-corevo-editor-stable-field="whySub">{content.whySub}</p>
           <span>FC / BOOK</span>
         </div>
-        <h2 id="freshcut-final-title">{content.whyTitle ?? 'Redo för en skarpare look?'}</h2>
+        <h2 id="freshcut-final-title" data-corevo-editor-field="whyTitle" data-corevo-editor-stable-field="whyTitle">{content.whyTitle}</h2>
         <BookCta
           slotId="final"
           enabled={bookingReachable}
@@ -318,12 +324,12 @@ export function FreshCutLayout({
       <section className={fc.contactSection} id="kontakt" aria-labelledby="freshcut-contact-title">
         <div className={fc.sectionLabel}>
           <span>04</span>
-          <p>Kontakt</p>
+          <p data-corevo-editor-field="contactEyebrow" data-corevo-editor-stable-field="contactEyebrow">{content.contactEyebrow}</p>
         </div>
         <div className={fc.contactMain}>
           <div className={fc.contactCopy}>
-            <h2 id="freshcut-contact-title">Vi ses i stolen.</h2>
-            <p>Aktuella öppettider och alla lediga tider ser du alltid i bokningen.</p>
+            <h2 id="freshcut-contact-title" data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle}</h2>
+            <p data-corevo-editor-field="contactLede" data-corevo-editor-stable-field="contactLede">{content.contactLede}</p>
             <BookCta
               slotId="contact"
               enabled={bookingReachable}

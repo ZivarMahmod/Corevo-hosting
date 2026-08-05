@@ -1,6 +1,6 @@
 'use client'
 
-// Onboarding-studions sju paneler och PANEL_BY_STEP-registret.
+// Onboardingens fyra paneler och PANEL_BY_STEP-registret.
 //
 // Ported from the design source (4-Dokument-Underlag/01-acceptans/super-admin/
 // studio.jsx PanelBranch…PanelLive) per W1 build-contract §5, but driven by the REAL
@@ -16,7 +16,6 @@ import { Field, ModuleStatePills } from './controls'
 import type { PanelProps } from '@/lib/platform/onboarding-studio/state'
 import { type StepId } from '@/lib/platform/onboarding-studio/phases'
 import { resolveModuleState } from '@/lib/platform/onboarding-studio/model'
-import { modulesForVertical } from '@/lib/platform/verticals-shared'
 import { isReservedSlug } from '@/lib/platform/slug'
 import { isSlugTaken } from '@/lib/platform/actions/tenants'
 import { useEffect, useState } from 'react'
@@ -29,7 +28,6 @@ import {
 } from '@/lib/platform/booking-variant'
 import { normalizeBookingExternalUrl } from '@/lib/platform/booking-external-url'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
-import { ThemeGallery } from '@/components/platform/ThemeGallery'
 import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
 import { tenantHostSuffix, tenantStorefrontHost } from '@/lib/storefront-url'
 import type { IconName } from '@/lib/ui-icons'
@@ -52,14 +50,6 @@ const labelStyle: CSSProperties = {
   color: 'var(--c-ink)',
   fontFamily: 'var(--font-ui)',
 }
-const groupEyebrow: CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: '.08em',
-  textTransform: 'uppercase',
-  fontFamily: 'var(--font-ui)',
-}
-
 /** Svenska hint per modul-läge. */
 const MODULE_STATE_HINTS: Record<ModuleState, string> = {
   off: 'Av och dold för kunden.',
@@ -277,90 +267,6 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
   )
 }
 
-/** tema — mall-väljaren. */
-function PanelTema({ cfg, dispatch, presets }: PanelProps) {
-  // ALLTID de riktiga temana — vendor-mallarna ur templatesByVertical valde tidigare
-  // orenderbara nycklar (tyst fallback, "tema-steget är trasigt per bransch").
-  // goal-58: sviten är 20 mallar → ThemeGallery (kategori-flikar + taggar + sök + kort
-  // med mallens hero-bild), SAMMA komponent som kundkortets Sida-flik använder.
-  // Branschen förfyller sitt default-tema, så steget går att passera med Nästa.
-  const branschDefault = cfg.branch
-    ? presets.verticals.find((v) => v.key === cfg.branch)?.defaultTemplate ?? null
-    : null
-  return (
-    <Panel
-      title="Välj mall"
-      sub="Branschens mall är redan vald — byt bara om du vill. Förhandsvisningen till höger visar kundens riktiga startsida."
-    >
-      <ThemeGallery
-        value={cfg.theme}
-        defaultKey={branschDefault}
-        compact
-        onChange={(key) => dispatch({ type: 'setTheme', key })}
-      />
-    </Panel>
-  )
-}
-
-/** Module visibility only. Booking provider and presentation live in the next step. */
-function PanelModval({ cfg, dispatch, presets }: PanelProps) {
-  const options = modulesForVertical(presets, cfg.branch)
-  const rec = options.filter((m) => m.defaultState !== 'off')
-  const others = options.filter((m) => m.defaultState === 'off')
-
-  // A render function (not a nested component) so the rows don't churn identity.
-  const renderRow = (moduleKey: string, name: string) => {
-    const isBooking = moduleKey === 'booking'
-    const cur = resolveModuleState(cfg, moduleKey, presets)
-    const choices: ModuleState[] = [...MODULE_STATES]
-    return (
-      <div
-        key={moduleKey}
-        style={{
-          padding: 14,
-          border: `1px solid ${cur !== 'off' ? 'var(--c-forest)' : 'var(--c-line)'}`,
-          borderRadius: 12,
-          background: 'var(--c-paper)',
-          marginBottom: 10,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>
-            {name}
-            {isBooking ? (
-              <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', fontWeight: 600, marginLeft: 8 }}>Kärnmodul</span>
-            ) : null}
-          </span>
-        </div>
-        <ModuleStatePills label={`${name} På eller Av`} value={cur} choices={choices} onChange={(state) => dispatch({ type: 'setModule', key: moduleKey, state })} />
-        <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '8px 0 0' }}>
-          {MODULE_STATE_HINTS[cur]}
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <Panel
-      title="Moduler"
-      sub="Förvalda enligt branschen — redan rätt för de flesta. Ändra fritt om kunden behöver något extra."
-    >
-      <div style={{ ...groupEyebrow, color: 'var(--c-gold-600)', marginBottom: 10 }}>Branschens förval</div>
-      {rec.length === 0 ? (
-        <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', margin: '0 0 10px' }}>Inga förvalda moduler för branschen.</p>
-      ) : (
-        rec.map((m) => renderRow(m.key, m.name))
-      )}
-      {others.length > 0 ? (
-        <>
-          <div style={{ ...groupEyebrow, color: 'var(--c-ink-3)', margin: '18px 0 10px' }}>Övriga moduler — välj fritt</div>
-          {others.map((m) => renderRow(m.key, m.name))}
-        </>
-      ) : null}
-    </Panel>
-  )
-}
-
 function PanelBokning({ cfg, dispatch, presets }: PanelProps) {
   const state = resolveModuleState(cfg, 'booking', presets)
   const live = state === 'live'
@@ -480,42 +386,10 @@ function PanelBokning({ cfg, dispatch, presets }: PanelProps) {
   )
 }
 
-/* modplace + modconf borttagna 2026-07-11 (Dunder-fix): stubbar utan skrivväg
-   mitt i flödet — logga-uppladdning och modulinställningar bor i kundkortet. */
-
-/** agare — W1-REAL. Ägarens namn → setOwnerName; Ägarens e-post (type=email) →
- *  setOwnerEmail (magic-link invite path). */
-function PanelAgare({ cfg, dispatch }: PanelProps) {
-  return (
-    <Panel
-      title="Ägare & inbjudan"
-      sub="Ägaren får en magic-link, bekräftar och sätter eget lösenord — och är inne i sin egen admin med rätt roll."
-    >
-      <div style={{ display: 'grid', gap: 18 }}>
-        <Field
-          label="Ägarens namn"
-          ph="Förnamn Efternamn"
-          value={cfg.ownerName}
-          onChange={(v) => dispatch({ type: 'setOwnerName', value: v })}
-        />
-        <Field
-          label="Ägarens e-post"
-          type="email"
-          required
-          ph="agare@foretag.se"
-          value={cfg.ownerEmail}
-          onChange={(v) => dispatch({ type: 'setOwnerEmail', value: v })}
-          hint="Får en engångs magic-link-invite när kunden skapas."
-        />
-      </div>
-    </Panel>
-  )
-}
-
 /** live — «Granska & lansera» (granska+live ihopslagna 2026-07-11, UX-order): kompakt
  *  checklista härledd ur REAL cfg + «vad kunden får»-kortet + den enda createTenant-
  *  triggern. Gold Lansera (disabled tills klart) → onLaunch; ActionState ytas av parent. */
-function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
+function PanelLive({ cfg, dispatch, presets, onLaunch }: StudioPanelProps) {
   const activeModules = presets.modules.filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off')
   const activeCount = activeModules.length
   const namedServices = cfg.services.filter((s) => s.name.trim() !== '')
@@ -526,7 +400,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
   const checks: { label: string; done: boolean; optional?: boolean }[] = [
     { label: 'Bransch vald', done: !!cfg.branch },
     { label: 'Namn & subdomän', done: !!cfg.name.trim() && !!cfg.slug },
-    { label: 'Temamall', done: !!cfg.theme },
+    { label: 'Mall förvald av branschen', done: !!cfg.theme },
     {
       label: bookingLive
         ? cfg.bookingProvider === 'external' ? 'Extern bokningslänk' : 'Corevo-bokning'
@@ -555,6 +429,23 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
   return (
     <Panel title="Granska & skapa" sub="Sista koll — kunden skapas under konfiguration och publiceras från kundkortet.">
       <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'grid', gap: 18 }}>
+          <Field
+            label="Ägarens namn"
+            ph="Förnamn Efternamn"
+            value={cfg.ownerName}
+            onChange={(value) => dispatch({ type: 'setOwnerName', value })}
+          />
+          <Field
+            label="Ägarens e-post"
+            type="email"
+            required
+            ph="agare@foretag.se"
+            value={cfg.ownerEmail}
+            onChange={(value) => dispatch({ type: 'setOwnerEmail', value })}
+            hint="Får en engångs magic-link-invite när kunden skapas."
+          />
+        </div>
         {/* Kompakt checklista (ersätter det egna granska-steget) */}
         <div style={{ display: 'grid', gap: 6 }}>
           {checks.map((c) => (
@@ -649,9 +540,6 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
 export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
   branch: PanelBranch,
   namn: PanelNamn,
-  tema: PanelTema,
-  modval: PanelModval,
   bokning: PanelBokning,
-  agare: PanelAgare,
   live: PanelLive,
 }

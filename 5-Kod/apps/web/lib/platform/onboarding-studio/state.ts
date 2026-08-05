@@ -24,7 +24,6 @@ export type StudioStage = 'super' | 'studio' | 'result'
  *   applyBranch  { key }      — tag the customer's category ONLY (no theme/module seeding)
  *   setName      { value }    — set name; auto-syncs slug until slugTouched
  *   setSlug      { value }    — set slug by hand → locks slugTouched=true
- *   setTheme     { key }      — set template/theme key
  *   setModule    { key, state }— set one module's lifecycle state
  *   setVariant   { variant }  — set the booking presentation variant (booking sub-choice)
  *   setServices  { services } — replace the onboarding service list (W4; whole-array set)
@@ -37,7 +36,6 @@ export type StudioAction =
   | { type: 'applyBranch'; key: string }
   | { type: 'setName'; value: string }
   | { type: 'setSlug'; value: string }
-  | { type: 'setTheme'; key: string }
   | { type: 'setModule'; key: string; state: ModuleState }
   | { type: 'setVariant'; variant: BookingVariant }
   | { type: 'setBookingProvider'; provider: BookingProviderKind }
@@ -67,8 +65,8 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
       case 'applyBranch':
         // Bransch FÖRFYLLER (Zivar 2026-07-11, "hjärndött att starta en kund"): valet
         // seedar tema (vertical.default_template) + modul-states från bransch-förvalen
-        // (VerticalEditor på /branscher äger dem). Allt går fortfarande att ändra i de
-        // egna stegen — bransch styr startläget, låser inget.
+        // (VerticalEditor på /branscher äger dem). Efter skapandet ändras de i
+        // kundkortet; onboardingen ska bara skapa en korrekt startpunkt.
         return applyBranch(cfg, action.key, presets)
       case 'setName':
         return cfg.slugTouched
@@ -76,8 +74,6 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
           : { ...cfg, name: action.value, slug: studioSlugify(action.value) }
       case 'setSlug':
         return { ...cfg, slug: action.value, slugTouched: true }
-      case 'setTheme':
-        return { ...cfg, theme: action.key }
       case 'setModule':
         return { ...cfg, moduleStates: { ...cfg.moduleStates, [action.key]: action.state } }
       case 'setVariant':

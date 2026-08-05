@@ -93,6 +93,96 @@ const mergeThemeDefaults = (
 const uniqueFields = (fields: SiteEditorField[]): SiteEditorField[] =>
   [...new Map(fields.map((item) => [item.key, item])).values()]
 
+function freshCutManifest(defaults: ResolvedThemeContent): SiteEditorManifest {
+  const palette = themePalette('freshcut')
+  return {
+    swatches: {
+      color_primary: [palette.primary, palette.accent, palette.bg, palette.fg],
+      color_accent: [palette.primary, palette.accent, palette.bg, palette.fg],
+      color_bg: [palette.primary, palette.accent, palette.bg, palette.fg],
+      color_fg: [palette.primary, palette.accent, palette.bg, palette.fg],
+    },
+    tabs: [
+      {
+        id: 'allmant', label: 'Allmänt', sub: 'Namn · färger · sökresultat', path: '',
+        cards: [
+          { id: 'logo', title: 'Logotyp', imageSlot: 'logo_url' },
+          { id: 'utility-copy', title: 'Raden ovanför menyn', fields: [field(defaults, 'utility', 'Text')] },
+        ],
+      },
+      {
+        id: 'hem', label: 'Start', sub: 'Första intrycket', path: '',
+        cards: [
+          { id: 'hero-copy', title: 'Startsidan', fields: [
+            field(defaults, 'heroEyebrow', 'Liten rubrik'),
+            field(defaults, 'heroTitle', 'Stora rubriken', { rows: 2, help: 'Radbrytning är tillåten.' }),
+            field(defaults, 'heroLede', 'Texten under rubriken', { rows: 3 }),
+          ] },
+          { id: 'hero-images', title: 'Huvudbild', imageSlot: 'hero_images', imageDefaults: defaults.heroImages, imageLimit: 1 },
+        ],
+      },
+      {
+        id: 'tjanster', label: 'Tjänster', sub: 'Sektionen på startsidan', path: '/#tjanster',
+        cards: [{
+          id: 'services-copy', title: 'Tjänster', fields: [
+            field(defaults, 'servicesEyebrow', 'Liten rubrik'),
+            field(defaults, 'servicesTitle', 'Rubrik'),
+            field(defaults, 'servicesIntro', 'Ingress', { rows: 3 }),
+          ],
+          info: { text: 'Tjänster, priser och längder ändras under Tjänster.', href: '/admin/tjanster', label: 'Ändra under Tjänster' },
+        }],
+      },
+      {
+        id: 'resultat', label: 'Resultat', sub: 'Galleri på startsidan', path: '/#resultat',
+        cards: [
+          { id: 'results-copy', title: 'Resultat', fields: [
+            field(defaults, 'resultsEyebrow', 'Liten rubrik'),
+            field(defaults, 'homeSecondTitle', 'Rubrik'),
+            field(defaults, 'resultsLede', 'Text', { rows: 3 }),
+            field(defaults, 'resultImage1Caption', 'Bild 1: bildtext'),
+            field(defaults, 'resultImage2Caption', 'Bild 2: bildtext'),
+            field(defaults, 'resultImage3Caption', 'Bild 3: bildtext'),
+          ] },
+          { id: 'results-images', title: 'Bilder', imageSlot: 'gallery_images', imageDefaults: defaults.galleryImages, imageLimit: 3 },
+        ],
+      },
+      {
+        id: 'salongen', label: 'Salongen', sub: 'Om salongen på startsidan', path: '/#salongen',
+        cards: [
+          { id: 'studio-copy', title: 'Salongen', fields: [
+            field(defaults, 'aboutTitle', 'Rubrik'),
+            field(defaults, 'aboutCopyHome', 'Text', { rows: 4 }),
+            field(defaults, 'studioImageCaption', 'Bildtext'),
+            field(defaults, 'studioEyebrow', 'Liten rubrik'),
+            field(defaults, 'studioPoint1', 'Punkt 1'),
+            field(defaults, 'studioPoint2', 'Punkt 2'),
+            field(defaults, 'studioPoint3', 'Punkt 3'),
+          ] },
+          { id: 'studio-image', title: 'Bild', imageSlot: 'about_image', imageDefaults: defaults.aboutImage ? [defaults.aboutImage] : [] },
+        ],
+      },
+      {
+        id: 'kontakt', label: 'Kontakt', sub: 'Kontaktsektionen på startsidan', path: '/#kontakt',
+        cards: [{
+          id: 'contact-copy', title: 'Kontakt', fields: [
+            field(defaults, 'contactEyebrow', 'Liten rubrik'),
+            field(defaults, 'contactTitle', 'Rubrik'),
+            field(defaults, 'contactLede', 'Text', { rows: 3 }),
+          ],
+        }],
+      },
+      {
+        id: 'bokning', label: 'Bokning', sub: 'Bokningssätt · tider · bilder', path: '?boka=1',
+        cards: [{
+          id: 'booking-data', title: 'Tider och bokningssätt',
+          info: { text: 'Bokningsbara tider styrs av personalens arbetstider och tjänsternas längd.', href: '/admin/installningar/bokning', label: 'Ändra bokningsregler' },
+        }],
+      },
+    ],
+    modules: genericModuleTabs(THEME_EXTRA_HOME.freshcut ?? []),
+  }
+}
+
 function kallaModuleTabs(defaults: ResolvedThemeContent): SiteEditorTab[] {
   return [
     {
@@ -172,6 +262,7 @@ export function buildSiteEditorManifest(kind: EditorManifestKind, defaults: Reso
   const caps = themeCaps(theme)
   const themeHomeFields = THEME_EXTRA_HOME[theme] ?? []
   defaults = mergeThemeDefaults(defaults, themeHomeFields)
+  if (theme === 'freshcut') return freshCutManifest(defaults)
   const common: Record<'allmant' | 'tjanster' | 'team' | 'kontakt' | 'bokning', SiteEditorTab> = {
     allmant: {
       id: 'allmant',
@@ -183,7 +274,10 @@ export function buildSiteEditorManifest(kind: EditorManifestKind, defaults: Reso
         {
           id: 'footer-copy',
           title: 'Sidfot',
-          fields: [field(defaults, 'tagline', 'Sidfotens text')],
+          fields: [
+            field(defaults, 'tagline', 'Sidfotens text'),
+            field(defaults, 'utility', 'Informationsrad'),
+          ],
         },
       ],
     },
@@ -320,7 +414,9 @@ export function buildSiteEditorManifest(kind: EditorManifestKind, defaults: Reso
       {
         id: 'home-sections',
         title: 'Startsidan längre ned',
-        fields: kind === 'generic' ? genericHomeFields : contractedHomeFields,
+        fields: kind === 'generic'
+          ? uniqueFields([...genericHomeFields, ...themeHomeFields.map(themeField)])
+          : contractedHomeFields,
       },
       ...(caps.homeAbout ? [{
         id: 'about-home-image', title: 'Bild i Om oss-sektionen', imageSlot: 'about_image' as const,

@@ -67,16 +67,17 @@ export function ZentumLayout({ tenant, content }: StorefrontLayoutProps) {
       {/* HERO */}
       <ZentumHeroShell>
         <div className={styles.heroBg}>
-          {heroImg && <img src={heroImg} alt="" fetchPriority="high" />}
+          {heroImg && <img src={heroImg} alt="" fetchPriority="high" data-corevo-editor-field="hero_images.0" data-corevo-editor-stable-field="hero_images.0" />}
         </div>
         <div className={styles.heroShade} />
         <div className={styles.heroTopShade} />
         <div className={styles.heroContent}>
           <span className={`${styles.heroEyebrow} ${styles.heroLayer}`}>
-            {content.heroEyebrow} {tenant.name}
+            <span data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</span>{' '}
+            <span data-corevo-editor-field="tenant.name" data-corevo-editor-stable-field="tenant.name">{tenant.name}</span>
           </span>
-          <h1 className={`${styles.heroTitle} ${styles.heroLayer}`}>{content.heroTitle}</h1>
-          <p className={`${styles.heroText} ${styles.heroLayer}`}>{content.heroLede}</p>
+          <h1 className={`${styles.heroTitle} ${styles.heroLayer}`} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={`${styles.heroText} ${styles.heroLayer}`} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={`${styles.heroCta} ${styles.heroLayer}`}>
             <a href="/kontakt" className={styles.btn}>
               Kontakta oss
@@ -90,7 +91,7 @@ export function ZentumLayout({ tenant, content }: StorefrontLayoutProps) {
 
       {/* SEKTION 1 — intro-statement (Merriweather 26px) */}
       <section className={styles.secIntro}>
-        <ZentumReveal as="p" className={styles.introStatement}>
+        <ZentumReveal as="p" className={styles.introStatement} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">
           {content.italic}
         </ZentumReveal>
       </section>
@@ -99,7 +100,7 @@ export function ZentumLayout({ tenant, content }: StorefrontLayoutProps) {
       <section className={styles.secServices}>
         <div className={styles.container}>
           <div className={styles.sectionHead}>
-            <ZentumHeading text={content.servicesTitle} />
+            <ZentumHeading text={content.servicesTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle" />
             <ZentumReveal as="p" className={styles.sectionDesc}>
               Från löpande bokföring till bokslut, deklarationer och strategisk rådgivning — vi
               stöttar bolag i alla skeden, oavsett om du söker en långsiktig partner eller hjälp
@@ -127,13 +128,15 @@ export function ZentumLayout({ tenant, content }: StorefrontLayoutProps) {
         <div
           className={styles.splitMedia}
           style={{ backgroundImage: `url(${splitImg})` }}
+          data-corevo-editor-field="about_image"
+          data-corevo-editor-stable-field="about_image"
           role="img"
           aria-label="Rådgivningsmöte"
         />
         <div className={styles.splitBody}>
           <div className={styles.splitBodyInner}>
-            <ZentumHeading text={content.aboutTitle} className={styles.splitTitle} />
-            <ZentumReveal as="p" className={styles.splitLead}>
+            <ZentumHeading text={content.aboutTitle} className={styles.splitTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle" />
+            <ZentumReveal as="p" className={styles.splitLead} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">
               {content.aboutCopy}
             </ZentumReveal>
             <div className={styles.splitSpacer} />
@@ -175,7 +178,7 @@ export function ZentumLayout({ tenant, content }: StorefrontLayoutProps) {
               <ZentumReveal as="h4" className={styles.eyebrow}>
                 Referenser
               </ZentumReveal>
-              <ZentumHeading text={content.teamTitle} />
+              <ZentumHeading text={content.teamTitle} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle" />
             </div>
             <ZentumTestimonials items={REFERENSER} />
           </div>

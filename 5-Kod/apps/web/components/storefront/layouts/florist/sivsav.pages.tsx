@@ -33,22 +33,24 @@ export function SivSavOm({ content, tenant }: ThemePageProps) {
     <section className={styles.ssPage}>
       <div className={styles.ssOmSplit}>
         <div>
-          <p className={styles.ssEyebrow}>{content.teamEyebrow ?? 'Om oss'}</p>
-          <h1 className={styles.ssOmTitle}>{content.aboutTitle}</h1>
-          <p className={styles.ssOmBody}>{content.aboutCopy}</p>
-          <p className={styles.ssOmBody}>{content.italic}</p>
+          <p className={styles.ssEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow ?? 'Om oss'}</p>
+          <h1 className={styles.ssOmTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+          <p className={styles.ssOmBody} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
+          <p className={styles.ssOmBody} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
         </div>
         <div
           className={styles.ssOmPhoto}
+          data-corevo-editor-field="about_image"
+          data-corevo-editor-stable-field="about_image"
           style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
         />
       </div>
 
       <div className={styles.ssOmStats}>
-        {stats.map((s) => (
+        {stats.map((s, index) => (
           <div key={s.value}>
-            <p className={styles.ssOmStatValue}>{s.value}</p>
-            <p className={styles.ssOmStatLabel}>{s.label}</p>
+            <p className={styles.ssOmStatValue} data-corevo-editor-field={`stats.${index}.value`} data-corevo-editor-stable-field={`stats.${index}.value`}>{s.value}</p>
+            <p className={styles.ssOmStatLabel} data-corevo-editor-field={`stats.${index}.label`} data-corevo-editor-stable-field={`stats.${index}.label`}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -62,8 +64,8 @@ export function SivSavTjanster({ content, services, modules }: ThemePageProps) {
   const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.ssPage}>
-      <p className={styles.ssEyebrow}>{content.servicesEyebrow}</p>
-      <h1 className={styles.ssPageTitle}>{content.servicesTitle}</h1>
+      <p className={styles.ssEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+      <h1 className={styles.ssPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
       {services.length === 0 ? (
         <p className={styles.ssEmpty}>Tjänsterna visas snart.</p>
       ) : (
@@ -88,14 +90,14 @@ export function SivSavKontakt({ content, location, contact }: ThemePageProps) {
 
   return (
     <section className={styles.ssPage}>
-      <h1 className={styles.ssPageTitle}>{content.contactTitle ?? 'Hör av dig'}</h1>
+      <h1 className={styles.ssPageTitle} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle ?? 'Hör av dig'}</h1>
 
       <div className={styles.ssKontaktGrid}>
         <div>
           {location?.address ? (
             <>
               <p className={styles.ssFactLabel}>Ateljén</p>
-              <p className={styles.ssFactValue}>{location.address}</p>
+              <p className={styles.ssFactValue} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</p>
             </>
           ) : null}
 
@@ -105,12 +107,12 @@ export function SivSavKontakt({ content, location, contact }: ThemePageProps) {
               <p className={styles.ssFactValue}>
                 {contact.email ? (
                   <>
-                    <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                    <a href={`mailto:${contact.email}`} data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{contact.email}</a>
                     <br />
                   </>
                 ) : null}
                 {contact.phone ? (
-                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
                 ) : null}
               </p>
             </>
@@ -120,14 +122,14 @@ export function SivSavKontakt({ content, location, contact }: ThemePageProps) {
             <>
               <p className={styles.ssFactLabel}>Öppet</p>
               <p className={styles.ssFactValue}>
-                {hours.map((h) => `${h.day} ${h.time}`).join(' · ')}
+                {hours.map((h, index) => <span key={h.day}>{index > 0 ? ' · ' : null}{h.day} <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span></span>)}
               </p>
             </>
           ) : null}
         </div>
 
         <div className={styles.ssCard}>
-          <p className={styles.ssCardProse}>{content.closingLede ?? content.aboutCopy}</p>
+          <p className={styles.ssCardProse} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? content.aboutCopy}</p>
           {/* Filens formulär (goal-64): bara placeholders, ingen etikett — skandinavisk
               renhet. Mejl-CTA:n var en amputation; nu skickar rutan på riktigt. */}
           <ContactForm

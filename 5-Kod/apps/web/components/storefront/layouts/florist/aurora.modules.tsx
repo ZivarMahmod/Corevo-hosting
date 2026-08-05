@@ -50,8 +50,8 @@ export function AuroraShop({ data, limit, moreHref, content }: ThemeShopViewProp
   return (
     <section className={styles.auShop} data-module="shop" data-fulfilment={config.fulfilment}>
       <div className={styles.auPageHead}>
-        <p className={styles.auEyebrow}>{content.shopEyebrow ?? 'Butiken'}</p>
-        <h1 className={styles.auPageTitle}>{content.shopTitle ?? 'Handbundet, varje morgon'}</h1>
+        <p className={styles.auEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Butiken'}</p>
+        <h1 className={styles.auPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Handbundet, varje morgon'}</h1>
         <p className={styles.auPageLede}>
           Lägg det du vill ha i korgen — vi binder allt samma dag som det levereras.
         </p>
@@ -88,7 +88,7 @@ export function AuroraShop({ data, limit, moreHref, content }: ThemeShopViewProp
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
         <p className={styles.auSecFoot}>
-          <a href={moreHref} className={styles.auBtnOutline}>
+          <a href={moreHref} className={styles.auBtnOutline} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
             {content.shopCta ?? 'Hela sortimentet'}
           </a>
         </p>
@@ -108,8 +108,8 @@ export function AuroraBlogg({ posts: allPosts, limit, moreHref, content }: Theme
   return (
     <section className={styles.auBlogg} data-module="blogg">
       <div className={styles.auPageHead}>
-        <p className={styles.auEyebrow}>{content.blogEyebrow ?? 'Bloggen'}</p>
-        <h1 className={styles.auPageTitle}>{content.blogTitle ?? 'Från studion'}</h1>
+        <p className={styles.auEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'Bloggen'}</p>
+        <h1 className={styles.auPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Från studion'}</h1>
       </div>
 
       {posts.length === 0 ? (
@@ -152,7 +152,7 @@ export function AuroraBlogg({ posts: allPosts, limit, moreHref, content }: Theme
 
       {moreHref && teaser && allPosts.length > 0 ? (
         <p className={styles.auSecFoot}>
-          <a href={moreHref} className={styles.auBtnOutline}>
+          <a href={moreHref} className={styles.auBtnOutline} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
             {content.blogCta ?? 'Läs fler inlägg'}
           </a>
         </p>
@@ -183,8 +183,8 @@ export function AuroraGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.auGalleri} data-module="galleri">
       <div className={styles.auGalHead}>
-        <p className={styles.auGalEyebrow}>{content.galleryEyebrow ?? 'Galleri'}</p>
-        <h1 className={styles.auGalTitle}>{content.galleryTitle ?? 'Ur studions dagbok'}</h1>
+        <p className={styles.auGalEyebrow} data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">{content.galleryEyebrow ?? 'Galleri'}</p>
+        <h1 className={styles.auGalTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Ur studions dagbok'}</h1>
       </div>
 
       {items.length === 0 ? (
@@ -239,11 +239,11 @@ export function AuroraLojalitet({ config, plans, content }: ThemeLojalitetViewPr
   return (
     <section className={styles.auClub} data-module="lojalitet" data-variant={config.variant}>
       <div className={styles.auGalHead}>
-        <p className={styles.auGalEyebrow}>{content.clubEyebrow ?? 'Blomsterklubben'}</p>
-        <h1 className={styles.auClubTitle}>
+        <p className={styles.auGalEyebrow} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">{content.clubEyebrow ?? 'Blomsterklubben'}</p>
+        <h1 className={styles.auClubTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">
           {content.clubTitle ?? 'Var nionde bukett bjuder vi på'}
         </h1>
-        <p className={styles.auClubLede}>{content.clubLede ?? config.perkText}</p>
+        <p className={styles.auClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">{content.clubLede ?? config.perkText}</p>
       </div>
 
       {stamps.length > 0 ? (
@@ -288,7 +288,7 @@ export function AuroraLojalitet({ config, plans, content }: ThemeLojalitetViewPr
       ) : null}
 
       <div className={styles.auClubJoin}>
-        <JoinClubForm cta={content.clubCta ?? 'Gå med gratis'} />
+        <JoinClubForm cta={content.clubCta ?? 'Gå med gratis'} editorField="clubCta" />
       </div>
     </section>
   )

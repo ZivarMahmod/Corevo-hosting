@@ -24,32 +24,33 @@ export function SolSaltOm({ content, tenant }: ThemePageProps) {
     <section className={styles.slPage}>
       <div className={styles.slOmSplit}>
         <div>
-          <p className={styles.slEyebrow}>{content.teamEyebrow}</p>
-          <h1 className={styles.slOmTitle}>{content.aboutTitle}</h1>
-          <p className={styles.slOmBody}>{content.aboutCopy}</p>
-          <p className={styles.slOmBody}>{content.italic}</p>
+          <p className={styles.slEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow}</p>
+          <h1 className={styles.slOmTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+          <p className={styles.slOmBody} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
+          <p className={styles.slOmBody} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
         </div>
         <div
           className={styles.slOmPhoto}
+          data-corevo-editor-field="about_image"
+          data-corevo-editor-stable-field="about_image"
           style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
           role="img"
           aria-label={tenant.name}
         />
       </div>
 
-      {/* Filens tre plattor. Texterna är designens egna — de är en del av mallen, inte data. */}
       <div className={styles.slFacts}>
         <div className={styles.slFactSun}>
-          <p className={`${styles.slFactBig} ${styles.slFactInk}`}>06:00</p>
-          <p className={`${styles.slFactSmall} ${styles.slFactInkSoft}`}>plockar på grossisten</p>
+          <p className={`${styles.slFactBig} ${styles.slFactInk}`} data-corevo-editor-field="aboutFact1Value" data-corevo-editor-stable-field="aboutFact1Value">{content.aboutFact1Value}</p>
+          <p className={`${styles.slFactSmall} ${styles.slFactInkSoft}`} data-corevo-editor-field="aboutFact1Label" data-corevo-editor-stable-field="aboutFact1Label">{content.aboutFact1Label}</p>
         </div>
         <div className={styles.slFactClay}>
-          <p className={`${styles.slFactBig} ${styles.slFactPaper}`}>Alla</p>
-          <p className={`${styles.slFactSmall} ${styles.slFactPaper}`}>dagar öppet</p>
+          <p className={`${styles.slFactBig} ${styles.slFactPaper}`} data-corevo-editor-field="aboutFact2Value" data-corevo-editor-stable-field="aboutFact2Value">{content.aboutFact2Value}</p>
+          <p className={`${styles.slFactSmall} ${styles.slFactPaper}`} data-corevo-editor-field="aboutFact2Label" data-corevo-editor-stable-field="aboutFact2Label">{content.aboutFact2Label}</p>
         </div>
         <div className={styles.slFactBlue}>
-          <p className={`${styles.slFactBig} ${styles.slFactPaper}`}>400 kr</p>
-          <p className={`${styles.slFactSmall} ${styles.slFactPaperSoft}`}>fri hemkörning över</p>
+          <p className={`${styles.slFactBig} ${styles.slFactPaper}`} data-corevo-editor-field="aboutFact3Value" data-corevo-editor-stable-field="aboutFact3Value">{content.aboutFact3Value}</p>
+          <p className={`${styles.slFactSmall} ${styles.slFactPaperSoft}`} data-corevo-editor-field="aboutFact3Label" data-corevo-editor-stable-field="aboutFact3Label">{content.aboutFact3Label}</p>
         </div>
       </div>
     </section>
@@ -60,9 +61,9 @@ export function SolSaltTjanster({ content, services, modules }: ThemePageProps) 
   const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.slPageNarrow}>
-      <p className={styles.slEyebrow}>{content.servicesEyebrow}</p>
-      <h1 className={styles.slPageTitle}>{content.servicesTitle}</h1>
-      <p className={styles.slPageLede}>
+      <p className={styles.slEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+      <h1 className={styles.slPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
+      <p className={styles.slPageLede} data-corevo-editor-field="servicesIntro" data-corevo-editor-stable-field="servicesIntro">
         {content.servicesIntro ??
           'Bröllop, fest eller ett grönt lyft till kontoret? Boka en tid så pratar vi färg och form.'}
       </p>
@@ -94,14 +95,14 @@ export function SolSaltKontakt({ content, location, contact }: ThemePageProps) {
 
   return (
     <section className={styles.slPage}>
-      <h1 className={styles.slPageTitle}>Hör av dig</h1>
+      <h1 className={styles.slPageTitle} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle ?? 'Hör av dig'}</h1>
 
       <div className={styles.slKontakt}>
         <div className={styles.slKontaktCard}>
           {location?.address ? (
             <>
               <p className={styles.slKontaktLabel}>Boden</p>
-              <p className={styles.slKontaktValue}>{location.address}</p>
+              <p className={styles.slKontaktValue} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</p>
             </>
           ) : null}
 
@@ -111,12 +112,12 @@ export function SolSaltKontakt({ content, location, contact }: ThemePageProps) {
               <p className={styles.slKontaktValue}>
                 {contact.email ? (
                   <>
-                    <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                    <a href={`mailto:${contact.email}`} data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{contact.email}</a>
                     <br />
                   </>
                 ) : null}
                 {contact.phone ? (
-                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
                 ) : null}
               </p>
             </>
@@ -126,9 +127,9 @@ export function SolSaltKontakt({ content, location, contact }: ThemePageProps) {
             <>
               <p className={styles.slKontaktLabel}>Öppet</p>
               <p className={styles.slKontaktValue}>
-                {hours.map((h) => (
+                {hours.map((h, index) => (
                   <span key={h.day}>
-                    {h.day} {h.time}
+                    {h.day} <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span>
                     <br />
                   </span>
                 ))}
@@ -142,7 +143,7 @@ export function SolSaltKontakt({ content, location, contact }: ThemePageProps) {
             Det låg som en mejl-CTA tills motorn fick sin kontakt-räls i goal-64; nu
             skickar rutan på riktigt. */}
         <div className={styles.slKontaktForm}>
-          <p className={styles.slKontaktIntro}>{content.closingLede ?? content.aboutCopy}</p>
+          <p className={styles.slKontaktIntro} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? content.aboutCopy}</p>
           <ContactForm
             rows={[
               [{ key: 'name', placeholder: 'Namn', required: true }],

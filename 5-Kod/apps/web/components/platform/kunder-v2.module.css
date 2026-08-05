@@ -305,6 +305,10 @@
 .pane:has(:global(.sida-studio-host)) {
   overflow: hidden;
 }
+.pane:has(:global(.onboarding-host)) {
+  flex: 1;
+  overflow: hidden;
+}
 .paneInner:has(:global(.sida-studio-host)) {
   height: 100%;
   max-width: none;
@@ -312,6 +316,18 @@
   padding-bottom: 0;
   display: flex;
   flex-direction: column;
+}
+.paneInner:has(:global(.onboarding-host)) {
+  height: 100%;
+  max-width: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.paneInner:has(:global(.onboarding-host)) :global(.onboarding-host) {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 .paneInnerWide {
   display: flex;

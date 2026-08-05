@@ -11,13 +11,11 @@ import {
 import s from './ThemeGallery.module.css'
 
 /**
- * MALL-GALLERIET — EN väljare, två ytor: kundkortets Sida-flik (ThemePicker) och
- * onboarding-studions tema-steg (PanelTema). goal-58 gjorde sviten 20 mallar; en platt
- * namnlista blev en röra att välja ur.
+ * MALL-GALLERIET — kundkortets Sida-flik. En platt namnlista blev en röra att välja ur.
  *
  * UX: kategori-flikar (Blomsterhandel / Salong & barber) → tagg-chips → fritextsök →
  * kort med mallens EGEN hero-bild och riktiga palett. Branschens förval får en gyllene
- * "Branschens förval"-markering, så operatören kan trycka Nästa utan att välja alls.
+ * "Branschens förval"-markering visar vilket tema som ligger närmast verksamheten.
  *
  * Rent presentational: ingen server-action, ingen spar. Föräldern äger valet.
  * goal-61: stilarna bor i ThemeGallery.module.css — inline kunde inte bära

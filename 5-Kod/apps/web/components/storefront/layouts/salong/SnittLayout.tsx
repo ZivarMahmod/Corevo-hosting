@@ -50,8 +50,8 @@ export function SnittLayout({ content, services, location, modules }: Storefront
         {/* (1) HERO */}
         <section className={styles.snHero}>
           <Reveal>
-            <p className={styles.snHeroEyebrow}>{content.heroEyebrow}</p>
-            <h1 className={styles.snHeroTitle}>
+            <p className={styles.snHeroEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+            <h1 className={styles.snHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">
               {heroHead.map((line) => (
                 <span key={line} data-corevo-editor-line>
                   {line}
@@ -62,7 +62,7 @@ export function SnittLayout({ content, services, location, modules }: Storefront
                 data-corevo-editor-line-tail>{heroTail}</span>
             </h1>
             <div className={styles.snHeroFoot}>
-              <p className={styles.snHeroLede}>{content.heroLede}</p>
+              <p className={styles.snHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
               <div className={styles.snHeroCtas}>
                 <BookCta enabled={bookingReachable} className={styles.snBtn} label="Boka nu" />
                 <Link href="/tjanster" className={styles.snBtnGhost}>
@@ -95,11 +95,11 @@ export function SnittLayout({ content, services, location, modules }: Storefront
         {services.length > 0 ? (
           <section className={styles.snSectionNarrow}>
             <Reveal>
-              <p className={styles.snEyebrow}>
+              <p className={styles.snEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">
                 <span className={styles.snDash}>—</span> {content.servicesEyebrow}
               </p>
-              <h2 className={styles.snSecTitle}>{content.pillar1Title ?? 'Hantverket, presenterat.'}</h2>
-              <p className={styles.snSecLede}>
+              <h2 className={styles.snSecTitle} data-corevo-editor-field="pillar1Title" data-corevo-editor-stable-field="pillar1Title">{content.pillar1Title ?? 'Hantverket, presenterat.'}</h2>
+              <p className={styles.snSecLede} data-corevo-editor-field="pillar1Body" data-corevo-editor-stable-field="pillar1Body">
                 {content.pillar1Body ??
                   'Varje behandling anpassas efter din stil, hårtyp och ansiktsform. Priserna gäller oavsett längd — vi tar betalt för tid, inte centimeter.'}
               </p>
@@ -126,7 +126,7 @@ export function SnittLayout({ content, services, location, modules }: Storefront
         <section className={styles.snSection}>
           <Reveal>
             <div className={styles.snBand}>
-              <h2 className={styles.snBandTitle}>
+              <h2 className={styles.snBandTitle} data-corevo-editor-field="pillar2Title" data-corevo-editor-stable-field="pillar2Title">
                 {content.pillar2Title ?? 'Hitta en tid som passar dig.'}
               </h2>
               <BookCta enabled={bookingReachable} className={styles.snBandCta} label="Boka nu" />
@@ -151,17 +151,17 @@ export function SnittLayout({ content, services, location, modules }: Storefront
               <p className={styles.snEyebrow}>
                 <span className={styles.snDash}>—</span> Om studion
               </p>
-              <h2 className={styles.snAboutTitle}>{content.aboutTitle}</h2>
-              <p className={styles.snAboutBody}>{content.aboutCopyHome}</p>
-              <p className={styles.snAboutItalic}>{content.italic}</p>
+              <h2 className={styles.snAboutTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h2>
+              <p className={styles.snAboutBody} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
+              <p className={styles.snAboutItalic} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
               {content.stats.length > 0 ? (
                 <div className={styles.snStats}>
                   {content.stats.map(([value, label], i) => (
                     <div key={`${value}-${label}`}>
-                      <p className={`${styles.snStatValue} ${i === 0 ? styles.snStatFirst : ''}`}>
+                      <p className={`${styles.snStatValue} ${i === 0 ? styles.snStatFirst : ''}`} data-corevo-editor-field={`stats.${i}.value`} data-corevo-editor-stable-field={`stats.${i}.value`}>
                         {value}
                       </p>
-                      <p className={styles.snStatLabel}>{label}</p>
+                      <p className={styles.snStatLabel} data-corevo-editor-field={`stats.${i}.label`} data-corevo-editor-stable-field={`stats.${i}.label`}>{label}</p>
                     </div>
                   ))}
                 </div>
@@ -175,10 +175,10 @@ export function SnittLayout({ content, services, location, modules }: Storefront
         {content.team.length > 0 ? (
           <section className={styles.snSection}>
             <Reveal>
-              <p className={styles.snEyebrow}>
+              <p className={styles.snEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">
                 <span className={styles.snDash}>—</span> {content.teamEyebrow}
               </p>
-              <h2 className={styles.snSecTitleAlt}>{content.teamTitle}</h2>
+              <h2 className={styles.snSecTitleAlt} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle}</h2>
             </Reveal>
             <ul className={styles.snCards3}>
               {content.team.map((m, i) => (
@@ -212,10 +212,10 @@ export function SnittLayout({ content, services, location, modules }: Storefront
         {location?.address || hours ? (
           <section className={styles.snSection}>
             <Reveal>
-              <p className={styles.snEyebrow}>
+              <p className={styles.snEyebrow} data-corevo-editor-field="findEyebrow" data-corevo-editor-stable-field="findEyebrow">
                 <span className={styles.snDash}>—</span> {content.findEyebrow ?? 'Plats & öppettider'}
               </p>
-              <h2 className={styles.snSecTitleAlt}>{content.pillar3Title ?? 'Hittar du hit?'}</h2>
+              <h2 className={styles.snSecTitleAlt} data-corevo-editor-field="pillar3Title" data-corevo-editor-stable-field="pillar3Title">{content.pillar3Title ?? 'Hittar du hit?'}</h2>
             </Reveal>
             <div className={styles.snFacts}>
               {location?.address ? (

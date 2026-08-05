@@ -43,10 +43,10 @@ export function SnittShop({ data, limit, moreHref, content }: ThemeShopViewProps
 
   return (
     <section className={styles.snShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.snEyebrow}>
+      <p className={styles.snEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">
         <span className={styles.snDash}>—</span> {content.shopEyebrow ?? 'Butik'}
       </p>
-      <h1 className={styles.snPageTitle}>
+      <h1 className={styles.snPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">
         {content.shopTitle ?? 'Hyllan'}
         <span className={styles.snDot} data-corevo-editor-decoration>
           .
@@ -111,7 +111,7 @@ export function SnittShop({ data, limit, moreHref, content }: ThemeShopViewProps
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
         <p className={styles.snShopMore}>
-          <a href={moreHref} className={styles.snLink}>
+          <a href={moreHref} className={styles.snLink} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
             {content.shopCta ?? 'Hela hyllan →'}
           </a>
         </p>
@@ -130,10 +130,10 @@ export function SnittBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
 
   return (
     <section className={styles.snBlogg} data-module="blogg">
-      <p className={styles.snEyebrow}>
+      <p className={styles.snEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">
         <span className={styles.snDash}>—</span> {content.blogEyebrow ?? 'Ur stolen'}
       </p>
-      <h1 className={styles.snPageTitleAlone}>
+      <h1 className={styles.snPageTitleAlone} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">
         {content.blogTitle ?? 'Journal'}
         <span className={styles.snDot} data-corevo-editor-decoration>
           .
@@ -174,7 +174,7 @@ export function SnittBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
 
       {moreHref && teaser && allPosts.length > 0 ? (
         <p className={styles.snBloggMore}>
-          <a href={moreHref} className={styles.snLink}>
+          <a href={moreHref} className={styles.snLink} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
             {content.blogCta ?? 'Hela journalen →'}
           </a>
         </p>
@@ -198,10 +198,10 @@ export function SnittTeam({ members, content }: ThemeTeamViewProps) {
 
   return (
     <section className={styles.snTeamPage} data-module="team">
-      <p className={styles.snPageEyebrow}>
+      <p className={styles.snPageEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">
         <span className={styles.snDash}>—</span> <span>{content.teamEyebrow}</span>
       </p>
-      <h1 className={styles.snPageTitle}>
+      <h1 className={styles.snPageTitle} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">
         {content.teamTitle}
         <span className={styles.snDot} data-corevo-editor-decoration>
           .
@@ -247,11 +247,11 @@ export function SnittTeam({ members, content }: ThemeTeamViewProps) {
 export function SnittGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.snGalleri} data-module="galleri">
-      <p className={styles.snPageEyebrow}>
+      <p className={styles.snPageEyebrow} data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">
         <span className={styles.snDash}>—</span>{' '}
         <span>{content.galleryEyebrow ?? 'Arbeten ur stolen'}</span>
       </p>
-      <h1 className={styles.snPageTitle}>
+      <h1 className={styles.snPageTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">
         {content.galleryTitle ?? 'Galleri'}
         <span className={styles.snDot} data-corevo-editor-decoration>
           .
@@ -302,16 +302,16 @@ export function SnittLojalitet({ config, plans, content, tenantName }: ThemeLoja
 
   return (
     <section className={styles.snClub} data-module="lojalitet" data-variant={config.variant}>
-      <p className={styles.snPageEyebrow}>
+      <p className={styles.snPageEyebrow} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">
         <span className={styles.snDash}>—</span> <span>{content.clubEyebrow ?? 'Stamkund'}</span>
       </p>
-      <h1 className={styles.snPageTitle}>
+      <h1 className={styles.snPageTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">
         {title}
         <span className={styles.snDot} data-corevo-editor-decoration>
           .
         </span>
       </h1>
-      <p className={styles.snClubLede}>
+      <p className={styles.snClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">
         {content.clubLede ??
           'Gratis att gå med. Byggd för dig som kommer tillbaka var sjätte vecka ändå.'}
       </p>
@@ -357,7 +357,7 @@ export function SnittLojalitet({ config, plans, content, tenantName }: ThemeLoja
           ))}
 
           <div className={styles.snClubJoin}>
-            <JoinClubForm cta={content.clubCta ?? 'Gå med gratis'} />
+            <JoinClubForm cta={content.clubCta ?? 'Gå med gratis'} editorField="clubCta" />
           </div>
         </div>
       </div>

@@ -67,9 +67,9 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
       {/* (1) HERO */}
       <section className={styles.kaHero}>
         <Reveal>
-          <p className={styles.kaEyebrow}>{content.heroEyebrow}</p>
-          <h1 className={styles.kaHeroTitle}>{content.heroTitle}</h1>
-          <p className={styles.kaHeroLede}>{content.heroLede}</p>
+          <p className={styles.kaEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+          <h1 className={styles.kaHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+          <p className={styles.kaHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
           <div className={styles.kaHeroCtas}>
             {/* "Boka en ritual" — boknings-drawern/-sidan, plattformens funktion. */}
             <BookCta enabled={bookingReachable} className={styles.kaSolid} label="Boka en ritual" />
@@ -89,7 +89,7 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
             data-corevo-editor-stable-field="hero_images.0"
             style={bandPhoto ? { backgroundImage: `url(${bandPhoto})` } : undefined}
           />
-          <p className={styles.kaBandCaption}>
+          <p className={styles.kaBandCaption} data-corevo-editor-field="homeGalleryEyebrow" data-corevo-editor-stable-field="homeGalleryEyebrow">
             {content.homeGalleryEyebrow ?? 'Behandlingsrummet'}
           </p>
         </Reveal>
@@ -100,8 +100,8 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
         {steps.map((s, i) => (
           <Reveal key={s.no} delay={i * 90} className={styles.kaStep}>
             <span className={styles.kaStepNo}>{s.no}</span>
-            <h3 className={styles.kaStepName}>{s.name}</h3>
-            <p className={styles.kaStepDesc}>{s.desc}</p>
+            <h3 className={styles.kaStepName} data-corevo-editor-field={`pillar${i + 1}Title`} data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{s.name}</h3>
+            <p className={styles.kaStepDesc} data-corevo-editor-field={`pillar${i + 1}Body`} data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{s.desc}</p>
           </Reveal>
         ))}
       </section>
@@ -110,8 +110,8 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
       {signatures.length > 0 ? (
         <section className={styles.kaSection}>
           <Reveal className={styles.kaSecHead}>
-            <p className={styles.kaSecEyebrow}>{content.servicesEyebrow}</p>
-            <h2 className={styles.kaSecTitle}>{content.servicesTitle}</h2>
+            <p className={styles.kaSecEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+            <h2 className={styles.kaSecTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h2>
           </Reveal>
           <ul className={styles.kaCardGrid}>
             {signatures.map((s, i) => (
@@ -142,9 +142,9 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
       <section className={styles.kaSection}>
         <Reveal className={styles.kaAbout}>
           <div>
-            <p className={styles.kaSecEyebrow}>{content.teamEyebrow}</p>
-            <h2 className={styles.kaAboutTitle}>{content.aboutTitle}</h2>
-            <p className={styles.kaAboutBody}>{content.aboutCopyHome}</p>
+            <p className={styles.kaSecEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow}</p>
+            <h2 className={styles.kaAboutTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h2>
+            <p className={styles.kaAboutBody} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome}</p>
             <Link href="/om" className={styles.kaTextLink}>
               Läs mer →
             </Link>
@@ -164,7 +164,7 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
       {content.team.length > 0 ? (
         <section className={styles.kaSectionNarrow}>
           <Reveal className={styles.kaSecHead}>
-            <h2 className={styles.kaSecTitle}>{content.teamTitle}</h2>
+            <h2 className={styles.kaSecTitle} data-corevo-editor-field="teamTitle" data-corevo-editor-stable-field="teamTitle">{content.teamTitle}</h2>
           </Reveal>
           <ul className={styles.kaTeamGrid}>
             {content.team.map((m, i) => (
@@ -195,9 +195,9 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
       {posts.length > 0 ? (
         <section className={styles.kaNotes}>
           <Reveal className={styles.kaNotesHead}>
-            <h2 className={styles.kaNotesTitle}>{content.blogTitle ?? 'Anteckningar'}</h2>
+            <h2 className={styles.kaNotesTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Anteckningar'}</h2>
             <Link href="/blogg" className={styles.kaTextLink}>
-              {content.blogCta ?? 'Alla →'}
+              <span data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">{content.blogCta ?? 'Alla →'}</span>
             </Link>
           </Reveal>
           <ul className={styles.kaNoteList}>

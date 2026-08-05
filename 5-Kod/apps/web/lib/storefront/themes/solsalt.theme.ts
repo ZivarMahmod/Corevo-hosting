@@ -78,6 +78,12 @@ export const solsalt: StorefrontThemeDefinition = {
   // Redigerbara element på hemmet. default = layoutens/vyernas inbyggda fallback VERBATIM —
   // fältet ska förifyllas ärligt, aldrig med en påhittad platshållare.
   extraHome: [
+    { name: 'aboutFact1Value', label: 'Om oss-platta 1: stor text', default: '06:00' },
+    { name: 'aboutFact1Label', label: 'Om oss-platta 1: liten text', default: 'plockar på grossisten' },
+    { name: 'aboutFact2Value', label: 'Om oss-platta 2: stor text', default: 'Alla' },
+    { name: 'aboutFact2Label', label: 'Om oss-platta 2: liten text', default: 'dagar öppet' },
+    { name: 'aboutFact3Value', label: 'Om oss-platta 3: stor text', default: '400 kr' },
+    { name: 'aboutFact3Label', label: 'Om oss-platta 3: liten text', default: 'fri hemkörning över' },
     {
       name: 'aboutCopyHome',
       label: 'Boden (hem): text',

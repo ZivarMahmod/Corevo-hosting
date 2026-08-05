@@ -38,10 +38,10 @@ export function KallaOm({ content }: ThemePageProps) {
           style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
         />
         <div>
-          <p className={styles.kaSecEyebrow}>{content.teamEyebrow}</p>
-          <h1 className={styles.kaOmTitle}>{content.aboutTitle}</h1>
-          <p className={styles.kaOmBody}>{content.aboutCopy}</p>
-          <p className={styles.kaOmBody}>{content.italic}</p>
+          <p className={styles.kaSecEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">{content.teamEyebrow}</p>
+          <h1 className={styles.kaOmTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+          <p className={styles.kaOmBody} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
+          <p className={styles.kaOmBody} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
         </div>
       </div>
 
@@ -50,8 +50,8 @@ export function KallaOm({ content }: ThemePageProps) {
         <ul className={styles.kaStats}>
           {content.stats.map(([value, label], i) => (
             <li key={`${value}-${i}`} className={i % 2 === 1 ? styles.kaStatDark : styles.kaStat}>
-              <p className={styles.kaStatValue}>{value}</p>
-              <p className={styles.kaStatLabel}>{label}</p>
+              <p className={styles.kaStatValue} data-corevo-editor-field={`stats.${i}.value`} data-corevo-editor-stable-field={`stats.${i}.value`}>{value}</p>
+              <p className={styles.kaStatLabel} data-corevo-editor-field={`stats.${i}.label`} data-corevo-editor-stable-field={`stats.${i}.label`}>{label}</p>
             </li>
           ))}
         </ul>
@@ -90,8 +90,8 @@ export function KallaTjanster({ content, services, modules }: ThemePageProps) {
   return (
     <section className={styles.kaPage}>
       <div className={styles.kaPageHead}>
-        <p className={styles.kaEyebrow}>{content.servicesEyebrow}</p>
-        <h1 className={styles.kaPageTitle}>{content.servicesTitle}</h1>
+        <p className={styles.kaEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+        <h1 className={styles.kaPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
       </div>
 
       {services.length === 0 ? (
@@ -132,7 +132,7 @@ export function KallaKontakt({ content, location, contact }: ThemePageProps) {
   return (
     <section className={styles.kaPageWide}>
       <div className={styles.kaPageHead}>
-        <h1 className={styles.kaPageTitle}>{content.contactTitle ?? 'Kontakt'}</h1>
+        <h1 className={styles.kaPageTitle} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle ?? 'Kontakt'}</h1>
       </div>
 
       <div className={styles.kaKontakt}>
@@ -169,7 +169,7 @@ export function KallaKontakt({ content, location, contact }: ThemePageProps) {
         </div>
 
         <div>
-          <p className={styles.kaKontaktProse}>{content.closingLede ?? content.aboutCopy}</p>
+          <p className={styles.kaKontaktProse} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">{content.closingLede ?? content.aboutCopy}</p>
           {/* Filens formulär (goal-64) — Källas kontaktsida hade bara prosa; .dc.html har
               en riktig ruta (Namn · E-post · "Vad kan vi hjälpa till med?" · Skicka).
               Nu finns kontakt-rälsen, så rutan kan vara det den ritades som. */}

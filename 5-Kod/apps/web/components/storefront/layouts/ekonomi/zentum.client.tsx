@@ -14,14 +14,28 @@ import styles from './zentum.module.css'
  */
 
 /** Hero-skalet: lägger på .isLoaded när bakgrunden laddat → lagren tonar in i sekvens. */
-export function ZentumHeroShell({ children }: { children: ReactNode }) {
+export function ZentumHeroShell({
+  children,
+  'data-corevo-editor-field': editorField,
+  'data-corevo-editor-stable-field': stableEditorField,
+}: {
+  children: ReactNode
+  'data-corevo-editor-field'?: string
+  'data-corevo-editor-stable-field'?: string
+}) {
   const [loaded, setLoaded] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 60)
     return () => clearTimeout(t)
   }, [])
   return (
-    <section className={`${styles.hero} ${loaded ? styles.isLoaded : ''}`}>{children}</section>
+    <section
+      className={`${styles.hero} ${loaded ? styles.isLoaded : ''}`}
+      data-corevo-editor-field={editorField}
+      data-corevo-editor-stable-field={stableEditorField}
+    >
+      {children}
+    </section>
   )
 }
 
@@ -30,10 +44,14 @@ export function ZentumReveal({
   children,
   as: Tag = 'div',
   className = '',
+  'data-corevo-editor-field': editorField,
+  'data-corevo-editor-stable-field': stableEditorField,
 }: {
   children: ReactNode
   as?: ElementType
   className?: string
+  'data-corevo-editor-field'?: string
+  'data-corevo-editor-stable-field'?: string
 }) {
   const [shown, setShown] = useState(false)
   const setNode = (node: HTMLElement | null) => {
@@ -60,6 +78,8 @@ export function ZentumReveal({
     <Tag
       ref={setNode}
       className={`${styles.revealFade} ${shown ? styles.isInview : ''} ${className}`}
+      data-corevo-editor-field={editorField}
+      data-corevo-editor-stable-field={stableEditorField}
     >
       {children}
     </Tag>
@@ -70,9 +90,13 @@ export function ZentumReveal({
 export function ZentumHeading({
   text,
   className = '',
+  'data-corevo-editor-field': editorField,
+  'data-corevo-editor-stable-field': stableEditorField,
 }: {
   text: string
   className?: string
+  'data-corevo-editor-field'?: string
+  'data-corevo-editor-stable-field'?: string
 }) {
   const [shown, setShown] = useState(false)
   const setNode = (node: HTMLElement | null) => {
@@ -99,6 +123,8 @@ export function ZentumHeading({
     <h2
       ref={setNode}
       className={`${styles.sectionTitle} ${styles.revealLines} ${shown ? styles.isInview : ''} ${className}`}
+      data-corevo-editor-field={editorField}
+      data-corevo-editor-stable-field={stableEditorField}
     >
       {text.split('\n').map((line, i) => (
         <span key={i} className={styles.line}>

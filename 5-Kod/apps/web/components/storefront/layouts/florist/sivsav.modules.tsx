@@ -45,8 +45,8 @@ export function SivSavShop({ data, limit, moreHref, content }: ThemeShopViewProp
 
   return (
     <section className={styles.ssShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.ssEyebrow}>{content.shopEyebrow ?? 'Sortiment'}</p>
-      <h1 className={styles.ssPageTitle}>{content.shopTitle ?? 'Buketterna'}</h1>
+      <p className={styles.ssEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Sortiment'}</p>
+      <h1 className={styles.ssPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Buketterna'}</h1>
 
       {/* KATEGORI-PILLS (goal-64, migration 0057) — filens rad 145-148: helrunda pills med
           1px kant, 14px/600. Vald = mörk platta. Kunden saknar kategorier → ingen rad. */}
@@ -100,7 +100,7 @@ export function SivSavShop({ data, limit, moreHref, content }: ThemeShopViewProp
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
         <p className={styles.ssMore}>
-          <a href={moreHref} className={styles.ssUnderline}>
+          <a href={moreHref} className={styles.ssUnderline} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
             {content.shopCta ?? 'Hela sortimentet →'}
           </a>
         </p>
@@ -119,8 +119,8 @@ export function SivSavBlogg({ posts: allPosts, limit, moreHref, content }: Theme
 
   return (
     <section className={styles.ssBlogg} data-module="blogg">
-      <p className={styles.ssEyebrow}>{content.blogEyebrow ?? 'Journalen'}</p>
-      <h1 className={styles.ssPageTitle}>{content.blogTitle ?? 'Ord om blomster'}</h1>
+      <p className={styles.ssEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'Journalen'}</p>
+      <h1 className={styles.ssPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Ord om blomster'}</h1>
 
       {posts.length === 0 ? (
         <p className={styles.ssEmpty}>Inga inlägg är publicerade ännu.</p>
@@ -161,7 +161,7 @@ export function SivSavBlogg({ posts: allPosts, limit, moreHref, content }: Theme
 
       {moreHref && teaser && allPosts.length > 0 ? (
         <p className={styles.ssMore}>
-          <a href={moreHref} className={styles.ssUnderline}>
+          <a href={moreHref} className={styles.ssUnderline} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
             {content.blogCta ?? 'Alla inlägg →'}
           </a>
         </p>
@@ -179,8 +179,8 @@ export function SivSavBlogg({ posts: allPosts, limit, moreHref, content }: Theme
 export function SivSavGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.ssGalleri} data-module="galleri">
-      <p className={styles.ssGalEyebrow}>{content.galleryEyebrow ?? 'Portfolio'}</p>
-      <h1 className={styles.ssGalTitle}>{content.galleryTitle ?? 'Galleri'}</h1>
+      <p className={styles.ssGalEyebrow} data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">{content.galleryEyebrow ?? 'Portfolio'}</p>
+      <h1 className={styles.ssGalTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Galleri'}</h1>
 
       {items.length === 0 ? (
         <p className={styles.ssGalEmpty}>Inga bilder är publicerade ännu.</p>
@@ -223,9 +223,9 @@ export function SivSavGalleri({ items, content }: ThemeGalleriViewProps) {
 export function SivSavLojalitet({ config, plans, content }: ThemeLojalitetViewProps) {
   return (
     <section className={styles.ssClub} data-module="lojalitet" data-variant={config.variant}>
-      <p className={styles.ssGalEyebrow}>{content.clubEyebrow ?? 'Medlemskap'}</p>
-      <h1 className={styles.ssGalTitle}>{content.clubTitle ?? 'Söndagsklubben'}</h1>
-      <p className={styles.ssClubLede}>
+      <p className={styles.ssGalEyebrow} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">{content.clubEyebrow ?? 'Medlemskap'}</p>
+      <h1 className={styles.ssGalTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'Söndagsklubben'}</h1>
+      <p className={styles.ssClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">
         {content.clubLede ??
           'Färska blommor hem varje eller varannan vecka. Pausa när du vill, avsluta när du vill.'}
       </p>
@@ -260,7 +260,7 @@ export function SivSavLojalitet({ config, plans, content }: ThemeLojalitetViewPr
       ) : null}
 
       <div className={styles.ssClubJoin}>
-        <JoinClubForm cta={content.clubCta ?? 'Starta prenumeration'} />
+        <JoinClubForm cta={content.clubCta ?? 'Starta prenumeration'} editorField="clubCta" />
       </div>
     </section>
   )

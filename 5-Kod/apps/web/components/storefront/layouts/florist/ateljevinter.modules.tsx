@@ -49,8 +49,8 @@ export function AteljeVinterShop({ data, limit, moreHref, content }: ThemeShopVi
 
   return (
     <section className={styles.avShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.avEyebrow}>{content.shopEyebrow ?? 'samling nr 14'}</p>
-      <h1 className={styles.avPageTitle}>{content.shopTitle ?? 'samlingen'}</h1>
+      <p className={styles.avEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'samling nr 14'}</p>
+      <h1 className={styles.avPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'samlingen'}</h1>
 
       {products.length === 0 ? (
         <p className={styles.avEmpty}>samlingen är tom just nu.</p>
@@ -82,7 +82,7 @@ export function AteljeVinterShop({ data, limit, moreHref, content }: ThemeShopVi
       )}
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
-        <a href={moreHref} className={styles.avUnderline}>
+          <a href={moreHref} className={styles.avUnderline} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
           {content.shopCta ?? 'se hela samlingen →'}
         </a>
       ) : null}
@@ -105,8 +105,8 @@ export function AteljeVinterBlogg({
 
   return (
     <section className={styles.avBlogg} data-module="blogg">
-      <p className={styles.avEyebrow}>{content.blogEyebrow ?? 'rum iv'}</p>
-      <h1 className={styles.avPageTitle}>{content.blogTitle ?? 'anteckningar'}</h1>
+      <p className={styles.avEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'rum iv'}</p>
+      <h1 className={styles.avPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'anteckningar'}</h1>
 
       {posts.length === 0 ? (
         <p className={styles.avEmpty}>inga anteckningar är publicerade ännu.</p>
@@ -133,7 +133,7 @@ export function AteljeVinterBlogg({
       )}
 
       {moreHref && teaser && allPosts.length > 0 ? (
-        <a href={moreHref} className={styles.avUnderline}>
+          <a href={moreHref} className={styles.avUnderline} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
           {content.blogCta ?? 'läs alla anteckningar →'}
         </a>
       ) : null}
@@ -154,8 +154,8 @@ export function AteljeVinterBlogg({
 export function AteljeVinterGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.avGalleri} data-module="galleri">
-      <p className={styles.avEyebrow}>{content.galleryEyebrow ?? 'rum iii'}</p>
-      <h1 className={styles.avPageTitle}>{content.galleryTitle ?? 'arkivet'}</h1>
+      <p className={styles.avEyebrow} data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">{content.galleryEyebrow ?? 'rum iii'}</p>
+      <h1 className={styles.avPageTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'arkivet'}</h1>
 
       {items.length === 0 ? (
         <p className={styles.avEmpty}>arkivet är tomt just nu.</p>
@@ -206,9 +206,9 @@ export function AteljeVinterGalleri({ items, content }: ThemeGalleriViewProps) {
 export function AteljeVinterLojalitet({ config, plans, content }: ThemeLojalitetViewProps) {
   return (
     <section className={styles.avClub} data-module="lojalitet" data-variant={config.variant}>
-      <p className={styles.avEyebrow}>{content.clubEyebrow ?? 'vänkretsen'}</p>
-      <h1 className={styles.avPageTitle}>{content.clubTitle ?? 'först till samlingen'}</h1>
-      <p className={styles.avClubLede}>{content.clubLede ?? config.perkText}</p>
+      <p className={styles.avEyebrow} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">{content.clubEyebrow ?? 'vänkretsen'}</p>
+      <h1 className={styles.avPageTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'först till samlingen'}</h1>
+      <p className={styles.avClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">{content.clubLede ?? config.perkText}</p>
 
       {config.perks && config.perks.length > 0 ? (
         <ul className={styles.avClubPerks}>
@@ -236,7 +236,7 @@ export function AteljeVinterLojalitet({ config, plans, content }: ThemeLojalitet
 
       <div className={styles.avClubBand}>
         <div className={styles.avClubJoin}>
-          <JoinClubForm cta={content.clubCta ?? 'gå med'} />
+          <JoinClubForm cta={content.clubCta ?? 'gå med'} editorField="clubCta" />
         </div>
       </div>
 

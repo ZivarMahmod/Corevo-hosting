@@ -31,14 +31,16 @@ export function AuroraOm({ content, tenant }: ThemePageProps) {
     <div className={styles.auPage}>
       <section className={styles.auSplit}>
         <Reveal>
-          <p className={styles.auEyebrow}>Om {tenant.name}</p>
-          <h1 className={styles.auSplitTitle}>{content.aboutTitle}</h1>
-          <p className={styles.auProse}>{content.aboutCopy}</p>
-          <p className={styles.auQuoteInline}>{content.italic}</p>
+          <p className={styles.auEyebrow} data-corevo-editor-field="teamEyebrow" data-corevo-editor-stable-field="teamEyebrow">Om {tenant.name}</p>
+          <h1 className={styles.auSplitTitle} data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle}</h1>
+          <p className={styles.auProse} data-corevo-editor-field="aboutCopy" data-corevo-editor-stable-field="aboutCopy">{content.aboutCopy}</p>
+          <p className={styles.auQuoteInline} data-corevo-editor-field="italic" data-corevo-editor-stable-field="italic">{content.italic}</p>
         </Reveal>
         <Reveal delay={140}>
           <div
             className={styles.auSplitPhoto}
+            data-corevo-editor-field="about_image"
+            data-corevo-editor-stable-field="about_image"
             style={photo ? { backgroundImage: `url(${photo})` } : undefined}
           />
         </Reveal>
@@ -68,9 +70,9 @@ export function AuroraTjanster({ content, services, modules }: ThemePageProps) {
   return (
     <div className={styles.auPage}>
       <div className={styles.auPageHead}>
-        <p className={styles.auEyebrow}>{content.servicesEyebrow}</p>
-        <h1 className={styles.auPageTitle}>{content.servicesTitle}</h1>
-        <p className={styles.auPageLede}>
+        <p className={styles.auEyebrow} data-corevo-editor-field="servicesEyebrow" data-corevo-editor-stable-field="servicesEyebrow">{content.servicesEyebrow}</p>
+        <h1 className={styles.auPageTitle} data-corevo-editor-field="servicesTitle" data-corevo-editor-stable-field="servicesTitle">{content.servicesTitle}</h1>
+        <p className={styles.auPageLede} data-corevo-editor-field="servicesIntro" data-corevo-editor-stable-field="servicesIntro">
           {content.servicesIntro ??
             'Små grupper, mycket blommor och fika i studion. Alla nivåer är välkomna.'}
         </p>
@@ -119,11 +121,10 @@ export function AuroraKontakt({ content, location, contact }: ThemePageProps) {
     <div className={styles.auPageMid}>
       <section className={styles.auContact}>
         <Reveal>
-          <p className={styles.auEyebrow}>{content.contactEyebrow ?? 'Kontakt'}</p>
-          <h1 className={styles.auContactTitle}>{content.contactTitle ?? 'Säg hej!'}</h1>
-          <p className={styles.auContactLede}>
-            Frågor om en beställning, ett bröllop eller något helt annat? Skriv en rad — vi
-            svarar samma dag.
+          <p className={styles.auEyebrow} data-corevo-editor-field="contactEyebrow" data-corevo-editor-stable-field="contactEyebrow">{content.contactEyebrow ?? 'Kontakt'}</p>
+          <h1 className={styles.auContactTitle} data-corevo-editor-field="contactTitle" data-corevo-editor-stable-field="contactTitle">{content.contactTitle ?? 'Säg hej!'}</h1>
+          <p className={styles.auContactLede} data-corevo-editor-field="closingLede" data-corevo-editor-stable-field="closingLede">
+            {content.closingLede ?? 'Frågor om en beställning, ett bröllop eller något helt annat? Skriv en rad — vi svarar samma dag.'}
           </p>
 
           <div className={styles.auFacts}>
@@ -131,7 +132,7 @@ export function AuroraKontakt({ content, location, contact }: ThemePageProps) {
               <p className={styles.auFact}>
                 <span className={styles.auFactLabel}>telefon</span>
                 <span className={styles.auFactValue}>
-                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} data-corevo-editor-field="contact.phone" data-corevo-editor-stable-field="contact.phone">{contact.phone}</a>
                 </span>
               </p>
             ) : null}
@@ -139,24 +140,24 @@ export function AuroraKontakt({ content, location, contact }: ThemePageProps) {
               <p className={styles.auFact}>
                 <span className={styles.auFactLabel}>e-post</span>
                 <span className={styles.auFactValue}>
-                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                  <a href={`mailto:${contact.email}`} data-corevo-editor-field="contact.email" data-corevo-editor-stable-field="contact.email">{contact.email}</a>
                 </span>
               </p>
             ) : null}
             {location?.address ? (
               <p className={styles.auFact}>
                 <span className={styles.auFactLabel}>studio</span>
-                <span className={styles.auFactValue}>{location.address}</span>
+                <span className={styles.auFactValue} data-corevo-editor-field="location.address" data-corevo-editor-stable-field="location.address">{location.address}</span>
               </p>
             ) : null}
           </div>
 
           {hours ? (
             <div className={styles.auHours}>
-              {hours.map((h) => (
+              {hours.map((h, index) => (
                 <div key={h.day} className={styles.auHoursRow}>
                   <span>{h.day}</span>
-                  <span>{h.time}</span>
+                  <span data-corevo-editor-field={`opening_hours.${index}.time`} data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span>
                 </div>
               ))}
             </div>

@@ -43,8 +43,8 @@ export function EloriaShop({ data, limit, moreHref, content }: ThemeShopViewProp
 
   return (
     <section className={styles.elPage} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.elBandEyebrow}>{content.shopEyebrow ?? 'Katalogen'}</p>
-      <h1 className={styles.elPageTitle}>{content.shopTitle ?? 'Kompositioner efter säsong'}</h1>
+      <p className={styles.elBandEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Katalogen'}</p>
+      <h1 className={styles.elPageTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Kompositioner efter säsong'}</h1>
       <p className={styles.elPageLede}>
         Katalogen är vägledande — varje komposition binds efter dagens bästa snitt. Beställ
         genom en förfrågan, så återkommer vi inom en timme under öppettid.
@@ -78,7 +78,7 @@ export function EloriaShop({ data, limit, moreHref, content }: ThemeShopViewProp
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
         <p className={styles.elBandFoot}>
-          <a href={moreHref} className={styles.elBtnLine}>
+          <a href={moreHref} className={styles.elBtnLine} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
             {content.shopCta ?? 'Se hela katalogen'}
           </a>
         </p>
@@ -97,8 +97,8 @@ export function EloriaBlogg({ posts: allPosts, limit, moreHref, content }: Theme
 
   return (
     <section className={styles.elJournal} data-module="blogg">
-      <p className={styles.elBandEyebrow}>{content.blogEyebrow ?? 'Journalen'}</p>
-      <h1 className={styles.elPageTitle}>{content.blogTitle ?? 'Ord om blommor'}</h1>
+      <p className={styles.elBandEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'Journalen'}</p>
+      <h1 className={styles.elPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Ord om blommor'}</h1>
 
       {posts.length === 0 ? (
         <p className={styles.elEmpty}>Inga inlägg är publicerade ännu.</p>
@@ -134,7 +134,7 @@ export function EloriaBlogg({ posts: allPosts, limit, moreHref, content }: Theme
 
       {moreHref && teaser && allPosts.length > 0 ? (
         <p className={styles.elBandFoot}>
-          <a href={moreHref} className={styles.elBtnLine}>
+          <a href={moreHref} className={styles.elBtnLine} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
             {content.blogCta ?? 'Läs hela journalen'}
           </a>
         </p>
@@ -153,8 +153,8 @@ export function EloriaBlogg({ posts: allPosts, limit, moreHref, content }: Theme
 export function EloriaGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.elGalleri} data-module="galleri">
-      <p className={styles.elGalEyebrow}>{content.galleryEyebrow ?? 'Galleri'}</p>
-      <h1 className={styles.elGalTitle}>{content.galleryTitle ?? 'Ur vår hand'}</h1>
+      <p className={styles.elGalEyebrow} data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">{content.galleryEyebrow ?? 'Galleri'}</p>
+      <h1 className={styles.elGalTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Ur vår hand'}</h1>
 
       {items.length === 0 ? (
         <p className={styles.elGalEmpty}>Inga bilder är publicerade ännu.</p>
@@ -199,16 +199,16 @@ export function EloriaGalleri({ items, content }: ThemeGalleriViewProps) {
 export function EloriaLojalitet({ config, plans, content, tenantName }: ThemeLojalitetViewProps) {
   return (
     <section className={styles.elClub} data-module="lojalitet" data-variant={config.variant}>
-      <p className={styles.elGalEyebrow}>{content.clubEyebrow ?? 'Lojalitet'}</p>
-      <h1 className={styles.elGalTitle}>{content.clubTitle ?? 'Vänner av huset'}</h1>
+      <p className={styles.elGalEyebrow} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">{content.clubEyebrow ?? 'Lojalitet'}</p>
+      <h1 className={styles.elGalTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{content.clubTitle ?? 'Vänner av huset'}</h1>
 
       <div className={styles.elLetter}>
         <p className={styles.elSalutation}>Kära blomstervän,</p>
-        <p className={styles.elLetterBody}>
+        <p className={styles.elLetterBody} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">
           {content.clubLede ??
             'Somliga kommer tillbaka, år efter år. Er vill vi tacka särskilt. Som vän av huset får ni vårt säsongsbrev före alla andra, tio procent på alla binderikurser och en ros på er födelsedag — hämtas i butiken, med våra gratulationer.'}
         </p>
-        <p className={styles.elLetterBody}>
+        <p className={styles.elLetterBody} data-corevo-editor-field="clubNote" data-corevo-editor-stable-field="clubNote">
           {content.clubNote ?? 'Medlemskapet kostar ingenting. Det är vårt sätt att säga tack.'}
         </p>
 
@@ -235,7 +235,7 @@ export function EloriaLojalitet({ config, plans, content, tenantName }: ThemeLoj
         <p className={styles.elSignature}>— huset {tenantName}</p>
 
         <div className={styles.elClubJoin}>
-          <JoinClubForm cta={content.clubCta ?? 'Bli vän av huset'} />
+          <JoinClubForm cta={content.clubCta ?? 'Bli vän av huset'} editorField="clubCta" />
         </div>
       </div>
     </section>

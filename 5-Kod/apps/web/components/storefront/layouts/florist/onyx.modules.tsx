@@ -42,8 +42,8 @@ export function OnyxShop({ data, limit, moreHref, content }: ThemeShopViewProps)
 
   return (
     <section className={styles.onShop} data-module="shop" data-fulfilment={config.fulfilment}>
-      <p className={styles.onEyebrow}>{content.shopEyebrow ?? 'DROP 27 — VECKA 28'}</p>
-      <h1 className={styles.onPageTitleTight}>{content.shopTitle ?? 'Butiken'}</h1>
+      <p className={styles.onEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'DROP 27 — VECKA 28'}</p>
+      <h1 className={styles.onPageTitleTight} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Butiken'}</h1>
       <p className={styles.onPageLede}>
         Begränsade antal per vecka. När droppet är slut är det slut — nästa måndag kommer nya
         sorter.
@@ -83,7 +83,7 @@ export function OnyxShop({ data, limit, moreHref, content }: ThemeShopViewProps)
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
         <p className={styles.onMoreRow}>
-          <a href={moreHref} className={styles.onLink}>
+          <a href={moreHref} className={styles.onLink} data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">
             {content.shopCta ?? 'SE ALLT →'}
           </a>
         </p>
@@ -102,8 +102,8 @@ export function OnyxBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBl
 
   return (
     <section className={styles.onBlogg} data-module="blogg">
-      <p className={styles.onEyebrow}>{content.blogEyebrow ?? 'JOURNAL'}</p>
-      <h1 className={styles.onPageTitle}>{content.blogTitle ?? 'Från studion'}</h1>
+      <p className={styles.onEyebrow} data-corevo-editor-field="blogEyebrow" data-corevo-editor-stable-field="blogEyebrow">{content.blogEyebrow ?? 'JOURNAL'}</p>
+      <h1 className={styles.onPageTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Från studion'}</h1>
 
       {posts.length === 0 ? (
         <p className={styles.onEmpty}>[ TOMT ] INGA INLÄGG ÄR PUBLICERADE ÄNNU.</p>
@@ -137,7 +137,7 @@ export function OnyxBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBl
 
       {moreHref && teaser && allPosts.length > 0 ? (
         <p className={styles.onMoreRow}>
-          <a href={moreHref} className={styles.onLink}>
+          <a href={moreHref} className={styles.onLink} data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">
             {content.blogCta ?? 'ALLA INLÄGG →'}
           </a>
         </p>
@@ -156,8 +156,8 @@ export function OnyxBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBl
 export function OnyxGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.onGalleri} data-module="galleri">
-      <p className={styles.onGalEyebrow}>{content.galleryEyebrow ?? 'ARKIV'}</p>
-      <h1 className={styles.onGalTitle}>{content.galleryTitle ?? 'Galleri'}</h1>
+      <p className={styles.onGalEyebrow} data-corevo-editor-field="galleryEyebrow" data-corevo-editor-stable-field="galleryEyebrow">{content.galleryEyebrow ?? 'ARKIV'}</p>
+      <h1 className={styles.onGalTitle} data-corevo-editor-field="galleryTitle" data-corevo-editor-stable-field="galleryTitle">{content.galleryTitle ?? 'Galleri'}</h1>
 
       {items.length === 0 ? (
         <p className={styles.onGalEmpty}>Inga bilder är publicerade ännu.</p>
@@ -199,9 +199,9 @@ export function OnyxLojalitet({ config, plans, content, tenantName }: ThemeLojal
 
   return (
     <section className={styles.onClub} data-module="lojalitet" data-variant={config.variant}>
-      <p className={styles.onGalEyebrow}>{content.clubEyebrow ?? 'MEDLEMSKAP'}</p>
-      <h1 className={styles.onGalTitle}>{title}</h1>
-      <p className={styles.onClubLede}>{content.clubLede ?? config.perkText}</p>
+      <p className={styles.onGalEyebrow} data-corevo-editor-field="clubEyebrow" data-corevo-editor-stable-field="clubEyebrow">{content.clubEyebrow ?? 'MEDLEMSKAP'}</p>
+      <h1 className={styles.onGalTitle} data-corevo-editor-field="clubTitle" data-corevo-editor-stable-field="clubTitle">{title}</h1>
+      <p className={styles.onClubLede} data-corevo-editor-field="clubLede" data-corevo-editor-stable-field="clubLede">{content.clubLede ?? config.perkText}</p>
 
       <div className={styles.onCard}>
         <div className={styles.onCardTop}>
@@ -241,7 +241,7 @@ export function OnyxLojalitet({ config, plans, content, tenantName }: ThemeLojal
       ) : null}
 
       <div className={styles.onClubJoin}>
-        <JoinClubForm cta={content.clubCta ?? 'GÅ MED'} />
+        <JoinClubForm cta={content.clubCta ?? 'GÅ MED'} editorField="clubCta" />
       </div>
     </section>
   )

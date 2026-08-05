@@ -22,10 +22,12 @@ export function JoinClubForm({
   planId,
   cta = 'Gå med',
   compact = false,
+  editorField,
 }: {
   planId?: string
   cta?: string
   compact?: boolean
+  editorField?: string
 }) {
   const [state, action, pending] = useActionState<JoinClubState, FormData>(joinLoyaltyClub, {
     phase: 'idle',
@@ -57,7 +59,13 @@ export function JoinClubForm({
         autoComplete="email"
         placeholder="din@epost.se"
       />
-      <button type="submit" className={s.joinBtn} disabled={pending}>
+      <button
+        type="submit"
+        className={s.joinBtn}
+        disabled={pending}
+        data-corevo-editor-field={editorField}
+        data-corevo-editor-stable-field={editorField}
+      >
         {pending ? 'Skickar…' : cta}
       </button>
       {state.phase === 'error' && state.message ? (

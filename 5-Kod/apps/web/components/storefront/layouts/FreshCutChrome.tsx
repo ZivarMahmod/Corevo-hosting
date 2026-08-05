@@ -42,7 +42,7 @@ export function FreshCutNav(p: ThemeNavProps) {
   return (
     <>
       <div className={fc.topline}>
-        <p>{p.utilityText || 'Barbershop · Linköping City'}</p>
+        <p data-corevo-editor-field="utility" data-corevo-editor-stable-field="utility">{p.utilityText}</p>
         {p.location?.address || p.contact?.phone ? (
           <p>
             {p.location?.address ? <span>{p.location.address.split(',')[0]}</span> : null}
@@ -91,7 +91,7 @@ export function FreshCutFooter(p: ThemeFooterProps) {
       <Link href="/" className={fc.footerWordmark} aria-label={`${p.tenant.name} – startsida`}>
         {wordmark(p.tenant.name)}
       </Link>
-      <p>© {new Date().getFullYear()} {p.tenant.name} · Linköping</p>
+      <p>© {new Date().getFullYear()} {p.tenant.name}</p>
       <p>Webb & bokning via Corevo</p>
     </footer>
   )

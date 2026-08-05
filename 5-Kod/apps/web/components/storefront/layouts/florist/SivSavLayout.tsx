@@ -69,9 +69,9 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
         {/* (1) HERO */}
         <section className={styles.ssHero}>
           <Reveal>
-            <p className={styles.ssHeroEyebrow}>{content.heroEyebrow}</p>
-            <h1 className={styles.ssHeroTitle}>{content.heroTitle}</h1>
-            <p className={styles.ssHeroLede}>{content.heroLede}</p>
+            <p className={styles.ssHeroEyebrow} data-corevo-editor-field="heroEyebrow" data-corevo-editor-stable-field="heroEyebrow">{content.heroEyebrow}</p>
+            <h1 className={styles.ssHeroTitle} data-corevo-editor-field="heroTitle" data-corevo-editor-stable-field="heroTitle">{content.heroTitle}</h1>
+            <p className={styles.ssHeroLede} data-corevo-editor-field="heroLede" data-corevo-editor-stable-field="heroLede">{content.heroLede}</p>
             <div className={styles.ssHeroCtas}>
               {/* Filens "Se buketterna" → butiken. Är shopen av finns ingen butik att
                   peka på: då blir tjänstelistan vägen in, aldrig en död länk. */}
@@ -87,7 +87,7 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
             </div>
           </Reveal>
           <Reveal delay={140}>
-            <div className={styles.ssHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />
+            <div className={styles.ssHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} data-corevo-editor-field="hero_images.0" data-corevo-editor-stable-field="hero_images.0" />
           </Reveal>
         </section>
 
@@ -95,8 +95,8 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
         <section className={styles.ssPromises}>
           {promises.map((pr, i) => (
             <Reveal key={pr.title} delay={i * 90}>
-              <p className={styles.ssPromiseTitle}>{pr.title}</p>
-              <p className={styles.ssPromiseDesc}>{pr.desc}</p>
+              <p className={styles.ssPromiseTitle} data-corevo-editor-field={`pillar${i + 1}Title`} data-corevo-editor-stable-field={`pillar${i + 1}Title`}>{pr.title}</p>
+              <p className={styles.ssPromiseDesc} data-corevo-editor-field={`pillar${i + 1}Body`} data-corevo-editor-stable-field={`pillar${i + 1}Body`}>{pr.desc}</p>
             </Reveal>
           ))}
         </section>
@@ -106,11 +106,11 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
           <section className={styles.ssSection}>
             <Reveal className={styles.ssSecHead}>
               <div>
-                <p className={styles.ssEyebrow}>{content.shopEyebrow ?? 'Just nu'}</p>
-                <h2 className={styles.ssSecTitle}>{content.shopTitle ?? 'Veckans buketter'}</h2>
+                <p className={styles.ssEyebrow} data-corevo-editor-field="shopEyebrow" data-corevo-editor-stable-field="shopEyebrow">{content.shopEyebrow ?? 'Just nu'}</p>
+                <h2 className={styles.ssSecTitle} data-corevo-editor-field="shopTitle" data-corevo-editor-stable-field="shopTitle">{content.shopTitle ?? 'Veckans buketter'}</h2>
               </div>
               <Link href="/shop" className={styles.ssSecLink}>
-                {content.shopCta ?? 'Hela sortimentet →'}
+                <span data-corevo-editor-field="shopCta" data-corevo-editor-stable-field="shopCta">{content.shopCta ?? 'Hela sortimentet →'}</span>
               </Link>
             </Reveal>
             <ul className={styles.ssProductGrid}>
@@ -150,11 +150,11 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
         <section className={styles.ssSectionWide}>
           <Reveal className={styles.ssAbout}>
             <div>
-              <p className={styles.ssAboutEyebrow}>{content.homeGalleryEyebrow ?? 'Ateljén'}</p>
+              <p className={styles.ssAboutEyebrow} data-corevo-editor-field="homeGalleryEyebrow" data-corevo-editor-stable-field="homeGalleryEyebrow">{content.homeGalleryEyebrow ?? 'Ateljén'}</p>
               <h2 className={styles.ssAboutTitle}>
-                {content.aboutTitle ?? 'Mindre är mer — men aldrig kallt'}
+                <span data-corevo-editor-field="aboutTitle" data-corevo-editor-stable-field="aboutTitle">{content.aboutTitle ?? 'Mindre är mer — men aldrig kallt'}</span>
               </h2>
-              <p className={styles.ssAboutBody}>{content.aboutCopyHome ?? content.aboutCopy}</p>
+              <p className={styles.ssAboutBody} data-corevo-editor-field="aboutCopyHome" data-corevo-editor-stable-field="aboutCopyHome">{content.aboutCopyHome ?? content.aboutCopy}</p>
               <Link href="/om" className={styles.ssUnderline}>
                 Läs mer om oss →
               </Link>
@@ -162,6 +162,8 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
             <div
               className={styles.ssAboutPhoto}
               style={{ backgroundImage: `url(${aboutPhoto})` }}
+              data-corevo-editor-field="about_image"
+              data-corevo-editor-stable-field="about_image"
             />
           </Reveal>
         </section>
@@ -170,9 +172,9 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
         {posts.length > 0 ? (
           <section className={styles.ssSectionWide}>
             <Reveal className={styles.ssSecHead}>
-              <h2 className={styles.ssSecTitle}>{content.blogTitle ?? 'Journalen'}</h2>
+              <h2 className={styles.ssSecTitle} data-corevo-editor-field="blogTitle" data-corevo-editor-stable-field="blogTitle">{content.blogTitle ?? 'Journalen'}</h2>
               <Link href="/blogg" className={styles.ssSecLink}>
-                {content.blogCta ?? 'Alla inlägg →'}
+                <span data-corevo-editor-field="blogCta" data-corevo-editor-stable-field="blogCta">{content.blogCta ?? 'Alla inlägg →'}</span>
               </Link>
             </Reveal>
             <ul className={styles.ssJournalGrid}>

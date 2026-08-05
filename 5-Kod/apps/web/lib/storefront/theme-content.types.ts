@@ -73,6 +73,23 @@ export type ResolvedThemeContent = ThemeContent & {
   clubNote?: string
   galleryTitle?: string
   galleryLede?: string
+  resultsEyebrow?: string
+  resultsLede?: string
+  resultImage1Caption?: string
+  resultImage2Caption?: string
+  resultImage3Caption?: string
+  studioImageCaption?: string
+  studioEyebrow?: string
+  studioPoint1?: string
+  studioPoint2?: string
+  studioPoint3?: string
+  contactLede?: string
+  aboutFact1Value?: string
+  aboutFact1Label?: string
+  aboutFact2Value?: string
+  aboutFact2Label?: string
+  aboutFact3Value?: string
+  aboutFact3Label?: string
 }
 
 /** The full default contract a theme is allowed to provide. */
