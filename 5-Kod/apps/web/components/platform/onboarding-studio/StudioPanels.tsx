@@ -33,6 +33,7 @@ import { tenantHostSuffix, tenantStorefrontHost } from '@/lib/storefront-url'
 import type { IconName } from '@/lib/ui-icons'
 import { modulesForVertical } from '@/lib/platform/verticals-shared'
 import { SELECTABLE_THEMES } from '@/lib/platform/theme-palettes'
+import styles from './OnboardingStudio.module.css'
 
 /**
  * The prop bag every panel in the registry receives. Extends PanelProps
@@ -65,7 +66,7 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
  *  over a scrollable body. No `foot`: the global FooterNav lives in PanelHost. */
 function Panel({ title, sub, children }: { title: string; sub?: ReactNode; children: ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className={styles.step} data-onboarding-step style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '26px 28px 18px', borderBottom: '1px solid var(--c-line)', flex: 'none', background: 'var(--c-paper)' }}>
         <div style={{ fontSize: 10, fontWeight: 750, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--c-gold-600)', marginBottom: 8 }}>
           Aktivt steg
@@ -75,7 +76,7 @@ function Panel({ title, sub, children }: { title: string; sub?: ReactNode; child
         </h2>
         {sub ? <p style={{ fontSize: 14, color: 'var(--c-ink-2)', margin: '10px 0 0', lineHeight: 1.55, maxWidth: 410 }}>{sub}</p> : null}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: 28 }}>{children}</div>
+      <div className={styles.stepScroll} data-onboarding-step-scroll style={{ flex: 1, padding: 28 }}>{children}</div>
     </div>
   )
 }

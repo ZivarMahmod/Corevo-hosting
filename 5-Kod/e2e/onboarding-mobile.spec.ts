@@ -18,6 +18,47 @@ async function expectViewportFit(page: Page) {
   expect(layout.clippedControls).toEqual([])
 }
 
+async function expectDocumentOwnsVerticalScroll(page: Page) {
+  const layout = await page.evaluate(() => {
+    const selectors = [
+      '[data-onboarding-root]',
+      '[data-onboarding-panel]',
+      '[data-onboarding-panel-scroll]',
+      '[data-onboarding-step]',
+      '[data-onboarding-step-scroll]',
+    ]
+    const nestedScrollers = selectors.flatMap((selector) => {
+      const element = document.querySelector<HTMLElement>(selector)
+      if (!element) return [`missing:${selector}`]
+      const overflowY = getComputedStyle(element).overflowY
+      const trapsScroll = overflowY === 'auto' || overflowY === 'scroll'
+      const clipsContent = (overflowY === 'hidden' || overflowY === 'clip') && element.scrollHeight > element.clientHeight + 1
+      return trapsScroll || clipsContent
+        ? [`${selector}:${overflowY}:${element.clientHeight}/${element.scrollHeight}`]
+        : []
+    })
+
+    return {
+      documentScrollable: document.documentElement.scrollHeight > document.documentElement.clientHeight,
+      nestedScrollers,
+    }
+  })
+
+  expect(layout.documentScrollable).toBe(true)
+  expect(layout.nestedScrollers).toEqual([])
+}
+
+async function expectWorkspaceOwnsVerticalScroll(page: Page) {
+  const overflow = await page.evaluate(() =>
+    ['[data-onboarding-panel-scroll]', '[data-onboarding-step-scroll]'].map((selector) => {
+      const element = document.querySelector<HTMLElement>(selector)
+      return element ? getComputedStyle(element).overflowY : `missing:${selector}`
+    }),
+  )
+
+  expect(overflow).toEqual(['auto', 'auto'])
+}
+
 test.describe('@readonly platform onboarding', () => {
   test('uses one responsive slide at a time without horizontal overflow', async ({ page }) => {
     await loginBackoffice(page, SEED.platformAdmin)
@@ -27,6 +68,8 @@ test.describe('@readonly platform onboarding', () => {
       await page.setViewportSize({ width, height: width < 768 ? 844 : 900 })
       await expect(page.getByRole('heading', { name: 'Starta kunden' })).toBeVisible()
       await expectViewportFit(page)
+      if (width < 768) await expectDocumentOwnsVerticalScroll(page)
+      else await expectWorkspaceOwnsVerticalScroll(page)
     }
 
     await page.setViewportSize({ width: 390, height: 844 })
@@ -42,6 +85,7 @@ test.describe('@readonly platform onboarding', () => {
     await branchSection.getByRole('radio').first().click()
     await expect(page.getByLabel('Extern bokningslänk')).toBeVisible()
     await expectViewportFit(page)
+    await expectDocumentOwnsVerticalScroll(page)
 
     for (const heading of [
       'Förbered innehåll',
@@ -52,6 +96,7 @@ test.describe('@readonly platform onboarding', () => {
       await page.getByRole('button', { name: 'Nästa' }).click()
       await expect(page.getByRole('heading', { name: heading })).toBeVisible()
       await expectViewportFit(page)
+      await expectDocumentOwnsVerticalScroll(page)
     }
   })
 })
