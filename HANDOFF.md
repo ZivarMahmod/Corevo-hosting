@@ -93,9 +93,15 @@ eller remote branch. Det kräver uttryckligt operatörsgodkännande.
 - GitHub-miljöerna `staging` och `production` kräver nu Zivars manuella godkännande
   och får bara deployas från skyddad branch. Självgodkännande är tillåtet eftersom
   kontot är ensam operatör; lägg till en andra granskare när ett sådant konto finns.
-- `staging` har inga miljöscopade vars eller secrets. Repo-variablerna saknar
-  även `E2E_ENABLED`, staging-allowlist och staging-readinessflagga, så den
-  credentialed E2E-rutten kan inte starta förrän den är uttryckligen konfigurerad.
+- `staging` har inga miljöscopade vars. Den har bara de generella
+  `BOOKING_PIN_PEPPER`/`GIADA_SMS_*`-hemligheterna; inga synliga
+  `STAGING_SUPABASE_*`- eller `STAGING_R2_PUBLIC_BASE_URL`-hemligheter finns där
+  eller på repot. `E2E_ENABLED=true` och `ISOLATED_STAGING_READY=true` måste
+  sättas som **repo-variabler**, eftersom de avgör om respektive jobb skickas till
+  runnern. `E2E_ALLOWED_SUPABASE_PROJECT_REF`,
+  `STAGING_SUPABASE_PROJECT_REF` och `PRODUCTION_SUPABASE_PROJECT_REF` kan sedan
+  ligga i den godkända stagingmiljön. `CF_WORKERS_SUBDOMAIN` syns inte heller på
+  repo- eller stagingnivå; bekräfta dess källa utan att skriva värdet i Git.
 - Både repo- och productionnivåns lästa `PROD_DB_MIGRATION` ligger före
   `20260804150000`. Produktionsgrinden ska därför fortsätta stänga.
 - Publik HTTP svarar i dag för den gamla releasen (`corevo.se` 200; `booking.corevo.se`
