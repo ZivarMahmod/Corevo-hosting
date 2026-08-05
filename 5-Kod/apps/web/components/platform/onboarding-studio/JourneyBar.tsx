@@ -1,13 +1,10 @@
 'use client'
 
-// Onboarding-studio (goal-48 W1) — the top journey bar. Ported VERBATIM from the
-// design source app.jsx:65–95 (build-contract §2/§3): the linear three-stage arc
-// Kunder → Onboarding-studio → Live, rendered as one honest pill group, not a
-// role-switch. Pure presentational + client-safe: it owns NO state, derives nothing
-// from cfg — the parent (OnboardingStudio) computes which stages are reachable and
-// passes the navigate handler in. Shell chrome only; inline styles keyed to the
-// existing [data-world="backoffice"] tokens. The design's right-hand "Spec-läge"
-// toggle is intentionally OMITTED:
+// Onboarding-studio (goal-48 W1) — top journey bar for the operator's customer-start
+// flow. Pure presentational + client-safe: it owns NO state, derives nothing from cfg
+// — the parent computes which stages are reachable and passes the navigate handler in.
+// Shell chrome only; inline styles keyed to the existing [data-world="backoffice"]
+// tokens. The design's right-hand "Spec-läge" toggle is intentionally OMITTED:
 // it toggles spec-annotations that W1 defers (no `spec` field exists in the studio
 // architecture), so rendering it would be a fake control (status-honesty §9). A
 // zero-width spacer keeps the verbatim 3-child space-between balance.
@@ -15,11 +12,11 @@ import { Fragment } from 'react'
 import { Icon } from '@/components/portal/ui'
 import type { StudioStage } from '@/lib/platform/onboarding-studio/state'
 
-/** The journey arc, in order. Labels are design-verbatim (app.jsx:63). */
+/** The journey arc, in order. */
 // 'super'-entrén borttagen (Dunder-fix 2026-07-11) — kundlistan bor på /kunder.
 const STAGES: ReadonlyArray<{ id: StudioStage; label: string }> = [
-  { id: 'studio', label: 'Onboarding-studio' },
-  { id: 'result', label: 'Live' },
+  { id: 'studio', label: 'Kundstart' },
+  { id: 'result', label: 'Skapad' },
 ]
 
 export type JourneyBarProps = {

@@ -65,13 +65,16 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
 function Panel({ title, sub, children }: { title: string; sub?: ReactNode; children: ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: '22px 24px 16px', borderBottom: '1px solid var(--c-line)', flex: 'none' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 21, color: 'var(--c-forest)', margin: 0 }}>
+      <div style={{ padding: '26px 28px 18px', borderBottom: '1px solid var(--c-line)', flex: 'none', background: 'var(--c-paper)' }}>
+        <div style={{ fontSize: 10, fontWeight: 750, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--c-gold-600)', marginBottom: 8 }}>
+          Aktivt steg
+        </div>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, lineHeight: 1.02, color: 'var(--c-forest)', margin: 0 }}>
           {title}
         </h2>
-        {sub ? <p style={{ fontSize: 13, color: 'var(--c-ink-2)', margin: '6px 0 0', lineHeight: 1.5 }}>{sub}</p> : null}
+        {sub ? <p style={{ fontSize: 14, color: 'var(--c-ink-2)', margin: '10px 0 0', lineHeight: 1.55, maxWidth: 410 }}>{sub}</p> : null}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>{children}</div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 28 }}>{children}</div>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-// Onboarding-studio (goal-48) — the middle 420px column of the studio row.
+// Onboarding-studio (goal-48) — the focused work column in the studio row.
 //
 // Ports the design's PanelColumn + FooterNav (studio.jsx:412–418): the active panel
 // (resolved via PANEL_BY_STEP[step]) over a global Föregående/Nästa footer. The
@@ -77,14 +77,15 @@ export function PanelHost({ cfg, step, stepOrder, dispatch, presets, onPrev, onN
   return (
     <div
       style={{
-        width: 'min(420px, 100%)',
+        width: 'min(500px, 100%)',
         boxSizing: 'border-box',
         flex: 'none',
-        borderRight: '1px solid var(--c-line)',
-        background: 'var(--c-cream)',
+        borderRight: '1px solid rgba(255,255,255,.12)',
+        background: 'linear-gradient(180deg, var(--c-cream) 0%, var(--c-paper) 100%)',
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
+        boxShadow: '18px 0 45px rgba(0,0,0,.12)',
       }}
     >
       {/* Scroll lives HERE so the FooterNav stays pinned at the column bottom — without

@@ -73,7 +73,8 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
   it('JourneyBar mounts (studio + result pills; super-entrén är borttagen)', () => {
     const reachable: Record<StudioStage, boolean> = { super: false, studio: true, result: false }
     const html = mounts(<JourneyBar stage="studio" reachable={reachable} onNav={noop} />)
-    expect(html).toContain('Onboarding-studio')
+    expect(html).toContain('Kundstart')
+    expect(html).not.toContain('Onboarding-studio')
     expect(html).not.toContain('>Kunder<') // gamla entré-pillen ska inte återuppstå
   })
 
