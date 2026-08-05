@@ -1,9 +1,11 @@
 /* Kunder v2: listläge med två paneler, vald kund som fullbreddsarbetsyta. */
 .board {
   display: grid;
-  grid-template-columns: 400px 1fr;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
   height: calc(100dvh - 58px - 30px);
   min-height: 420px;
   overflow: hidden;
@@ -29,11 +31,13 @@
 .list {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   border-right: 1px solid var(--c-line);
 }
 .listHead {
   flex: none;
+  min-width: 0;
   padding: 16px 18px 0;
 }
 .listTitleRow {
@@ -95,6 +99,7 @@
   display: flex;
   align-items: flex-start;
   gap: 7px;
+  min-width: 0;
 }
 .chips {
   display: flex;
@@ -132,6 +137,7 @@
 }
 .row {
   position: relative;
+  min-width: 0;
   border-bottom: 1px solid var(--c-line);
   box-shadow: inset 3px 0 0 transparent;
 }
@@ -170,8 +176,10 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
 }
 .rowName b {
+  min-width: 0;
   overflow: hidden;
   color: var(--c-ink);
   font-size: 14px;
@@ -260,6 +268,7 @@
 .confirm {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 7px;
   padding: 9px 12px 11px 18px;
   background: var(--c-danger-bg);
@@ -267,7 +276,8 @@
   font-size: 12px;
 }
 .confirm span {
-  flex: 1;
+  flex: 1 1 180px;
+  min-width: 0;
 }
 .confirm button {
   min-height: 34px;
@@ -355,7 +365,7 @@
 
 @media (max-width: 1000px) {
   .board {
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
   }
   .rowMeta {
     display: none;

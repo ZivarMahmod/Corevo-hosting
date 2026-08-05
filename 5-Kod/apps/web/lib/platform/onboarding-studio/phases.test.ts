@@ -16,18 +16,33 @@ const presets: VerticalPresetData = {
 }
 
 describe('visibleStepOrder', () => {
-  it('shows booking only when the booking module is live', () => {
-    expect(visibleStepOrder(applyBranch(initStudioCfg('aurora'), 'frisor', presets), presets)).toContain('bokning')
-    expect(visibleStepOrder(applyBranch(initStudioCfg('aurora'), 'studio', presets), presets)).not.toContain('bokning')
+  it('keeps the same six-slide journey for Corevo and external customers', () => {
+    expect(visibleStepOrder(applyBranch(initStudioCfg('aurora'), 'frisor', presets), presets)).toEqual([
+      'start',
+      'setup',
+      'content',
+      'site',
+      'domain',
+      'review',
+    ])
+    expect(visibleStepOrder(applyBranch(initStudioCfg('aurora'), 'studio', presets), presets)).toEqual([
+      'start',
+      'setup',
+      'content',
+      'site',
+      'domain',
+      'review',
+    ])
   })
 
-  it('keeps the shared setup steps in place', () => {
+  it('keeps the shared setup order in place', () => {
     expect(visibleStepOrder(applyBranch(initStudioCfg('aurora'), 'studio', presets), presets)).toEqual([
-      'branch',
-      'namn',
-      'modules',
-      'appearance',
-      'live',
+      'start',
+      'setup',
+      'content',
+      'site',
+      'domain',
+      'review',
     ])
   })
 })

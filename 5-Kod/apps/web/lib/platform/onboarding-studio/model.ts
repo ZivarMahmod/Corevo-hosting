@@ -14,10 +14,12 @@ import { isSelectableCatalogTheme } from '@/lib/platform/theme-catalog'
 export type StudioService = { name: string; price: string }
 
 export type StudioCfg = {
+  onboardingMode: 'corevo' | 'external'
   /** chosen bransch (vertical key) — null until the operator picks one. */
   branch: string | null
   name: string
   slug: string
+  city: string
   /** true once the operator edits the slug by hand → name changes stop auto-syncing it. */
   slugTouched: boolean
   /** template key (settings.theme). Defaults to the built-in default until a bransch sets it. */
@@ -50,8 +52,10 @@ export function initStudioCfg(
 ): StudioCfg {
   return {
     branch: null,
+    onboardingMode: 'corevo',
     name: '',
     slug: '',
+    city: '',
     slugTouched: false,
     theme: defaultTheme,
     variant,

@@ -22,6 +22,9 @@ export function Card({
     <div
       className={className}
       style={{
+        boxSizing: 'border-box',
+        minWidth: 0,
+        maxWidth: '100%',
         background: 'var(--c-paper)',
         border: '1px solid var(--c-line)',
         borderRadius: 16,
