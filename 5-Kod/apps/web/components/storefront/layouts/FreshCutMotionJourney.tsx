@@ -46,6 +46,7 @@ const CHECKPOINTS: ReadonlyArray<{
 type MotionStyle = CSSProperties & { '--motion-progress': string }
 type CheckpointStyle = CSSProperties & { '--motion-checkpoint-top': string }
 type PendingFocus = Pick<(typeof CHECKPOINTS)[number], 'phase' | 'headingId'>
+type JourneyMode = 'pending' | 'static' | 'enhanced'
 
 export function motionPhaseForProgress(progress: number): FreshCutMotionPhase {
   const clamped = Number.isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress))
@@ -57,11 +58,12 @@ export function motionPhaseForProgress(progress: number): FreshCutMotionPhase {
 export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const focusTimersRef = useRef<Set<number>>(new Set())
-  const [enhanced, setEnhanced] = useState(false)
+  const [journeyMode, setJourneyMode] = useState<JourneyMode>('pending')
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
   const [measuredTravel, setMeasuredTravel] = useState<number | null>(null)
   const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null)
+  const enhanced = journeyMode === 'enhanced'
   const phase = motionPhaseForProgress(progress)
   const panels = Children.toArray(children)
 
@@ -69,7 +71,10 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
     const prefersReducedMotion =
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
-    if (prefersReducedMotion || connection?.saveData) return
+    if (prefersReducedMotion || connection?.saveData) {
+      setJourneyMode('static')
+      return
+    }
 
     const wrapper = wrapperRef.current
     if (!wrapper) return
@@ -92,6 +97,7 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
       const nextProgress = Math.min(1, Math.max(0, -bounds.top / travel))
       setMeasuredTravel(travel)
       setProgress(nextProgress)
+      setJourneyMode('enhanced')
     }
 
     const queueUpdate = () => {
@@ -128,8 +134,6 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
       queueUpdate()
     }
 
-    setEnhanced(true)
-
     return () => {
       disposed = true
       window.removeEventListener('scroll', handleScroll)
@@ -150,10 +154,10 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
-    if (!pendingFocus || (enhanced && pendingFocus.phase !== phase)) return
+    if (!pendingFocus || (journeyMode !== 'static' && pendingFocus.phase !== phase)) return
     document.getElementById(pendingFocus.headingId)?.focus({ preventScroll: true })
     setPendingFocus(null)
-  }, [enhanced, pendingFocus, phase])
+  }, [journeyMode, pendingFocus, phase])
 
   const queueCheckpointFocus = (
     event: ReactMouseEvent<HTMLAnchorElement>,

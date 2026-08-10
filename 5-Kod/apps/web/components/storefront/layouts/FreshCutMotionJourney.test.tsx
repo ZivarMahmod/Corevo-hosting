@@ -204,19 +204,20 @@ describe('FreshCutMotionJourney', () => {
 
   it('keeps one queued frame, gates offscreen work, and updates progress while paused', async () => {
     const journey = await renderJourney()
-    vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
+    let top = -360
+    vi.spyOn(journey, 'getBoundingClientRect').mockImplementation(() => ({
       x: 0,
-      y: -360,
-      top: -360,
+      y: top,
+      top,
       right: 100,
-      bottom: 640,
+      bottom: top + 1000,
       left: 0,
       width: 100,
       height: 1000,
       toJSON: () => ({}),
-    })
+    }))
 
-    expect(journey.dataset.motionMode).toBe('enhanced')
+    expect(journey.dataset.motionMode).toBe('static')
     expect(observers).toHaveLength(1)
     window.dispatchEvent(new Event('scroll'))
     expect(frames).toHaveLength(0)
@@ -229,15 +230,70 @@ describe('FreshCutMotionJourney', () => {
     window.dispatchEvent(new Event('scroll'))
     expect(frames).toHaveLength(1)
 
+    await act(async () => flushFrames())
+    expect(journey.dataset.motionMode).toBe('enhanced')
+    expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.6')
+
     const pause = journey.querySelector<HTMLButtonElement>('button[aria-pressed]')!
     await act(async () => pause.click())
     expect(pause.getAttribute('aria-pressed')).toBe('true')
 
+    top = -522
+    window.dispatchEvent(new Event('scroll'))
+    window.dispatchEvent(new Event('scroll'))
+    expect(frames).toHaveLength(1)
     await act(async () => flushFrames())
-    expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.6')
-    expect(journey.dataset.motionPhase).toBe('craft')
+    expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.87')
+    expect(journey.dataset.motionPhase).toBe('mirror')
     expect(journey.dataset.motionPaused).toBe('true')
-    expect(journey.querySelector('a[aria-current="step"]')?.textContent).toBe('Hantverket')
+    expect(journey.querySelector('a[aria-current="step"]')?.textContent).toBe('Resultatet')
+  })
+
+  it('keeps static anchors until the first intersection measurement completes', async () => {
+    const journey = await renderJourney()
+    vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 100,
+      bottom: 1000,
+      left: 0,
+      width: 100,
+      height: 1000,
+      toJSON: () => ({}),
+    })
+    const anchors = [...journey.querySelectorAll<HTMLElement>('[data-motion-checkpoint]')]
+
+    expect(journey.dataset.motionMode).toBe('static')
+    expect(journey.dataset.motionEnhanced).toBeUndefined()
+    expect(anchors.map((anchor) => anchor.style.getPropertyValue('--motion-checkpoint-top'))).toEqual([
+      '',
+      '',
+      '',
+    ])
+
+    observers[0]!.callback(
+      [{ isIntersecting: false, target: observers[0]!.target } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    )
+    expect(frames).toHaveLength(0)
+    expect(journey.dataset.motionMode).toBe('static')
+
+    observers[0]!.callback(
+      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    )
+    expect(frames).toHaveLength(1)
+    expect(journey.dataset.motionMode).toBe('static')
+
+    await act(async () => flushFrames())
+
+    expect(journey.dataset.motionMode).toBe('enhanced')
+    expect(anchors.map((anchor) => anchor.style.getPropertyValue('--motion-checkpoint-top'))).toEqual([
+      '0px',
+      '360px',
+      '522px',
+    ])
   })
 
   it('waits for the clicked checkpoint phase to render before focusing its heading', async () => {
