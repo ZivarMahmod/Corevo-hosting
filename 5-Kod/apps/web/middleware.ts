@@ -87,7 +87,7 @@ export async function middleware(request: NextRequest) {
     )
     trustedRequestHeaders.set('x-corevo-tenant-kind', 'tenant')
     trustedRequestHeaders.set('x-corevo-tenant-slug', storefrontExperience.tenantSlug)
-    if (!isMotiontestPublicPath(path)) {
+    if (!isMotiontestPublicPath(path, url.searchParams)) {
       return new NextResponse(null, { status: 404 })
     }
   }

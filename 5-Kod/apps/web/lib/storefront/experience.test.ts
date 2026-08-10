@@ -32,10 +32,34 @@ describe('FreshCut motiontest storefront experience', () => {
       '/favicon.ico',
       '/icon.svg',
       '/_next/static/chunks/app.js',
-      '/_next/image?url=%2Fimages%2Ffreshcut%2Ffreshcut-hero.webp&w=1200&q=75',
       '/images/freshcut/freshcut-hero.webp',
     ]) {
       expect(isMotiontestPublicPath(pathname), pathname).toBe(true)
+    }
+  })
+
+  it('allows image optimization only for an exact local FreshCut source', () => {
+    expect(
+      isMotiontestPublicPath(
+        '/_next/image',
+        new URLSearchParams('url=%2Fimages%2Ffreshcut%2Ffreshcut-hero.webp&w=1200&q=75'),
+      ),
+    ).toBe(true)
+  })
+
+  it('rejects missing, remote, deceptive, and traversal image sources', () => {
+    for (const url of [
+      null,
+      'https://attacker.test/image.webp',
+      '//attacker.test/image.webp',
+      '/images/freshcut-evil/image.webp',
+      '/images/other-tenant.webp',
+      '/images/freshcut/../other-tenant.webp',
+      '/images/freshcut/%2e%2e/other-tenant.webp',
+      '/images/freshcut/%252e%252e/other-tenant.webp',
+    ]) {
+      const search = url === null ? new URLSearchParams() : new URLSearchParams({ url })
+      expect(isMotiontestPublicPath('/_next/image', search), String(url)).toBe(false)
     }
   })
 
