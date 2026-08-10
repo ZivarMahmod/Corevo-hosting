@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
-import { isMotiontestPublicPath, storefrontExperienceForHost } from './experience'
+import {
+  isMotiontestPublicPath,
+  storefrontExperienceForHost,
+  storefrontExperienceFromHeader,
+} from './experience'
 
 const mocks = vi.hoisted(() => ({ updateSession: vi.fn() }))
 vi.mock('@/lib/supabase/middleware', () => ({ updateSession: mocks.updateSession }))
@@ -8,6 +12,23 @@ vi.mock('@/lib/supabase/middleware', () => ({ updateSession: mocks.updateSession
 import { middleware } from '../../middleware'
 
 describe('FreshCut motiontest storefront experience', () => {
+  it('accepts only the exact trusted middleware header value', () => {
+    expect(storefrontExperienceFromHeader('freshcut-motiontest')).toBe('freshcut-motiontest')
+
+    for (const value of [
+      null,
+      undefined,
+      '',
+      'FreshCut-motiontest',
+      'freshcut-motiontest ',
+      'motiontest.corevo.se',
+      '/?experience=freshcut-motiontest',
+      'unknown',
+    ]) {
+      expect(storefrontExperienceFromHeader(value), String(value)).toBeNull()
+    }
+  })
+
   it('maps only the exact production and local aliases to FreshCut', () => {
     expect(storefrontExperienceForHost('motiontest.corevo.se')).toEqual({
       experience: 'freshcut-motiontest',

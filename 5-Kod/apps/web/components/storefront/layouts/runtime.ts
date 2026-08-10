@@ -1,10 +1,12 @@
 import type { ComponentType } from 'react'
 import type { StorefrontTheme } from '@/lib/tenant-data'
+import type { StorefrontExperience } from '@/lib/storefront/experience'
 import { THEME_SUITES } from '@/lib/storefront/themes/registry'
 import { EditLayout } from './EditLayout'
 import { FloraLayout } from './FloraLayout'
 import { FreshCutFooter, FreshCutNav } from './FreshCutChrome'
 import { FreshCutLayout } from './FreshCutLayout'
+import { FreshCutMotionLayout } from './FreshCutMotionLayout'
 import { LeanderLayout } from './LeanderLayout'
 import { LinneaLayout } from './LinneaLayout'
 import { SalviaLayout } from './SalviaLayout'
@@ -319,6 +321,15 @@ const THEME_RUNTIME: Readonly<Record<string, ThemeRuntime>> = {
 export const STOREFRONT_LAYOUTS = Object.fromEntries(
   Object.entries(THEME_RUNTIME).map(([key, runtime]) => [key, runtime.layout]),
 ) as Record<StorefrontTheme, ComponentType<StorefrontLayoutProps>>
+
+export function resolveStorefrontLayout(
+  theme: StorefrontTheme,
+  experience: StorefrontExperience,
+): ComponentType<StorefrontLayoutProps> {
+  return theme === 'freshcut' && experience === 'freshcut-motiontest'
+    ? FreshCutMotionLayout
+    : STOREFRONT_LAYOUTS[theme]
+}
 
 export const THEME_OWNS_MODULES: ReadonlySet<StorefrontTheme> = new Set<StorefrontTheme>([
   'flora',

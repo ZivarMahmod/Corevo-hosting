@@ -1,8 +1,9 @@
-import { isValidElement, type ReactElement, type ReactNode } from 'react'
+import { isValidElement, type ElementType, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TenantBundle } from '@/lib/tenant-data'
 import type { LayoutModuleTeasers } from '@/components/storefront/layouts/types'
 import PublicHomePage from '@/app/(public)/page'
+import { AteljeVinterLayout } from '@/components/storefront/layouts/florist/AteljeVinterLayout'
 import PreviewHomePage from './page'
 
 const reads = vi.hoisted(() => ({
@@ -17,11 +18,7 @@ vi.mock('@/lib/tenant-data', () => ({
   currentTenant: reads.currentTenant,
   getServices: reads.services,
 }))
-vi.mock('@/components/storefront/layouts/runtime', () => ({
-  STOREFRONT_LAYOUTS: { ateljevinter: 'test-storefront-layout' },
-  THEME_LOADS_LAYOUT_MODULES: new Set(['ateljevinter']),
-  THEME_OWNS_MODULES: new Set(['ateljevinter']),
-}))
+vi.mock('next/headers', () => ({ headers: vi.fn(async () => new Headers()) }))
 vi.mock('@/components/storefront/layouts/load-module-teasers', async (load) => ({
   ...(await load<typeof import('@/components/storefront/layouts/load-module-teasers')>()),
   loadLayoutModuleTeasers: reads.layoutModules,
@@ -65,7 +62,7 @@ const modules: LayoutModuleTeasers = {
   lojalitetReachable: false, kurserReachable: false, galleriReachable: false,
 }
 
-function elements<P>(node: ReactNode, type: string): ReactElement<P>[] {
+function elements<P>(node: ReactNode, type: ElementType): ReactElement<P>[] {
   if (Array.isArray(node)) return node.flatMap((child) => elements<P>(child, type))
   if (!isValidElement(node)) return []
   const element = node as ReactElement<{ children?: ReactNode }>
@@ -89,8 +86,8 @@ describe('public and preview storefront home parity', () => {
       params: Promise.resolve({ slug: 'studio-test' }),
       searchParams: Promise.resolve({}),
     })
-    const publicLayout = elements<{ modules?: LayoutModuleTeasers }>(publicTree, 'test-storefront-layout')[0]
-    const previewLayout = elements<{ modules?: LayoutModuleTeasers }>(previewTree, 'test-storefront-layout')[0]
+    const publicLayout = elements<{ modules?: LayoutModuleTeasers }>(publicTree, AteljeVinterLayout)[0]
+    const previewLayout = elements<{ modules?: LayoutModuleTeasers }>(previewTree, AteljeVinterLayout)[0]
 
     expect(publicLayout?.props.modules?.bookingReachable).toBe(true)
     expect(previewLayout?.props.modules?.bookingReachable).toBe(true)
@@ -114,8 +111,8 @@ describe('public and preview storefront home parity', () => {
       params: Promise.resolve({ slug: 'studio-test' }),
       searchParams: Promise.resolve({}),
     })
-    const publicLayout = elements<{ modules?: LayoutModuleTeasers }>(publicTree, 'test-storefront-layout')[0]
-    const previewLayout = elements<{ modules?: LayoutModuleTeasers }>(previewTree, 'test-storefront-layout')[0]
+    const publicLayout = elements<{ modules?: LayoutModuleTeasers }>(publicTree, AteljeVinterLayout)[0]
+    const previewLayout = elements<{ modules?: LayoutModuleTeasers }>(previewTree, AteljeVinterLayout)[0]
 
     expect(publicLayout?.props.modules?.bookingReachable).toBe(false)
     expect(previewLayout?.props.modules?.bookingReachable).toBe(false)

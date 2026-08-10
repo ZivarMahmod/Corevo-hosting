@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next'
+import { headers } from 'next/headers'
 import { currentTenant } from '@/lib/tenant-data'
+import { storefrontExperienceFromHeader } from '@/lib/storefront/experience'
 import { requestOrigin } from '@/lib/url'
 
 // Host-resolved, per-tenant robots. MUST be dynamic for the same reason as the
@@ -14,6 +16,13 @@ export const dynamic = 'force-dynamic'
  *    disallow everything — the back-office (booking.corevo.se) is not public.
  */
 export default async function robots(): Promise<MetadataRoute.Robots> {
+  const experience = storefrontExperienceFromHeader(
+    (await headers()).get('x-corevo-storefront-experience'),
+  )
+  if (experience === 'freshcut-motiontest') {
+    return { rules: [{ userAgent: '*', disallow: '/' }] }
+  }
+
   const bundle = await currentTenant()
   if (!bundle) {
     return { rules: [{ userAgent: '*', disallow: '/' }] }

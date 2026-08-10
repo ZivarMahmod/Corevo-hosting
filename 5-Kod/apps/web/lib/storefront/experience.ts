@@ -1,5 +1,11 @@
 export type StorefrontExperience = 'freshcut-motiontest' | null
 
+export function storefrontExperienceFromHeader(
+  value: string | null | undefined,
+): StorefrontExperience {
+  return value === 'freshcut-motiontest' ? value : null
+}
+
 type StorefrontExperienceResolution = {
   experience: Exclude<StorefrontExperience, null>
   tenantSlug: 'freshcut'

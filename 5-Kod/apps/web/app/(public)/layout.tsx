@@ -1,14 +1,19 @@
 import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { StorefrontShell } from '@/components/storefront/StorefrontShell'
 import { currentTenant } from '@/lib/tenant-data'
 import { requestOrigin } from '@/lib/url'
+import { storefrontExperienceFromHeader } from '@/lib/storefront/experience'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
+  const experience = storefrontExperienceFromHeader(
+    (await headers()).get('x-corevo-storefront-experience'),
+  )
   const bundle = await currentTenant()
   if (!bundle) return { title: 'Corevo' }
   const { tenant } = bundle
@@ -26,6 +31,9 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     alternates: { canonical: '/' },
     openGraph: { title: tenant.name, description, type: 'website', url: '/', siteName: tenant.name },
+    ...(experience === 'freshcut-motiontest'
+      ? { robots: { index: false, follow: false } }
+      : {}),
   }
 }
 

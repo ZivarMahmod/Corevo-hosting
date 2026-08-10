@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import {
-  STOREFRONT_LAYOUTS,
+  resolveStorefrontLayout,
   THEME_LOADS_LAYOUT_MODULES,
   THEME_OWNS_MODULES,
 } from '@/components/storefront/layouts/runtime'
@@ -12,6 +13,7 @@ import {
 import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import { getTenantCopy } from '@/lib/storefront/tenant-copy'
 import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
+import { storefrontExperienceFromHeader } from '@/lib/storefront/experience'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
@@ -22,9 +24,12 @@ export default async function HomePage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings, location } = bundle
+  const experience = storefrontExperienceFromHeader(
+    (await headers()).get('x-corevo-storefront-experience'),
+  )
 
   // The selected theme layout is the only renderer.
-  const Layout = STOREFRONT_LAYOUTS[settings.theme]
+  const Layout = resolveStorefrontLayout(settings.theme, experience)
   // Owner copy (settings.copy) wins per-field; theme default fills the rest.
   const copy = await getTenantCopy(bundle)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)
