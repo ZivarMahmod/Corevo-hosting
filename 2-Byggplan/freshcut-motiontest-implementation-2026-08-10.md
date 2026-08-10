@@ -5,9 +5,15 @@
 på `motiontest.corevo.se` utan att ändra release eller render för
 `freshcut.corevo.se`.
 
+**Aktuellt exekveringsscope 2026-08-10:** användaren har godkänt en lokal,
+helt syntetisk Higgsfield-demo från text utan uppladdade FreshCut-, kund- eller
+personreferenser. Den ska märkas `generated-demo` / `synthetic-text-only`, får
+inte beskrivas som verklig salong, personal eller slutgodkänt kundmaterial och
+får inte deployas inom detta scope.
+
 ## Verifierad releasebas 2026-08-10
 
-- Lokal motion-HEAD: `6263a818699da69e074c2f57d8d5bfc3687d6e14` på den
+- Lokal motion-HEAD: `171338b254d9aa2ecefde0d5ff9d8b772a741f49` på den
   isolerade featurebranchen.
 - Lokal och remote `main`: `cdc6a6c6b6fddc89e32c10baf565d69bfeb62a7a`.
 - Senaste lyckade produktionsdeploy: GitHub Actions run `31022493653`, manuellt
@@ -50,8 +56,10 @@ på `motiontest.corevo.se` utan att ändra release eller render för
   och grupperas till Enter, Craft, Result/Team.
 - Reduced motion, data saver, mediafel och partiell JavaScript ger en komplett
   designad statisk sida.
-- Ingen betald Higgsfield-generation före godkända riktiga referenser,
-  storyboard/safe zones, kostnadsestimat och fyra oberoende förgranskningar.
+- Ingen betald Higgsfield-transformation av verkliga eller befintliga
+  FreshCut-referenser före dokumenterad källa, rättighet och AI-medgivande.
+  Den uttryckligen godkända text-only-demon får genereras efter låst storyboard,
+  safe zones, live kostnadsestimat och fyra oberoende förgranskningar.
 - Inget färdigpåstående förrän publik deploy, inspelningar, prestandabevis och
   samtliga critic loops är gröna.
 
@@ -151,21 +159,28 @@ oförändrade; motiontest är `noindex/nofollow` och robots disallow.
       cinematic rendering pausas när vanlig sida tar över.
 - [ ] Mobil är en avsiktlig Enter→Craft→Result/Team-regi utan intern scrollruta.
 
-### Task 8 — Higgsfield-produktion efter referensgrind
+### Task 8 — Syntetisk Higgsfield-demo; verklig slutmedia efter referensgrind
 
-- [ ] Inventera endast kundägt, publikt eller uttryckligen godkänt material och
-      dokumentera källa, datum, rättighet, plats, ansiktsrisk och AI-medgivande.
-- [ ] Lås tre art-directed keyframes, storyboard, crop och UI-safe zones.
+- [ ] Ladda inte upp eller transformera befintliga FreshCut-, kund-, sociala
+      medier- eller fallbackbilder. Syntetiska ankarramar skapas från text och
+      återanvänds endast som internt genererade kontinuitetsreferenser.
+- [ ] Lås syntetisk salong, syntetisk barberare/kund, sekventiella keyframes,
+      storyboard, crop och UI-safe zones.
 - [ ] Kör fyra oberoende pre-generation reviews.
 - [ ] Kontrollera aktuellt workspace/balans/modell och estimera före varje jobb.
-- [ ] Börja med en kandidat per validerad action-shot. Generera aldrig batch om
-      ett definierat fel inte kräver ny kandidat.
+- [ ] Börja med en Mini-kandidat per validerad action-shot. Generera final i
+      1080p först när draftens komposition, fysik och crops har godkänts.
+- [ ] Generera aldrig batch eller omtag om ett dokumenterat visuellt fel inte
+      kräver en ny kandidat.
 - [ ] För kreditbok och accepted/rejected-logg; stoppa före 65 % totalbudget.
 - [ ] Frame-QC av händer, verktyg, hår, kundidentitet, stol, ljus och skarvar.
+- [ ] Publicera endast hashade/versionerade FFmpeg-derivat och märk varje
+      integrerad familj `generated-demo` / `synthetic-text-only`.
 
-**Sanningsgrind:** tasken kan inte slutföras innan riktiga godkända salon-/kund-
-referenser och rätt att AI-transformera dem har lämnats. Under tiden används
-designade statiska fallbacks, men de får inte beskrivas som slutmedia.
+**Sanningsgrind:** den lokala syntetiska demon kan slutföras utan verkliga
+referenser, men den är inte verklig FreshCut-slutmedia. Cutover till
+`approved-final` för en verklig salong/kund förblir blockerad tills godkända
+salong-/kundreferenser och rätt att AI-transformera dem har lämnats.
 
 ### Task 9 — Isolerad Cloudflare- och GitHub-releaseväg
 
