@@ -157,6 +157,39 @@ rectangles, annotations, highlights, watermark, signage, logo, interface,
 pricing, brand mark or reflection.
 ```
 
+### S0R6 — sixth documented coordinate-free precision retry
+
+Use only after row 01R5 produces a clean photograph but places the chair outside
+all three centred tall-phone crops. This remains a text-only, no-reference job
+and uses the following complete replacement prompt:
+
+```text
+FICTIONAL DEMO ASSET. Create one natural, unmarked, photorealistic wide
+cinematic photograph of an empty contemporary Scandinavian barbershop. It must
+not resemble a real salon or contain any real person's likeness.
+
+Use a chest-height camera outside one centred open doorway, a fixed level
+horizon and a calm documentary lens. Warm practical light, graphite and muted
+olive walls, pale stone floor. Keep a broad plain dark wall across the left side
+as calm empty space. The doorway opening is exactly at the visual centre.
+
+Place one complete matte-black barber chair almost dead centre inside the
+doorway. Its leftmost physical part begins only a breath to the right of the
+photograph's midpoint. Make the chair compact and modestly distant: the
+headrest, both arms, seat, hydraulic base and entire footrest stay together in
+the narrow middle of the doorway, with clear space before the right door jamb.
+The chair must not sit on the right side of the room. It remains fully visible
+when the outer sides of the photograph are trimmed heavily for a tall phone and
+also remains fully beside, rather than behind, the dark left content panel.
+Keep one simple workstation and one rigid rectangular mirror with neutral dark
+glass farther behind it. Maintain a clear straight walking path.
+
+This is only a photograph. Include no characters, letters, numbers, percentage
+marks, measurements, captions, guide lines, grids, diagrams, borders,
+rectangles, annotations, highlights, watermark, signage, logo, interface,
+pricing, brand mark or reflection.
+```
+
 ### P0 — `CUSTOMER_REF`
 
 ```text

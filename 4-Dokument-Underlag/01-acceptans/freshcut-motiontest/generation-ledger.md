@@ -1,7 +1,7 @@
 # FreshCut motiontest — Higgsfield generation ledger
 
-Status: pre-generation gate passed; generation active; five S0 attempts rejected
-Balance last verified after job 01R4: 899.5 credits (2026-08-10)
+Status: pre-generation gate passed; generation active; six S0 attempts rejected
+Balance last verified after job 01R5: 897.5 credits (2026-08-10)
 Workspace: selected private owner workspace, Plus; opaque workspace ID kept outside Git
 Free/unlimited generation available: no
 Acceptance scope: `local-generated-demo`
@@ -17,10 +17,10 @@ Acceptance scope: `local-generated-demo`
 - registered normal path: 258 credits, 28.37% of 909.5;
 - expected balance after normal path: 651.5 credits, 71.63%;
 - base-path headroom to 60% ceiling: 287.7 credits;
-- five documented S0 composition retries: +10 credits; current projected path
-  268 credits, expected final balance 641.5 credits and unchanged compliance with
+- six documented S0 composition retries: +12 credits; current projected path
+  270 credits, expected final balance 639.5 credits and unchanged compliance with
   all gates;
-- retry-expanded headroom to the 60% ceiling: 277.7 credits.
+- retry-expanded headroom to the 60% ceiling: 275.7 credits.
 
 The estimates above were re-read live on 2026-08-10 with one output, 16:9 and
 audio disabled. Nano Banana Pro required a representative prompt to estimate
@@ -39,7 +39,7 @@ Each requires a documented visual failure, a new row and a new live estimate.
 | Conversion/mobile | GO | hidden compact media owners, opaque returning panel, unsafe crop and copy zones | canonical timeline/manifest/CSS fixed; independent rereview passed 87/87 tests | pass |
 | Architecture/integration | conditional GO | runtime provenance and source-family ownership had to stay fail-closed | `generated-demo` / `synthetic-text-only` source gate and pipeline manifest tests are green | pass |
 | Performance/accessibility | GO | eager/lazy posters, constrained-client teardown, decoder/preload ownership, static GPU hints, 200% wrap and runtime request gates | independent rereview passed 135/135 focused tests plus Chromium poster/layout/constrained-client matrices; output metrics remain post-generation gates | pass |
-| Rights/budget, additional safety review | GO | v2 prompts, rows, sequential allowlist and reproducible still chain required | mechanical rereview confirmed the 22-job / 258-credit baseline; the documented retry-expanded ledger now has 27 submissions / 268 credits; live checks remain per job | pass |
+| Rights/budget, additional safety review | GO | v2 prompts, rows, sequential allowlist and reproducible still chain required | mechanical rereview confirmed the 22-job / 258-credit baseline; the documented retry-expanded ledger now has 28 submissions / 270 credits; live checks remain per job | pass |
 
 No job may be submitted until the four primary lanes show pass and all
 critical/major findings are closed.
@@ -64,7 +64,8 @@ All jobs use one output. Still prompts are `synthetic-v2`; video prompts are
 | 01R2 | S0 second retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01R | 2 | 2 | `e4ffb60a-55ac-4047-9927-ff11840e322f` | rejected: true tall-phone centre crops clip chair footrest at right | no |
 | 01R3 | S0 third retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01R2 | 2 | 2 | `da07f97c-c8b8-4bbc-bd4f-7e78fe981260` | rejected: real desktop DOM panel hides chair's left side | no |
 | 01R4 | S0 fourth retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01R3 | 2 | 2 | `e3247f22-dd75-4fe9-8a95-0a815a78ed5b` | rejected: visible coordinate labels and guide lines | no |
-| 01R5 | S0 coordinate-free retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01R4 | 2 | 0 | — | planned after documented guide-rendering failure | no |
+| 01R5 | S0 coordinate-free retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01R4 | 2 | 2 | `b83592b6-a53f-4789-b3ca-6ed8fd5acb3f` | rejected: clean frame but chair falls outside tall-phone centre crops | no |
+| 01R6 | S0 coordinate-free precision retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01R5 | 2 | 0 | — | planned after documented centre-crop failure | no |
 | 02 | P0 / CUSTOMER_REF | Nano Banana Pro, 2K, 16:9 | none | 2 | 0 | — | planned | no |
 | 03 | P1 / BARBER_REF | Nano Banana Pro, 2K, 16:9 | none | 2 | 0 | — | planned | no |
 | 04 | K1A / empty chair | Nano Banana Pro, 2K, 16:9 | S0 | 2 | 0 | — | blocked until S0 accepted | no |
@@ -121,6 +122,7 @@ on them.
 | 01R2 | 2026-08-10T19:29:29.482Z → 2026-08-10T19:30:35.500Z | `e4ffb60a-55ac-4047-9927-ff11840e322f` | requested `nano_banana_pro`; connector result `nano_banana_2`; 2K, 16:9, count 1 | `446310772279a228d0d71cb3c81d39deeebb11cb00f45f1285e1a358f5d804c2` | none | 2 → 2; 905.5 → 903.5 | `ca9e06adac3bf324fea492453567cd34fc55cb7fc93ae977762605b388b29c49` | rejected: clean frame and doorway pass, but the required 360×800, 390×844 and 430×932 centre crops clip the chair footrest at the right edge; retry 01R3; delete raw 2026-09-09; no integrated path |
 | 01R3 | 2026-08-10T19:33:29.602Z → 2026-08-10T19:34:35.795Z | `da07f97c-c8b8-4bbc-bd4f-7e78fe981260` | requested `nano_banana_pro`; connector result `nano_banana_2`; 2K, 16:9, count 1 | `70abb58907f6ffabc14a7ad2b96b1dde743d2e08014998694b7e40c78acf40e8` | none | 2 → 2; 903.5 → 901.5 | `6e68bd672902ffcd2c2492847a3323e5a53341392c7b82d723c1aa3a89710274` | rejected: clean frame and all required tall-phone crops pass, but the actual opaque left DOM panel at 1440×900 hides the chair's left side; retry 01R4; delete raw 2026-09-09; no integrated path |
 | 01R4 | 2026-08-10T19:39:24.994Z → 2026-08-10T19:40:51.187Z | `e3247f22-dd75-4fe9-8a95-0a815a78ed5b` | requested `nano_banana_pro`; connector result `nano_banana_2`; 2K, 16:9, count 1 | `c03eb8c26104b6a4e0fde5fc073644204820631381f11fccbc1bf1f6fb8615d1` | none | 2 → 2; 901.5 → 899.5 | `d92d8b3d6c6804fcefece0d44d95fc1f7a1e4d804de270762a9d230c7c7e7cf1` | rejected before DOM review: the image visibly renders coordinate labels, percentage text, boxes and guide lines; retry 01R5 with a coordinate-free replacement prompt; delete raw 2026-09-09; no integrated path |
+| 01R5 | 2026-08-10T19:43:00.095Z → 2026-08-10T19:44:06.488Z | `b83592b6-a53f-4789-b3ca-6ed8fd5acb3f` | requested `nano_banana_pro`; connector result `nano_banana_2`; 2K, 16:9, count 1 | `da50bd541aa924079d7d296b909544f55b4af70ddcbf9cb37c465303ab5a5046` | none | 2 → 2; 899.5 → 897.5 | `ed604b23f600c5693ad51f87082088d0f577396c9dbe38d7bbc912a17ce19e4c` | rejected before DOM review: clean natural frame and desktop negative space pass, but the chair sits too far right and is mostly outside the required 360×800, 390×844 and 430×932 centre crops; retry 01R6; delete raw 2026-09-09; no integrated path |
 
 Reject any output with a recognizable real person, real brand, readable sign,
 possible real FreshCut geometry, broken anatomy, identity drift, morphing,
