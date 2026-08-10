@@ -31,6 +31,31 @@
   padding-top: var(--nav-h);
 }
 
+.motiontestSkipLink {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 70;
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 2px solid #a78f6d;
+  color: #ebe8df;
+  background: #171918;
+  font-weight: 750;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 16px));
+}
+
+.motiontestSkipLink:focus-visible {
+  outline: 2px solid #ebe8df;
+  outline-offset: 2px;
+  transform: none;
+}
+
 /* ── Top utility bar ──────────────────────────────────────────────────────── */
 .utilityBar {
   background: var(--color-fg);

@@ -1,4 +1,5 @@
 import {
+  Children,
   createElement,
   isValidElement,
   type ElementType,
@@ -15,7 +16,9 @@ import { CookieConsent } from './CookieConsent'
 import { InlineBooking } from './InlineBooking'
 import type { LayoutModuleTeasers } from './layouts/types'
 import { LocalBusinessJsonLd } from './seo'
+import { CartProvider } from './shop/CartProvider'
 import { StorefrontShell, deriveStorefrontShellView } from './StorefrontShell'
+import { NavShell } from '@/components/brand/NavShell'
 
 const reads = vi.hoisted(() => ({
   copy: vi.fn(),
@@ -27,6 +30,9 @@ const reads = vi.hoisted(() => ({
   primaryCta: vi.fn(),
   teamCount: vi.fn(),
   layoutModules: vi.fn(),
+}))
+const chrome = vi.hoisted(() => ({
+  FreshCutNav: () => null,
 }))
 vi.mock('@/lib/storefront/tenant-copy', () => ({ getTenantCopy: reads.copy }))
 vi.mock('@/lib/tenant-modules', async (load) => ({
@@ -46,7 +52,11 @@ vi.mock('./layouts/load-module-teasers', async (load) => ({
   loadLayoutModuleTeasers: reads.layoutModules,
 }))
 vi.mock('./layouts/runtime', () => ({
-  themeChrome: () => ({ Nav: null, Footer: null, ownsUtility: false }),
+  themeChrome: (theme: string) => ({
+    Nav: theme === 'freshcut' ? chrome.FreshCutNav : null,
+    Footer: null,
+    ownsUtility: false,
+  }),
 }))
 vi.mock('@/lib/storefront/theme-content', () => ({
   THEME_CONTENT: {
@@ -288,6 +298,125 @@ describe('shared storefront shell', () => {
     })
 
     expect(elements(tree, CookieConsent)).toHaveLength(0)
+  })
+
+  it('does not mount public runtime listeners or cookie consent for motiontest', async () => {
+    const tree = await StorefrontShell({
+      bundle,
+      surface: 'public',
+      experience: 'freshcut-motiontest',
+      children: createElement('p', null, 'Sida'),
+    })
+
+    expect(elements(tree, RealtimeTenantModulesLazy)).toHaveLength(0)
+    expect(elements(tree, CookieConsent)).toHaveLength(0)
+  })
+
+  it('keeps account navigation on ordinary FreshCut surfaces but removes its denied motiontest path', async () => {
+    const freshcutBundle: TenantBundle = {
+      ...bundle,
+      settings: {
+        ...bundle.settings,
+        theme: 'freshcut',
+        customerAccountsEnabled: true,
+      },
+    }
+    const child = createElement('p', null, 'Sida')
+    const regularTree = await StorefrontShell({
+      bundle: freshcutBundle,
+      surface: 'public',
+      children: child,
+    })
+    const motiontestTree = await StorefrontShell({
+      bundle: freshcutBundle,
+      surface: 'public',
+      experience: 'freshcut-motiontest',
+      children: child,
+    })
+    const previewTree = await StorefrontShell({
+      bundle: freshcutBundle,
+      surface: 'preview',
+      theme: 'freshcut',
+      copyMode: 'keep',
+      children: child,
+    })
+    const accountState = (tree: ReactNode) => ({
+      desktop: elements<{ customerAccountsEnabled?: boolean }>(tree, chrome.FreshCutNav)[0]?.props
+        .customerAccountsEnabled,
+      mobile: elements<{ customerAccountsEnabled?: boolean }>(tree, NavShell)[0]?.props
+        .customerAccountsEnabled,
+    })
+
+    expect(accountState(regularTree)).toEqual({ desktop: true, mobile: true })
+    expect(accountState(previewTree)).toEqual({ desktop: true, mobile: true })
+    expect(accountState(motiontestTree)).toEqual({ desktop: false, mobile: false })
+  })
+
+  it('puts a skip link before storefront chrome only for the motiontest experience', async () => {
+    const freshcutBundle: TenantBundle = {
+      ...bundle,
+      settings: { ...bundle.settings, theme: 'freshcut' },
+    }
+    const child = createElement('p', null, 'Sida')
+    const regularTree = await StorefrontShell({
+      bundle: freshcutBundle,
+      surface: 'public',
+      children: child,
+    })
+    const motiontestTree = await StorefrontShell({
+      bundle: freshcutBundle,
+      surface: 'public',
+      experience: 'freshcut-motiontest',
+      children: child,
+    })
+    const previewTree = await StorefrontShell({
+      bundle: freshcutBundle,
+      surface: 'preview',
+      theme: 'freshcut',
+      copyMode: 'keep',
+      children: child,
+    })
+    const skipLinks = (tree: ReactNode) =>
+      elements<{ href?: string; tabIndex?: number }>(tree, 'a').filter(
+        (link) => link.props.href === '#motiontest-main-content',
+      )
+    const main = (tree: ReactNode) =>
+      elements<{ id?: string; tabIndex?: number }>(tree, 'main')[0]
+
+    expect(skipLinks(regularTree)).toHaveLength(0)
+    expect(skipLinks(previewTree)).toHaveLength(0)
+    expect(main(regularTree)?.props).not.toHaveProperty('id')
+    expect(main(regularTree)?.props).not.toHaveProperty('tabIndex')
+    expect(main(previewTree)?.props).not.toHaveProperty('id')
+    expect(main(previewTree)?.props).not.toHaveProperty('tabIndex')
+
+    expect(rootProps<{ 'data-storefront-shell-experience'?: string }>(regularTree)).not.toHaveProperty(
+      'data-storefront-shell-experience',
+    )
+    expect(rootProps<{ 'data-storefront-shell-experience'?: string }>(previewTree)).not.toHaveProperty(
+      'data-storefront-shell-experience',
+    )
+    expect(
+      rootProps<{ 'data-storefront-shell-experience'?: string }>(motiontestTree),
+    ).toMatchObject({ 'data-storefront-shell-experience': 'freshcut-motiontest' })
+
+    expect(skipLinks(motiontestTree)).toHaveLength(1)
+    expect(skipLinks(motiontestTree)[0]?.props).toMatchObject({
+      href: '#motiontest-main-content',
+      tabIndex: 0,
+    })
+    expect(main(motiontestTree)?.props).toMatchObject({
+      id: 'motiontest-main-content',
+      tabIndex: -1,
+    })
+    const cart = elements<{ children?: ReactNode }>(motiontestTree, CartProvider)[0]
+    const cartChildren = Children.toArray(cart?.props.children)
+    expect(isValidElement(cartChildren[0]) ? cartChildren[0].type : null).toBe('a')
+    expect(
+      isValidElement(cartChildren[0])
+        ? (cartChildren[0] as ReactElement<{ href?: string }>).props.href
+        : null,
+    ).toBe('#motiontest-main-content')
   })
 
   it('keeps a standalone booking page link-only instead of mounting a second booking provider', async () => {

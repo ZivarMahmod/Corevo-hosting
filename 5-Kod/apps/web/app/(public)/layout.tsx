@@ -38,11 +38,20 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PublicLayout({ children }: { children: ReactNode }) {
+  const experience = storefrontExperienceFromHeader(
+    (await headers()).get('x-corevo-storefront-experience'),
+  )
   const bundle = await currentTenant()
   if (!bundle) notFound()
 
   return (
-    <StorefrontShell bundle={bundle} surface="public">
+    <StorefrontShell
+      bundle={bundle}
+      surface="public"
+      {...(experience === 'freshcut-motiontest'
+        ? { experience }
+        : {})}
+    >
       {children}
     </StorefrontShell>
   )

@@ -31,6 +31,7 @@ import { getTenantCopy } from '@/lib/storefront/tenant-copy'
 import { THEME_CONTENT, resolveTenantCopy } from '@/lib/storefront/theme-content'
 import { getBookingPrefs, getWizardLocations, getWizardServices } from './wizard-services'
 import { countTeamMembers } from '@/lib/storefront/team/load-team'
+import type { StorefrontExperience } from '@/lib/storefront/experience'
 import storefront from './storefront.module.css'
 
 export type StorefrontSurface = 'public' | 'preview'
@@ -95,12 +96,19 @@ type StorefrontShellProps = {
   bundle: TenantBundle
   children: ReactNode
 } & (
-  | { surface: 'public'; theme?: never; copyMode?: never; embeddedBooking?: boolean }
+  | {
+      surface: 'public'
+      theme?: never
+      copyMode?: never
+      embeddedBooking?: boolean
+      experience?: Exclude<StorefrontExperience, null>
+    }
   | {
       surface: 'preview'
       theme: StorefrontTheme
       copyMode: 'keep' | 'template' | null
       embeddedBooking?: never
+      experience?: never
     }
 )
 
@@ -111,6 +119,10 @@ export async function StorefrontShell(props: StorefrontShellProps) {
   const theme = surface === 'preview' ? props.theme : settings.theme
   const copyMode = surface === 'preview' ? props.copyMode : null
   const embeddedBooking = surface === 'preview' ? true : props.embeddedBooking !== false
+  const isMotiontestExperience =
+    surface === 'public' && props.experience === 'freshcut-motiontest'
+  const customerAccountsEnabled =
+    settings.customerAccountsEnabled && !isMotiontestExperience
   const [
     copy,
     moduleStates,
@@ -153,9 +165,18 @@ export async function StorefrontShell(props: StorefrontShellProps) {
   const isFullFooter = theme === 'salvia' || theme === 'freshcut'
   const shell = (
     <CartProvider>
+      {isMotiontestExperience ? (
+        <a
+          className={storefront.motiontestSkipLink}
+          href="#motiontest-main-content"
+          tabIndex={0}
+        >
+          Hoppa till innehåll
+        </a>
+      ) : null}
       {chrome.Nav ? (
         <NavShell
-          customerAccountsEnabled={settings.customerAccountsEnabled}
+          customerAccountsEnabled={customerAccountsEnabled}
           cartEnabled={view.cartEnabled}
           utilityText={content.utility}
           hideUtility={chrome.ownsUtility}
@@ -168,7 +189,7 @@ export async function StorefrontShell(props: StorefrontShellProps) {
             links={view.shellNavLinks}
             primaryCta={view.primaryCta}
             cartEnabled={view.cartEnabled}
-            customerAccountsEnabled={settings.customerAccountsEnabled}
+            customerAccountsEnabled={customerAccountsEnabled}
             utilityText={content.utility}
             location={location}
             contact={settings.contact}
@@ -178,14 +199,21 @@ export async function StorefrontShell(props: StorefrontShellProps) {
         <Nav
           tenant={tenantIdentity}
           branding={settings.branding}
-          customerAccountsEnabled={settings.customerAccountsEnabled}
+          customerAccountsEnabled={customerAccountsEnabled}
           cartEnabled={view.cartEnabled}
           utilityText={content.utility}
           primaryCta={view.primaryCta}
           links={view.shellNavLinks}
         />
       )}
-      <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
+      <main
+        className={`tenant-main ${storefront.shellMain}`}
+        {...(isMotiontestExperience
+          ? { id: 'motiontest-main-content', tabIndex: -1 }
+          : {})}
+      >
+        {children}
+      </main>
       {embeddedBooking && view.inlineBooking.mounted ? (
         <InlineBooking
           services={view.wizardServices}
@@ -223,7 +251,11 @@ export async function StorefrontShell(props: StorefrontShellProps) {
       ) : (
         <Footer tenant={{ name: tenant.name }} bokaOnline={bokning.online} />
       )}
-      {surface === 'public' && settings.cookieBannerEnabled ? <CookieConsent /> : null}
+      {surface === 'public' &&
+      settings.cookieBannerEnabled &&
+      !isMotiontestExperience ? (
+        <CookieConsent />
+      ) : null}
     </CartProvider>
   )
 
@@ -233,11 +265,14 @@ export async function StorefrontShell(props: StorefrontShellProps) {
       data-world="storefront"
       data-theme={theme}
       data-tenant={tenant.id}
+      {...(isMotiontestExperience
+        ? { 'data-storefront-shell-experience': 'freshcut-motiontest' }
+        : {})}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
       {surface === 'public' ? (
         <>
-          <RealtimeTenantModulesLazy tenantId={tenant.id} />
+          {!isMotiontestExperience ? <RealtimeTenantModulesLazy tenantId={tenant.id} /> : null}
           <LocalBusinessJsonLd
             name={tenant.name}
             location={location}

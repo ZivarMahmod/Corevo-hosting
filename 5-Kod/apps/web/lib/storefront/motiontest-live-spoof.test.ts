@@ -1,21 +1,19 @@
 import { Fragment, isValidElement, type ReactElement, type ReactNode } from 'react'
+import { NextRequest, NextResponse } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TenantBundle } from '@/lib/tenant-data'
 
 const state = vi.hoisted(() => ({
-  experience: null as string | null,
-  origin: 'https://freshcut.corevo.se',
+  requestHeaders: null as Headers | null,
+  updateSession: vi.fn(),
   currentTenant: vi.fn(),
   getServices: vi.fn(),
   loadLayoutModuleTeasers: vi.fn(),
 }))
 
+vi.mock('@/lib/supabase/middleware', () => ({ updateSession: state.updateSession }))
 vi.mock('next/headers', () => ({
-  headers: vi.fn(async () => new Headers(
-    state.experience
-      ? { 'x-corevo-storefront-experience': state.experience }
-      : undefined,
-  )),
+  headers: vi.fn(async () => state.requestHeaders ?? new Headers()),
 }))
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {
@@ -26,7 +24,9 @@ vi.mock('@/lib/tenant-data', () => ({
   currentTenant: state.currentTenant,
   getServices: state.getServices,
 }))
-vi.mock('@/lib/url', () => ({ requestOrigin: vi.fn(async () => state.origin) }))
+vi.mock('@/lib/url', () => ({
+  requestOrigin: vi.fn(async () => 'https://freshcut.corevo.se'),
+}))
 vi.mock('@/lib/storefront/tenant-copy', () => ({ getTenantCopy: vi.fn(async () => null) }))
 vi.mock('@/lib/storefront/theme-content', () => ({ resolveThemeContent: vi.fn(() => ({})) }))
 vi.mock('@/components/storefront/layouts/load-module-teasers', () => ({
@@ -40,15 +40,13 @@ vi.mock('@/components/storefront/StorefrontShell', () => ({
   StorefrontShell: 'test-storefront-shell',
 }))
 
-import * as runtime from './runtime'
-import { resolveStorefrontLayout } from './runtime'
-import { FreshCutLayout } from './FreshCutLayout'
-import { FreshCutMotionLayout } from './FreshCutMotionLayout'
+import { middleware } from '../../middleware'
 import HomePage from '@/app/(public)/page'
 import PublicLayout, { generateMetadata } from '@/app/(public)/layout'
 import robots from '@/app/(public)/robots'
+import { FreshCutLayout } from '@/components/storefront/layouts/FreshCutLayout'
 
-const bundle: TenantBundle = {
+const bundle = {
   tenant: {
     id: 'tenant-freshcut',
     slug: 'freshcut',
@@ -83,7 +81,7 @@ const bundle: TenantBundle = {
     defaultTimeZone: 'Europe/Stockholm',
   },
   location: null,
-}
+} satisfies TenantBundle
 
 function firstElement(node: ReactNode): ReactElement | null {
   if (Array.isArray(node)) {
@@ -98,11 +96,10 @@ function firstElement(node: ReactNode): ReactElement | null {
   return firstElement((node.props as { children?: ReactNode }).children)
 }
 
-describe('FreshCut motiontest runtime selection', () => {
+describe('live FreshCut motiontest-header spoof boundary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    state.experience = null
-    state.origin = 'https://freshcut.corevo.se'
+    state.requestHeaders = null
     state.currentTenant.mockResolvedValue(bundle)
     state.getServices.mockResolvedValue([])
     state.loadLayoutModuleTeasers.mockResolvedValue({
@@ -117,71 +114,34 @@ describe('FreshCut motiontest runtime selection', () => {
       kurserReachable: false,
       galleriReachable: false,
     })
-  })
-
-  it('keeps the ordinary FreshCut registry entry and selects motion only for FreshCut', () => {
-    expect(runtime.STOREFRONT_LAYOUTS.freshcut).toBe(FreshCutLayout)
-    expect(resolveStorefrontLayout('freshcut', 'freshcut-motiontest')).toBe(FreshCutMotionLayout)
-    expect(resolveStorefrontLayout('freshcut', null)).toBe(FreshCutLayout)
-    expect(resolveStorefrontLayout('leander', 'freshcut-motiontest')).toBe(
-      runtime.STOREFRONT_LAYOUTS.leander,
-    )
-  })
-
-  it('makes the public page consume the trusted experience header', async () => {
-    state.experience = 'freshcut-motiontest'
-    const motionTree = await HomePage()
-    expect(firstElement(motionTree)?.type).toBe(FreshCutMotionLayout)
-
-    state.experience = 'spoofed-value'
-    const ordinaryTree = await HomePage()
-    expect(firstElement(ordinaryTree)?.type).toBe(FreshCutLayout)
-  })
-
-  it('passes only the trusted motiontest identity to the public shell', async () => {
-    state.experience = 'freshcut-motiontest'
-    const motionTree = await PublicLayout({ children: 'Motion' })
-
-    expect(firstElement(motionTree)?.props).toMatchObject({
-      surface: 'public',
-      experience: 'freshcut-motiontest',
+    state.updateSession.mockImplementation(async (_request, requestHeaders: Headers) => {
+      state.requestHeaders = new Headers(requestHeaders)
+      return { response: NextResponse.next(), user: null }
     })
-
-    state.experience = 'spoofed-value'
-    const ordinaryTree = await PublicLayout({ children: 'Ordinary' })
-
-    expect(firstElement(ordinaryTree)?.props).not.toHaveProperty('experience')
   })
 
-  it('keeps a host-specific canonical while marking motion metadata noindex', async () => {
-    state.experience = 'freshcut-motiontest'
-    state.origin = 'https://motiontest.corevo.se'
+  it('keeps exact live host layout, shell, metadata, and robots ordinary', async () => {
+    await middleware(
+      new NextRequest('https://freshcut.corevo.se/', {
+        headers: {
+          host: 'freshcut.corevo.se',
+          'x-corevo-storefront-experience': 'freshcut-motiontest',
+        },
+      }),
+    )
 
-    const metadata = await generateMetadata()
+    expect(state.requestHeaders?.get('x-corevo-storefront-experience')).toBeNull()
+    expect(firstElement(await HomePage())?.type).toBe(FreshCutLayout)
+    expect(firstElement(await PublicLayout({ children: 'ordinary' }))?.props).not.toHaveProperty(
+      'experience',
+    )
 
-    expect(metadata.robots).toEqual({ index: false, follow: false })
-    expect(new URL(String(metadata.alternates?.canonical), metadata.metadataBase ?? undefined).href)
-      .toBe('https://motiontest.corevo.se/')
-  })
-
-  it('keeps ordinary FreshCut metadata indexable', async () => {
     const metadata = await generateMetadata()
     expect(metadata.robots).toBeUndefined()
-  })
-
-  it('disallows the motiontest root without publishing a sitemap', async () => {
-    state.experience = 'freshcut-motiontest'
-
-    const policy = await robots()
-
-    expect(policy).toEqual({ rules: [{ userAgent: '*', disallow: '/' }] })
-    expect(policy).not.toHaveProperty('sitemap')
-  })
-
-  it('preserves ordinary FreshCut robots behavior', async () => {
-    const policy = await robots()
-
-    expect(policy).toEqual({
+    expect(
+      new URL(String(metadata.alternates?.canonical), metadata.metadataBase ?? undefined).href,
+    ).toBe('https://freshcut.corevo.se/')
+    await expect(robots()).resolves.toEqual({
       rules: [{ userAgent: '*', allow: '/', disallow: ['/konto', '/api/'] }],
       sitemap: 'https://freshcut.corevo.se/sitemap.xml',
     })

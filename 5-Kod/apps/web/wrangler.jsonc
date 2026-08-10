@@ -29,7 +29,7 @@
     // Back-office split: superbooking = platform, booking = admin + staff.
     "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
     "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
-    "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms",
+    "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms,motiontest",
     // Each tenant gets one exact, free-SSL address: <slug>.corevo.se. Exact tenant
     // routes are created at onboarding and injected from Cloudflare before deploy.
     "NEXT_PUBLIC_TENANT_HOST_SUFFIX": "corevo.se",
@@ -123,7 +123,7 @@
         "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
         "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
         "NEXT_PUBLIC_CUSTOMER_PORTAL_HOST": "mina.corevo.se",
-        "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms",
+        "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms,motiontest",
         "NEXT_PUBLIC_TENANT_HOST_SUFFIX": "corevo.se",
         "NEXT_PUBLIC_SITE_URL": "https://bokningsplatformen-staging.zivar68.workers.dev",
         // Mirrored from top-level so wrangler doesn't warn about un-inherited vars and
@@ -133,6 +133,32 @@
         "SMS_DELIVERY_MODE": "off",
         "R2_PUBLIC_BASE_URL": "https://staging-media-required.invalid",
         "DOMAIN_PROVISIONING_ENABLED": "false",
+      },
+    },
+    // Isolated FreshCut motion experiment. Its thin request-boundary wrapper
+    // delegates approved reads to the generated OpenNext fetch handler, while
+    // the production scheduler and every production-only binding stay out of scope.
+    "motiontest": {
+      "name": "freshcut-motiontest",
+      "main": "./motiontest-worker.mjs",
+      "workers_dev": false,
+      "preview_urls": false,
+      "triggers": { "crons": [] },
+      "assets": {
+        "directory": ".open-next/assets",
+        "binding": "ASSETS",
+        "run_worker_first": true,
+      },
+      "observability": { "enabled": false },
+      "routes": [
+        { "pattern": "motiontest.corevo.se", "custom_domain": true },
+      ],
+      // Named environments do not inherit vars or bindings. Keep this list to
+      // the two browser-public, read-only Supabase values used by storefront
+      // reads; no service-role or delivery/payment configuration belongs here.
+      "vars": {
+        "NEXT_PUBLIC_SUPABASE_URL": "https://clylvowtowbtotrahuad.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNseWx2b3d0b3didG90cmFodWFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTg4MDcsImV4cCI6MjA5NTc3NDgwN30.ZSm3eMT-PxqfDPN2P584EVBlWfUwpeQ6gKOnKBvqxJU",
       },
     },
   },

@@ -20,7 +20,7 @@ export const REQUIRED_FIXED_ROUTES = [
 
 /** Labels that can never be minted as tenant addresses on the shared POS zone. */
 export const RESERVED = new Set(
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms'.split(
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms,motiontest'.split(
     ',',
   ),
 )

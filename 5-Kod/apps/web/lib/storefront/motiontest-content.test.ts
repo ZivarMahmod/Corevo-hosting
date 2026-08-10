@@ -46,9 +46,9 @@ describe('resolveMotiontestView', () => {
     const view = resolveMotiontestView(SERVICES, null)
 
     expect(view.prototypeServices).toEqual([
-      { name: 'Damklippning', priceCents: 39900, provenance: 'prototype' },
-      { name: 'Dam student', priceCents: 34900, provenance: 'prototype' },
-      { name: 'Dam pensionär', priceCents: 32900, provenance: 'prototype' },
+      { name: 'Damklippning · prototyp', priceCents: 39900, provenance: 'prototype' },
+      { name: 'Dam student · prototyp', priceCents: 34900, provenance: 'prototype' },
+      { name: 'Dam pensionär · prototyp', priceCents: 32900, provenance: 'prototype' },
     ])
     for (const service of view.prototypeServices) {
       expect(service).not.toHaveProperty('id')
@@ -78,5 +78,47 @@ describe('resolveMotiontestView', () => {
         bookable: false,
       },
     ])
+  })
+
+  it('owns motion-only scene copy in one explicitly prototyped resolver payload', () => {
+    const view = resolveMotiontestView(SERVICES, null)
+
+    expect(view.prototypeCopy).toEqual({
+      provenance: 'prototype',
+      scenes: {
+        entrance: { eyebrow: '01 / Entrén', title: 'Kliv in.' },
+        chair: {
+          eyebrow: '02 / Stolen',
+          title: 'Slå dig ner.',
+          body: 'Stolen, capen och verktygen är redo. Här börjar arbetet.',
+        },
+        craft: {
+          eyebrow: '03 / Hantverket',
+          title: 'Händerna gör skillnaden.',
+          body: 'Vi lyssnar först och klipper sedan — med sax, maskin, kam och precision.',
+        },
+        range: { eyebrow: '04 / Utbudet', title: 'Olika hår. Samma noggrannhet.' },
+        return: { eyebrow: '05 / Formen', title: 'Tillbaka till helheten.' },
+        mirror: {
+          eyebrow: '06 / Spegeln',
+          title: 'Resultatet är ditt.',
+          body: 'Ett rent avslut, en skarp linje och en form som håller.',
+        },
+      },
+      rangeLabels: ['Herr', 'Student', 'Barn', 'Senior', 'Skägg', 'Dam · preliminärt'],
+      resultLabels: ['Ung', 'Barn', 'Dam · preliminärt', 'Senior', 'Skägg'],
+    })
+  })
+
+  it('marks every motion-only Dam label as preliminary', () => {
+    const view = resolveMotiontestView(SERVICES, null)
+    const prototypeCopy = view.prototypeCopy ?? { rangeLabels: [], resultLabels: [] }
+    const labels = [
+      ...view.prototypeServices.map((service) => service.name),
+      ...prototypeCopy.rangeLabels,
+      ...prototypeCopy.resultLabels,
+    ].filter((label) => label.includes('Dam'))
+
+    expect(labels.every((label) => /prototyp|preliminärt/i.test(label))).toBe(true)
   })
 })

@@ -47,7 +47,7 @@ describe('FreshCut motiontest storefront experience', () => {
   })
 
   it('accepts only an exact motiontest authority with an optional valid numeric port', () => {
-    expect(storefrontExperienceForHost('MOTIONTEST.COREVO.SE:443')).not.toBeNull()
+    expect(storefrontExperienceForHost('MOTIONTEST.COREVO.SE:443')).toBeNull()
     expect(storefrontExperienceForHost('motiontest.localhost:3000')).not.toBeNull()
 
     for (const host of [
@@ -79,6 +79,30 @@ describe('FreshCut motiontest storefront experience', () => {
     }
   })
 
+  it('allows only content-bound versioned FreshCut motion media families', () => {
+    const family = 'entrance-v1-a1b2c3d4e5f6'
+    for (const pathname of [
+      `/media/freshcut-motion/${family}/${family}-desktop.webm`,
+      `/media/freshcut-motion/${family}/${family}-desktop.mp4`,
+      `/media/freshcut-motion/${family}/${family}-mobile.webm`,
+      `/media/freshcut-motion/${family}/${family}-mobile.mp4`,
+      `/media/freshcut-motion/${family}/${family}-poster.webp`,
+    ]) {
+      expect(isMotiontestPublicPath(pathname), pathname).toBe(true)
+    }
+
+    for (const pathname of [
+      '/media/freshcut-motion/unversioned.mp4',
+      `/media/freshcut-motion/${family}/other-v1-a1b2c3d4e5f6-desktop.webm`,
+      '/media/freshcut-motion/entrance-v0-a1b2c3d4e5f6/entrance-v0-a1b2c3d4e5f6-desktop.webm',
+      '/media/freshcut-motion/entrance-v1-short/entrance-v1-short-desktop.webm',
+      `/media/freshcut-motion/${family}/${family}-audio.mp3`,
+      `/media/freshcut-motion/${family}/../tenant-secret.json`,
+    ]) {
+      expect(isMotiontestPublicPath(pathname), pathname).toBe(false)
+    }
+  })
+
   it('allows image optimization only for an exact local FreshCut source', () => {
     expect(
       isMotiontestPublicPath(
@@ -104,6 +128,19 @@ describe('FreshCut motiontest storefront experience', () => {
     }
   })
 
+  it('rejects duplicate or extra image optimizer parameters', () => {
+    for (const search of [
+      'url=%2Fimages%2Ffreshcut%2Fhero.webp&url=%2Fimages%2Ffreshcut%2Fother.webp&w=1200&q=75',
+      'url=%2Fimages%2Ffreshcut%2Fhero.webp&w=1200&w=600&q=75',
+      'url=%2Fimages%2Ffreshcut%2Fhero.webp&w=1200&q=75&q=50',
+      'url=%2Fimages%2Ffreshcut%2Fhero.webp&w=1200&q=75&format=webp',
+    ]) {
+      expect(isMotiontestPublicPath('/_next/image', new URLSearchParams(search)), search).toBe(
+        false,
+      )
+    }
+  })
+
   it('fails closed for alternate pages, APIs, and unrelated public files', () => {
     for (const pathname of [
       '/admin',
@@ -113,6 +150,10 @@ describe('FreshCut motiontest storefront experience', () => {
       '/sitemap.xml',
       '/images/other-tenant.webp',
       '/_next/data/build-id/index.json',
+      '/manifest.webmanifest',
+      '/sw.js',
+      '/templates/freshcut',
+      '/_next/static/../server/app.js',
     ]) {
       expect(isMotiontestPublicPath(pathname), pathname).toBe(false)
     }
@@ -137,6 +178,22 @@ describe('FreshCut motiontest middleware boundary', () => {
     expect(mocks.updateSession).not.toHaveBeenCalled()
   })
 
+  it('rejects every non-read request before Next server actions can run', async () => {
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+      const response = await middleware(
+        new NextRequest('https://motiontest.corevo.se/', {
+          method,
+          headers: { host: 'motiontest.corevo.se' },
+        }),
+      )
+
+      expect(response.status, method).toBe(405)
+      expect(response.headers.get('allow'), method).toBe('GET, HEAD')
+    }
+
+    expect(mocks.updateSession).not.toHaveBeenCalled()
+  })
+
   it('replaces client-supplied tenant and experience headers from the exact host', async () => {
     await middleware(
       new NextRequest('https://motiontest.corevo.se/', {
@@ -155,5 +212,21 @@ describe('FreshCut motiontest middleware boundary', () => {
     expect(trustedHeaders.get('x-corevo-tenant-kind')).toBe('tenant')
     expect(trustedHeaders.get('x-corevo-tenant-slug')).toBe('freshcut')
     expect(trustedHeaders.get('x-corevo-reserved-subdomain')).toBeNull()
+  })
+
+  it('strips an exact motiontest header spoof from the live FreshCut host', async () => {
+    await middleware(
+      new NextRequest('https://freshcut.corevo.se/', {
+        headers: {
+          host: 'freshcut.corevo.se',
+          'x-corevo-storefront-experience': 'freshcut-motiontest',
+        },
+      }),
+    )
+
+    const trustedHeaders = mocks.updateSession.mock.calls[0]?.[1] as Headers
+    expect(trustedHeaders.get('x-corevo-storefront-experience')).toBeNull()
+    expect(trustedHeaders.get('x-corevo-tenant-kind')).toBe('tenant')
+    expect(trustedHeaders.get('x-corevo-tenant-slug')).toBe('freshcut')
   })
 })

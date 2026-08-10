@@ -27,143 +27,310 @@
   color: inherit;
 }
 
-.journey {
+.cinematic {
   position: relative;
-}
-
-.checkpointAnchor {
-  position: absolute;
-  left: 0;
-  width: 1px;
-  height: 1px;
-  pointer-events: none;
-}
-
-.checkpointAnchor[data-motion-checkpoint='threshold'] {
-  top: 0;
-}
-
-.checkpointAnchor[data-motion-checkpoint='craft'] {
-  top: 33.333%;
-}
-
-.checkpointAnchor[data-motion-checkpoint='mirror'] {
-  top: 66.667%;
-}
-
-.journeyControls {
-  position: relative;
-  z-index: 4;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 20px;
-  padding: 14px clamp(18px, 3vw, 42px);
   color: var(--motion-paper);
   background: var(--motion-ink);
 }
 
-.pauseButton {
-  padding: 6px 0;
-  border: 0;
-  border-bottom: 1px solid currentcolor;
+.motionExperience {
+  --motion-progress: 0;
+  --motion-visual-progress: 0;
+
+  position: relative;
+  background: var(--motion-ink);
+}
+
+.motionExperienceControls {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 22px;
+  min-height: 58px;
+  padding: 10px clamp(16px, 3vw, 42px);
+  border-bottom: 1px solid var(--motion-light-line);
   color: var(--motion-paper);
+  background: rgb(23 25 24 / 94%);
+  backdrop-filter: blur(12px);
+}
+
+.motionExperienceNav,
+.motionExperienceActions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px 18px;
+}
+
+.motionExperienceActions {
+  justify-content: flex-end;
+}
+
+.motionExperienceNav a,
+.motionExperienceActions a,
+.motionExperiencePause {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  color: rgb(235 232 223 / 68%);
   background: transparent;
   font: inherit;
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.motionExperienceNav a[aria-current='step'],
+.motionExperienceNav a:hover,
+.motionExperienceActions a:hover,
+.motionExperiencePause:hover {
+  border-bottom-color: currentcolor;
+  color: var(--motion-warm);
+}
+
+.motionExperienceActions .primaryButton,
+.motionExperienceActions .primaryButton:hover {
+  min-height: 44px;
+  padding: 12px 18px;
+  border: 1px solid var(--motion-warm);
+  color: var(--motion-ink);
+  background: var(--motion-warm);
+}
+
+.motionExperiencePause {
   cursor: pointer;
 }
 
-.pauseButton:disabled {
+.motionExperiencePause:disabled {
   cursor: default;
-  opacity: 0.55;
+  opacity: 0.48;
 }
 
-.journey[data-motion-preparing='true'],
-.journey[data-motion-enhanced='true'] {
-  height: 220svh;
+.motionExperienceStage {
+  position: relative;
+  min-width: 0;
 }
 
-.journey[data-motion-enhanced='true'] .checkpointAnchor {
-  top: var(--motion-checkpoint-top);
+.motionExperience[data-motion-mode='preparing'],
+.motionExperience[data-motion-mode='enhanced'] {
+  height: calc(100svh + var(--motion-scroll-distance-desktop));
 }
 
-.journey[data-motion-enhanced='true'] .journeyScene {
+.motionExperience[data-motion-mode='preparing'] .motionExperienceStage,
+.motionExperience[data-motion-mode='enhanced'] .motionExperienceStage {
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: clip;
+  isolation: isolate;
+  perspective: 1200px;
+  transform-style: preserve-3d;
 }
 
-.journey[data-motion-enhanced='true'] .journeyControls {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  left: 16px;
-  border: 1px solid var(--motion-light-line);
-  background: rgb(23 25 24 / 88%);
+.motionScene {
+  position: relative;
+  display: grid;
+  min-height: 86svh;
+  overflow: clip;
+  background: var(--motion-ink-soft);
+  scroll-margin-top: 64px;
+  transform-style: preserve-3d;
 }
 
-.journey[data-motion-enhanced='true'] .journeyPanel {
+.motionExperience[data-motion-mode='preparing'] .motionScene,
+.motionExperience[data-motion-mode='enhanced'] .motionScene {
   position: absolute;
   inset: 0;
+  min-height: 100%;
+}
+
+.motionExperience[data-motion-mode='preparing'] .motionScene {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
-  transition:
-    opacity 240ms ease,
-    visibility 0s linear 240ms;
 }
 
-.journey[data-motion-phase='threshold'] .journeyPanel[data-motion-panel='threshold'],
-.journey[data-motion-phase='craft'] .journeyPanel[data-motion-panel='craft'],
-.journey[data-motion-phase='mirror'] .journeyPanel[data-motion-panel='mirror'] {
+.motionExperience[data-motion-mode='preparing'] .motionScene[data-motion-scene='hero'] {
   visibility: visible;
   opacity: 1;
-  pointer-events: auto;
-  transition-delay: 0s;
 }
 
-.journey[data-motion-paused='true'] .journeyPanel {
-  transition: none;
-}
-
-.poster {
-  position: relative;
-  min-height: 100svh;
+.sceneVisual {
+  position: absolute;
+  inset: 0;
   overflow: clip;
-  scroll-margin-top: 72px;
+  transform-style: preserve-3d;
 }
 
-.threshold {
-  display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+.sceneLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.motionExperience[data-motion-mode='preparing'] .sceneLayer,
+.motionExperience[data-motion-mode='enhanced'] .sceneLayer {
+  will-change: transform;
+}
+
+.sceneMediaLayer {
+  background-color: #30332f;
+  background-image: var(--motion-scene-poster);
+  background-position: var(--motion-scene-crop);
+  background-size: cover;
+  filter: grayscale(1) contrast(1.08) brightness(0.68);
+}
+
+.sceneVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--motion-scene-crop);
+}
+
+.sceneVideo[data-motion-media-state='fallback'] {
+  opacity: 0;
+}
+
+.sceneSideScrim {
+  background: linear-gradient(
+    90deg,
+    rgb(17 18 15 / 80%) 0%,
+    rgb(17 18 15 / 10%) 58%,
+    rgb(17 18 15 / 42%) 100%
+  );
+}
+
+.sceneBottomScrim {
+  background: linear-gradient(0deg, rgb(17 18 15 / 64%) 0%, transparent 52%);
+}
+
+.sceneCopy {
+  position: relative;
+  z-index: 4;
+  align-self: end;
+  width: min(590px, 46vw);
+  margin: clamp(22px, 4vw, 64px);
+  padding: clamp(22px, 3vw, 44px);
+  border: 1px solid var(--motion-light-line);
+  background: rgb(23 25 24 / 86%);
+  backdrop-filter: blur(10px);
+}
+
+.sceneCopy h2 {
+  margin: 14px 0 18px;
+  font-size: clamp(42px, 5.4vw, 86px);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+.sceneCopy > p:not(.posterIndex) {
+  max-width: 520px;
+  margin: 0;
+  color: rgb(235 232 223 / 72%);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.sceneCopy > a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 20px;
+  padding-block: 8px;
+  border-bottom: 1px solid currentcolor;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.businessPanel {
+  position: relative;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 760px);
+  min-height: 86svh;
+  padding: clamp(40px, 7vw, 104px) clamp(24px, 6vw, 88px);
   color: var(--motion-paper);
   background: var(--motion-ink);
 }
 
-.thresholdImage {
-  grid-column: 2;
-  grid-row: 1;
-  min-height: 100%;
-  background-color: var(--motion-ink-soft);
-  background-image: url('/images/freshcut/freshcut-hero.webp');
-  background-position: center;
-  background-size: cover;
-  filter: grayscale(1) contrast(1.08) brightness(0.72);
+.motionExperience[data-motion-mode='preparing'] .businessPanel,
+.motionExperience[data-motion-mode='enhanced'] .businessPanel {
+  position: absolute;
+  top: 58px;
+  bottom: 0;
+  left: 0;
+  width: min(47vw, 720px);
+  min-height: 0;
 }
 
-.thresholdContent {
-  z-index: 1;
-  grid-column: 1;
-  grid-row: 1;
+.businessPanel h1 {
+  max-width: 620px;
+  margin: 20px 0 18px;
+  font-size: clamp(54px, 6vw, 98px);
+  font-weight: 750;
+  line-height: 0.88;
+  letter-spacing: -0.065em;
+  text-wrap: balance;
+}
+
+.rangeLabels {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: min(100%, 740px);
-  padding: clamp(42px, 7vw, 112px) clamp(28px, 6vw, 96px);
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rangeLabels li {
+  padding: 8px 10px;
+  border: 1px solid var(--motion-light-line);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mirrorScene {
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: clamp(28px, 5vw, 76px);
+  align-items: center;
+  padding: clamp(28px, 5vw, 78px);
+  background: #202220;
+}
+
+.mirrorScene .sceneMirrorFrame {
+  z-index: 2;
+  width: min(100%, 640px);
+}
+
+.mirrorScene .sceneCopy {
+  align-self: center;
+  width: 100%;
+  margin: 0;
+}
+
+.motionExperience[data-motion-mode='static'] .heroScene {
+  min-height: 56svh;
+}
+
+.motionExperience[data-motion-mode='static'] .businessPanel {
+  min-height: auto;
 }
 
 .wordmark {
@@ -179,6 +346,19 @@
   font-style: normal;
 }
 
+@media (min-width: 768px) {
+  .motionExperience[data-motion-mode='preparing'] .businessPanel,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel {
+    top: 0;
+    padding-block: clamp(32px, 4svh, 44px);
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .wordmark,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .wordmark {
+    margin-bottom: clamp(18px, 3svh, 28px);
+  }
+}
+
 .kicker,
 .posterIndex,
 .sectionHeader > p,
@@ -191,16 +371,6 @@
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-}
-
-.threshold h1 {
-  max-width: 620px;
-  margin: 20px 0 18px;
-  font-size: clamp(58px, 6.4vw, 104px);
-  font-weight: 750;
-  line-height: 0.88;
-  letter-spacing: -0.065em;
-  text-wrap: balance;
 }
 
 .lede {
@@ -220,9 +390,11 @@
 }
 
 .primaryActions > a:not(.primaryButton),
-.posterActions > a,
-.textBooking,
-.lineLink {
+.textBooking {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
   padding: 4px 0;
   border-bottom: 1px solid currentcolor;
   font-size: 13px;
@@ -248,7 +420,7 @@
 }
 
 .priceRail {
-  margin-top: 34px;
+  margin-top: 16px;
   border-top: 1px solid var(--motion-light-line);
 }
 
@@ -282,80 +454,42 @@
   text-transform: uppercase;
 }
 
-.craft {
-  color: var(--motion-paper);
-  background: var(--motion-ink-soft);
-}
+@media (min-width: 1024px) and (max-height: 900px) {
+  .motionExperience[data-motion-mode='preparing'] .businessPanel,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel {
+    padding-block: clamp(18px, 2.5svh, 24px);
+  }
 
-.craftImage {
-  position: absolute;
-  inset: 0;
-  background-color: #343734;
-  background-image: url('/images/freshcut/freshcut-barber.webp');
-  background-position: center 36%;
-  background-size: cover;
-  filter: grayscale(1) contrast(1.12);
-}
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .wordmark,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .wordmark {
+    margin-bottom: clamp(10px, 1.5svh, 14px);
+  }
 
-.craftCopy {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: min(42%, 610px);
-  min-height: 100svh;
-  margin-left: auto;
-  padding: clamp(34px, 5vw, 82px);
-  border-left: 1px solid var(--motion-light-line);
-  background: var(--motion-ink-soft);
-}
+  .motionExperience[data-motion-mode='preparing'] .businessPanel h1,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel h1 {
+    margin: clamp(8px, 1.2svh, 12px) 0 clamp(8px, 1svh, 10px);
+    font-size: clamp(52px, 5vw, 72px);
+  }
 
-.craftCopy h2,
-.mirrorBooking h2 {
-  margin: 20px 0 24px;
-  font-size: clamp(46px, 5vw, 82px);
-  line-height: 0.92;
-  letter-spacing: -0.055em;
-  text-wrap: balance;
-}
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .primaryActions,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .primaryActions {
+    margin-top: clamp(14px, 2svh, 18px);
+  }
 
-.craftCopy > p:not(.posterIndex),
-.mirrorBooking > p:not(.posterIndex) {
-  max-width: 520px;
-  margin: 0;
-  color: rgb(235 232 223 / 72%);
-  font-size: 17px;
-  line-height: 1.6;
-}
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .priceRail,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .priceRail {
+    margin-top: 10px;
+  }
 
-.checkpoints {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  margin: 0;
-  padding: 16px 0;
-  border-top: 1px solid var(--motion-light-line);
-  border-bottom: 1px solid var(--motion-light-line);
-}
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .priceRailRow,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .priceRailRow {
+    padding-block: 6px;
+  }
 
-.checkpoints a {
-  color: rgb(235 232 223 / 58%);
-  font-size: 12px;
-  font-weight: 750;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.checkpoints a[aria-current='step'] {
-  color: var(--motion-warm);
-}
-
-.posterActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px 22px;
-  margin-top: 24px;
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .twoSalons,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .twoSalons {
+    margin-top: 10px;
+  }
 }
 
 .textBooking {
@@ -365,89 +499,23 @@
   background: transparent;
 }
 
-.mirror {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(380px, 0.8fr);
-  gap: clamp(34px, 6vw, 90px);
-  align-items: center;
-  padding: clamp(32px, 7vw, 108px);
-  color: var(--motion-paper);
-  background: #202220;
-}
-
-.mirrorResult {
-  min-width: 0;
-}
-
-.mirrorFrame {
-  position: relative;
+.sceneMirrorFrame {
+  inset: 8% auto;
   aspect-ratio: 4 / 5;
+  width: min(42vw, 640px);
   max-height: 76svh;
   margin-inline: auto;
-  padding: clamp(14px, 2.4vw, 36px);
   border: clamp(12px, 2vw, 30px) solid #665c4d;
   outline: 1px solid #aa9a81;
   outline-offset: -7px;
-  background: #292a27;
 }
 
-.mirrorFrame::after {
+.sceneMirrorFrame::after {
   position: absolute;
   inset: 4%;
   border: 1px solid rgb(235 232 223 / 16%);
   content: '';
   pointer-events: none;
-}
-
-.mirrorImage {
-  width: 100%;
-  height: 100%;
-  background-color: #343633;
-  background-image: url('/images/freshcut/freshcut-3.webp');
-  background-position: center 28%;
-  background-size: cover;
-  filter: grayscale(1) contrast(1.07) brightness(0.82);
-}
-
-.mirrorResult > p {
-  max-width: 620px;
-  margin: 18px auto 0;
-  color: rgb(235 232 223 / 58%);
-  font-size: 11px;
-  line-height: 1.5;
-}
-
-.mirrorBooking {
-  min-width: 0;
-}
-
-.mirrorServices {
-  margin: 32px 0 26px;
-  border-top: 1px solid var(--motion-light-line);
-}
-
-.mirrorServices > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--motion-light-line);
-}
-
-.mirrorServices span,
-.mirrorServices small {
-  display: block;
-}
-
-.mirrorServices small {
-  margin-top: 3px;
-  color: rgb(235 232 223 / 52%);
-  font-size: 11px;
-}
-
-.mirrorBooking .lineLink {
-  display: table;
-  margin-top: 22px;
 }
 
 .normalPage {
@@ -702,6 +770,10 @@
 }
 
 .contactFacts a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
   width: fit-content;
   text-decoration: none;
   border-bottom: 1px solid currentcolor;
@@ -712,12 +784,43 @@
 }
 
 @media (max-width: 1023px) {
-  .threshold {
-    grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+  .motionExperienceControls {
+    position: relative;
+    min-height: 0;
+    padding: 8px 14px;
+    backdrop-filter: none;
   }
 
-  .mirror {
-    grid-template-columns: minmax(0, 1fr) minmax(330px, 0.9fr);
+  .motionExperienceNav,
+  .motionExperienceActions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px 10px;
+  }
+
+  .motionExperienceNav a,
+  .motionExperienceActions a,
+  .motionExperiencePause {
+    min-height: 44px;
+    padding: 10px 0;
+    font-size: 9px;
+  }
+
+  .motionExperienceNav
+    a:not([href='#motion-scene-hero']):not([href='#motion-scene-craft']):not(
+      [href='#motion-scene-mirror']
+    ) {
+    display: none;
+  }
+
+  .motionExperience[data-motion-mode='preparing'],
+  .motionExperience[data-motion-mode='enhanced'] {
+    height: calc(100svh + var(--motion-scroll-distance-mobile));
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .motionExperienceStage,
+  .motionExperience[data-motion-mode='enhanced'] .motionExperienceStage {
+    height: 100svh;
   }
 
   .sectionHeader,
@@ -740,30 +843,107 @@
 }
 
 @media (max-width: 767px) {
-  .poster {
-    min-height: auto;
-  }
-
-  .threshold {
-    display: block;
-    min-height: min(760px, 100svh);
-  }
-
-  .thresholdImage {
-    position: absolute;
+  .motionExperience[data-motion-mode='preparing'] .businessPanel,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel {
     top: 0;
     right: 0;
-    width: 42%;
-    height: 170px;
-    min-height: 0;
-    background-position: 58% center;
+    bottom: auto;
+    width: 100%;
+    min-height: 100%;
   }
 
-  .thresholdContent {
-    position: relative;
-    display: block;
+  .businessPanel {
     width: 100%;
-    padding: 22px 18px 54px;
+    padding: 18px 16px calc(86px + env(safe-area-inset-bottom));
+  }
+
+  .businessPanel .wordmark {
+    min-height: 28px;
+    margin: 0 0 12px;
+    font-size: 21px;
+  }
+
+  .businessPanel .kicker {
+    max-width: none;
+    font-size: 9px;
+  }
+
+  .businessPanel h1 {
+    max-width: 330px;
+    margin: 10px 0 8px;
+    font-size: clamp(40px, 12.5vw, 54px);
+  }
+
+  .businessPanel .lede {
+    max-width: 350px;
+    font-size: 13px;
+  }
+
+  .businessPanel .primaryActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px 8px;
+    margin-top: 12px;
+  }
+
+  .businessPanel .priceRail {
+    margin-top: 12px;
+  }
+
+  .businessPanel .priceRailRow {
+    padding: 5px 0;
+    font-size: 10px;
+  }
+
+  .businessPanel .twoSalons {
+    margin-top: 10px;
+    font-size: 9px;
+  }
+
+  .motionScene {
+    min-height: 76svh;
+  }
+
+  .sceneMediaLayer {
+    background-position: var(--motion-scene-mobile-crop);
+  }
+
+  .sceneVideo {
+    object-position: var(--motion-scene-mobile-crop);
+  }
+
+  .sceneCopy {
+    width: auto;
+    margin: auto 14px calc(84px + env(safe-area-inset-bottom));
+    padding: 18px;
+  }
+
+  .sceneCopy h2 {
+    margin: 10px 0 12px;
+    font-size: clamp(38px, 13vw, 58px);
+  }
+
+  .sceneCopy > p:not(.posterIndex) {
+    font-size: 13px;
+  }
+
+  .mirrorScene {
+    display: block;
+    padding: 14px 14px calc(84px + env(safe-area-inset-bottom));
+  }
+
+  .mirrorScene .sceneMirrorFrame {
+    width: min(76vw, 360px);
+    height: min(52svh, 470px);
+    margin-inline: auto;
+  }
+
+  .mirrorScene .sceneCopy {
+    position: absolute;
+    right: 14px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    left: 14px;
+    margin: 0;
   }
 
   .wordmark {
@@ -773,12 +953,6 @@
 
   .kicker {
     max-width: 54%;
-  }
-
-  .threshold h1 {
-    max-width: 310px;
-    margin: 12px 0 10px;
-    font-size: clamp(45px, 14vw, 62px);
   }
 
   .lede {
@@ -796,7 +970,7 @@
 
   .primaryButton {
     grid-column: 1 / -1;
-    min-height: 42px;
+    min-height: 44px;
   }
 
   .primaryActions > a:not(.primaryButton) {
@@ -817,51 +991,9 @@
     font-size: 10px;
   }
 
-  .craft {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .craftImage {
-    position: relative;
-    inset: auto;
-    min-height: 52svh;
-    background-position: center 32%;
-  }
-
-  .craftCopy {
-    width: 100%;
-    min-height: auto;
-    padding: 34px 20px 48px;
-    border-top: 1px solid var(--motion-light-line);
-    border-left: 0;
-  }
-
-  .craftCopy h2,
-  .mirrorBooking h2 {
-    margin: 14px 0 18px;
-    font-size: clamp(43px, 13vw, 62px);
-  }
-
-  .craftCopy > p:not(.posterIndex),
-  .mirrorBooking > p:not(.posterIndex) {
-    font-size: 14px;
-  }
-
-  .mirror {
-    display: flex;
-    flex-direction: column;
-    gap: 34px;
-    padding: 54px 20px;
-  }
-
-  .mirrorFrame {
+  .sceneMirrorFrame {
     width: min(100%, 430px);
     max-height: none;
-  }
-
-  .mirrorBooking {
-    width: 100%;
   }
 
   .services,

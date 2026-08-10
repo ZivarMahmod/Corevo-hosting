@@ -7,7 +7,8 @@ import { BookingProvider } from '@/components/storefront/BookingProvider'
 import type { Service } from '@/lib/tenant-data'
 import type { BookingExternalCtaUrls } from '@/lib/platform/booking-external-url'
 import { resolveThemeContent } from '@/lib/storefront/theme-content'
-import { FreshCutMotionLayout } from './FreshCutMotionLayout'
+import { FreshCutMotionLayout, FreshCutMotionSceneVisual } from './FreshCutMotionLayout'
+import { FRESHCUT_MOTION_SCENES, type FreshCutMotionScene } from './freshcut-motion-scenes'
 
 const EXTERNAL_URL = 'https://www.bokadirekt.se/places/freshcut-123'
 
@@ -29,7 +30,10 @@ const SERVICES = [
   active: true,
 })) as Service[]
 
-function renderMotiontest(externalCtaUrls: BookingExternalCtaUrls = {}) {
+function renderMotiontest(
+  externalCtaUrls: BookingExternalCtaUrls = {},
+  content = resolveThemeContent('freshcut', null, null),
+) {
   return renderToStaticMarkup(
     <BookingProvider
       tenantName="FreshCut"
@@ -42,7 +46,7 @@ function renderMotiontest(externalCtaUrls: BookingExternalCtaUrls = {}) {
       <FreshCutMotionLayout
         tenant={{ id: 'tenant-freshcut', name: 'FreshCut', slug: 'freshcut' }}
         theme="freshcut"
-        content={resolveThemeContent('freshcut', null, null)}
+        content={content}
         services={SERVICES}
         location={{
           name: 'FreshCut Bokhållaregatan',
@@ -73,7 +77,7 @@ describe('FreshCut motiontest server markup', () => {
     const html = renderMotiontest()
 
     for (const expected of [
-      'Rent snitt. Ingen krångel.',
+      'Klippt. Format. Klart.',
       'Boka via Bokadirekt',
       'Två salonger i Linköping',
       'Bokhållaregatan 2',
@@ -86,30 +90,151 @@ describe('FreshCut motiontest server markup', () => {
     ]) {
       expect(html).toContain(expected)
     }
-    for (const id of ['upplevelsen', 'tjanster', 'salongen', 'resultat', 'om', 'kontakt']) {
+    for (const id of [
+      'upplevelsen',
+      'motion-scene-hero',
+      'motion-scene-entrance',
+      'motion-scene-chair',
+      'motion-scene-craft',
+      'motion-scene-range',
+      'motion-scene-return',
+      'motion-scene-mirror',
+      'motion-scene-team',
+      'tjanster',
+      'salongen',
+      'resultat',
+      'om',
+      'kontakt',
+    ]) {
       expect(html).toContain(`id="${id}"`)
     }
-    expect(html.match(/data-poster-composition=/g)).toHaveLength(3)
+    expect(html.match(/<section[^>]+data-motion-scene=/g)).toHaveLength(8)
+    expect(html.match(/<[^>]*\sdata-motion-business-panel(?:="[^"]*")?[^>]*>/g)).toHaveLength(1)
+    expect(html.match(/<[^>]*\sdata-motion-popular-services(?:="[^"]*")?[^>]*>/g)).toHaveLength(1)
+    expect(html.match(/<[^>]*\sdata-motion-salon-selector(?:="[^"]*")?[^>]*>/g)).toHaveLength(1)
+    expect(html).not.toContain('data-poster-composition=')
+    expect(html).not.toContain('data-motion-layout-variant="mobile"')
     expect(html).not.toContain('href="/boka"')
   })
 
   it('makes the first-view booking destination unambiguous for both salons', () => {
     const html = renderMotiontest()
-    const threshold = html.match(
-      /<section class="[^"]+" id="upplevelsen"[\s\S]*?<\/section>/,
-    )?.[0]
+    expect(html).toContain('Boka nu')
+    expect(html).toContain('<span>Sankt Larsgatan 17, Linköping — bokningslänk kommer</span>')
+    expect(html).not.toMatch(/<a[^>]*>[^<]*Sankt Larsgatan 17[^<]*<\/a>/)
+  })
 
-    expect(threshold).toBeDefined()
-    expect(threshold).toContain('Boka via Bokadirekt · Bokhållaregatan')
-    expect(threshold).toContain('<span>Sankt Larsgatan 17, Linköping — bokningslänk kommer</span>')
-    expect(threshold).not.toMatch(/<a[^>]*>[\s\S]*Sankt Larsgatan 17[\s\S]*<\/a>/)
+  it('projects every manifest layer once while keeping unapproved media on its poster fallback', () => {
+    const html = renderMotiontest()
+
+    expect(html.match(/data-motion-layer-kind="media"/g) ?? []).toHaveLength(8)
+    expect(html).not.toContain('<video')
+    expect(html).not.toContain('<source')
+
+    for (const scene of FRESHCUT_MOTION_SCENES) {
+      const section = html.match(
+        new RegExp(`<section[^>]+data-motion-scene="${scene.id}"[\\s\\S]*?</section>`),
+      )?.[0]
+      expect(section).toBeDefined()
+      for (const layer of scene.layers as unknown as readonly { token: string }[]) {
+        expect(
+          section?.match(new RegExp(`data-motion-layer="${layer.token}"`, 'g')) ?? [],
+        ).toHaveLength(1)
+      }
+    }
+  })
+
+  it('emits only the existing media-layer host during SSR even for an approved cloned scene', () => {
+    const source = FRESHCUT_MOTION_SCENES.find((candidate) => candidate.id === 'entrance')!
+    const family = '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6'
+    const base = `${family}/entrance-v1-a1b2c3d4e5f6`
+    const scene = {
+      ...source,
+      media: {
+        ...source.media,
+        poster: `${base}-poster.webp`,
+        desktopWebm: `${base}-desktop.webm`,
+        desktopMp4: `${base}-desktop.mp4`,
+        mobileWebm: `${base}-mobile.webm`,
+        mobileMp4: `${base}-mobile.mp4`,
+        sourceStatus: 'approved-final',
+        rightsStatus: 'approved-for-ai-transformation',
+      },
+    } as FreshCutMotionScene
+
+    const html = renderToStaticMarkup(<FreshCutMotionSceneVisual scene={scene} />)
+
+    expect(html).toContain('data-motion-media-host="entrance"')
+    expect(html.match(/data-motion-layer-kind="media"/g) ?? []).toHaveLength(1)
+    expect(html).not.toContain('<video')
+    expect(html).not.toContain('<source')
+  })
+
+  it('renders authoritative owner content with editor markers and no duplicate About body', () => {
+    const content = {
+      ...resolveThemeContent('freshcut', null, null),
+      heroEyebrow: 'OWNER HERO EYEBROW',
+      heroTitle: 'OWNER HERO TITLE',
+      heroLede: 'OWNER HERO LEDE',
+      servicesEyebrow: 'OWNER SERVICES EYEBROW',
+      servicesTitle: 'OWNER SERVICES TITLE',
+      servicesIntro: 'OWNER SERVICES INTRO',
+      resultsEyebrow: 'OWNER RESULTS EYEBROW',
+      homeSecondTitle: 'OWNER RESULTS TITLE',
+      resultsLede: 'OWNER RESULTS LEDE',
+      studioEyebrow: 'OWNER ABOUT EYEBROW',
+      aboutTitle: 'OWNER ABOUT TITLE',
+      aboutCopyHome: 'OWNER ABOUT BODY UNIQUE',
+      teamEyebrow: 'OWNER TEAM EYEBROW',
+      teamTitle: 'OWNER TEAM TITLE',
+      teamLead: 'OWNER TEAM LEAD',
+      contactEyebrow: 'OWNER CONTACT EYEBROW',
+      contactTitle: 'OWNER CONTACT TITLE',
+      contactLede: 'OWNER CONTACT LEDE',
+    }
+    const html = renderMotiontest({}, content)
+
+    const fields = {
+      heroEyebrow: content.heroEyebrow,
+      heroTitle: content.heroTitle,
+      heroLede: content.heroLede,
+      servicesEyebrow: content.servicesEyebrow,
+      servicesTitle: content.servicesTitle,
+      servicesIntro: content.servicesIntro,
+      resultsEyebrow: content.resultsEyebrow,
+      homeSecondTitle: content.homeSecondTitle,
+      resultsLede: content.resultsLede,
+      studioEyebrow: content.studioEyebrow,
+      aboutTitle: content.aboutTitle,
+      aboutCopyHome: content.aboutCopyHome,
+      teamEyebrow: content.teamEyebrow,
+      teamTitle: content.teamTitle,
+      teamLead: content.teamLead,
+      contactEyebrow: content.contactEyebrow,
+      contactTitle: content.contactTitle,
+      contactLede: content.contactLede,
+    }
+
+    for (const [field, value] of Object.entries(fields)) {
+      expect(html).toContain(`data-corevo-editor-field="${field}"`)
+      expect(html).toContain(`data-corevo-editor-stable-field="${field}"`)
+      expect(html).toContain(value)
+    }
+    expect(html.match(/OWNER ABOUT BODY UNIQUE/g)).toHaveLength(1)
+    expect(html).not.toContain('Rent snitt. Ingen krångel.')
+  })
+
+  it('never presents an unverified Dam label as production data', () => {
+    const html = renderMotiontest()
+
+    expect(html).not.toContain('<li>Dam</li>')
+    expect(html).toContain('Dam · preliminärt')
   })
 
   it('uses only registered page booking slots', () => {
     const canonical = {
       hero: 'https://slots.example/hero',
       results: 'https://slots.example/results',
-      'services-footer': 'https://slots.example/services-footer',
       contact: 'https://slots.example/contact',
       studio: 'https://slots.example/studio',
       nav: 'https://slots.example/nav',
@@ -144,10 +269,12 @@ describe('FreshCut motiontest server markup', () => {
   it('never gives prototype services or Sankt Larsgatan a production booking path', () => {
     const html = renderMotiontest()
 
-    for (const name of ['Damklippning', 'Dam student', 'Dam pensionär']) {
-      const row = html.match(
-        new RegExp(`<li data-prototype-service="${name}"[\\s\\S]*?</li>`),
-      )?.[0]
+    for (const name of [
+      'Damklippning · prototyp',
+      'Dam student · prototyp',
+      'Dam pensionär · prototyp',
+    ]) {
+      const row = html.match(new RegExp(`<li data-prototype-service="${name}"[\\s\\S]*?</li>`))?.[0]
 
       expect(row).toBeDefined()
       expect(row).not.toContain('<a ')

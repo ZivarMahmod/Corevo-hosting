@@ -1,0 +1,98 @@
+name: Deploy FreshCut Motiontest
+
+on:
+  # GitHub exposes workflow_dispatch only after this workflow exists on the
+  # default branch. There is intentionally no automatic or alternate trigger.
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact candidate commit SHA to verify and deploy
+        required: true
+        type: string
+      expected_ref:
+        description: Exact release branch ref containing the candidate
+        required: true
+        type: string
+
+concurrency:
+  group: freshcut-motiontest-worker
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: 5-Kod
+
+jobs:
+  deploy-motiontest:
+    name: deploy isolated FreshCut motiontest
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: motiontest
+    env:
+      MOTIONTEST_EXPECTED_SHA: ${{ inputs.expected_sha }}
+      MOTIONTEST_EXPECTED_REF: ${{ inputs.expected_ref }}
+      MOTIONTEST_ACTUAL_SHA: ${{ github.sha }}
+      MOTIONTEST_ACTUAL_REF: ${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: 5-Kod/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run full web test suite (includes motiontest contracts)
+        run: pnpm --filter @corevo/web test
+
+      - name: Typecheck web
+        run: pnpm --filter @corevo/web typecheck
+
+      - name: Install Playwright browsers for motiontest evidence
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+
+      - name: Run local motiontest browser evidence
+        env:
+          NEXT_PUBLIC_CUSTOMER_PORTAL_HOST: mina.corevo.se
+          NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+          NEXT_PUBLIC_RESERVED_SUBDOMAINS: booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka,mina,internal,localhost,portal,sms,motiontest
+          NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
+          NEXT_PUBLIC_SITE_URL: https://motiontest.corevo.se
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNseWx2b3d0b3didG90cmFodWFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTg4MDcsImV4cCI6MjA5NTc3NDgwN30.ZSm3eMT-PxqfDPN2P584EVBlWfUwpeQ6gKOnKBvqxJU
+          NEXT_PUBLIC_SUPABASE_URL: https://clylvowtowbtotrahuad.supabase.co
+          NEXT_PUBLIC_SUPERADMIN_HOST: superbooking.corevo.se
+          NEXT_PUBLIC_TENANT_HOST_SUFFIX: corevo.se
+          NEXT_PUBLIC_TENANT_MODE: live
+          E2E_PORT: "3000"
+          LIVE_FRESHCUT_BASE_URL: https://freshcut.corevo.se
+        run: pnpm exec playwright test e2e/motiontest-freshcut.spec.ts e2e/motiontest-freshcut-cls.spec.ts e2e/motiontest-freshcut-nojs.spec.ts --project=chromium --project=firefox --project=webkit
+
+      - id: motiontest-build
+        name: Build and stamp OpenNext motiontest
+        env:
+          NODE_OPTIONS: ""
+        run: pnpm --filter @corevo/web build:motiontest
+
+      - name: Dry-run isolated motiontest Worker
+        env:
+          NODE_OPTIONS: ""
+          MOTIONTEST_EXPECTED_ARTIFACT_SHA: ${{ steps.motiontest-build.outputs.artifact_sha }}
+        run: pnpm --filter @corevo/web deploy:motiontest --dry-run
+
+      - name: Deploy and verify isolated motiontest Worker
+        env:
+          NODE_OPTIONS: ""
+          MOTIONTEST_EXPECTED_ARTIFACT_SHA: ${{ steps.motiontest-build.outputs.artifact_sha }}
+          MOTIONTEST_CLOUDFLARE_API_TOKEN: ${{ secrets.MOTIONTEST_CLOUDFLARE_API_TOKEN }}
+          MOTIONTEST_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.MOTIONTEST_CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter @corevo/web deploy:motiontest
