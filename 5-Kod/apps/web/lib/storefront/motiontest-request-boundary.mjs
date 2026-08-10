@@ -1,7 +1,7 @@
 const MOTIONTEST_PRODUCTION_AUTHORITY = 'motiontest.corevo.se'
 const MOTIONTEST_LOCAL_AUTHORITY = /^motiontest\.localhost(?::(\d+))?$/i
 const VERSIONED_MEDIA_PATH =
-  /^\/media\/freshcut-motion\/([a-z0-9][a-z0-9-]*-v[1-9]\d*-[a-f0-9]{12})\/\1-(?:desktop\.(?:webm|mp4)|mobile\.(?:webm|mp4)|poster\.webp)$/
+  /^\/media\/freshcut-motion\/([a-z0-9][a-z0-9-]*-v[1-9]\d*-[a-f0-9]{12})\/\1-(?:(?:desktop|mobile)\.(?:webm|mp4)|(?:desktop|mobile)-poster\.webp)$/
 
 function fullyDecode(value) {
   let decoded = value

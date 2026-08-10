@@ -86,7 +86,8 @@ describe('FreshCut motiontest storefront experience', () => {
       `/media/freshcut-motion/${family}/${family}-desktop.mp4`,
       `/media/freshcut-motion/${family}/${family}-mobile.webm`,
       `/media/freshcut-motion/${family}/${family}-mobile.mp4`,
-      `/media/freshcut-motion/${family}/${family}-poster.webp`,
+      `/media/freshcut-motion/${family}/${family}-desktop-poster.webp`,
+      `/media/freshcut-motion/${family}/${family}-mobile-poster.webp`,
     ]) {
       expect(isMotiontestPublicPath(pathname), pathname).toBe(true)
     }
@@ -97,6 +98,8 @@ describe('FreshCut motiontest storefront experience', () => {
       '/media/freshcut-motion/entrance-v0-a1b2c3d4e5f6/entrance-v0-a1b2c3d4e5f6-desktop.webm',
       '/media/freshcut-motion/entrance-v1-short/entrance-v1-short-desktop.webm',
       `/media/freshcut-motion/${family}/${family}-audio.mp3`,
+      `/media/freshcut-motion/${family}/${family}-poster.webp`,
+      `/media/freshcut-motion/${family}/${family}-manifest.json`,
       `/media/freshcut-motion/${family}/../tenant-secret.json`,
     ]) {
       expect(isMotiontestPublicPath(pathname), pathname).toBe(false)

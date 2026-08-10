@@ -38,12 +38,18 @@ describe('motiontest Worker outer boundary', () => {
         `https://motiontest.corevo.se/media/freshcut-motion/${family}/${family}-desktop.webm`,
       ),
       new Request(
+        `https://motiontest.corevo.se/media/freshcut-motion/${family}/${family}-desktop-poster.webp`,
+      ),
+      new Request(
+        `https://motiontest.corevo.se/media/freshcut-motion/${family}/${family}-mobile-poster.webp`,
+      ),
+      new Request(
         'https://motiontest.corevo.se/_next/image?url=%2Fimages%2Ffreshcut%2Ffreshcut-hero.webp&w=1200&q=75',
       ),
     ]) {
       await expect(worker.fetch(request, { binding: 'test' }, {})).resolves.toBe(delegated)
     }
-    expect(fetch).toHaveBeenCalledTimes(7)
+    expect(fetch).toHaveBeenCalledTimes(9)
   })
 
   it('makes every motiontest write impossible before OpenNext or ASSETS', async () => {
@@ -87,6 +93,9 @@ describe('motiontest Worker outer boundary', () => {
       new Request('https://motiontest.corevo.se/api/auth/session'),
       new Request('https://motiontest.corevo.se/manifest.webmanifest'),
       new Request('https://motiontest.corevo.se/images/other-tenant/image.webp'),
+      new Request(
+        'https://motiontest.corevo.se/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6/entrance-v1-a1b2c3d4e5f6-manifest.json',
+      ),
       new Request(
         'https://motiontest.corevo.se/_next/image?url=https%3A%2F%2Fattacker.test%2Fimage.webp&w=1200&q=75',
       ),
