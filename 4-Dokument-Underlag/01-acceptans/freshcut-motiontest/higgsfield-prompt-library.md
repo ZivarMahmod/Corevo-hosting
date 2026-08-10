@@ -128,6 +128,35 @@ render one natural unmarked photograph with no guide, border, rectangle, line,
 annotation, text or highlight.
 ```
 
+### S0R5 — fifth documented coordinate-free retry
+
+Use only after row 01R4 renders the numeric composition instructions as visible
+labels and guide lines. This retry deliberately replaces both the global block
+and S0 block with the following coordinate-free text; no references:
+
+```text
+FICTIONAL DEMO ASSET. Create one natural, unmarked, photorealistic wide
+cinematic photograph of an empty contemporary Scandinavian barbershop. It must
+not resemble a real salon or contain any real person's likeness.
+
+The camera is chest-height outside an open doorway with a fixed level horizon
+and a calm documentary lens. Warm practical light, graphite and muted olive
+walls, pale stone floor. A broad plain dark wall fills nearly the entire left
+half as calm empty copy space. The open doorway sits at the visual centre. A
+complete matte-black barber chair stands slightly right of the doorway centre
+and is modestly sized, with its headrest, both arms, seat, hydraulic base and
+entire footrest all clearly visible with generous empty floor and wall margin.
+It must remain complete even when the outer sides of the photograph are trimmed
+heavily for a tall phone. Keep one simple workstation and one rigid rectangular
+mirror with neutral dark glass farther behind the chair. Maintain a clear
+straight walking path from the doorway.
+
+This is only a photograph. Include no characters, letters, numbers, percentage
+marks, measurements, captions, guide lines, grids, diagrams, borders,
+rectangles, annotations, highlights, watermark, signage, logo, interface,
+pricing, brand mark or reflection.
+```
+
 ### P0 — `CUSTOMER_REF`
 
 ```text
