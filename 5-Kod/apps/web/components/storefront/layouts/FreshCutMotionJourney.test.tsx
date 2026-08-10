@@ -14,6 +14,12 @@ type ObserverRecord = {
   target?: Element
 }
 
+type ResizeObserverRecord = {
+  callback: ResizeObserverCallback
+  disconnect: ReturnType<typeof vi.fn>
+  target?: Element
+}
+
 let container: HTMLDivElement
 let root: Root
 let reducedMotion = false
@@ -21,6 +27,9 @@ let saveData = false
 let nextFrame = 1
 let frames: Map<number, FrameRequestCallback>
 let observers: ObserverRecord[]
+let resizeObservers: ResizeObserverRecord[]
+let viewportHeight = 400
+let visualViewport: VisualViewport
 
 function posters() {
   return [
@@ -67,8 +76,19 @@ describe('FreshCutMotionJourney', () => {
     nextFrame = 1
     frames = new Map()
     observers = []
+    resizeObservers = []
+    viewportHeight = 400
 
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 400 })
+    visualViewport = new EventTarget() as VisualViewport
+    Object.defineProperty(visualViewport, 'height', {
+      configurable: true,
+      get: () => viewportHeight,
+    })
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: visualViewport,
+    })
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: vi.fn(() => ({
@@ -121,6 +141,23 @@ describe('FreshCutMotionJourney', () => {
         unobserve = vi.fn()
         disconnect = () => this.record.disconnect()
         takeRecords = () => []
+      },
+    })
+    Object.defineProperty(window, 'ResizeObserver', {
+      configurable: true,
+      value: class {
+        private readonly record: ResizeObserverRecord
+
+        constructor(callback: ResizeObserverCallback) {
+          this.record = { callback, disconnect: vi.fn() }
+          resizeObservers.push(this.record)
+        }
+
+        observe = (target: Element) => {
+          this.record.target = target
+        }
+        unobserve = vi.fn()
+        disconnect = () => this.record.disconnect()
       },
     })
 
@@ -203,21 +240,166 @@ describe('FreshCutMotionJourney', () => {
     expect(journey.querySelector('a[aria-current="step"]')?.textContent).toBe('Hantverket')
   })
 
-  it('remains active without IntersectionObserver and uses native hash before focusing the heading', async () => {
-    Object.defineProperty(window, 'IntersectionObserver', { configurable: true, value: undefined })
+  it('waits for the clicked checkpoint phase to render before focusing its heading', async () => {
     const journey = await renderJourney()
     vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
       x: 0,
-      y: 0,
-      top: 0,
+      y: -522,
+      top: -522,
       right: 100,
-      bottom: 1000,
+      bottom: 478,
+      left: 0,
+      width: 100,
+      height: 1000,
+      toJSON: () => ({}),
+    })
+
+    const heading = journey.querySelector<HTMLElement>('#motion-mirror-title')!
+    const focus = vi.spyOn(heading, 'focus')
+    const link = [...journey.querySelectorAll<HTMLAnchorElement>('nav a')].find(
+      (candidate) => candidate.textContent === 'Resultatet',
+    )!
+
+    await act(async () => {
+      link.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(window.location.hash).toBe('#motion-checkpoint-mirror')
+    expect(focus).not.toHaveBeenCalled()
+    expect(journey.dataset.motionPhase).toBe('threshold')
+
+    observers[0]!.callback(
+      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    )
+    await act(async () => flushFrames())
+
+    expect(journey.dataset.motionPhase).toBe('mirror')
+    expect(document.activeElement).toBe(heading)
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+  })
+
+  it('focuses an already-current checkpoint after preserving native hash navigation', async () => {
+    const journey = await renderJourney()
+    const heading = journey.querySelector<HTMLElement>('#motion-threshold-title')!
+    const focus = vi.spyOn(heading, 'focus')
+    const link = [...journey.querySelectorAll<HTMLAnchorElement>('nav a')].find(
+      (candidate) => candidate.textContent === 'Entré',
+    )!
+
+    await act(async () => {
+      link.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(window.location.hash).toBe('#motion-checkpoint-threshold')
+    expect(document.activeElement).toBe(heading)
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+  })
+
+  it('focuses any checkpoint in static mode after preserving native hash navigation', async () => {
+    reducedMotion = true
+    const journey = await renderJourney()
+    const heading = journey.querySelector<HTMLElement>('#motion-mirror-title')!
+    const focus = vi.spyOn(heading, 'focus')
+    const link = [...journey.querySelectorAll<HTMLAnchorElement>('nav a')].find(
+      (candidate) => candidate.textContent === 'Resultatet',
+    )!
+
+    await act(async () => {
+      link.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(journey.dataset.motionMode).toBe('static')
+    expect(window.location.hash).toBe('#motion-checkpoint-mirror')
+    expect(document.activeElement).toBe(heading)
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+  })
+
+  it('shares measured travel with checkpoint anchors and coalesces every resize source', async () => {
+    viewportHeight = 500
+    const addEventListener = vi.spyOn(window, 'addEventListener')
+    const journey = await renderJourney()
+    let top = -300
+    let height = 1000
+    vi.spyOn(journey, 'getBoundingClientRect').mockImplementation(() => ({
+      x: 0,
+      y: top,
+      top,
+      right: 100,
+      bottom: top + height,
+      left: 0,
+      width: 100,
+      height,
+      toJSON: () => ({}),
+    }))
+
+    observers[0]!.callback(
+      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    )
+    await act(async () => flushFrames())
+
+    expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.6')
+    expect(
+      journey
+        .querySelector<HTMLElement>('[data-motion-checkpoint="craft"]')!
+        .style.getPropertyValue('--motion-checkpoint-top'),
+    ).toBe('300px')
+    expect(
+      journey
+        .querySelector<HTMLElement>('[data-motion-checkpoint="mirror"]')!
+        .style.getPropertyValue('--motion-checkpoint-top'),
+    ).toBe('435px')
+
+    viewportHeight = 450
+    height = 1050
+    top = -300
+    window.dispatchEvent(new Event('resize'))
+    visualViewport.dispatchEvent(new Event('resize'))
+    resizeObservers[0]!.callback([], {} as ResizeObserver)
+
+    expect(frames).toHaveLength(1)
+    expect(
+      addEventListener.mock.calls.filter(([type]) => type === 'scroll'),
+    ).toHaveLength(1)
+    expect(addEventListener).toHaveBeenCalledWith('scroll', expect.any(Function), { passive: true })
+
+    await act(async () => flushFrames())
+
+    expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.5')
+    expect(
+      journey
+        .querySelector<HTMLElement>('[data-motion-checkpoint="craft"]')!
+        .style.getPropertyValue('--motion-checkpoint-top'),
+    ).toBe('360px')
+    expect(
+      journey
+        .querySelector<HTMLElement>('[data-motion-checkpoint="mirror"]')!
+        .style.getPropertyValue('--motion-checkpoint-top'),
+    ).toBe('522px')
+  })
+
+  it('remains active without observer or visual viewport support', async () => {
+    Object.defineProperty(window, 'IntersectionObserver', { configurable: true, value: undefined })
+    Object.defineProperty(window, 'ResizeObserver', { configurable: true, value: undefined })
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: undefined })
+    const journey = await renderJourney()
+    vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: -522,
+      top: -522,
+      right: 100,
+      bottom: 478,
       left: 0,
       width: 100,
       height: 1000,
       toJSON: () => ({}),
     })
     await act(async () => flushFrames())
+    expect(journey.dataset.motionPhase).toBe('mirror')
 
     const heading = journey.querySelector<HTMLElement>('#motion-mirror-title')!
     const focus = vi.spyOn(heading, 'focus')
@@ -242,6 +424,7 @@ describe('FreshCutMotionJourney', () => {
 
   it('cleans up the observer, scroll listener, and queued frame', async () => {
     const removeEventListener = vi.spyOn(window, 'removeEventListener')
+    const removeViewportListener = vi.spyOn(visualViewport, 'removeEventListener')
     await renderJourney()
     observers[0]!.callback(
       [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
@@ -253,7 +436,10 @@ describe('FreshCutMotionJourney', () => {
     await act(async () => root.unmount())
 
     expect(observers[0]!.disconnect).toHaveBeenCalledOnce()
+    expect(resizeObservers[0]!.disconnect).toHaveBeenCalledOnce()
     expect(window.cancelAnimationFrame).toHaveBeenCalledOnce()
     expect(removeEventListener).toHaveBeenCalledWith('scroll', expect.any(Function))
+    expect(removeEventListener).toHaveBeenCalledWith('resize', expect.any(Function))
+    expect(removeViewportListener).toHaveBeenCalledWith('resize', expect.any(Function))
   })
 })

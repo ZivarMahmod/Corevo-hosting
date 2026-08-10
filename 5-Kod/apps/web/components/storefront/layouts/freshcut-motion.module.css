@@ -85,12 +85,8 @@
   height: 220svh;
 }
 
-.journey[data-motion-enhanced='true'] .checkpointAnchor[data-motion-checkpoint='craft'] {
-  top: calc(60% - 60svh);
-}
-
-.journey[data-motion-enhanced='true'] .checkpointAnchor[data-motion-checkpoint='mirror'] {
-  top: calc(87% - 87svh);
+.journey[data-motion-enhanced='true'] .checkpointAnchor {
+  top: var(--motion-checkpoint-top);
 }
 
 .journey[data-motion-enhanced='true'] .journeyScene {
