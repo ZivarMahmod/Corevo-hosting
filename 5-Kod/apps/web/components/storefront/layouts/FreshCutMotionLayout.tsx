@@ -3,6 +3,7 @@ import { Bookable } from '@/components/storefront/Bookable'
 import type { Service } from '@/lib/tenant-data'
 import { resolveMotiontestView } from '@/lib/storefront/motiontest-content'
 import { FreshCutWordmark } from './FreshCutChrome'
+import { FreshCutMotionJourney } from './FreshCutMotionJourney'
 import type { StorefrontLayoutProps } from './types'
 import motion from './freshcut-motion.module.css'
 
@@ -29,115 +30,139 @@ export function FreshCutMotionLayout({
 
   return (
     <div className={motion.page} data-storefront-experience="freshcut-motiontest">
-      <section
-        className={`${motion.poster} ${motion.threshold}`}
-        id="upplevelsen"
-        aria-labelledby="motion-threshold-title"
-        data-poster-composition="threshold"
-      >
-        <div className={motion.thresholdImage} aria-hidden="true" data-media-status="previsualization" />
-        <div className={motion.thresholdContent}>
-          <p className={motion.wordmark}><FreshCutWordmark name={tenant.name} /></p>
-          <p className={motion.kicker}>Linköping · Klippning och skägg</p>
-          <h1 id="motion-threshold-title">Rent snitt. Ingen krångel.</h1>
-          <p className={motion.lede}>
-            Lokalt hantverk, tydliga priser och en bokning som inte står i vägen.
-          </p>
+      <FreshCutMotionJourney>
+        <section
+          className={`${motion.poster} ${motion.threshold}`}
+          id="upplevelsen"
+          aria-labelledby="motion-threshold-title"
+          data-poster-composition="threshold"
+        >
+          <div
+            className={motion.thresholdImage}
+            aria-hidden="true"
+            data-media-status="previsualization"
+          />
+          <div className={motion.thresholdContent}>
+            <p className={motion.wordmark}>
+              <FreshCutWordmark name={tenant.name} />
+            </p>
+            <p className={motion.kicker}>Linköping · Klippning och skägg</p>
+            <h1 id="motion-threshold-title" tabIndex={-1}>
+              Rent snitt. Ingen krångel.
+            </h1>
+            <p className={motion.lede}>
+              Lokalt hantverk, tydliga priser och en bokning som inte står i vägen.
+            </p>
 
-          <div className={motion.primaryActions} aria-label="Genvägar">
+            <div className={motion.primaryActions} aria-label="Genvägar">
+              <BookCta
+                slotId="hero"
+                enabled={bookingReachable}
+                className={motion.primaryButton}
+                label="Boka via Bokadirekt · Bokhållaregatan"
+              />
+              <a href="#tjanster">Se tjänster &amp; priser</a>
+              <a href="#salongen">Välj salong</a>
+              <a href="#hantverket">Upplev FreshCut</a>
+            </div>
+
+            <div className={motion.priceRail} aria-label="Populära tjänster">
+              {featured.map(({ service }) => (
+                <div key={service.id} className={motion.priceRailRow}>
+                  <span>{service.name}</span>
+                  <strong>{formatPrice(service.price_cents)}</strong>
+                </div>
+              ))}
+            </div>
+
+            <div className={motion.twoSalons}>
+              <strong>Två salonger i Linköping</strong>
+              <span>
+                {primaryLocation?.address || 'Primär adress publiceras snart'} — boka via Bokadirekt
+              </span>
+              <span>{prototypeLocation?.address} — bokningslänk kommer</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          className={`${motion.poster} ${motion.craft}`}
+          id="hantverket"
+          aria-labelledby="motion-craft-title"
+          data-poster-composition="craft"
+        >
+          <div
+            className={motion.craftImage}
+            aria-hidden="true"
+            data-media-status="previsualization"
+          />
+          <div className={motion.craftCopy}>
+            <p className={motion.posterIndex}>02 / Hantverket</p>
+            <h2 id="motion-craft-title" tabIndex={-1}>
+              Händerna gör skillnaden.
+            </h2>
+            <p>
+              Vi lyssnar först och klipper sedan. Sax, maskin, kam och varm handduk — alltid med
+              fokus på formen som passar dig.
+            </p>
+            <div className={motion.posterActions}>
+              <a href="#resultat">Hoppa till resultat</a>
+              <a href="#tjanster">Se tjänster</a>
+              <BookCta
+                slotId="results"
+                enabled={bookingReachable}
+                className={motion.textBooking}
+                label="Boka nu"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section
+          className={`${motion.poster} ${motion.mirror}`}
+          id="spegeln"
+          aria-labelledby="motion-mirror-title"
+          data-poster-composition="mirror"
+        >
+          <div className={motion.mirrorResult}>
+            <div className={motion.mirrorFrame}>
+              <div
+                className={motion.mirrorImage}
+                aria-hidden="true"
+                data-media-status="previsualization"
+              />
+            </div>
+            <p>Ett rent avslut, en skarp linje och en form som håller efter besöket.</p>
+          </div>
+          <div className={motion.mirrorBooking}>
+            <p className={motion.posterIndex}>03 / Spegeln</p>
+            <h2 id="motion-mirror-title" tabIndex={-1}>
+              Resultatet är ditt.
+            </h2>
+            <p>Välj en tjänst och boka tryggt vidare via Bokadirekt.</p>
+            <div className={motion.mirrorServices}>
+              {featured.map(({ service }) => (
+                <div key={service.id}>
+                  <span>
+                    {service.name}
+                    <small>{service.duration_min} min</small>
+                  </span>
+                  <strong>{formatPrice(service.price_cents)}</strong>
+                </div>
+              ))}
+            </div>
             <BookCta
-              slotId="hero"
+              slotId="services-footer"
               enabled={bookingReachable}
               className={motion.primaryButton}
-              label="Boka via Bokadirekt · Bokhållaregatan"
+              label="Boka via Bokadirekt"
             />
-            <a href="#tjanster">Se tjänster &amp; priser</a>
-            <a href="#salongen">Välj salong</a>
-            <a href="#hantverket">Upplev FreshCut</a>
+            <a className={motion.lineLink} href="#tjanster">
+              Visa alla tjänster
+            </a>
           </div>
-
-          <div className={motion.priceRail} aria-label="Populära tjänster">
-            {featured.map(({ service }) => (
-              <div key={service.id} className={motion.priceRailRow}>
-                <span>{service.name}</span>
-                <strong>{formatPrice(service.price_cents)}</strong>
-              </div>
-            ))}
-          </div>
-
-          <div className={motion.twoSalons}>
-            <strong>Två salonger i Linköping</strong>
-            <span>{primaryLocation?.address || 'Primär adress publiceras snart'} — boka via Bokadirekt</span>
-            <span>{prototypeLocation?.address} — bokningslänk kommer</span>
-          </div>
-        </div>
-      </section>
-
-      <section
-        className={`${motion.poster} ${motion.craft}`}
-        id="hantverket"
-        aria-labelledby="motion-craft-title"
-        data-poster-composition="craft"
-      >
-        <div className={motion.craftImage} aria-hidden="true" data-media-status="previsualization" />
-        <div className={motion.craftCopy}>
-          <p className={motion.posterIndex}>02 / Hantverket</p>
-          <h2 id="motion-craft-title">Händerna gör skillnaden.</h2>
-          <p>
-            Vi lyssnar först och klipper sedan. Sax, maskin, kam och varm handduk —
-            alltid med fokus på formen som passar dig.
-          </p>
-          <nav aria-label="Upplevelsens delar" className={motion.checkpoints}>
-            <a href="#upplevelsen">Entré</a>
-            <a href="#hantverket" aria-current="step">Hantverket</a>
-            <a href="#spegeln">Resultatet</a>
-          </nav>
-          <div className={motion.posterActions}>
-            <a href="#resultat">Hoppa till resultat</a>
-            <a href="#tjanster">Se tjänster</a>
-            <BookCta
-              slotId="results"
-              enabled={bookingReachable}
-              className={motion.textBooking}
-              label="Boka nu"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section
-        className={`${motion.poster} ${motion.mirror}`}
-        id="spegeln"
-        aria-labelledby="motion-mirror-title"
-        data-poster-composition="mirror"
-      >
-        <div className={motion.mirrorResult}>
-          <div className={motion.mirrorFrame}>
-            <div className={motion.mirrorImage} aria-hidden="true" data-media-status="previsualization" />
-          </div>
-          <p>Ett rent avslut, en skarp linje och en form som håller efter besöket.</p>
-        </div>
-        <div className={motion.mirrorBooking}>
-          <p className={motion.posterIndex}>03 / Spegeln</p>
-          <h2 id="motion-mirror-title">Resultatet är ditt.</h2>
-          <p>Välj en tjänst och boka tryggt vidare via Bokadirekt.</p>
-          <div className={motion.mirrorServices}>
-            {featured.map(({ service }) => (
-              <div key={service.id}>
-                <span>{service.name}<small>{service.duration_min} min</small></span>
-                <strong>{formatPrice(service.price_cents)}</strong>
-              </div>
-            ))}
-          </div>
-          <BookCta
-            slotId="services-footer"
-            enabled={bookingReachable}
-            className={motion.primaryButton}
-            label="Boka via Bokadirekt"
-          />
-          <a className={motion.lineLink} href="#tjanster">Visa alla tjänster</a>
-        </div>
-      </section>
+        </section>
+      </FreshCutMotionJourney>
 
       <div className={motion.normalPage}>
         <section className={motion.services} id="tjanster" aria-labelledby="motion-services-title">
@@ -167,7 +192,9 @@ export function FreshCutMotionLayout({
                     <span className={motion.rowName}>{service.name}</span>
                     <span className={motion.rowDuration}>{service.duration_min} min</span>
                     <strong>{formatPrice(service.price_cents)}</strong>
-                    <span data-booking-slot={slotId} className={motion.rowAction}>Boka ↗</span>
+                    <span data-booking-slot={slotId} className={motion.rowAction}>
+                      Boka ↗
+                    </span>
                   </Bookable>
                 </article>
               )
@@ -233,7 +260,11 @@ export function FreshCutMotionLayout({
             <h2 id="motion-results-title">Olika hår. Samma noggrannhet.</h2>
           </div>
           <ul aria-label="FreshCuts tjänstebredd">
-            <li>Ung</li><li>Barn</li><li>Dam</li><li>Senior</li><li>Skägg</li>
+            <li>Ung</li>
+            <li>Barn</li>
+            <li>Dam</li>
+            <li>Senior</li>
+            <li>Skägg</li>
           </ul>
           <BookCta
             slotId="results"
@@ -247,8 +278,8 @@ export function FreshCutMotionLayout({
           <p>Om FreshCut</p>
           <h2 id="motion-about-title">Rakt, lokalt och noggrant.</h2>
           <p>
-            Hörnsalongen där frisör möter barberare. Vi håller det enkelt, vasst och
-            prisvärt — och vi minns hur du gillar din fade.
+            Hörnsalongen där frisör möter barberare. Vi håller det enkelt, vasst och prisvärt — och
+            vi minns hur du gillar din fade.
           </p>
           <BookCta
             slotId="studio"
@@ -265,7 +296,9 @@ export function FreshCutMotionLayout({
           </div>
           <div className={motion.contactFacts}>
             {primaryLocation?.address ? <address>{primaryLocation.address}</address> : null}
-            {contact?.phone ? <a href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}>{contact.phone}</a> : null}
+            {contact?.phone ? (
+              <a href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}>{contact.phone}</a>
+            ) : null}
             {contact?.email ? <a href={`mailto:${contact.email}`}>{contact.email}</a> : null}
           </div>
           <BookCta

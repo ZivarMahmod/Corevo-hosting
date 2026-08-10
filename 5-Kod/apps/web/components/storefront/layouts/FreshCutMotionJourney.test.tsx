@@ -1,0 +1,259 @@
+/** @vitest-environment happy-dom */
+
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { FreshCutMotionJourney, motionPhaseForProgress } from './FreshCutMotionJourney'
+;(
+  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
+
+type ObserverRecord = {
+  callback: IntersectionObserverCallback
+  disconnect: ReturnType<typeof vi.fn>
+  target?: Element
+}
+
+let container: HTMLDivElement
+let root: Root
+let reducedMotion = false
+let saveData = false
+let nextFrame = 1
+let frames: Map<number, FrameRequestCallback>
+let observers: ObserverRecord[]
+
+function posters() {
+  return [
+    <section
+      key="threshold"
+      aria-labelledby="motion-threshold-title"
+      data-poster-composition="threshold"
+    >
+      <h1 id="motion-threshold-title" tabIndex={-1}>
+        Entrérubrik
+      </h1>
+      <a href="https://booking.example/">Boka entré</a>
+    </section>,
+    <section key="craft" aria-labelledby="motion-craft-title" data-poster-composition="craft">
+      <h2 id="motion-craft-title" tabIndex={-1}>
+        Hantverksrubrik
+      </h2>
+      <a href="https://booking.example/">Boka hantverk</a>
+    </section>,
+    <section key="mirror" aria-labelledby="motion-mirror-title" data-poster-composition="mirror">
+      <h2 id="motion-mirror-title" tabIndex={-1}>
+        Resultatrubrik
+      </h2>
+      <a href="https://booking.example/">Boka resultat</a>
+    </section>,
+  ]
+}
+
+async function renderJourney() {
+  await act(async () => root.render(<FreshCutMotionJourney>{posters()}</FreshCutMotionJourney>))
+  return container.querySelector<HTMLElement>('[data-motion-mode]')!
+}
+
+function flushFrames() {
+  const queued = [...frames.values()]
+  frames.clear()
+  for (const callback of queued) callback(0)
+}
+
+describe('FreshCutMotionJourney', () => {
+  beforeEach(() => {
+    reducedMotion = false
+    saveData = false
+    nextFrame = 1
+    frames = new Map()
+    observers = []
+
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 400 })
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({
+        matches: reducedMotion,
+        media: '(prefers-reduced-motion: reduce)',
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(() => true),
+      })),
+    })
+    Object.defineProperty(navigator, 'connection', {
+      configurable: true,
+      value: {
+        get saveData() {
+          return saveData
+        },
+      },
+    })
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: vi.fn((callback: FrameRequestCallback) => {
+        const id = nextFrame++
+        frames.set(id, callback)
+        return id
+      }),
+    })
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: vi.fn((id: number) => frames.delete(id)),
+    })
+    Object.defineProperty(window, 'IntersectionObserver', {
+      configurable: true,
+      value: class {
+        readonly root = null
+        readonly rootMargin = '0px'
+        readonly thresholds = [0]
+        private readonly record: ObserverRecord
+
+        constructor(callback: IntersectionObserverCallback) {
+          this.record = { callback, disconnect: vi.fn() }
+          observers.push(this.record)
+        }
+
+        observe = (target: Element) => {
+          this.record.target = target
+        }
+        unobserve = vi.fn()
+        disconnect = () => this.record.disconnect()
+        takeRecords = () => []
+      },
+    })
+
+    window.history.replaceState(null, '', '/')
+    container = document.createElement('div')
+    document.body.append(container)
+    root = createRoot(container)
+  })
+
+  afterEach(async () => {
+    await act(async () => root.unmount())
+    container.remove()
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    [-1, 'threshold'],
+    [0, 'threshold'],
+    [0.599999, 'threshold'],
+    [0.6, 'craft'],
+    [0.869999, 'craft'],
+    [0.87, 'mirror'],
+    [1, 'mirror'],
+    [2, 'mirror'],
+  ] as const)('maps clamped progress %s to %s', (progress, expected) => {
+    expect(motionPhaseForProgress(progress)).toBe(expected)
+  })
+
+  it.each([
+    ['reduced motion', true, false],
+    ['save-data', false, true],
+  ])('keeps the complete journey sequential for %s', async (_label, reduced, saving) => {
+    reducedMotion = reduced
+    saveData = saving
+
+    const journey = await renderJourney()
+
+    expect(journey.dataset.motionMode).toBe('static')
+    expect(journey.querySelectorAll('[data-poster-composition]')).toHaveLength(3)
+    expect(journey.querySelectorAll('a[href="https://booking.example/"]')).toHaveLength(3)
+    expect(observers).toHaveLength(0)
+    expect(frames).toHaveLength(0)
+  })
+
+  it('keeps one queued frame, gates offscreen work, and updates progress while paused', async () => {
+    const journey = await renderJourney()
+    vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: -360,
+      top: -360,
+      right: 100,
+      bottom: 640,
+      left: 0,
+      width: 100,
+      height: 1000,
+      toJSON: () => ({}),
+    })
+
+    expect(journey.dataset.motionMode).toBe('enhanced')
+    expect(observers).toHaveLength(1)
+    window.dispatchEvent(new Event('scroll'))
+    expect(frames).toHaveLength(0)
+
+    observers[0]!.callback(
+      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    )
+    window.dispatchEvent(new Event('scroll'))
+    window.dispatchEvent(new Event('scroll'))
+    expect(frames).toHaveLength(1)
+
+    const pause = journey.querySelector<HTMLButtonElement>('button[aria-pressed]')!
+    await act(async () => pause.click())
+    expect(pause.getAttribute('aria-pressed')).toBe('true')
+
+    await act(async () => flushFrames())
+    expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.6')
+    expect(journey.dataset.motionPhase).toBe('craft')
+    expect(journey.dataset.motionPaused).toBe('true')
+    expect(journey.querySelector('a[aria-current="step"]')?.textContent).toBe('Hantverket')
+  })
+
+  it('remains active without IntersectionObserver and uses native hash before focusing the heading', async () => {
+    Object.defineProperty(window, 'IntersectionObserver', { configurable: true, value: undefined })
+    const journey = await renderJourney()
+    vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 100,
+      bottom: 1000,
+      left: 0,
+      width: 100,
+      height: 1000,
+      toJSON: () => ({}),
+    })
+    await act(async () => flushFrames())
+
+    const heading = journey.querySelector<HTMLElement>('#motion-mirror-title')!
+    const focus = vi.spyOn(heading, 'focus')
+    const link = [...journey.querySelectorAll<HTMLAnchorElement>('nav a')].find(
+      (candidate) => candidate.textContent === 'Resultatet',
+    )!
+    let defaultPrevented = true
+    link.addEventListener('click', (event) => {
+      defaultPrevented = event.defaultPrevented
+    })
+
+    await act(async () => {
+      link.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(defaultPrevented).toBe(false)
+    expect(window.location.hash).toBe('#motion-checkpoint-mirror')
+    expect(document.activeElement).toBe(heading)
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+  })
+
+  it('cleans up the observer, scroll listener, and queued frame', async () => {
+    const removeEventListener = vi.spyOn(window, 'removeEventListener')
+    await renderJourney()
+    observers[0]!.callback(
+      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    )
+    window.dispatchEvent(new Event('scroll'))
+    expect(frames).toHaveLength(1)
+
+    await act(async () => root.unmount())
+
+    expect(observers[0]!.disconnect).toHaveBeenCalledOnce()
+    expect(window.cancelAnimationFrame).toHaveBeenCalledOnce()
+    expect(removeEventListener).toHaveBeenCalledWith('scroll', expect.any(Function))
+  })
+})
