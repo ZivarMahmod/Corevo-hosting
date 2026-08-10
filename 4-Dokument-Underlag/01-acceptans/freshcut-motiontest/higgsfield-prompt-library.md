@@ -190,6 +190,40 @@ rectangles, annotations, highlights, watermark, signage, logo, interface,
 pricing, brand mark or reflection.
 ```
 
+### S0R7 — seventh documented depth and vertical-safe retry
+
+Use only after the responsive re-review shows that S0R3 can clear the desktop
+panel but its chair remains too low, while row 01R6 also clips the chair at the
+right phone edge. This is another complete coordinate-free replacement prompt
+with no references:
+
+```text
+FICTIONAL DEMO ASSET. Create one natural, unmarked, photorealistic wide
+cinematic photograph of an empty contemporary Scandinavian barbershop. It must
+not resemble a real salon or contain any real person's likeness.
+
+Use a chest-height camera outside one centred open doorway, a fixed level
+horizon and a calm documentary lens. Warm practical light, graphite and muted
+olive walls, pale stone floor. Keep a broad plain dark wall across the left side
+as calm empty space. The doorway opening is exactly at the visual centre.
+
+Place one complete matte-black barber chair far back inside the room, almost
+dead centre in the doorway and only a handspan to the right of the photograph's
+midpoint. The chair is much smaller and more distant than a normal foreground
+chair. Its headrest, both arms, seat, hydraulic base and entire footrest form one
+compact silhouette high in the middle of the doorway, nowhere near the right
+door jamb. Show a large uninterrupted area of empty pale floor below the entire
+chair all the way to the doorway threshold. The chair must finish well before
+the bottom third begins and stay complete when both outer sides are trimmed
+heavily for a tall phone. Keep one simple workstation and one rigid rectangular
+mirror with neutral dark glass behind it. Maintain a clear walking path.
+
+This is only a photograph. Include no characters, letters, numbers, percentage
+marks, measurements, captions, guide lines, grids, diagrams, borders,
+rectangles, annotations, highlights, watermark, signage, logo, interface,
+pricing, brand mark or reflection.
+```
+
 ### P0 — `CUSTOMER_REF`
 
 ```text
