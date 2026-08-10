@@ -960,11 +960,26 @@ describe('FreshCut master motion enhancement', () => {
     expect(range.dataset.motionEntryDirection).toBe('centre')
 
     const chairSceneTransition = timeline.fromTo.mock.calls.find(([target]) => target === chair)
-    expect(chairSceneTransition).toBeDefined()
-    const [, chairEntry, chairStable, chairTransitionStart] = chairSceneTransition!
-    expect(chairEntry).toMatchObject({ autoAlpha: 0, xPercent: -12 })
-    expect(chairStable).toMatchObject({ autoAlpha: 1, xPercent: 0 })
-    expect(chairTransitionStart + chairStable.duration).toBeCloseTo(0.28)
+    expect(chairSceneTransition).toBeUndefined()
+    const entranceHardCut = timeline.set.mock.calls.find(
+      ([target, state]) => target === entrance && state.autoAlpha === 0,
+    )
+    const chairHardCut = timeline.set.mock.calls.find(
+      ([target, state]) => target === chair && state.autoAlpha === 1,
+    )
+    expect(entranceHardCut?.[1]).toMatchObject({
+      autoAlpha: 0,
+      pointerEvents: 'none',
+      xPercent: 0,
+    })
+    expect(entranceHardCut?.[2]).toBe(0.28)
+    expect(chairHardCut?.[1]).toMatchObject({
+      autoAlpha: 1,
+      pointerEvents: 'auto',
+      scale: 1,
+      xPercent: 0,
+    })
+    expect(chairHardCut?.[2]).toBe(0.28)
 
     const chairMediaTransition = timeline.fromTo.mock.calls.find(
       ([target]) => target === chairMediaLayer,
@@ -1002,6 +1017,7 @@ describe('FreshCut master motion enhancement', () => {
     const experience = await renderExperience()
     const timeline = gsapHarness.timelines[0]!
     const businessPanel = experience.querySelector<HTMLElement>('[data-motion-business-panel]')!
+    const chair = experience.querySelector<HTMLElement>('[data-motion-scene="chair"]')!
     const sceneTransitions = timeline.fromTo.mock.calls.filter(
       ([target]) => target instanceof HTMLElement && target.hasAttribute('data-motion-scene'),
     )
@@ -1014,8 +1030,13 @@ describe('FreshCut master motion enhancement', () => {
     expect(gsapHarness.triggers).toHaveLength(1)
     expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 1023px)')
     expect(sceneTransitions.map(([target]) => (target as HTMLElement).dataset.motionScene)).toEqual(
-      ['entrance', 'chair', 'craft', 'range', 'return', 'mirror', 'team'],
+      ['entrance', 'craft', 'range', 'return', 'mirror', 'team'],
     )
+    expect(
+      timeline.set.mock.calls.find(
+        ([target, state, at]) => target === chair && state.autoAlpha === 1 && at === 0.28,
+      ),
+    ).toBeDefined()
     expect(layerTransitions.length).toBeGreaterThan(0)
     for (const [, entryState, stableState] of sceneTransitions) {
       expect(entryState.xPercent).toBe(0)
@@ -1065,7 +1086,12 @@ describe('FreshCut master motion enhancement', () => {
     const desktopTimeline = gsapHarness.timelines[1]!
     const chair = experience.querySelector<HTMLElement>('[data-motion-scene="chair"]')!
     const chairTransition = desktopTimeline.fromTo.mock.calls.find(([target]) => target === chair)
-    expect(chairTransition?.[1]).toMatchObject({ xPercent: -12 })
+    expect(chairTransition).toBeUndefined()
+    expect(
+      desktopTimeline.set.mock.calls.find(
+        ([target, state, at]) => target === chair && state.autoAlpha === 1 && at === 0.28,
+      )?.[1],
+    ).toMatchObject({ xPercent: 0 })
 
     await act(async () => root?.unmount())
     root = null
@@ -1116,23 +1142,13 @@ describe('FreshCut master motion enhancement', () => {
       const transitionedScenes = sceneTransitions.map(
         ([target]) => (target as HTMLElement).dataset.motionScene,
       )
-      if (finalCompact) {
-        expect(transitionedScenes).toEqual([
-          'entrance',
-          'chair',
-          'craft',
-          'range',
-          'return',
-          'mirror',
-          'team',
-        ])
-      } else {
-        expect(transitionedScenes).toContain('chair')
-        const chairTransition = sceneTransitions.find(
-          ([target]) => (target as HTMLElement).dataset.motionScene === 'chair',
-        )
-        expect(chairTransition?.[1]).toMatchObject({ xPercent: -12 })
-      }
+      expect(transitionedScenes).toEqual(['entrance', 'craft', 'range', 'return', 'mirror', 'team'])
+      const chair = experienceRoot.querySelector<HTMLElement>('[data-motion-scene="chair"]')!
+      expect(
+        gsapHarness.timelines[0]!.set.mock.calls.find(
+          ([target, state, at]) => target === chair && state.autoAlpha === 1 && at === 0.28,
+        )?.[1],
+      ).toMatchObject({ xPercent: 0 })
     },
   )
 

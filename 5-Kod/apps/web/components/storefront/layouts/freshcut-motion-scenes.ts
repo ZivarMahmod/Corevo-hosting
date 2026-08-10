@@ -90,6 +90,7 @@ export type FreshCutMotionScene = {
 }
 
 const SHARED_CONTROLS = ['checkpoints', 'skip-result', 'services', 'book'] as const
+export const FRESHCUT_MATCHED_CHAIR_HARD_CUT = 'matched-chair-hard-cut'
 
 function sceneLayers(
   sceneId: FreshCutMotionSceneId,
@@ -187,7 +188,7 @@ export const FRESHCUT_MOTION_SCENES = [
     },
     dom: ['entrance-line', 'persistent-booking'],
     transitionIn: 'doorway-mask-open',
-    transitionOut: 'chair-foreground-wipe',
+    transitionOut: FRESHCUT_MATCHED_CHAIR_HARD_CUT,
     controls: SHARED_CONTROLS,
     reducedMotion: 'static-entrance-panel',
     fallback: 'entrance-poster',
@@ -229,7 +230,7 @@ export const FRESHCUT_MOTION_SCENES = [
       rightsStatus: 'ai-transformation-pending',
     },
     dom: ['chair-line', 'persistent-booking'],
-    transitionIn: 'chair-foreground-wipe',
+    transitionIn: FRESHCUT_MATCHED_CHAIR_HARD_CUT,
     transitionOut: 'barber-right-occlusion',
     controls: SHARED_CONTROLS,
     reducedMotion: 'static-chair-panel',
@@ -724,6 +725,15 @@ export function validateFreshCutMotionScenes(scenes: readonly FreshCutMotionScen
     returnScene.media.mobilePoster !== craft.media.mobilePoster
   ) {
     errors.push('return must reuse craft responsive poster URLs exactly')
+  }
+
+  const entrance = scenes.find((scene) => scene.id === 'entrance')
+  const chair = scenes.find((scene) => scene.id === 'chair')
+  if (
+    entrance?.transitionOut !== FRESHCUT_MATCHED_CHAIR_HARD_CUT ||
+    chair?.transitionIn !== FRESHCUT_MATCHED_CHAIR_HARD_CUT
+  ) {
+    errors.push('entrance-to-chair transition must use matched-chair-hard-cut')
   }
 
   if (scenes.at(-1)?.range[1] !== 1) errors.push('last scene must end at 1')

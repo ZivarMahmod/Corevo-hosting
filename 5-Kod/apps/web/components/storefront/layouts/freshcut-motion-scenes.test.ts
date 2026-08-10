@@ -216,6 +216,18 @@ describe('FreshCut production motion scene map', () => {
     )
   })
 
+  it('fails closed unless Entrance and Chair share the matched-chair hard cut', () => {
+    const broken = FRESHCUT_MOTION_SCENES.map((scene) => {
+      if (scene.id === 'entrance') return { ...scene, transitionOut: 'generic-crossfade' }
+      if (scene.id === 'chair') return { ...scene, transitionIn: 'generic-crossfade' }
+      return scene
+    }) as unknown as readonly FreshCutMotionScene[]
+
+    expect(validateFreshCutMotionScenes(broken)).toContain(
+      'entrance-to-chair transition must use matched-chair-hard-cut',
+    )
+  })
+
   it('rejects duplicate anchor or heading destinations', () => {
     const broken = FRESHCUT_MOTION_SCENES.map((scene) => ({
       ...scene,

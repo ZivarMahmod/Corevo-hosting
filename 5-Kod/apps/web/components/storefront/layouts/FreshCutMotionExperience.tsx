@@ -11,6 +11,7 @@ import React, {
   useState,
 } from 'react'
 import {
+  FRESHCUT_MATCHED_CHAIR_HARD_CUT,
   FRESHCUT_MOTION_SCENES,
   motionMobilePhaseForScene,
   motionSceneForProgress,
@@ -535,6 +536,10 @@ export function FreshCutMotionExperience({
               sceneDuration * 0.35,
             )
             const transitionStart = Math.max(0, start - transitionDuration)
+            const usesMatchedHardCut =
+              previousElement !== undefined &&
+              previousKeyframe?.motionScene.transitionOut === FRESHCUT_MATCHED_CHAIR_HARD_CUT &&
+              motionScene.transitionIn === FRESHCUT_MATCHED_CHAIR_HARD_CUT
 
             if (index === 0) {
               timeline.set(
@@ -546,6 +551,26 @@ export function FreshCutMotionExperience({
                   xPercent: 0,
                 },
                 0,
+              )
+            } else if (usesMatchedHardCut) {
+              timeline.set(
+                previousElement,
+                {
+                  autoAlpha: 0,
+                  pointerEvents: 'none',
+                  xPercent: 0,
+                },
+                start,
+              )
+              timeline.set(
+                sceneElement,
+                {
+                  autoAlpha: 1,
+                  pointerEvents: 'auto',
+                  scale: 1,
+                  xPercent: 0,
+                },
+                start,
               )
             } else {
               if (previousElement) {

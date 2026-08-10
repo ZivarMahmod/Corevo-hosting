@@ -256,13 +256,21 @@ export function buildFreshCutQaArtifactPlan(input, facts = {}) {
   let samples
   if (input.mediaKind === 'video') {
     const durationSeconds = Number(facts.durationSeconds)
+    const finalFrameSeconds = Number(facts.finalFrameSeconds)
     if (!Number.isFinite(durationSeconds) || durationSeconds <= 1 / 30) {
       throw new Error('Video duration must be longer than one frame')
+    }
+    if (
+      !Number.isFinite(finalFrameSeconds) ||
+      finalFrameSeconds < 0 ||
+      finalFrameSeconds > durationSeconds
+    ) {
+      throw new Error('Video final decoded frame timestamp is invalid')
     }
     samples = [
       { label: 'first', seconds: 0 },
       { label: 'middle', seconds: durationSeconds / 2 },
-      { label: 'final', seconds: durationSeconds - 1 / 30 },
+      { label: 'final', seconds: finalFrameSeconds },
     ]
   } else {
     samples = [{ label: 'still', seconds: null }]
@@ -277,6 +285,7 @@ export function buildFreshCutQaArtifactPlan(input, facts = {}) {
       input.sceneId,
       {
         durationSeconds: input.mediaKind === 'video' ? Number(facts.durationSeconds) : null,
+        finalFrameSeconds: input.mediaKind === 'video' ? Number(facts.finalFrameSeconds) : null,
         mediaKind: input.mediaKind,
         path: input.candidatePath,
         sceneId: input.sceneId,
@@ -284,17 +293,26 @@ export function buildFreshCutQaArtifactPlan(input, facts = {}) {
     ],
   ])
   for (const transition of input.transitionInputs) {
+    const transitionFacts = facts.transitionMediaFacts?.[transition.sceneId]
     const durationSeconds =
-      transition.mediaKind === 'video'
-        ? Number(facts.transitionDurations?.[transition.sceneId])
-        : null
+      transition.mediaKind === 'video' ? Number(transitionFacts?.durationSeconds) : null
+    const finalFrameSeconds =
+      transition.mediaKind === 'video' ? Number(transitionFacts?.finalFrameSeconds) : null
     if (
       transition.mediaKind === 'video' &&
-      (!Number.isFinite(durationSeconds) || durationSeconds <= 1 / 30)
+      (!Number.isFinite(durationSeconds) ||
+        durationSeconds <= 1 / 30 ||
+        !Number.isFinite(finalFrameSeconds) ||
+        finalFrameSeconds < 0 ||
+        finalFrameSeconds > durationSeconds)
     ) {
       throw new Error(`Transition video duration is invalid for ${transition.sceneId}`)
     }
-    mediaByScene.set(transition.sceneId, { ...transition, durationSeconds })
+    mediaByScene.set(transition.sceneId, {
+      ...transition,
+      durationSeconds,
+      finalFrameSeconds,
+    })
   }
   const transitionPairs = DOCUMENTED_TRANSITION_PAIRS.flatMap(([fromScene, toScene]) => {
     const from = mediaByScene.get(fromScene)
@@ -387,7 +405,7 @@ function frameCommand(plan, sample, kind, filter, output, command) {
 
 function transitionEndpointArgs(media, endpoint) {
   if (media.mediaKind !== 'video') return ['-i', media.path]
-  const seconds = endpoint === 'final' ? media.durationSeconds - 1 / 30 : 0
+  const seconds = endpoint === 'final' ? media.finalFrameSeconds : 0
   return ['-ss', String(seconds), '-i', media.path]
 }
 
@@ -486,8 +504,11 @@ function probeQaMedia(media, ffprobePath, runCommand) {
           [
             '-v',
             'error',
+            '-select_streams',
+            'v:0',
+            '-show_frames',
             '-show_entries',
-            'stream=codec_type,width,height,duration:format=duration',
+            'stream=codec_type,width,height,duration:format=duration:frame=best_effort_timestamp_time,pts_time,pkt_pts_time',
             '-of',
             'json',
             media.path,
@@ -513,14 +534,27 @@ function probeQaMedia(media, ffprobePath, runCommand) {
     throw new Error('Candidate media has no decodable visual stream')
   }
   const durationSeconds = Number(probe?.format?.duration ?? videoStream.duration)
+  const decodedFrameSeconds = Array.isArray(probe?.frames)
+    ? probe.frames
+        .map((frame) =>
+          Number(frame.best_effort_timestamp_time ?? frame.pts_time ?? frame.pkt_pts_time),
+        )
+        .filter((seconds) => Number.isFinite(seconds) && seconds >= 0)
+    : []
+  const finalFrameSeconds =
+    decodedFrameSeconds.length > 0 ? Math.max(...decodedFrameSeconds) : Number.NaN
   if (
     media.mediaKind === 'video' &&
-    (!Number.isFinite(durationSeconds) || durationSeconds <= 1 / 30)
+    (!Number.isFinite(durationSeconds) ||
+      durationSeconds <= 1 / 30 ||
+      !Number.isFinite(finalFrameSeconds) ||
+      finalFrameSeconds > durationSeconds)
   ) {
     throw new Error('Candidate video duration is invalid')
   }
   return {
     durationSeconds: media.mediaKind === 'video' ? durationSeconds : null,
+    finalFrameSeconds: media.mediaKind === 'video' ? finalFrameSeconds : null,
     height: Number(videoStream.height),
     width: Number(videoStream.width),
   }
@@ -831,17 +865,21 @@ export async function executeFreshCutQaHarness(input, options = {}) {
     ffprobePath,
     runCommand,
   )
-  const transitionDurations = {}
+  const transitionMediaFacts = {}
   const transitionHashes = { [input.sceneId]: candidateSha256 }
   for (const transition of input.transitionInputs) {
     const probe = probeQaMedia(transition, ffprobePath, runCommand)
-    transitionDurations[transition.sceneId] = probe.durationSeconds
+    transitionMediaFacts[transition.sceneId] = {
+      durationSeconds: probe.durationSeconds,
+      finalFrameSeconds: probe.finalFrameSeconds,
+    }
     transitionHashes[transition.sceneId] = await hashQaMediaFile(transition.path)
   }
   const plan = buildFreshCutQaArtifactPlan(input, {
     candidateSha256,
     durationSeconds: candidateProbe.durationSeconds,
-    transitionDurations,
+    finalFrameSeconds: candidateProbe.finalFrameSeconds,
+    transitionMediaFacts,
   })
   if (existsSync(plan.artifactDirectory)) {
     throw new Error('QA artifact package already exists for this candidate and scene')

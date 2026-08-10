@@ -188,6 +188,7 @@ describe('FreshCut motion contact-sheet QA harness', () => {
     const plan = qaHarness.buildFreshCutQaArtifactPlan(input, {
       candidateSha256: 'b'.repeat(64),
       durationSeconds: 5,
+      finalFrameSeconds: 4.958333,
     })
     const commands = qaHarness.buildFreshCutQaFfmpegCommands(plan, {
       ffmpegPath: 'ffmpeg-test',
@@ -197,7 +198,7 @@ describe('FreshCut motion contact-sheet QA harness', () => {
     expect(plan.samples.map(({ label, seconds }) => ({ label, seconds }))).toEqual([
       { label: 'first', seconds: 0 },
       { label: 'middle', seconds: 2.5 },
-      { label: 'final', seconds: 5 - 1 / 30 },
+      { label: 'final', seconds: 4.958333 },
     ])
     expect(commands).toHaveLength(12)
     expect(commands.map(({ kind }) => kind)).toEqual(
@@ -207,6 +208,148 @@ describe('FreshCut motion contact-sheet QA harness', () => {
         'final-center-430x932',
       ]),
     )
+  })
+
+  it('samples a 24 fps video final frame at its probed maximum PTS', async () => {
+    const candidate = validInput({ sceneId: 'chair', copyPlacement: 'right' })
+    const videoPath = candidate.candidatePath.replace(/\.png$/, '.mp4')
+    writeFileSync(videoPath, 'private-24-fps-video')
+    const input = qaHarness.resolveQaHarnessInput(
+      [
+        '--candidate',
+        videoPath,
+        '--scene',
+        candidate.sceneId,
+        '--copy-placement',
+        candidate.copyPlacement,
+        '--output',
+        candidate.outputDir,
+      ],
+      {},
+      { repositoryRoot },
+    )
+    const commands = []
+    const runCommand = (command, args, options = {}) => {
+      commands.push({ args: [...args], command, label: options.label })
+      if (command === 'ffprobe-test') {
+        return JSON.stringify({
+          streams: [{ codec_type: 'video', width: 1280, height: 720 }],
+          frames: [
+            { best_effort_timestamp_time: '0.000000' },
+            { best_effort_timestamp_time: '5.000000' },
+          ],
+          format: { duration: '5.041667' },
+        })
+      }
+      const output = args.at(-1)
+      mkdirSync(dirname(output), { recursive: true })
+      writeFileSync(output, `generated:${command}`)
+      return ''
+    }
+
+    await qaHarness.executeFreshCutQaHarness(input, {
+      ffmpegPath: 'ffmpeg-test',
+      ffprobePath: 'ffprobe-test',
+      runCommand,
+    })
+
+    const finalFrame = commands.find(({ label }) => label === 'final-desktop-overlay')
+    const seekIndex = finalFrame.args.indexOf('-ss')
+    expect(finalFrame.args[seekIndex + 1]).toBe('5')
+  })
+
+  it.each([
+    ['no decoded frames', []],
+    ['a decoded frame after the reported duration', [{ best_effort_timestamp_time: '5.100000' }]],
+  ])('fails before artifact generation when a candidate video has %s', async (_label, frames) => {
+    const candidate = validInput({ sceneId: 'chair', copyPlacement: 'right' })
+    const videoPath = candidate.candidatePath.replace(/\.png$/, '.mp4')
+    writeFileSync(videoPath, 'private-invalid-frame-video')
+    const input = qaHarness.resolveQaHarnessInput(
+      [
+        '--candidate',
+        videoPath,
+        '--scene',
+        candidate.sceneId,
+        '--copy-placement',
+        candidate.copyPlacement,
+        '--output',
+        candidate.outputDir,
+      ],
+      {},
+      { repositoryRoot },
+    )
+    const artifactCommands = []
+    const runCommand = (command) => {
+      if (command === 'ffprobe-test') {
+        return JSON.stringify({
+          streams: [{ codec_type: 'video', width: 1280, height: 720 }],
+          frames,
+          format: { duration: '5.000000' },
+        })
+      }
+      artifactCommands.push(command)
+      return ''
+    }
+
+    await expect(
+      qaHarness.executeFreshCutQaHarness(input, {
+        ffmpegPath: 'ffmpeg-test',
+        ffprobePath: 'ffprobe-test',
+        runCommand,
+      }),
+    ).rejects.toThrow('Candidate video duration is invalid')
+    expect(artifactCommands).toEqual([])
+  })
+
+  it('fails before artifact generation when a transition video has no decoded frames', async () => {
+    const candidate = validInput({ sceneId: 'chair', copyPlacement: 'right' })
+    const chairPath = candidate.candidatePath.replace(/\.png$/, '-chair.mp4')
+    const entrancePath = candidate.candidatePath.replace(/\.png$/, '-entrance.mp4')
+    writeFileSync(chairPath, 'private-valid-chair-video')
+    writeFileSync(entrancePath, 'private-invalid-entrance-video')
+    const input = qaHarness.resolveQaHarnessInput(
+      [
+        '--candidate',
+        chairPath,
+        '--scene',
+        'chair',
+        '--copy-placement',
+        'right',
+        '--output',
+        candidate.outputDir,
+        '--transition-input',
+        `entrance=${entrancePath}`,
+      ],
+      {},
+      { repositoryRoot },
+    )
+    let probeCount = 0
+    const artifactCommands = []
+    const runCommand = (command) => {
+      if (command === 'ffprobe-test') {
+        probeCount += 1
+        return JSON.stringify({
+          streams: [{ codec_type: 'video', width: 1280, height: 720 }],
+          frames:
+            probeCount === 1
+              ? [{ best_effort_timestamp_time: '0' }, { best_effort_timestamp_time: '4.958333' }]
+              : [],
+          format: { duration: '5.000000' },
+        })
+      }
+      artifactCommands.push(command)
+      return ''
+    }
+
+    await expect(
+      qaHarness.executeFreshCutQaHarness(input, {
+        ffmpegPath: 'ffmpeg-test',
+        ffprobePath: 'ffprobe-test',
+        runCommand,
+      }),
+    ).rejects.toThrow('Candidate video duration is invalid')
+    expect(artifactCommands).toEqual([])
   })
 
   it('builds only documented transition pairs when neighbouring private inputs are provided', () => {
@@ -234,7 +377,10 @@ describe('FreshCut motion contact-sheet QA harness', () => {
     const plan = qaHarness.buildFreshCutQaArtifactPlan(input, {
       candidateSha256: 'c'.repeat(64),
       durationSeconds: 5,
-      transitionDurations: { entrance: 4 },
+      finalFrameSeconds: 4.958333,
+      transitionMediaFacts: {
+        entrance: { durationSeconds: 4, finalFrameSeconds: 3.958333 },
+      },
     })
     const commands = qaHarness.buildFreshCutQaFfmpegCommands(plan, {
       ffmpegPath: 'ffmpeg-test',
@@ -251,6 +397,11 @@ describe('FreshCut motion contact-sheet QA harness', () => {
     )
     const desktop = commands.find(({ kind }) => kind === 'transition-entrance-to-chair-desktop')
     expect(desktop.args.join(' ')).toContain('hstack=inputs=2')
+    expect(
+      desktop.args.flatMap((argument, index) =>
+        argument === '-ss' ? [desktop.args[index + 1]] : [],
+      ),
+    ).toEqual(['3.958333', '0'])
   })
 
   it('fails closed when supplied transition inputs cannot form a documented pair', () => {

@@ -1,6 +1,6 @@
 # FreshCut Motiontest — produktionsplan
 
-**Status:** aktiv på `codex/freshcut-motiontest-production-grade`
+**Status:** STOP vid underkänd `17/K1AV source` på `codex/freshcut-motiontest-production-grade`; ingen K1AV eller senare generation är godkänd
 **Mål:** Bygg och publicera en produktionskvalitativ, isolerad FreshCut-upplevelse
 på `motiontest.corevo.se` utan att ändra release eller render för
 `freshcut.corevo.se`.
@@ -149,8 +149,10 @@ oförändrade; motiontest är `noindex/nofollow` och robots disallow.
 ### Task 7 — Bygg den sammanhängande åttascenskompositionen
 
 - [ ] Hero fungerar som kampanjposter med all affärsnytta innan media.
-- [ ] Entrance, Chair och Craft delar samma miljö och använder masker/
-      foreground för att dölja skarvar, inte rektangulära videor.
+- [ ] Entrance, Chair och Craft delar samma miljö. A→B använder en
+      geometrimatchad hard cut med en komplett stol; stol/crop/foreground/
+      occluder/wipe får inte dölja skarven. Senare motiv får bara använda
+      dokumenterade miljö-/personmasker, inte rektangulära videor.
 - [ ] Range använder separata korrekta motiv och riktig DOM-tjänstedata.
 - [ ] Return återför samma huvudkund innan Mirror.
 - [ ] Mirror är komposit med boknings-UI bredvid/under, aldrig genererad text,
@@ -161,21 +163,43 @@ oförändrade; motiontest är `noindex/nofollow` och robots disallow.
 
 ### Task 8 — Syntetisk Higgsfield-demo; verklig slutmedia efter referensgrind
 
-**Låst syntetisk v2-råplan:** fjorton 2K-stills skapar S0/K0,
-CUSTOMER_REF, BARBER_REF, K1A, K1B, K2, K3, K4, fem separata Range-motiv
-och T0. Fyra femsekundersklipp är A entrance, B chair, C en enda craft-
-detalj och D mirror-only. Hero, Range, Return och Team får deterministiska
-responsiva posterfamiljer från godkända stills; Range kompositeras av R1–R5,
-Team får en lokal CSS/GSAP-pan och Return återanvänder exakt Crafts poster-URL:er
-utan ny hämtning eller videokälla. B- och C-drafts granskas först;
-A/D och alla 1080p-finaler förblir spärrade tills föregående grind är grön.
-Normalvägen är live-estimerad till 258 av 909,5 krediter.
+**Aktiv syntetisk v2-väg:** canonical 01L och referens-only P0R/P1R är
+accepterade. K1A/K1AR/K1AR2/K1AE är reject och får aldrig vara referenser;
+deras tidigare foreground-/occlusion-regel är historik och överskrids av den
+bindande complete-chair-grinden. Den redan budgeterade A-draften flyttas före
+K1B och är samma jobb som `17/K1AV source`; ingen andra A-draft körs. Därefter
+skapas K1B, K2, K3, K4, fem separata Range-motiv och T0. B- och C-drafts körs
+efter stillkedjan och granskas tillsammans; D-draft och alla relevanta
+1080p-finaler förblir spärrade tills föregående grind är grön. A-final använder
+01L som start och exakt accepterad K1AV som slut.
+
+Hero, Range, Return och Team får deterministiska responsiva posterfamiljer från
+godkända stills; Range kompositeras av R1–R5, Team får en lokal CSS/GSAP-pan och
+Return återanvänder exakt Crafts poster-URL:er utan ny hämtning eller
+videokälla. Retry-expanded väg är 295 av 909,5 krediter, prognos 614,5 kvar,
+67,56 % retained och 250,7 krediter headroom; row-17-aliasen lägger inte till
+ett jobb eller en kostnad.
 
 - [ ] Ladda inte upp eller transformera befintliga FreshCut-, kund-, sociala
       medier- eller fallbackbilder. Syntetiska ankarramar skapas från text och
       återanvänds endast som internt genererade kontinuitetsreferenser.
 - [ ] Lås syntetisk salong, syntetisk barberare/kund, sekventiella keyframes,
       storyboard, crop och UI-safe zones.
+- [x] Kör `17/K1AV source` som Seedance 2.0 Mini 720p, 5 s, 16:9, silent,
+      count 1 med endast accepterad 01L som start; jobbet kördes och avvisades.
+- [x] Granska hela A-videon och varje avkodad frame i full 16:9 och exakta
+      360/390/430-crops. Exakt en komplett stol—huvudstöd, båda armstöd, sits,
+      hydraulbas och fotstöd—har fri marginal i `x=41–59%, y=12–58%`, inget
+      viktigt under `y=62%`; slutbasen nådde cirka `y=75%`, så jobbet föll.
+- [x] Stoppa utan K1AV-extraktion, upload, derivatsubstitution eller retry när
+      råvideon föll den förregistrerade fail-closed-grinden.
+- [ ] BLOCKED — A slutar tydligt inne i salongen med stabil hold ≥0,75 s. Extrahera först
+      därefter deterministiskt sista avkodade icke-svarta max-PTS-framen och
+      bind video-SHA, frame index, PTS, dimensioner och PNG-SHA.
+- [ ] BLOCKED — Ladda upp exakt den K1AV-PNG-filen en gång och kräv byte-exakt roundtrip.
+      K1AV är `continuity-reference-only`, delar A:s acceptans/publiceringsgrind
+      och får bara gå till K1B efter grön helkedja. A→B är en geometrimatchad
+      hard cut; K1B matchar K1AV-kamera/rigid geometri med kunden bredvid stolen.
 - [ ] Kör fyra oberoende pre-generation reviews.
 - [ ] Kontrollera aktuellt workspace/balans/modell och estimera före varje jobb.
 - [ ] Börja med en Mini-kandidat per validerad action-shot. Generera final i
