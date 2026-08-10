@@ -78,7 +78,7 @@ at x=0–40%. The centred 9:16 crop must show the whole doorway path and whole
 chair, not a partial chair at either edge.
 ```
 
-### S0R2 — final documented artifact retry
+### S0R2 — second documented artifact retry
 
 Use only after row 01R is rejected for rendering a visible composition guide.
 Send the same global block and S0 prompt plus this correction; no references:
@@ -90,6 +90,24 @@ frame around the chair or doorway. Compose one natural unmarked photograph:
 the open doorway and the complete chair are centred together, the whole chair
 has clear margin on every side, and calm dark negative space remains on the
 left. The centred portrait crop shows the full doorway path and full chair.
+```
+
+### S0R3 — third documented crop retry
+
+Use only after row 01R2 is rejected because the true tall-phone centre crops
+clip the chair footrest at the right edge. Send the same global block and S0
+prompt plus this correction; no references:
+
+```text
+FINAL PHYSICAL PLACEMENT CORRECTION: make the open doorway and the complete
+barber chair share the exact visual centre of the photograph. Move the chair
+substantially left within the room so its headrest, both arms, seat, hydraulic
+base and entire footrest all have generous empty margin inside even the
+narrowest centred tall-phone crop. Keep the chair facing slightly left without
+extending any part toward the right crop edge. Preserve the broad calm dark wall
+on the far left for DOM copy. These are invisible photographic composition
+instructions: render no guide, border, rectangle, line, annotation, text or
+highlight of any kind.
 ```
 
 ### P0 — `CUSTOMER_REF`
