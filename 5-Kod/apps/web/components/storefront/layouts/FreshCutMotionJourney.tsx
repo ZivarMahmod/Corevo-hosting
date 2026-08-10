@@ -46,7 +46,7 @@ const CHECKPOINTS: ReadonlyArray<{
 type MotionStyle = CSSProperties & { '--motion-progress': string }
 type CheckpointStyle = CSSProperties & { '--motion-checkpoint-top': string }
 type PendingFocus = Pick<(typeof CHECKPOINTS)[number], 'phase' | 'headingId'>
-type JourneyMode = 'pending' | 'static' | 'enhanced'
+type JourneyMode = 'pending' | 'preparing' | 'static' | 'enhanced'
 
 export function motionPhaseForProgress(progress: number): FreshCutMotionPhase {
   const clamped = Number.isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress))
@@ -58,11 +58,14 @@ export function motionPhaseForProgress(progress: number): FreshCutMotionPhase {
 export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const focusTimersRef = useRef<Set<number>>(new Set())
+  const geometryPreparedRef = useRef(false)
+  const queueMeasurementRef = useRef<() => void>(() => undefined)
   const [journeyMode, setJourneyMode] = useState<JourneyMode>('pending')
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
   const [measuredTravel, setMeasuredTravel] = useState<number | null>(null)
   const [pendingFocus, setPendingFocus] = useState<PendingFocus | null>(null)
+  const preparing = journeyMode === 'preparing'
   const enhanced = journeyMode === 'enhanced'
   const phase = motionPhaseForProgress(progress)
   const panels = Children.toArray(children)
@@ -100,13 +103,23 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
       setJourneyMode('enhanced')
     }
 
-    const queueUpdate = () => {
+    const queueMeasurement = () => {
       if (!active || queuedFrame !== null) return
       queuedFrame = window.requestAnimationFrame(updateProgress)
     }
 
-    const handleScroll = () => queueUpdate()
-    const handleResize = () => queueUpdate()
+    const requestUpdate = () => {
+      if (!active) return
+      if (!geometryPreparedRef.current) {
+        setJourneyMode('preparing')
+        return
+      }
+      queueMeasurement()
+    }
+    queueMeasurementRef.current = queueMeasurement
+
+    const handleScroll = () => requestUpdate()
+    const handleResize = () => requestUpdate()
     window.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('resize', handleResize)
     const visualViewport = window.visualViewport
@@ -123,7 +136,7 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
       observer = new window.IntersectionObserver(([entry]) => {
         active = entry?.isIntersecting ?? false
         if (active) {
-          queueUpdate()
+          requestUpdate()
         } else if (queuedFrame !== null) {
           window.cancelAnimationFrame(queuedFrame)
           queuedFrame = null
@@ -131,7 +144,7 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
       })
       observer.observe(wrapper)
     } else {
-      queueUpdate()
+      requestUpdate()
     }
 
     return () => {
@@ -142,8 +155,15 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
       observer?.disconnect()
       resizeObserver?.disconnect()
       if (queuedFrame !== null) window.cancelAnimationFrame(queuedFrame)
+      queueMeasurementRef.current = () => undefined
     }
   }, [])
+
+  useEffect(() => {
+    if (journeyMode !== 'preparing') return
+    geometryPreparedRef.current = true
+    queueMeasurementRef.current()
+  }, [journeyMode])
 
   useEffect(
     () => () => {
@@ -178,6 +198,7 @@ export function FreshCutMotionJourney({ children }: { children: ReactNode }) {
       ref={wrapperRef}
       className={motion.journey}
       data-motion-mode={enhanced ? 'enhanced' : 'static'}
+      data-motion-preparing={preparing ? 'true' : undefined}
       data-motion-enhanced={enhanced ? 'true' : undefined}
       data-motion-phase={phase}
       data-motion-paused={paused ? 'true' : 'false'}

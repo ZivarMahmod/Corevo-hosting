@@ -222,16 +222,21 @@ describe('FreshCutMotionJourney', () => {
     window.dispatchEvent(new Event('scroll'))
     expect(frames).toHaveLength(0)
 
-    observers[0]!.callback(
-      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
-      {} as IntersectionObserver,
+    await act(async () =>
+      observers[0]!.callback(
+        [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      ),
     )
     window.dispatchEvent(new Event('scroll'))
     window.dispatchEvent(new Event('scroll'))
     expect(frames).toHaveLength(1)
+    expect(journey.dataset.motionMode).toBe('static')
+    expect(journey.dataset.motionPreparing).toBe('true')
 
     await act(async () => flushFrames())
     expect(journey.dataset.motionMode).toBe('enhanced')
+    expect(journey.dataset.motionPreparing).toBeUndefined()
     expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.6')
 
     const pause = journey.querySelector<HTMLButtonElement>('button[aria-pressed]')!
@@ -249,18 +254,22 @@ describe('FreshCutMotionJourney', () => {
     expect(journey.querySelector('a[aria-current="step"]')?.textContent).toBe('Resultatet')
   })
 
-  it('keeps static anchors until the first intersection measurement completes', async () => {
+  it('measures prepared wrapper geometry before atomically exposing enhanced anchors', async () => {
+    Object.defineProperty(window, 'ResizeObserver', { configurable: true, value: undefined })
     const journey = await renderJourney()
-    vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
-      x: 0,
-      y: 0,
-      top: 0,
-      right: 100,
-      bottom: 1000,
-      left: 0,
-      width: 100,
-      height: 1000,
-      toJSON: () => ({}),
+    const getBounds = vi.spyOn(journey, 'getBoundingClientRect').mockImplementation(() => {
+      const height = journey.dataset.motionPreparing === 'true' ? 1000 : 1400
+      return {
+        x: 0,
+        y: -300,
+        top: -300,
+        right: 100,
+        bottom: height - 300,
+        left: 0,
+        width: 100,
+        height,
+        toJSON: () => ({}),
+      }
     })
     const anchors = [...journey.querySelectorAll<HTMLElement>('[data-motion-checkpoint]')]
 
@@ -272,23 +281,38 @@ describe('FreshCutMotionJourney', () => {
       '',
     ])
 
-    observers[0]!.callback(
-      [{ isIntersecting: false, target: observers[0]!.target } as IntersectionObserverEntry],
-      {} as IntersectionObserver,
+    await act(async () =>
+      observers[0]!.callback(
+        [{ isIntersecting: false, target: observers[0]!.target } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      ),
     )
     expect(frames).toHaveLength(0)
     expect(journey.dataset.motionMode).toBe('static')
+    expect(journey.dataset.motionPreparing).toBeUndefined()
 
-    observers[0]!.callback(
-      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
-      {} as IntersectionObserver,
+    await act(async () =>
+      observers[0]!.callback(
+        [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      ),
     )
     expect(frames).toHaveLength(1)
     expect(journey.dataset.motionMode).toBe('static')
+    expect(journey.dataset.motionPreparing).toBe('true')
+    expect(getBounds).not.toHaveBeenCalled()
+    expect(anchors.map((anchor) => anchor.style.getPropertyValue('--motion-checkpoint-top'))).toEqual([
+      '',
+      '',
+      '',
+    ])
 
     await act(async () => flushFrames())
 
+    expect(getBounds).toHaveBeenCalledOnce()
     expect(journey.dataset.motionMode).toBe('enhanced')
+    expect(journey.dataset.motionPreparing).toBeUndefined()
+    expect(journey.style.getPropertyValue('--motion-progress')).toBe('0.5')
     expect(anchors.map((anchor) => anchor.style.getPropertyValue('--motion-checkpoint-top'))).toEqual([
       '0px',
       '360px',
@@ -325,10 +349,14 @@ describe('FreshCutMotionJourney', () => {
     expect(focus).not.toHaveBeenCalled()
     expect(journey.dataset.motionPhase).toBe('threshold')
 
-    observers[0]!.callback(
-      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
-      {} as IntersectionObserver,
+    await act(async () =>
+      observers[0]!.callback(
+        [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      ),
     )
+    expect(journey.dataset.motionPreparing).toBe('true')
+    expect(focus).not.toHaveBeenCalled()
     await act(async () => flushFrames())
 
     expect(journey.dataset.motionPhase).toBe('mirror')
@@ -392,9 +420,11 @@ describe('FreshCutMotionJourney', () => {
       toJSON: () => ({}),
     }))
 
-    observers[0]!.callback(
-      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
-      {} as IntersectionObserver,
+    await act(async () =>
+      observers[0]!.callback(
+        [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      ),
     )
     await act(async () => flushFrames())
 
@@ -443,6 +473,8 @@ describe('FreshCutMotionJourney', () => {
     Object.defineProperty(window, 'ResizeObserver', { configurable: true, value: undefined })
     Object.defineProperty(window, 'visualViewport', { configurable: true, value: undefined })
     const journey = await renderJourney()
+    expect(journey.dataset.motionPreparing).toBe('true')
+    expect(frames).toHaveLength(1)
     vi.spyOn(journey, 'getBoundingClientRect').mockReturnValue({
       x: 0,
       y: -522,
@@ -482,9 +514,11 @@ describe('FreshCutMotionJourney', () => {
     const removeEventListener = vi.spyOn(window, 'removeEventListener')
     const removeViewportListener = vi.spyOn(visualViewport, 'removeEventListener')
     await renderJourney()
-    observers[0]!.callback(
-      [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
-      {} as IntersectionObserver,
+    await act(async () =>
+      observers[0]!.callback(
+        [{ isIntersecting: true, target: observers[0]!.target } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      ),
     )
     window.dispatchEvent(new Event('scroll'))
     expect(frames).toHaveLength(1)

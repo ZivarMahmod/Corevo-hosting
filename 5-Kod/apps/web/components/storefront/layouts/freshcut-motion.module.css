@@ -81,6 +81,7 @@
   opacity: 0.55;
 }
 
+.journey[data-motion-preparing='true'],
 .journey[data-motion-enhanced='true'] {
   height: 220svh;
 }
