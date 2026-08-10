@@ -78,6 +78,20 @@ at x=0–40%. The centred 9:16 crop must show the whole doorway path and whole
 chair, not a partial chair at either edge.
 ```
 
+### S0R2 — final documented artifact retry
+
+Use only after row 01R is rejected for rendering a visible composition guide.
+Send the same global block and S0 prompt plus this correction; no references:
+
+```text
+All spatial instructions are invisible composition guidance only. Do not draw
+or render any guide, outline, border, rectangle, line, highlight, annotation or
+frame around the chair or doorway. Compose one natural unmarked photograph:
+the open doorway and the complete chair are centred together, the whole chair
+has clear margin on every side, and calm dark negative space remains on the
+left. The centred portrait crop shows the full doorway path and full chair.
+```
+
 ### P0 — `CUSTOMER_REF`
 
 ```text

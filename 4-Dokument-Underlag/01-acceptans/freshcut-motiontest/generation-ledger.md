@@ -1,7 +1,7 @@
 # FreshCut motiontest — Higgsfield generation ledger
 
-Status: pre-generation gate passed; generation active; first S0 rejected on mobile crop
-Balance last verified after job 01: 907.5 credits (2026-08-10)
+Status: pre-generation gate passed; generation active; two S0 attempts rejected
+Balance last verified after job 01R: 905.5 credits (2026-08-10)
 Workspace: selected private owner workspace, Plus; opaque workspace ID kept outside Git
 Free/unlimited generation available: no
 Acceptance scope: `local-generated-demo`
@@ -17,8 +17,9 @@ Acceptance scope: `local-generated-demo`
 - registered normal path: 258 credits, 28.37% of 909.5;
 - expected balance after normal path: 651.5 credits, 71.63%;
 - headroom to 60% ceiling: 287.7 credits.
-- documented S0 composition retry: +2 credits; current projected path 260 credits,
-  expected final balance 649.5 credits and unchanged compliance with all gates.
+- two documented S0 composition retries: +4 credits; current projected path 262
+  credits, expected final balance 647.5 credits and unchanged compliance with
+  all gates.
 
 The estimates above were re-read live on 2026-08-10 with one output, 16:9 and
 audio disabled. Nano Banana Pro required a representative prompt to estimate
@@ -58,7 +59,8 @@ All jobs use one output. Still prompts are `synthetic-v2`; video prompts are
 | Seq | Asset/job role | Model/config | Allowed parent/reference rows | Estimate | Actual | Job/output ID | Status | Accepted |
 | ---: | --- | --- | --- | ---: | ---: | --- | --- | --- |
 | 01 | S0 / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none | 2 | 2 | `914901a3-7ef3-4202-9bee-fc5c7a98c76a` | rejected: portrait crop clips chair; centre mullion blocks path | no |
-| 01R | S0 retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01 | 2 | 0 | — | planned after documented visual failure | no |
+| 01R | S0 retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01 | 2 | 2 | `ac9a9799-fcf1-4c82-b29c-36db3ae783ed` | rejected: visible yellow composition guide | no |
+| 01R2 | S0 final retry / SALON_REF / K0 | Nano Banana Pro, 2K, 16:9 | none; retry of 01R | 2 | 0 | — | planned after documented visual failure | no |
 | 02 | P0 / CUSTOMER_REF | Nano Banana Pro, 2K, 16:9 | none | 2 | 0 | — | planned | no |
 | 03 | P1 / BARBER_REF | Nano Banana Pro, 2K, 16:9 | none | 2 | 0 | — | planned | no |
 | 04 | K1A / empty chair | Nano Banana Pro, 2K, 16:9 | S0 | 2 | 0 | — | blocked until S0 accepted | no |
@@ -111,6 +113,7 @@ on them.
 | Seq | UTC start → complete | Job/output ID | Exact config | Prompt SHA-256 | Ordered parent output IDs | Estimate → actual; balance before → after | Raw local SHA-256 | Decision / retention / integrated path |
 | ---: | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | 2026-08-10T19:21:27.267Z → 2026-08-10T19:22:03.973Z | `914901a3-7ef3-4202-9bee-fc5c7a98c76a` | requested `nano_banana_pro`; connector result `nano_banana_2`; 2K, 16:9, count 1 | `7b47120674c5c9562c7d8a7e3f88108b91e0049c45a370d426fc2871a2033ad2` | none | 2 → 2; 909.5 → 907.5 | `e889caf47651bd89ed16c08a8ee84a14d491a5b1bc4af487445f86c63ecc58a7` | rejected: centred 9:16 crop places a door mullion centrally and clips the chair at right; retry 01R; delete raw 2026-09-09; no integrated path |
+| 01R | 2026-08-10T19:23:38.263Z → 2026-08-10T19:26:28.123Z | `ac9a9799-fcf1-4c82-b29c-36db3ae783ed` | requested `nano_banana_pro`; connector result `nano_banana_2`; 2K, 16:9, count 1 | `56d6e087050698f8583fc589631702e539350cbe9809fb617e46923822747786` | none | 2 → 2; 907.5 → 905.5 | `5fe066de61e047cc1db9c1c9cb3a599dcbd147933732d7250b8f70164b9dabe7` | rejected: crop and full chair pass, but a bright yellow composition rectangle is rendered in-frame; retry 01R2; delete raw 2026-09-09; no integrated path |
 
 Reject any output with a recognizable real person, real brand, readable sign,
 possible real FreshCut geometry, broken anatomy, identity drift, morphing,
