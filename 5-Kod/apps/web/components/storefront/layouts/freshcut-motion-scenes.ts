@@ -680,6 +680,8 @@ export function validateFreshCutMotionScenes(scenes: readonly FreshCutMotionScen
     if (layerDepths.size < 2)
       errors.push(`${scene.id} must define at least two distinct layer depths`)
     const hasVideoSource = hasAnyVideoSource(scene.media)
+    const requiresPublishedVideo =
+      scene.media.videoOwner && scene.media.sourceStatus !== 'repository-controlled-fallback'
     if (!scene.media.videoOwner && hasVideoSource) {
       errors.push(`${scene.id} still-only scene must not declare video sources`)
     }
@@ -693,7 +695,10 @@ export function validateFreshCutMotionScenes(scenes: readonly FreshCutMotionScen
     } else if (!validatedFreshCutMotionPosters(scene.media, scene.id)) {
       errors.push(`${scene.id} media must use one valid responsive poster family`)
     }
-    if (hasVideoSource && !validatedFreshCutMotionVideoSources(scene.media, scene.id)) {
+    if (
+      (hasVideoSource || requiresPublishedVideo) &&
+      !validatedFreshCutMotionVideoSources(scene.media, scene.id)
+    ) {
       errors.push(`${scene.id} playable media must use one local versioned WebM and MP4 source-set`)
     }
     if (!scene.reducedMotion || !scene.fallback) {

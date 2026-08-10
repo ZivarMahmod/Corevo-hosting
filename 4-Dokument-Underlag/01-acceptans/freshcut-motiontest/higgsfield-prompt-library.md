@@ -64,6 +64,20 @@ doorway/chair anchor inside x=47–59%, y=12–58%; reserve x=0–46% as calm da
 negative space for DOM copy. No people, text, signs, logos or reflections.
 ```
 
+### S0R — one documented composition retry
+
+Use only after row 01 is rejected for its centred portrait crop. Send the same
+global block and S0 prompt plus this correction; no media references:
+
+```text
+COMPOSITION CORRECTION: keep the doorway opening itself unobstructed at exact
+image centre. No door frame, mullion or wall edge may cross x=45–55%. Place the
+entire chair — headrest, both arms, seat, footrest and base — fully inside
+x=45–55%, y=18–58%, with clear margin around it. Preserve calm negative space
+at x=0–40%. The centred 9:16 crop must show the whole doorway path and whole
+chair, not a partial chair at either edge.
+```
+
 ### P0 — `CUSTOMER_REF`
 
 ```text

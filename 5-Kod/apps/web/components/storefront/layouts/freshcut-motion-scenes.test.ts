@@ -463,4 +463,31 @@ describe('FreshCut production motion scene map', () => {
       'entrance playable media must use one local versioned WebM and MP4 source-set',
     )
   })
+
+  it('rejects a published video owner whose otherwise valid generated family has no videos', () => {
+    const family = '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6'
+    const base = `${family}/entrance-v1-a1b2c3d4e5f6`
+    const broken = FRESHCUT_MOTION_SCENES.map((scene) =>
+      scene.id === 'entrance'
+        ? {
+            ...scene,
+            media: {
+              ...scene.media,
+              desktopPoster: `${base}-desktop-poster.webp` as const,
+              mobilePoster: `${base}-mobile-poster.webp` as const,
+              desktopWebm: null,
+              desktopMp4: null,
+              mobileWebm: null,
+              mobileMp4: null,
+              sourceStatus: 'generated-demo' as const,
+              rightsStatus: 'synthetic-text-only' as const,
+            },
+          }
+        : scene,
+    )
+
+    expect(validateFreshCutMotionScenes(broken)).toContain(
+      'entrance playable media must use one local versioned WebM and MP4 source-set',
+    )
+  })
 })
