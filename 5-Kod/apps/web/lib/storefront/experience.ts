@@ -6,17 +6,23 @@ type StorefrontExperienceResolution = {
 }
 
 const MOTIONTEST_HOSTS = new Set(['motiontest.corevo.se', 'motiontest.localhost'])
+const MOTIONTEST_AUTHORITY = /^(motiontest\.corevo\.se|motiontest\.localhost)(?::(\d+))?$/i
 
-const hostnameFromHost = (host: string | null | undefined): string => {
-  if (!host) return ''
-  const portIndex = host.indexOf(':')
-  return (portIndex === -1 ? host : host.slice(0, portIndex)).toLowerCase()
+const hostnameFromHost = (host: string | null | undefined): string | null => {
+  const match = host ? MOTIONTEST_AUTHORITY.exec(host) : null
+  if (!match) return null
+  const hostname = match[1]
+  if (!hostname) return null
+  const port = match[2] ? Number(match[2]) : null
+  if (port !== null && (port < 1 || port > 65535)) return null
+  return hostname.toLowerCase()
 }
 
 export function storefrontExperienceForHost(
   host: string | null | undefined,
 ): StorefrontExperienceResolution | null {
-  if (!MOTIONTEST_HOSTS.has(hostnameFromHost(host))) return null
+  const hostname = hostnameFromHost(host)
+  if (!hostname || !MOTIONTEST_HOSTS.has(hostname)) return null
   return { experience: 'freshcut-motiontest', tenantSlug: 'freshcut' }
 }
 

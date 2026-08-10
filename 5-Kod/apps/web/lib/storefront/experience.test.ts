@@ -25,6 +25,26 @@ describe('FreshCut motiontest storefront experience', () => {
     expect(storefrontExperienceForHost('evil-motiontest.localhost')).toBeNull()
   })
 
+  it('accepts only an exact motiontest authority with an optional valid numeric port', () => {
+    expect(storefrontExperienceForHost('MOTIONTEST.COREVO.SE:443')).not.toBeNull()
+    expect(storefrontExperienceForHost('motiontest.localhost:3000')).not.toBeNull()
+
+    for (const host of [
+      'motiontest.corevo.se:',
+      'motiontest.corevo.se:https',
+      'motiontest.corevo.se:0',
+      'motiontest.corevo.se:65536',
+      'motiontest.corevo.se:443.attacker.test',
+      'motiontest.localhost:3000.attacker.test',
+      'motiontest.corevo.se:443:444',
+      'user@motiontest.corevo.se',
+      ' motiontest.corevo.se',
+      'motiontest.corevo.se ',
+    ]) {
+      expect(storefrontExperienceForHost(host), host).toBeNull()
+    }
+  })
+
   it('allows only the home page and its explicit public metadata and assets', () => {
     for (const pathname of [
       '/',
