@@ -25,7 +25,7 @@ export function freshCutNavigationLinks(
   return [...HOME_LINKS, ...moduleLinks]
 }
 
-function wordmark(name: string) {
+export function FreshCutWordmark({ name }: { name: string }) {
   const compact = name.replace(/\s+/g, '')
   if (compact.toLocaleLowerCase('sv-SE') !== 'freshcut') return <>{name}<i>.</i></>
   return <>FRESH<span>CUT</span><i>.</i></>
@@ -54,7 +54,7 @@ export function FreshCutNav(p: ThemeNavProps) {
 
       <header className={`${shell.navThemed} ${fc.siteHeader}`}>
         <Link href="/" className={`${shell.navWordmark} ${fc.wordmark}`} aria-label={`${p.tenant.name} – startsida`}>
-          {hasLogo ? <Logo tenant={p.tenant} branding={p.branding} /> : wordmark(p.tenant.name)}
+          {hasLogo ? <Logo tenant={p.tenant} branding={p.branding} /> : <FreshCutWordmark name={p.tenant.name} />}
         </Link>
 
         <nav className={`${shell.navLinks} ${fc.desktopNav}`} aria-label="Huvudmeny">
@@ -89,7 +89,7 @@ export function FreshCutFooter(p: ThemeFooterProps) {
   return (
     <footer className={fc.siteFooter}>
       <Link href="/" className={fc.footerWordmark} aria-label={`${p.tenant.name} – startsida`}>
-        {wordmark(p.tenant.name)}
+        <FreshCutWordmark name={p.tenant.name} />
       </Link>
       <p>© {new Date().getFullYear()} {p.tenant.name}</p>
       <p>Webb via Corevo</p>

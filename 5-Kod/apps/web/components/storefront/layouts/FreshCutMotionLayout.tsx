@@ -2,6 +2,7 @@ import { BookCta } from '@/components/brand/BookCta'
 import { Bookable } from '@/components/storefront/Bookable'
 import type { Service } from '@/lib/tenant-data'
 import { resolveMotiontestView } from '@/lib/storefront/motiontest-content'
+import { FreshCutWordmark } from './FreshCutChrome'
 import type { StorefrontLayoutProps } from './types'
 import motion from './freshcut-motion.module.css'
 
@@ -14,6 +15,7 @@ function serviceSlot(service: Service): `service:${string}` {
 }
 
 export function FreshCutMotionLayout({
+  tenant,
   services,
   location,
   contact,
@@ -35,7 +37,7 @@ export function FreshCutMotionLayout({
       >
         <div className={motion.thresholdImage} aria-hidden="true" data-media-status="previsualization" />
         <div className={motion.thresholdContent}>
-          <p className={motion.wordmark}>FRESH<span>CUT</span><i>.</i></p>
+          <p className={motion.wordmark}><FreshCutWordmark name={tenant.name} /></p>
           <p className={motion.kicker}>Linköping · Klippning och skägg</p>
           <h1 id="motion-threshold-title">Rent snitt. Ingen krångel.</h1>
           <p className={motion.lede}>
@@ -47,7 +49,7 @@ export function FreshCutMotionLayout({
               slotId="hero"
               enabled={bookingReachable}
               className={motion.primaryButton}
-              label="Boka via Bokadirekt"
+              label="Boka via Bokadirekt · Bokhållaregatan"
             />
             <a href="#tjanster">Se tjänster &amp; priser</a>
             <a href="#salongen">Välj salong</a>
@@ -65,8 +67,8 @@ export function FreshCutMotionLayout({
 
           <div className={motion.twoSalons}>
             <strong>Två salonger i Linköping</strong>
-            <span>{primaryLocation?.address || 'Primär adress publiceras snart'}</span>
-            <span>{prototypeLocation?.address}</span>
+            <span>{primaryLocation?.address || 'Primär adress publiceras snart'} — boka via Bokadirekt</span>
+            <span>{prototypeLocation?.address} — bokningslänk kommer</span>
           </div>
         </div>
       </section>
@@ -94,7 +96,7 @@ export function FreshCutMotionLayout({
             <a href="#resultat">Hoppa till resultat</a>
             <a href="#tjanster">Se tjänster</a>
             <BookCta
-              slotId="journey-craft"
+              slotId="results"
               enabled={bookingReachable}
               className={motion.textBooking}
               label="Boka nu"
@@ -128,7 +130,7 @@ export function FreshCutMotionLayout({
             ))}
           </div>
           <BookCta
-            slotId="mirror"
+            slotId="services-footer"
             enabled={bookingReachable}
             className={motion.primaryButton}
             label="Boka via Bokadirekt"
@@ -206,7 +208,7 @@ export function FreshCutMotionLayout({
               <h3>{primaryLocation?.name}</h3>
               <address>{primaryLocation?.address || 'Adress publiceras snart'}</address>
               <BookCta
-                slotId="location-primary"
+                slotId="contact"
                 enabled={bookingReachable && Boolean(primaryLocation?.bookable)}
                 className={motion.locationBooking}
                 label="Boka via Bokadirekt"
@@ -249,7 +251,7 @@ export function FreshCutMotionLayout({
             prisvärt — och vi minns hur du gillar din fade.
           </p>
           <BookCta
-            slotId="about"
+            slotId="studio"
             enabled={bookingReachable}
             className={motion.textBooking}
             label="Boka via Bokadirekt"
@@ -277,7 +279,7 @@ export function FreshCutMotionLayout({
 
       <div className={motion.mobileBooking}>
         <BookCta
-          slotId="mobile-persistent"
+          slotId="nav"
           enabled={bookingReachable}
           className={motion.primaryButton}
           label="Boka via Bokadirekt"

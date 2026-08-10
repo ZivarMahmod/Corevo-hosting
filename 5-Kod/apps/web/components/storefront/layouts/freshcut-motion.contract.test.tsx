@@ -5,6 +5,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import type { Service } from '@/lib/tenant-data'
+import type { BookingExternalCtaUrls } from '@/lib/platform/booking-external-url'
 import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import { FreshCutMotionLayout } from './FreshCutMotionLayout'
 
@@ -28,7 +29,7 @@ const SERVICES = [
   active: true,
 })) as Service[]
 
-function renderMotiontest() {
+function renderMotiontest(externalCtaUrls: BookingExternalCtaUrls = {}) {
   return renderToStaticMarkup(
     <BookingProvider
       tenantName="FreshCut"
@@ -36,6 +37,7 @@ function renderMotiontest() {
       reachable
       provider="external"
       externalUrl={EXTERNAL_URL}
+      externalCtaUrls={externalCtaUrls}
     >
       <FreshCutMotionLayout
         tenant={{ id: 'tenant-freshcut', name: 'FreshCut', slug: 'freshcut' }}
@@ -89,6 +91,40 @@ describe('FreshCut motiontest server markup', () => {
     }
     expect(html.match(/data-poster-composition=/g)).toHaveLength(3)
     expect(html).not.toContain('href="/boka"')
+  })
+
+  it('makes the first-view booking destination unambiguous for both salons', () => {
+    const html = renderMotiontest()
+    const threshold = html.match(
+      /<section class="[^"]+" id="upplevelsen"[\s\S]*?<\/section>/,
+    )?.[0]
+
+    expect(threshold).toBeDefined()
+    expect(threshold).toContain('Boka via Bokadirekt · Bokhållaregatan')
+    expect(threshold).toContain('<span>Sankt Larsgatan 17, Linköping — bokningslänk kommer</span>')
+    expect(threshold).not.toMatch(/<a[^>]*>[\s\S]*Sankt Larsgatan 17[\s\S]*<\/a>/)
+  })
+
+  it('uses only registered page booking slots', () => {
+    const canonical = {
+      hero: 'https://slots.example/hero',
+      results: 'https://slots.example/results',
+      'services-footer': 'https://slots.example/services-footer',
+      contact: 'https://slots.example/contact',
+      studio: 'https://slots.example/studio',
+      nav: 'https://slots.example/nav',
+    }
+    const forbidden = {
+      'journey-craft': 'https://slots.example/forbidden-journey-craft',
+      mirror: 'https://slots.example/forbidden-mirror',
+      'location-primary': 'https://slots.example/forbidden-location-primary',
+      about: 'https://slots.example/forbidden-about',
+      'mobile-persistent': 'https://slots.example/forbidden-mobile-persistent',
+    }
+    const html = renderMotiontest({ ...canonical, ...forbidden })
+
+    for (const url of Object.values(canonical)) expect(html).toContain(`href="${url}"`)
+    for (const url of Object.values(forbidden)) expect(html).not.toContain(url)
   })
 
   it('routes every verified service id to the saved external destination', () => {
