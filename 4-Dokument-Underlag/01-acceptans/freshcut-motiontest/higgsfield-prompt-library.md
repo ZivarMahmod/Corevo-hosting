@@ -110,6 +110,24 @@ instructions: render no guide, border, rectangle, line, annotation, text or
 highlight of any kind.
 ```
 
+### S0R4 — fourth documented DOM-overlay retry
+
+Use only after row 01R3 passes every true tall-phone crop but the real opaque
+desktop DOM panel hides the chair's left side. Send the same global block and S0
+prompt plus this correction; no references:
+
+```text
+DOM OVERLAY CORRECTION: keep the open doorway centred, but make the complete
+barber chair modestly smaller and place every physical part of it just right of
+centre, fully inside x=49–58% and y=28–58%. The headrest, both arms, seat,
+hydraulic base and entire footrest must all remain to the right of the opaque
+left copy panel ending at x=47%, while also retaining clear margin inside the
+narrowest centred tall-phone crop. Preserve the broad calm dark wall at x=0–46%
+for DOM copy. All percentages are invisible composition instructions only:
+render one natural unmarked photograph with no guide, border, rectangle, line,
+annotation, text or highlight.
+```
+
 ### P0 — `CUSTOMER_REF`
 
 ```text
