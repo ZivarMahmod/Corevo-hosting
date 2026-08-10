@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  approvedFreshCutMotionVideoSources,
   FRESHCUT_MOTION_SCENES,
   motionSceneForProgress,
   motionSceneTarget,
   motionScrollDistanceVh,
   motionMobilePhaseForScene,
+  validatedFreshCutMotionVideoSources,
   validateFreshCutMotionScenes,
 } from './freshcut-motion-scenes'
 
@@ -187,12 +187,51 @@ describe('FreshCut production motion scene map', () => {
       rightsStatus: 'approved-for-ai-transformation' as const,
     }
 
-    expect(approvedFreshCutMotionVideoSources(media, 'entrance')).toEqual({
+    expect(validatedFreshCutMotionVideoSources(media, 'entrance')).toEqual({
       desktopWebm: media.desktopWebm,
       desktopMp4: media.desktopMp4,
       mobileWebm: media.mobileWebm,
       mobileMp4: media.mobileMp4,
     })
+  })
+
+  it('accepts one honestly labelled synthetic demo family without calling it approved final', () => {
+    const family = '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6'
+    const base = `${family}/entrance-v1-a1b2c3d4e5f6`
+    const media = {
+      ...FRESHCUT_MOTION_SCENES[1].media,
+      poster: `${base}-poster.webp`,
+      desktopWebm: `${base}-desktop.webm`,
+      desktopMp4: `${base}-desktop.mp4`,
+      mobileWebm: `${base}-mobile.webm`,
+      mobileMp4: `${base}-mobile.mp4`,
+      sourceStatus: 'generated-demo' as const,
+      rightsStatus: 'synthetic-text-only' as const,
+    }
+
+    expect(validatedFreshCutMotionVideoSources(media, 'entrance')).toEqual({
+      desktopWebm: media.desktopWebm,
+      desktopMp4: media.desktopMp4,
+      mobileWebm: media.mobileWebm,
+      mobileMp4: media.mobileMp4,
+    })
+  })
+
+  it('rejects crossed source and rights provenance even when the source family is complete', () => {
+    const family = '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6'
+    const base = `${family}/entrance-v1-a1b2c3d4e5f6`
+    const media = {
+      ...FRESHCUT_MOTION_SCENES[1].media,
+      poster: `${base}-poster.webp`,
+      desktopWebm: `${base}-desktop.webm`,
+      desktopMp4: `${base}-desktop.mp4`,
+      mobileWebm: `${base}-mobile.webm`,
+      mobileMp4: `${base}-mobile.mp4`,
+      sourceStatus: 'generated-demo' as const,
+      rightsStatus: 'approved-for-ai-transformation' as const,
+    }
+
+    expect(validatedFreshCutMotionVideoSources(media, 'entrance')).toBeNull()
   })
 
   it('rejects an approved source-set paired with a generic fallback poster', () => {
@@ -206,7 +245,7 @@ describe('FreshCut production motion scene map', () => {
       rightsStatus: 'approved-for-ai-transformation' as const,
     }
 
-    expect(approvedFreshCutMotionVideoSources(media, 'entrance')).toBeNull()
+    expect(validatedFreshCutMotionVideoSources(media, 'entrance')).toBeNull()
   })
 
   it('rejects a flat published family instead of the atomic nested family directory', () => {
@@ -221,7 +260,7 @@ describe('FreshCut production motion scene map', () => {
       rightsStatus: 'approved-for-ai-transformation' as const,
     }
 
-    expect(approvedFreshCutMotionVideoSources(media, 'entrance')).toBeNull()
+    expect(validatedFreshCutMotionVideoSources(media, 'entrance')).toBeNull()
   })
 
   it('rejects an otherwise valid approved family whose prefix belongs to another scene', () => {
@@ -246,7 +285,7 @@ describe('FreshCut production motion scene map', () => {
     )
 
     expect(validateFreshCutMotionScenes(broken)).toContain(
-      'entrance approved media must use one local versioned WebM and MP4 source-set',
+      'entrance playable media must use one local versioned WebM and MP4 source-set',
     )
   })
 
@@ -288,7 +327,7 @@ describe('FreshCut production motion scene map', () => {
     )
 
     expect(validateFreshCutMotionScenes(broken)).toContain(
-      'entrance approved media must use one local versioned WebM and MP4 source-set',
+      'entrance playable media must use one local versioned WebM and MP4 source-set',
     )
   })
 })

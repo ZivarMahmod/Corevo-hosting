@@ -49,8 +49,11 @@ export type FreshCutMotionMediaPolicy = {
   mobileMp4: string | null
   desktopCrop: string
   mobileCrop: string
-  sourceStatus: 'repository-controlled-fallback' | 'approved-final'
-  rightsStatus: 'ai-transformation-pending' | 'approved-for-ai-transformation'
+  sourceStatus: 'repository-controlled-fallback' | 'generated-demo' | 'approved-final'
+  rightsStatus:
+    | 'ai-transformation-pending'
+    | 'synthetic-text-only'
+    | 'approved-for-ai-transformation'
 }
 
 export type FreshCutMotionSafeZone = {
@@ -390,21 +393,24 @@ const VERSIONED_MEDIA_BASE =
   /^\/media\/freshcut-motion\/([a-z0-9][a-z0-9-]*-v[1-9]\d*-[a-f0-9]{12})\/\1-desktop\.webm$/
 const CONTROLLED_FALLBACK_POSTER = /^\/images\/freshcut\/[a-z0-9][a-z0-9-]*\.webp$/
 
-export type FreshCutMotionApprovedVideoSources = {
+export type FreshCutMotionVideoSources = {
   desktopWebm: string
   desktopMp4: string
   mobileWebm: string
   mobileMp4: string
 }
 
-/** Fail-closed projection gate for paid, rights-cleared repository media only. */
-export function approvedFreshCutMotionVideoSources(
+/** Fail-closed projection gate for one honestly paired provenance and local source family. */
+export function validatedFreshCutMotionVideoSources(
   media: FreshCutMotionMediaPolicy,
   sceneId: FreshCutMotionSceneId,
-): FreshCutMotionApprovedVideoSources | null {
+): FreshCutMotionVideoSources | null {
+  const hasValidProvenance =
+    (media.sourceStatus === 'approved-final' &&
+      media.rightsStatus === 'approved-for-ai-transformation') ||
+    (media.sourceStatus === 'generated-demo' && media.rightsStatus === 'synthetic-text-only')
   if (
-    media.sourceStatus !== 'approved-final' ||
-    media.rightsStatus !== 'approved-for-ai-transformation' ||
+    !hasValidProvenance ||
     !media.desktopWebm ||
     !media.desktopMp4 ||
     !media.mobileWebm ||
@@ -539,10 +545,10 @@ export function validateFreshCutMotionScenes(scenes: readonly FreshCutMotionScen
         `${scene.id} repository fallback must use a controlled fallback image without video sources`,
       )
     } else if (
-      (scene.media.sourceStatus === 'approved-final' || hasVideoSource) &&
-      !approvedFreshCutMotionVideoSources(scene.media, scene.id)
+      (scene.media.sourceStatus !== 'repository-controlled-fallback' || hasVideoSource) &&
+      !validatedFreshCutMotionVideoSources(scene.media, scene.id)
     ) {
-      errors.push(`${scene.id} approved media must use one local versioned WebM and MP4 source-set`)
+      errors.push(`${scene.id} playable media must use one local versioned WebM and MP4 source-set`)
     }
     if (!scene.reducedMotion || !scene.fallback) {
       errors.push(`${scene.id} must define reduced-motion and fallback states`)

@@ -1,7 +1,7 @@
 import {
-  approvedFreshCutMotionVideoSources,
   type FreshCutMotionScene,
   type FreshCutMotionSceneId,
+  validatedFreshCutMotionVideoSources,
 } from './freshcut-motion-scenes'
 
 export type MotionMediaCommand = {
@@ -276,8 +276,8 @@ export function createFreshCutMotionMediaController(
   }
 
   for (const scene of scenes) {
-    const approvedSources = approvedFreshCutMotionVideoSources(scene.media, scene.id)
-    if (!approvedSources) continue
+    const validatedSources = validatedFreshCutMotionVideoSources(scene.media, scene.id)
+    if (!validatedSources) continue
 
     const host = root.querySelector<HTMLElement>(`[data-motion-media-host="${scene.id}"]`)
     if (!host) continue
@@ -296,10 +296,10 @@ export function createFreshCutMotionMediaController(
     element.loop = false
 
     const sources = [
-      appendSource(element, approvedSources.mobileWebm, '(max-width: 1023px)'),
-      appendSource(element, approvedSources.mobileMp4, '(max-width: 1023px)'),
-      appendSource(element, approvedSources.desktopWebm, '(min-width: 1024px)'),
-      appendSource(element, approvedSources.desktopMp4, '(min-width: 1024px)'),
+      appendSource(element, validatedSources.mobileWebm, '(max-width: 1023px)'),
+      appendSource(element, validatedSources.mobileMp4, '(max-width: 1023px)'),
+      appendSource(element, validatedSources.desktopWebm, '(min-width: 1024px)'),
+      appendSource(element, validatedSources.desktopMp4, '(min-width: 1024px)'),
     ]
     host.append(element)
 

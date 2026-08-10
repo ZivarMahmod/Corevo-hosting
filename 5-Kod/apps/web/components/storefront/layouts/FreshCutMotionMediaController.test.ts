@@ -45,6 +45,24 @@ function approvedScenes(): readonly FreshCutMotionScene[] {
   return FRESHCUT_MOTION_SCENES.map((scene) => approvedScene(scene))
 }
 
+function generatedDemoScene(scene: FreshCutMotionScene): FreshCutMotionScene {
+  const family = `${scene.id}-v1-${FAMILY_HASH}`
+  const base = `/media/freshcut-motion/${family}/${family}`
+  return {
+    ...scene,
+    media: {
+      ...scene.media,
+      poster: `${base}-poster.webp`,
+      desktopWebm: `${base}-desktop.webm`,
+      desktopMp4: `${base}-desktop.mp4`,
+      mobileWebm: `${base}-mobile.webm`,
+      mobileMp4: `${base}-mobile.mp4`,
+      sourceStatus: 'generated-demo',
+      rightsStatus: 'synthetic-text-only',
+    },
+  } as unknown as FreshCutMotionScene
+}
+
 function command(
   sceneId: MotionMediaCommand['sceneId'],
   overrides: Partial<MotionMediaCommand> = {},
@@ -184,6 +202,15 @@ describe('FreshCutMotionMediaController', () => {
 
     controller.sync(command('entrance'))
     expect(root.querySelectorAll('video')).toHaveLength(0)
+  })
+
+  it('materializes generated demo media only when its synthetic provenance pair is complete', () => {
+    const entrance = generatedDemoScene(FRESHCUT_MOTION_SCENES[1])
+    const controller = createFreshCutMotionMediaController(root, [entrance])
+
+    expect(videoRecord('entrance').element.querySelectorAll('source')).toHaveLength(4)
+
+    controller.destroy()
   })
 
   it('keeps eager media network-inert until the first explicit sync selects sources', () => {

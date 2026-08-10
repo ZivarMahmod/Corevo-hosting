@@ -16,6 +16,10 @@ import { fileURLToPath } from 'node:url'
 const SCENES = new Set(['hero', 'entrance', 'chair', 'craft', 'range', 'return', 'mirror', 'team'])
 const SOURCE_HASH_PATTERN = /^[a-f0-9]{64}$/i
 const VERSION_PATTERN = /^v[1-9]\d*$/
+const VALID_PROVENANCE_PAIRS = new Set([
+  'generated-demo:synthetic-text-only',
+  'approved-final:approved-for-ai-transformation',
+])
 
 export const FRESHCUT_MOTION_PIPELINE_VERSION = 'freshcut-motion-ffmpeg-v2'
 
@@ -95,6 +99,13 @@ export function buildFreshCutMotionMediaPlan(input) {
   if (!SOURCE_HASH_PATTERN.test(String(input.sourceHash ?? ''))) {
     throw new Error('Source hash must be one full SHA-256 hexadecimal digest')
   }
+  const provenance = {
+    sourceStatus: String(input.sourceStatus ?? ''),
+    rightsStatus: String(input.rightsStatus ?? ''),
+  }
+  if (!VALID_PROVENANCE_PAIRS.has(`${provenance.sourceStatus}:${provenance.rightsStatus}`)) {
+    throw new Error('Provenance must use one supported source and rights status pair')
+  }
 
   const trimStartSeconds = finiteNonNegative(input.trimStartSeconds, 'Trim start')
   const trimEndSeconds = finiteNonNegative(input.trimEndSeconds, 'Trim end')
@@ -113,6 +124,7 @@ export function buildFreshCutMotionMediaPlan(input) {
     .update(
       canonicalJson({
         pipelineVersion: FRESHCUT_MOTION_PIPELINE_VERSION,
+        provenance,
         sourceHash,
         sceneId: input.sceneId,
         version: input.version,
@@ -131,6 +143,7 @@ export function buildFreshCutMotionMediaPlan(input) {
     familyDirectory,
     version: input.version,
     pipelineVersion: FRESHCUT_MOTION_PIPELINE_VERSION,
+    provenance,
     sourceHash,
     familyHash,
     baseName,
@@ -499,6 +512,7 @@ export function executeFreshCutMotionMediaPlan(plan, options = {}) {
           sceneId: plan.sceneId,
           version: plan.version,
           pipelineVersion: plan.pipelineVersion,
+          provenance: plan.provenance,
           sourceHash: plan.sourceHash,
           familyHash: plan.familyHash,
           recipe: plan.recipe,
@@ -538,8 +552,12 @@ async function main() {
   const sceneId = argument(args, '--scene')
   const outputDir = argument(args, '--output')
   const version = argument(args, '--version') || 'v1'
-  if (!inputPath || !sceneId || !outputDir) {
-    throw new Error('Usage: --input <file> --scene <id> --output <directory> [--version v1]')
+  const sourceStatus = argument(args, '--source-status')
+  const rightsStatus = argument(args, '--rights-status')
+  if (!inputPath || !sceneId || !outputDir || !sourceStatus || !rightsStatus) {
+    throw new Error(
+      'Usage: --input <file> --scene <id> --output <directory> --source-status <status> --rights-status <status> [--version v1]',
+    )
   }
   const sourceHash = await hashMotionSource(inputPath)
   const plan = buildFreshCutMotionMediaPlan({
@@ -548,6 +566,8 @@ async function main() {
     outputDir: resolve(outputDir),
     version,
     sourceHash,
+    sourceStatus,
+    rightsStatus,
     trimStartSeconds: Number(argument(args, '--trim-start') || 0),
     trimEndSeconds: Number(argument(args, '--trim-end') || 5),
     holdStartSeconds: Number(argument(args, '--hold-start') || 0.2),

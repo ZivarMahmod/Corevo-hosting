@@ -38,6 +38,8 @@ function planInput(overrides = {}) {
     trimEndSeconds: 5.8,
     holdStartSeconds: 0.25,
     holdEndSeconds: 0.35,
+    sourceStatus: 'generated-demo',
+    rightsStatus: 'synthetic-text-only',
     ...overrides,
   }
 }
@@ -113,6 +115,10 @@ describe('FreshCut motion media preparation', () => {
     const familyDirectory = `C:/public/media/freshcut-motion/${plan.baseName}`
 
     expect(plan.pipelineVersion).toBe(EXPECTED_PIPELINE_VERSION)
+    expect(plan.provenance).toEqual({
+      sourceStatus: 'generated-demo',
+      rightsStatus: 'synthetic-text-only',
+    })
     expect(plan.sourceHash).toBe(SOURCE_HASH)
     expect(plan.familyHash).toMatch(/^[a-f0-9]{64}$/)
     expect(plan.baseName).toBe(`craft-v1-${plan.familyHash.slice(0, 12)}`)
@@ -159,6 +165,12 @@ describe('FreshCut motion media preparation', () => {
     const changedSource = buildFreshCutMotionMediaPlan(planInput({ sourceHash: 'b'.repeat(64) }))
     const changedTrim = buildFreshCutMotionMediaPlan(planInput({ trimEndSeconds: 5.9 }))
     const changedHold = buildFreshCutMotionMediaPlan(planInput({ holdEndSeconds: 0.45 }))
+    const changedProvenance = buildFreshCutMotionMediaPlan(
+      planInput({
+        sourceStatus: 'approved-final',
+        rightsStatus: 'approved-for-ai-transformation',
+      }),
+    )
 
     expect(
       new Set([
@@ -166,8 +178,9 @@ describe('FreshCut motion media preparation', () => {
         changedSource.familyHash,
         changedTrim.familyHash,
         changedHold.familyHash,
+        changedProvenance.familyHash,
       ]).size,
-    ).toBe(4)
+    ).toBe(5)
   })
 
   it('builds non-overwriting commands from the canonical recipe', () => {
@@ -244,6 +257,10 @@ describe('FreshCut motion media preparation', () => {
       sceneId: plan.sceneId,
       version: plan.version,
       pipelineVersion: EXPECTED_PIPELINE_VERSION,
+      provenance: {
+        sourceStatus: 'generated-demo',
+        rightsStatus: 'synthetic-text-only',
+      },
       sourceHash: SOURCE_HASH,
       familyHash: plan.familyHash,
       recipe: plan.recipe,
@@ -332,6 +349,13 @@ describe('FreshCut motion media preparation', () => {
     expect(() =>
       buildFreshCutMotionMediaPlan({ ...base, trimStartSeconds: 4, trimEndSeconds: 2 }),
     ).toThrow(/trim window/i)
+    expect(() =>
+      buildFreshCutMotionMediaPlan({
+        ...base,
+        sourceStatus: 'generated-demo',
+        rightsStatus: 'approved-for-ai-transformation',
+      }),
+    ).toThrow(/provenance/i)
   })
 
   it('verifies encoded dimensions, duration, bitrate, frame rate, and absence of audio', () => {
