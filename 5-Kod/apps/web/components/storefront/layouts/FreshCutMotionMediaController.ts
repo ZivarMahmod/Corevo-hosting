@@ -36,10 +36,7 @@ type MediaRecord = {
   preload: MediaPreload
   selectionEpoch: number
   playEpoch: number
-  pendingPosition:
-    | { kind: 'stable'; endpoint: 'start' | 'end' }
-    | { kind: 'scrub'; progress: number }
-    | null
+  pendingPosition: { kind: 'stable'; endpoint: 'start' | 'end' } | null
 }
 
 const DEFAULT_LOADING_TIMEOUT_MS = 8_000
@@ -141,26 +138,6 @@ export function createFreshCutMotionMediaController(
     record.element.dataset.motionMediaFrame = 'end'
   }
 
-  const applyScrubPosition = (record: MediaRecord, progress: number) => {
-    const duration = record.element.duration
-    if (!Number.isFinite(duration) || duration <= 0) {
-      applyStablePosition(record, 'start')
-      record.pendingPosition = { kind: 'scrub', progress }
-      return
-    }
-
-    const [start, end] = record.scene.range
-    const localProgress = Math.min(1, Math.max(0, (progress - start) / (end - start)))
-    record.pendingPosition = null
-    record.element.loop = false
-    if (!setCurrentTime(record.element, duration * localProgress)) {
-      showPoster(record)
-      record.pendingPosition = { kind: 'scrub', progress }
-      return
-    }
-    record.element.dataset.motionMediaFrame = 'scrub'
-  }
-
   const detachSources = (record: MediaRecord) => {
     for (const source of record.sources) source.removeAttribute('src')
   }
@@ -203,8 +180,6 @@ export function createFreshCutMotionMediaController(
       const pendingPosition = record.pendingPosition
       if (pendingPosition?.kind === 'stable') {
         applyStablePosition(record, pendingPosition.endpoint)
-      } else if (pendingPosition?.kind === 'scrub') {
-        applyScrubPosition(record, pendingPosition.progress)
       }
       if (element.dataset.motionMediaState === 'loading') setMediaState(record, 'stable')
     }
@@ -289,7 +264,6 @@ export function createFreshCutMotionMediaController(
     element.dataset.motionMediaScene = scene.id
     element.dataset.motionMediaFrame = 'poster'
     element.dataset.motionMediaState = 'idle'
-    element.poster = scene.media.poster
     element.preload = 'none'
     element.muted = true
     element.playsInline = true
@@ -330,18 +304,6 @@ export function createFreshCutMotionMediaController(
     applyStablePosition(record, endpoint)
   }
 
-  const scrubRecord = (record: MediaRecord, progress: number) => {
-    record.playEpoch += 1
-    record.element.pause()
-    record.element.loop = false
-    if (record.element.dataset.motionMediaReady === 'true') setMediaState(record, 'stable')
-    else {
-      setMediaState(record, 'loading')
-      startLoadingTimer(record)
-    }
-    applyScrubPosition(record, progress)
-  }
-
   const playRecord = (record: MediaRecord, restart: boolean) => {
     if (record.element.dataset.motionMediaState === 'fallback') return
     record.pendingPosition = null
@@ -365,23 +327,14 @@ export function createFreshCutMotionMediaController(
   }
 
   const resolvePreload = (
-    record: MediaRecord,
     recordIndex: number,
     activeIndex: number,
     visible: boolean,
     direction: 1 | -1,
   ): MediaPreload => {
     if (!visible || pageHidden || activeIndex < 0) return 'none'
-    if (recordIndex === activeIndex || record.scene.media.preload === 'eager') return 'auto'
-    if (
-      record.scene.media.preload === 'active-and-next' &&
-      recordIndex === activeIndex + direction
-    ) {
-      return 'auto'
-    }
-    if (record.scene.media.preload === 'nearby' && Math.abs(recordIndex - activeIndex) === 1) {
-      return 'metadata'
-    }
+    if (recordIndex === activeIndex) return 'auto'
+    if (recordIndex === activeIndex + direction) return 'metadata'
     return 'none'
   }
 
@@ -393,10 +346,7 @@ export function createFreshCutMotionMediaController(
     const visible = command.visible && !pageHidden
     for (const [recordSceneId, record] of records) {
       const recordIndex = scenes.findIndex((scene) => scene.id === recordSceneId)
-      updatePreload(
-        record,
-        resolvePreload(record, recordIndex, sceneIndex, visible, command.direction),
-      )
+      updatePreload(record, resolvePreload(recordIndex, sceneIndex, visible, command.direction))
       if (recordSceneId !== command.sceneId) pauseRecord(record, 'idle')
     }
 
@@ -421,12 +371,6 @@ export function createFreshCutMotionMediaController(
     if (command.checkpoint) {
       playedEntry = command.sceneId
       resolveStableRecord(record, 'start')
-      return
-    }
-
-    if (record.scene.media.forward === 'environment-scrub') {
-      if (userPaused || command.paused) pauseRecord(record)
-      else scrubRecord(record, command.progress)
       return
     }
 

@@ -40,14 +40,12 @@ const MOTION_SCENE: Record<FreshCutMotionSceneId, FreshCutMotionScene> = {
 }
 
 type MotionSceneStyle = CSSProperties & {
-  '--motion-scene-poster': string
   '--motion-scene-crop': string
   '--motion-scene-mobile-crop': string
 }
 
 function motionSceneStyle(scene: FreshCutMotionScene): MotionSceneStyle {
   return {
-    '--motion-scene-poster': `url("${scene.media.poster}")`,
     '--motion-scene-crop': scene.media.desktopCrop,
     '--motion-scene-mobile-crop': scene.media.mobileCrop,
   }
@@ -61,6 +59,8 @@ function motionLayerClass(layer: FreshCutMotionScene['layers'][number]): string 
 }
 
 export function FreshCutMotionSceneVisual({ scene }: { scene: FreshCutMotionScene }) {
+  const heroPoster = scene.id === 'hero'
+
   return (
     <div className={motion.sceneVisual} aria-hidden="true">
       {scene.layers.map((layer) => (
@@ -72,7 +72,29 @@ export function FreshCutMotionSceneVisual({ scene }: { scene: FreshCutMotionScen
           data-motion-depth-factor={layer.depthFactor}
           data-motion-media-host={layer.kind === 'media' ? scene.id : undefined}
           data-motion-media-class={layer.kind === 'media' ? motion.sceneVideo : undefined}
-        ></div>
+        >
+          {layer.kind === 'media' ? (
+            <picture
+              className={motion.scenePosterPicture}
+              data-motion-poster-scene={scene.id}
+              data-motion-poster-owner={scene.media.posterOwner}
+            >
+              <source media="(max-width: 1023px)" srcSet={scene.media.mobilePoster} />
+              <source media="(min-width: 1024px)" srcSet={scene.media.desktopPoster} />
+              <img
+                className={motion.scenePoster}
+                data-motion-poster-image={scene.id}
+                src={scene.media.desktopPoster}
+                alt=""
+                loading={heroPoster ? 'eager' : 'lazy'}
+                fetchPriority={heroPoster ? 'high' : 'auto'}
+                decoding="async"
+                width={1920}
+                height={1080}
+              />
+            </picture>
+          ) : null}
+        </div>
       ))}
     </div>
   )
@@ -174,6 +196,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.hero.anchorId}
             aria-labelledby={MOTION_SCENE.hero.headingId}
             data-motion-scene="hero"
+            data-motion-copy-placement={MOTION_SCENE.hero.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.hero)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.hero} />
@@ -184,6 +207,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.entrance.anchorId}
             aria-labelledby={MOTION_SCENE.entrance.headingId}
             data-motion-scene="entrance"
+            data-motion-copy-placement={MOTION_SCENE.entrance.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.entrance)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.entrance} />
@@ -200,6 +224,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.chair.anchorId}
             aria-labelledby={MOTION_SCENE.chair.headingId}
             data-motion-scene="chair"
+            data-motion-copy-placement={MOTION_SCENE.chair.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.chair)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.chair} />
@@ -217,6 +242,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.craft.anchorId}
             aria-labelledby={MOTION_SCENE.craft.headingId}
             data-motion-scene="craft"
+            data-motion-copy-placement={MOTION_SCENE.craft.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.craft)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.craft} />
@@ -234,6 +260,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.range.anchorId}
             aria-labelledby={MOTION_SCENE.range.headingId}
             data-motion-scene="range"
+            data-motion-copy-placement={MOTION_SCENE.range.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.range)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.range} />
@@ -255,6 +282,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.return.anchorId}
             aria-labelledby={MOTION_SCENE.return.headingId}
             data-motion-scene="return"
+            data-motion-copy-placement={MOTION_SCENE.return.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.return)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.return} />
@@ -271,6 +299,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.mirror.anchorId}
             aria-labelledby={MOTION_SCENE.mirror.headingId}
             data-motion-scene="mirror"
+            data-motion-copy-placement={MOTION_SCENE.mirror.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.mirror)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.mirror} />
@@ -288,6 +317,7 @@ export function FreshCutMotionLayout({
             id={MOTION_SCENE.team.anchorId}
             aria-labelledby={MOTION_SCENE.team.headingId}
             data-motion-scene="team"
+            data-motion-copy-placement={MOTION_SCENE.team.copyPlacement}
             style={motionSceneStyle(MOTION_SCENE.team)}
           >
             <FreshCutMotionSceneVisual scene={MOTION_SCENE.team} />

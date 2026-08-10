@@ -115,6 +115,23 @@ describe('FreshCut motiontest server markup', () => {
     expect(html).not.toContain('data-poster-composition=')
     expect(html).not.toContain('data-motion-layout-variant="mobile"')
     expect(html).not.toContain('href="/boka"')
+
+    for (const [scene, placement] of [
+      ['hero', 'left'],
+      ['entrance', 'left'],
+      ['chair', 'right'],
+      ['craft', 'left'],
+      ['range', 'left'],
+      ['return', 'right'],
+      ['mirror', 'right'],
+      ['team', 'left'],
+    ] as const) {
+      expect(html).toMatch(
+        new RegExp(
+          `<section[^>]+data-motion-scene="${scene}"[^>]+data-motion-copy-placement="${placement}"`,
+        ),
+      )
+    }
   })
 
   it('makes the first-view booking destination unambiguous for both salons', () => {
@@ -124,24 +141,49 @@ describe('FreshCut motiontest server markup', () => {
     expect(html).not.toMatch(/<a[^>]*>[^<]*Sankt Larsgatan 17[^<]*<\/a>/)
   })
 
-  it('projects every manifest layer once while keeping unapproved media on its poster fallback', () => {
+  it('projects every layer once with real responsive lazy picture delivery', () => {
     const html = renderMotiontest()
 
     expect(html.match(/data-motion-layer-kind="media"/g) ?? []).toHaveLength(8)
+    expect(html.match(/data-motion-poster-image=/g) ?? []).toHaveLength(8)
+    expect(html.match(/<source/g) ?? []).toHaveLength(16)
     expect(html).not.toContain('<video')
-    expect(html).not.toContain('<source')
 
     for (const scene of FRESHCUT_MOTION_SCENES) {
       const section = html.match(
         new RegExp(`<section[^>]+data-motion-scene="${scene.id}"[\\s\\S]*?</section>`),
       )?.[0]
       expect(section).toBeDefined()
+      expect(section).toContain(`data-motion-poster-scene="${scene.id}"`)
+      expect(section).toContain(`data-motion-poster-owner="${scene.media.posterOwner}"`)
+      expect(section).toContain(
+        `<source media="(max-width: 1023px)" srcSet="${scene.media.mobilePoster}"/>`,
+      )
+      expect(section).toContain(
+        `<source media="(min-width: 1024px)" srcSet="${scene.media.desktopPoster}"/>`,
+      )
+      expect(section).toContain(`src="${scene.media.desktopPoster}"`)
+      expect(section).toContain(`loading="${scene.id === 'hero' ? 'eager' : 'lazy'}"`)
+      expect(section).toContain(`fetchPriority="${scene.id === 'hero' ? 'high' : 'auto'}"`)
       for (const layer of scene.layers as unknown as readonly { token: string }[]) {
         expect(
           section?.match(new RegExp(`data-motion-layer="${layer.token}"`, 'g')) ?? [],
         ).toHaveLength(1)
       }
     }
+  })
+
+  it('gives desktop and mobile currentSrc candidates without a second Return fetch target', () => {
+    const craft = FRESHCUT_MOTION_SCENES.find((scene) => scene.id === 'craft')!
+    const returnScene = FRESHCUT_MOTION_SCENES.find((scene) => scene.id === 'return')!
+    const returnHtml = renderToStaticMarkup(<FreshCutMotionSceneVisual scene={returnScene} />)
+
+    expect(returnScene.media.desktopPoster).toBe(craft.media.desktopPoster)
+    expect(returnScene.media.mobilePoster).toBe(craft.media.mobilePoster)
+    expect(returnHtml).toContain(`media="(max-width: 1023px)" srcSet="${craft.media.mobilePoster}"`)
+    expect(returnHtml).toContain(
+      `media="(min-width: 1024px)" srcSet="${craft.media.desktopPoster}"`,
+    )
   })
 
   it('emits only the existing media-layer host during SSR even for an approved cloned scene', () => {
@@ -152,7 +194,8 @@ describe('FreshCut motiontest server markup', () => {
       ...source,
       media: {
         ...source.media,
-        poster: `${base}-poster.webp`,
+        desktopPoster: `${base}-desktop-poster.webp`,
+        mobilePoster: `${base}-mobile-poster.webp`,
         desktopWebm: `${base}-desktop.webm`,
         desktopMp4: `${base}-desktop.mp4`,
         mobileWebm: `${base}-mobile.webm`,
@@ -167,7 +210,7 @@ describe('FreshCut motiontest server markup', () => {
     expect(html).toContain('data-motion-media-host="entrance"')
     expect(html.match(/data-motion-layer-kind="media"/g) ?? []).toHaveLength(1)
     expect(html).not.toContain('<video')
-    expect(html).not.toContain('<source')
+    expect(html.match(/<source/g) ?? []).toHaveLength(2)
   })
 
   it('renders authoritative owner content with editor markers and no duplicate About body', () => {

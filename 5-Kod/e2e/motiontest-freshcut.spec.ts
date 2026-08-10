@@ -215,36 +215,40 @@ async function expectCheckpointGrouping(page: Page, width: number): Promise<void
   await expect(checkpointAnchors, `${width}px: alla åtta checkpoints ska finnas i DOM`).toHaveCount(
     8,
   )
-  if (width < 1024) {
-    await expect(
-      visibleCheckpointLinks,
-      `${width}px: compact/tablet navigation ska visa exakt tre huvudsteg`,
-    ).toHaveCount(3)
-    await expect(visibleCheckpointLinks).toHaveText(['Start', 'Hantverket', 'Resultatet'])
-    return
-  }
-
   await expect(
     visibleCheckpointLinks,
-    `${width}px: desktop navigation ska visa alla åtta checkpoints`,
+    `${width}px: navigation ska visa alla åtta checkpoints`,
   ).toHaveCount(8)
+}
+
+async function expectPopularServicesOrCatalogLink(page: Page, width: number): Promise<boolean> {
+  const popularServices = page.locator('[data-motion-popular-services]')
+  const prices = popularServices.locator('strong')
+  if ((await prices.count()) === 0) {
+    await expect(
+      page.getByRole('link', { name: /Se tjänster/ }).first(),
+      `${width}px: tjänstekatalogen ska vara nåbar när tenantens prislista saknas`,
+    ).toBeVisible()
+    return false
+  }
+  await expect(prices, `${width}px: exakt tre riktiga populärpriser`).toHaveText([
+    '369 kr',
+    '329 kr',
+    '459 kr',
+  ])
+  return true
 }
 
 async function expectBookingFirstViewport(page: Page, width: number): Promise<void> {
   const motionRoot = page.locator('[data-motion-mode]')
   const popularServices = page.locator('[data-motion-popular-services]')
-  const prices = popularServices.locator('strong')
   const salonSummary = page.locator('[data-motion-salon-selector]')
   const book = motionRoot.getByRole('link', { name: 'Boka nu', exact: true }).first()
   const services = page.getByRole('link', { name: 'Se tjänster', exact: true })
   const result = page.getByRole('link', { name: 'Hoppa till resultat', exact: true })
   const checkpoints = page.getByRole('navigation', { name: 'Upplevelsens scener' })
 
-  await expect(prices, `${width}px: exakt tre riktiga populärpriser`).toHaveText([
-    '369 kr',
-    '329 kr',
-    '459 kr',
-  ])
+  const hasPopularServices = await expectPopularServicesOrCatalogLink(page, width)
   await expect(salonSummary).toContainText('Två salonger i Linköping')
   await expect(salonSummary).toContainText('Bokhållaregatan 2')
   await expect(salonSummary).toContainText('Sankt Larsgatan 17')
@@ -269,7 +273,9 @@ async function expectBookingFirstViewport(page: Page, width: number): Promise<vo
     `${width}px: permanent Boka ska ha minst 44px tryckyta`,
   ).toBeGreaterThanOrEqual(44)
 
-  await expectInsideFirstViewport(popularServices, `${width}px: tre populära tjänster`)
+  if (hasPopularServices) {
+    await expectInsideFirstViewport(popularServices, `${width}px: tre populära tjänster`)
+  }
   await expectInsideFirstViewport(salonSummary, `${width}px: båda salongerna`)
   await expectInsideFirstViewport(book, `${width}px: boka`)
   await expectInsideFirstViewport(services, `${width}px: tjänste-skip`)
@@ -319,9 +325,7 @@ test.describe('@readonly @motiontest FreshCut motiontest', () => {
     }
   })
 
-  test('byter från tre compact/tablet-steg till åtta desktopsteg exakt vid 1024px', async ({
-    page,
-  }) => {
+  test('behåller alla åtta checkpoints synliga genom compact/tablet/desktop', async ({ page }) => {
     for (const viewport of [
       { width: 767, height: 900 },
       { width: 768, height: 1024 },
@@ -350,6 +354,40 @@ test.describe('@readonly @motiontest FreshCut motiontest', () => {
           ).toBeLessThan(0.55)
         }
       })
+    }
+  })
+
+  test('wrappar kontroller utan horisontell overflow vid 200% zoom-ekvivalent bredd', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 640, height: 900 })
+    await gotoMotiontest(page)
+
+    const navigation = page.getByRole('navigation', { name: 'Upplevelsens scener' })
+    const links = navigation.getByRole('link')
+    await expect(links).toHaveCount(8)
+    await expectCheckpointGrouping(page, 640)
+    await expectViewportContract(page, 640)
+
+    const layout = await navigation.evaluate((element) => {
+      const documentWidth = document.documentElement.clientWidth
+      const linkRects = Array.from(element.querySelectorAll('a')).map((link) => {
+        const rect = link.getBoundingClientRect()
+        return { left: rect.left, right: rect.right }
+      })
+      return {
+        documentWidth,
+        flexWrap: getComputedStyle(element).flexWrap,
+        linkRects,
+        scrollWidth: document.documentElement.scrollWidth,
+      }
+    })
+
+    expect(layout.flexWrap).toBe('wrap')
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.documentWidth + 1)
+    for (const rect of layout.linkRects) {
+      expect(rect.left).toBeGreaterThanOrEqual(-1)
+      expect(rect.right).toBeLessThanOrEqual(layout.documentWidth + 1)
     }
   })
 
@@ -689,14 +727,11 @@ test.describe('@readonly @motiontest FreshCut motiontest', () => {
 
     const experience = page.locator('[data-motion-mode]')
     await expect(experience).toHaveAttribute('data-motion-mode', 'static')
+    await expect(page.locator('[data-motion-layer]').first()).toHaveCSS('will-change', 'auto')
     await expect(page.locator('[data-motion-stage]')).not.toHaveCSS('position', 'sticky')
     await expect(page.getByRole('button', { name: 'Pausa rörelse' })).toBeDisabled()
-    await expect(page.getByRole('heading', { name: 'Rent snitt. Ingen krångel.' })).toBeVisible()
-    await expect(page.locator('[data-motion-popular-services] strong')).toHaveText([
-      '369 kr',
-      '329 kr',
-      '459 kr',
-    ])
+    await expect(page.locator('#motion-scene-hero-title')).toBeVisible()
+    await expectPopularServicesOrCatalogLink(page, 390)
     await expect(page.locator('[data-motion-salon-selector]')).toContainText('Sankt Larsgatan 17')
     const servicesSection = page.locator(
       'section#tjanster[aria-labelledby="motion-services-title"]',
@@ -716,12 +751,8 @@ test.describe('@readonly @motiontest FreshCut motiontest', () => {
 
     await page.locator('video').evaluateAll((videos) => videos.forEach((video) => video.remove()))
     await expect(page.locator('video')).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Rent snitt. Ingen krångel.' })).toBeVisible()
-    await expect(page.locator('[data-motion-popular-services] strong')).toHaveText([
-      '369 kr',
-      '329 kr',
-      '459 kr',
-    ])
+    await expect(page.locator('#motion-scene-hero-title')).toBeVisible()
+    await expectPopularServicesOrCatalogLink(page, 390)
     await expect(page.locator('[data-location-key="bokhallaregatan"]')).toContainText(
       'Bokhållaregatan 2',
     )
@@ -732,24 +763,74 @@ test.describe('@readonly @motiontest FreshCut motiontest', () => {
     assertNoPageErrors()
   })
 
+  test('väljer responsiv poster-currentSrc och återanvänder Craft exakt för Return', async ({
+    page,
+  }) => {
+    const selectedPictureSource = (sceneId: string) =>
+      page.locator(`picture[data-motion-poster-scene="${sceneId}"]`).evaluate((picture) => {
+        const matching = Array.from(picture.querySelectorAll('source')).find(
+          (source) => window.matchMedia(source.media).matches,
+        )
+        return matching ? new URL(matching.srcset, document.baseURI).href : null
+      })
+
+    for (const width of [390, 1024]) {
+      await page.setViewportSize({ width, height: 900 })
+      await gotoMotiontest(page)
+
+      const posters = page.locator('img[data-motion-poster-image]')
+      await expect(posters).toHaveCount(8)
+      await expect(page.locator('img[data-motion-poster-image][loading="eager"]')).toHaveCount(1)
+      await expect(page.locator('img[data-motion-poster-image][fetchpriority="high"]')).toHaveCount(
+        1,
+      )
+      await expect(page.locator('img[data-motion-poster-image][loading="lazy"]')).toHaveCount(7)
+
+      for (const sceneId of ['hero', 'craft', 'return']) {
+        const image = page.locator(`img[data-motion-poster-image="${sceneId}"]`)
+        await expect
+          .poll(() => image.evaluate((element) => (element as HTMLImageElement).currentSrc))
+          .toBe(await selectedPictureSource(sceneId))
+      }
+
+      const craftCurrentSrc = await page
+        .locator('img[data-motion-poster-image="craft"]')
+        .evaluate((element) => (element as HTMLImageElement).currentSrc)
+      const returnCurrentSrc = await page
+        .locator('img[data-motion-poster-image="return"]')
+        .evaluate((element) => (element as HTMLImageElement).currentSrc)
+      expect(returnCurrentSrc).toBe(craftCurrentSrc)
+    }
+  })
+
   test('väljer ett verkligt codec-currentSrc från den godkända fyrkällsfamiljen', async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1024, height: 900 })
+    await page.setViewportSize({ width: 390, height: 844 })
     await gotoMotiontest(page)
 
-    const video = page.locator('video[data-motion-media-owned="freshcut-controller"]').first()
+    let video = page.locator('video[data-motion-media-owned="freshcut-controller"]').first()
     test.skip(
       (await video.count()) === 0,
-      'Slutmedia saknas; currentSrc-gaten aktiveras när en approved-final family finns.',
+      'Validerad videofamilj saknas; currentSrc-gaten aktiveras när källor finns.',
     )
 
-    await expect(video.locator('source')).toHaveCount(4)
-    await expect
-      .poll(() => video.evaluate((element) => (element as HTMLVideoElement).currentSrc))
-      .toMatch(
-        /^https?:\/\/[^/]+\/media\/freshcut-motion\/([a-z0-9][a-z0-9-]*-v[1-9]\d*-[a-f0-9]{12})\/\1-(?:desktop|mobile)\.(?:webm|mp4)$/,
-      )
+    for (const viewport of [
+      { width: 390, height: 844, suffix: 'mobile' },
+      { width: 1024, height: 900, suffix: 'desktop' },
+    ] as const) {
+      await page.setViewportSize(viewport)
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      video = page.locator('video[data-motion-media-owned="freshcut-controller"]').first()
+      await expect(video.locator('source')).toHaveCount(4)
+      await expect
+        .poll(() => video.evaluate((element) => (element as HTMLVideoElement).currentSrc))
+        .toMatch(
+          new RegExp(
+            `^https?://[^/]+/media/freshcut-motion/([a-z0-9][a-z0-9-]*-v[1-9]\\d*-[a-f0-9]{12})/\\1-${viewport.suffix}\\.(?:webm|mp4)$`,
+          ),
+        )
+    }
   })
 
   test('ger aldrig Sankt Larsgatan eller preliminära tjänster en bokningsväg', async ({ page }) => {

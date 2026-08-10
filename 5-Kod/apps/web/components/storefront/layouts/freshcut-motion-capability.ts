@@ -11,6 +11,37 @@ type FreshCutMotionWindow = Window & {
   __freshCutMotionPrepaintState?: FreshCutMotionPrepaintState
 }
 
+type FreshCutMotionConnection = {
+  effectiveType?: string
+  saveData?: boolean
+  addEventListener?: (type: 'change', listener: EventListener) => void
+  removeEventListener?: (type: 'change', listener: EventListener) => void
+}
+
+function constrainedConnection(connection: FreshCutMotionConnection | undefined): boolean {
+  return (
+    connection?.effectiveType === 'slow-2g' ||
+    connection?.effectiveType === '2g' ||
+    connection?.effectiveType === '3g'
+  )
+}
+
+/** Re-checkable runtime gate for preferences and device/network constraints. */
+export function isFreshCutMotionRuntimeEligible(): boolean {
+  const connection = (navigator as Navigator & { connection?: FreshCutMotionConnection }).connection
+  const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
+  return (
+    typeof window.requestAnimationFrame === 'function' &&
+    'adoptedStyleSheets' in document &&
+    typeof CSSStyleSheet === 'function' &&
+    typeof CSSStyleSheet.prototype.replaceSync === 'function' &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+    !connection?.saveData &&
+    !constrainedConnection(connection) &&
+    !(typeof deviceMemory === 'number' && deviceMemory <= 2)
+  )
+}
+
 function removeSheet(sheet: CSSStyleSheet): void {
   if (!('adoptedStyleSheets' in document)) return
   document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
@@ -35,7 +66,9 @@ export function applyFreshCutMotionPrepaintCapability(): boolean {
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const constrainedConnection =
-      connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g'
+      connection?.effectiveType === 'slow-2g' ||
+      connection?.effectiveType === '2g' ||
+      connection?.effectiveType === '3g'
     const eligible =
       typeof window.requestAnimationFrame === 'function' &&
       'adoptedStyleSheets' in document &&

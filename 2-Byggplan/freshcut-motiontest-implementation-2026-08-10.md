@@ -161,6 +161,16 @@ oförändrade; motiontest är `noindex/nofollow` och robots disallow.
 
 ### Task 8 — Syntetisk Higgsfield-demo; verklig slutmedia efter referensgrind
 
+**Låst syntetisk v2-råplan:** fjorton 2K-stills skapar S0/K0,
+CUSTOMER_REF, BARBER_REF, K1A, K1B, K2, K3, K4, fem separata Range-motiv
+och T0. Fyra femsekundersklipp är A entrance, B chair, C en enda craft-
+detalj och D mirror-only. Hero, Range, Return och Team får deterministiska
+responsiva posterfamiljer från godkända stills; Range kompositeras av R1–R5,
+Team får en lokal CSS/GSAP-pan och Return återanvänder exakt Crafts poster-URL:er
+utan ny hämtning eller videokälla. B- och C-drafts granskas först;
+A/D och alla 1080p-finaler förblir spärrade tills föregående grind är grön.
+Normalvägen är live-estimerad till 258 av 909,5 krediter.
+
 - [ ] Ladda inte upp eller transformera befintliga FreshCut-, kund-, sociala
       medier- eller fallbackbilder. Syntetiska ankarramar skapas från text och
       återanvänds endast som internt genererade kontinuitetsreferenser.

@@ -1,6 +1,6 @@
 # FreshCut motiontest — source asset manifest
 
-Status: repository-controlled fallbacks only
+Status: repository-controlled fallbacks plus authorized synthetic demo lane
 Audit date: 2026-08-10
 
 These files may be displayed as existing Corevo/FreshCut fallback material. Their
@@ -21,7 +21,23 @@ transformation rights. The configured official Instagram handle could not be
 read anonymously during this audit, so no social-media asset is approved by
 inference.
 
-## Missing approval pack
+## Authorized synthetic demo lane
+
+The local motion demo may use assets generated from text with no uploaded
+FreshCut, customer, employee, social-media, stock or repository image. The
+first synthetic outputs may be reused only as internal Higgsfield continuity
+references for later synthetic outputs in the same ledger.
+
+Every derivative in this lane must use the paired provenance
+`generated-demo` / `synthetic-text-only`. It represents a fictional salon and
+fictional people. It is not evidence of a real FreshCut location, employee,
+customer, haircut or result, and it may not be relabelled `approved-final`.
+
+Raw outputs and signed download URLs remain outside Git. The ledger records
+job/output IDs, hashes, estimates, decisions and the final versioned local
+media path. Only hash-named FFmpeg derivatives enter the web media tree.
+
+## Missing real-final approval pack
 
 Final generation remains blocked until FreshCut/user-provided references cover:
 

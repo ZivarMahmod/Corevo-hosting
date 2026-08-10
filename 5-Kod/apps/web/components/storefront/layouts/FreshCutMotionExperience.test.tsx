@@ -448,6 +448,14 @@ describe('FreshCut master motion experience', () => {
 describe('FreshCut master motion enhancement', () => {
   let container: HTMLDivElement
   let compactQuery: MediaQueryList & { emit: (matches: boolean) => void }
+  let reducedQuery: MediaQueryList & { emit: (matches: boolean) => void }
+  let connection: {
+    readonly effectiveType: string
+    readonly saveData: boolean
+    addEventListener: ReturnType<typeof vi.fn>
+    removeEventListener: ReturnType<typeof vi.fn>
+    emit: () => void
+  }
   let root: Root | null
   let deviceMemory: number
   let effectiveType: string
@@ -469,6 +477,8 @@ describe('FreshCut master motion enhancement', () => {
     saveData = false
     window.history.replaceState(null, '', '/')
     const compactListeners = new Set<(event: MediaQueryListEvent) => void>()
+    const reducedListeners = new Set<(event: MediaQueryListEvent) => void>()
+    const connectionListeners = new Set<(event: Event) => void>()
     compactQuery = {
       matches: false,
       media: '(max-width: 1023px)',
@@ -488,33 +498,51 @@ describe('FreshCut master motion enhancement', () => {
         for (const listener of compactListeners) listener(event)
       },
     }
+    reducedQuery = {
+      get matches() {
+        return reducedMotion
+      },
+      media: '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addEventListener: vi.fn((_type, listener) => {
+        reducedListeners.add(listener as (event: MediaQueryListEvent) => void)
+      }),
+      removeEventListener: vi.fn((_type, listener) => {
+        reducedListeners.delete(listener as (event: MediaQueryListEvent) => void)
+      }),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(() => true),
+      emit(matches) {
+        reducedMotion = matches
+        const event = { matches, media: this.media } as MediaQueryListEvent
+        for (const listener of reducedListeners) listener(event)
+      },
+    }
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
-      value: vi.fn((query: string) =>
-        query === compactQuery.media
-          ? compactQuery
-          : {
-              matches: reducedMotion,
-              media: query,
-              onchange: null,
-              addEventListener: vi.fn(),
-              removeEventListener: vi.fn(),
-              addListener: vi.fn(),
-              removeListener: vi.fn(),
-              dispatchEvent: vi.fn(() => true),
-            },
-      ),
+      value: vi.fn((query: string) => (query === compactQuery.media ? compactQuery : reducedQuery)),
     })
+    connection = {
+      get effectiveType() {
+        return effectiveType
+      },
+      get saveData() {
+        return saveData
+      },
+      addEventListener: vi.fn((_type, listener) => {
+        connectionListeners.add(listener as (event: Event) => void)
+      }),
+      removeEventListener: vi.fn((_type, listener) => {
+        connectionListeners.delete(listener as (event: Event) => void)
+      }),
+      emit() {
+        for (const listener of connectionListeners) listener(new Event('change'))
+      },
+    }
     Object.defineProperty(navigator, 'connection', {
       configurable: true,
-      value: {
-        get effectiveType() {
-          return effectiveType
-        },
-        get saveData() {
-          return saveData
-        },
-      },
+      value: connection,
     })
     Object.defineProperty(navigator, 'deviceMemory', {
       configurable: true,
@@ -680,16 +708,44 @@ describe('FreshCut master motion enhancement', () => {
     expect(frameHarness.pendingCount).toBe(0)
   })
 
-  it('keeps 3g eligible for the single enhanced owner', async () => {
+  it('keeps 3g static and does not load the motion runtime', async () => {
     effectiveType = '3g'
 
     const experience = await renderExperience()
 
-    expect(experience.dataset.motionMode).toBe('enhanced')
-    expect(gsapHarness.timelines).toHaveLength(1)
-    expect(gsapHarness.triggers).toHaveLength(1)
-    expect(mediaHarness.controllers).toHaveLength(1)
-    expect(document.adoptedStyleSheets).toHaveLength(0)
+    expect(experience.dataset.motionMode).toBe('static')
+    expect(gsapHarness.timelines).toHaveLength(0)
+    expect(gsapHarness.triggers).toHaveLength(0)
+    expect(mediaHarness.controllers).toHaveLength(0)
+  })
+
+  it('tears down the enhanced owner when reduced motion becomes preferred', async () => {
+    const experience = await renderExperience()
+    const timeline = gsapHarness.timelines[0]!
+    const trigger = gsapHarness.triggers[0]!
+    const media = mediaHarness.controllers[0]!
+
+    await act(async () => reducedQuery.emit(true))
+
+    expect(experience.dataset.motionMode).toBe('static')
+    expect(timeline.killed).toBe(true)
+    expect(trigger.killed).toBe(true)
+    expect(media.destroy).toHaveBeenCalledOnce()
+  })
+
+  it('tears down the enhanced owner when the connection becomes constrained', async () => {
+    const experience = await renderExperience()
+    const timeline = gsapHarness.timelines[0]!
+    const trigger = gsapHarness.triggers[0]!
+    const media = mediaHarness.controllers[0]!
+
+    effectiveType = '3g'
+    await act(async () => connection.emit())
+
+    expect(experience.dataset.motionMode).toBe('static')
+    expect(timeline.killed).toBe(true)
+    expect(trigger.killed).toBe(true)
+    expect(media.destroy).toHaveBeenCalledOnce()
   })
 
   it('does not materialize approved media when ScrollTrigger construction fails', async () => {
@@ -941,7 +997,7 @@ describe('FreshCut master motion enhancement', () => {
     expect(chairMediaTransition?.[1]).not.toEqual(chairScrimTransition?.[1])
   })
 
-  it('uses one vertical three-phase timeline through the tablet breakpoint', async () => {
+  it('keeps every compact media owner visible inside the three mobile phases', async () => {
     Object.defineProperty(compactQuery, 'matches', { configurable: true, value: true })
     const experience = await renderExperience()
     const timeline = gsapHarness.timelines[0]!
@@ -958,7 +1014,7 @@ describe('FreshCut master motion enhancement', () => {
     expect(gsapHarness.triggers).toHaveLength(1)
     expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 1023px)')
     expect(sceneTransitions.map(([target]) => (target as HTMLElement).dataset.motionScene)).toEqual(
-      ['craft', 'mirror', 'team'],
+      ['entrance', 'chair', 'craft', 'range', 'return', 'mirror', 'team'],
     )
     expect(layerTransitions.length).toBeGreaterThan(0)
     for (const [, entryState, stableState] of sceneTransitions) {
@@ -972,11 +1028,13 @@ describe('FreshCut master motion enhancement', () => {
       expect(Math.abs(fromState.z)).toBeLessThanOrEqual(7.5)
       expect(Math.abs(toState.z)).toBeLessThanOrEqual(7.5)
     }
-    expect(panelMoves).toHaveLength(3)
-    for (const [, panelState] of panelMoves) {
-      expect(panelState.xPercent).toBe(0)
-      expect(panelState.scale).toBeGreaterThanOrEqual(0.96)
-    }
+    expect(panelMoves).toHaveLength(1)
+    expect(panelMoves[0]?.[1]).toMatchObject({
+      autoAlpha: 0,
+      pointerEvents: 'none',
+      xPercent: 0,
+      scale: 1,
+    })
   })
 
   it('rebuilds transactionally across the compact breakpoint without duplicate owners', async () => {
@@ -1059,7 +1117,15 @@ describe('FreshCut master motion enhancement', () => {
         ([target]) => (target as HTMLElement).dataset.motionScene,
       )
       if (finalCompact) {
-        expect(transitionedScenes).toEqual(['craft', 'mirror', 'team'])
+        expect(transitionedScenes).toEqual([
+          'entrance',
+          'chair',
+          'craft',
+          'range',
+          'return',
+          'mirror',
+          'team',
+        ])
       } else {
         expect(transitionedScenes).toContain('chair')
         const chairTransition = sceneTransitions.find(

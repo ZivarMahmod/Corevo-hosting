@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   FRESHCUT_MOTION_SCENES,
+  type FreshCutMotionScene,
   motionSceneForProgress,
   motionSceneTarget,
   motionScrollDistanceVh,
   motionMobilePhaseForScene,
+  validatedFreshCutMotionPosters,
   validatedFreshCutMotionVideoSources,
   validateFreshCutMotionScenes,
 } from './freshcut-motion-scenes'
@@ -60,13 +62,68 @@ describe('FreshCut production motion scene map', () => {
     for (const scene of FRESHCUT_MOTION_SCENES) {
       expect(scene.safeZone.desktop).not.toBe('')
       expect(scene.safeZone.mobile).not.toBe('')
-      expect(scene.media.poster).toMatch(/^\/images\/freshcut\/.+\.webp$/)
+      expect(scene.media.desktopPoster).toMatch(/^\/images\/freshcut\/.+\.webp$/)
+      expect(scene.media.mobilePoster).toMatch(/^\/images\/freshcut\/.+\.webp$/)
       expect(scene.media.desktopWebm).toBeNull()
       expect(scene.media.desktopMp4).toBeNull()
       expect(scene.media.mobileWebm).toBeNull()
       expect(scene.media.mobileMp4).toBeNull()
       expect(scene.media.sourceStatus).toBe('repository-controlled-fallback')
       expect(scene.media.rightsStatus).toBe('ai-transformation-pending')
+    }
+  })
+
+  it('has exactly four potential video owners and keeps every editorial scene still-only', () => {
+    expect(
+      FRESHCUT_MOTION_SCENES.filter((scene) => scene.media.videoOwner).map((scene) => scene.id),
+    ).toEqual(['entrance', 'chair', 'craft', 'mirror'])
+    expect(
+      FRESHCUT_MOTION_SCENES.filter((scene) => !scene.media.videoOwner).map((scene) => scene.id),
+    ).toEqual(['hero', 'range', 'return', 'team'])
+
+    for (const scene of FRESHCUT_MOTION_SCENES.filter((candidate) => !candidate.media.videoOwner)) {
+      expect(scene.media.forward).toBe('hold')
+      expect(scene.media.reverse).toBe('stable-frame')
+      expect([
+        scene.media.desktopWebm,
+        scene.media.desktopMp4,
+        scene.media.mobileWebm,
+        scene.media.mobileMp4,
+      ]).toEqual([null, null, null, null])
+    }
+  })
+
+  it('plays Entrance once on entry and resolves reverse travel to a stable frame', () => {
+    const entrance = FRESHCUT_MOTION_SCENES.find((scene) => scene.id === 'entrance')!
+
+    expect(entrance.media.forward).toBe('play-on-entry')
+    expect(entrance.media.reverse).toBe('stable-frame')
+  })
+
+  it('reuses the Craft K3 posters for Return without introducing another fetch target', () => {
+    const craft = FRESHCUT_MOTION_SCENES.find((scene) => scene.id === 'craft')!
+    const returnScene = FRESHCUT_MOTION_SCENES.find((scene) => scene.id === 'return')!
+
+    expect(returnScene.media.posterOwner).toBe('craft')
+    expect(returnScene.media.desktopPoster).toBe(craft.media.desktopPoster)
+    expect(returnScene.media.mobilePoster).toBe(craft.media.mobilePoster)
+  })
+
+  it('locks DOM copy placement and the narrow mobile subject corridor before generation', () => {
+    expect(FRESHCUT_MOTION_SCENES.map((scene) => [scene.id, scene.copyPlacement])).toEqual([
+      ['hero', 'left'],
+      ['entrance', 'left'],
+      ['chair', 'right'],
+      ['craft', 'left'],
+      ['range', 'left'],
+      ['return', 'right'],
+      ['mirror', 'right'],
+      ['team', 'left'],
+    ])
+
+    for (const scene of FRESHCUT_MOTION_SCENES) {
+      expect(scene.safeZone.mobile).toContain('critical-x41-59-y12-58')
+      expect(scene.media.mobileCrop.split(' ')[0]).toBe('center')
     }
   })
 
@@ -82,10 +139,10 @@ describe('FreshCut production motion scene map', () => {
       ['entrance', 'first-frame', 'last-frame'],
       ['chair', 'first-frame', 'last-frame'],
       ['craft', 'first-frame', 'last-frame'],
-      ['range', 'first-frame', 'last-frame'],
+      ['range', 'poster', 'poster'],
       ['return', 'poster', 'poster'],
       ['mirror', 'first-frame', 'last-frame'],
-      ['team', 'first-frame', 'last-frame'],
+      ['team', 'poster', 'poster'],
     ])
   })
 
@@ -135,12 +192,13 @@ describe('FreshCut production motion scene map', () => {
   it('has no gap, overlap, missing stable state or backward human playback', () => {
     expect(validateFreshCutMotionScenes(FRESHCUT_MOTION_SCENES)).toEqual([])
     expect(
-      FRESHCUT_MOTION_SCENES.filter((scene) => scene.media.humanAction).map((scene) => [
+      FRESHCUT_MOTION_SCENES.filter((scene) => scene.media.videoOwner).map((scene) => [
         scene.id,
         scene.media.forward,
         scene.media.reverse,
       ]),
     ).toEqual([
+      ['entrance', 'play-on-entry', 'stable-frame'],
       ['chair', 'play-on-entry', 'stable-frame'],
       ['craft', 'play-on-entry', 'stable-frame'],
       ['mirror', 'play-on-entry', 'stable-frame'],
@@ -173,12 +231,45 @@ describe('FreshCut production motion scene map', () => {
     )
   })
 
+  it('fails closed when ownership, still-only delivery or Craft-to-Return reuse drifts', () => {
+    const broken = FRESHCUT_MOTION_SCENES.map((scene) => {
+      if (scene.id === 'hero') {
+        return {
+          ...scene,
+          media: { ...scene.media, videoOwner: true },
+        }
+      }
+      if (scene.id === 'range') {
+        return {
+          ...scene,
+          media: { ...scene.media, desktopWebm: '/media/freshcut-motion/range.webm' },
+        }
+      }
+      if (scene.id === 'return') {
+        return {
+          ...scene,
+          media: { ...scene.media, mobilePoster: '/images/freshcut/freshcut-3.webp' },
+        }
+      }
+      return scene
+    }) as unknown as readonly FreshCutMotionScene[]
+
+    expect(validateFreshCutMotionScenes(broken)).toEqual(
+      expect.arrayContaining([
+        'video owners must be exactly entrance, chair, craft and mirror',
+        'range still-only scene must not declare video sources',
+        'return must reuse craft responsive poster URLs exactly',
+      ]),
+    )
+  })
+
   it('accepts the FFmpeg source-set and versioned poster as one approved local asset family', () => {
     const family = '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6'
     const base = `${family}/entrance-v1-a1b2c3d4e5f6`
     const media = {
       ...FRESHCUT_MOTION_SCENES[1].media,
-      poster: `${base}-poster.webp`,
+      desktopPoster: `${base}-desktop-poster.webp`,
+      mobilePoster: `${base}-mobile-poster.webp`,
       desktopWebm: `${base}-desktop.webm`,
       desktopMp4: `${base}-desktop.mp4`,
       mobileWebm: `${base}-mobile.webm`,
@@ -195,12 +286,13 @@ describe('FreshCut production motion scene map', () => {
     })
   })
 
-  it('accepts one honestly labelled synthetic demo family without calling it approved final', () => {
+  it('accepts one honestly labelled synthetic demo video family for a video owner', () => {
     const family = '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6'
     const base = `${family}/entrance-v1-a1b2c3d4e5f6`
     const media = {
       ...FRESHCUT_MOTION_SCENES[1].media,
-      poster: `${base}-poster.webp`,
+      desktopPoster: `${base}-desktop-poster.webp`,
+      mobilePoster: `${base}-mobile-poster.webp`,
       desktopWebm: `${base}-desktop.webm`,
       desktopMp4: `${base}-desktop.mp4`,
       mobileWebm: `${base}-mobile.webm`,
@@ -215,6 +307,40 @@ describe('FreshCut production motion scene map', () => {
       mobileWebm: media.mobileWebm,
       mobileMp4: media.mobileMp4,
     })
+    expect(validatedFreshCutMotionPosters(media, 'entrance')).toEqual({
+      desktopPoster: media.desktopPoster,
+      mobilePoster: media.mobilePoster,
+    })
+    const scenes = FRESHCUT_MOTION_SCENES.map((scene) =>
+      scene.id === 'entrance' ? { ...scene, media } : scene,
+    ) as unknown as readonly FreshCutMotionScene[]
+    expect(validateFreshCutMotionScenes(scenes)).toEqual([])
+  })
+
+  it('fails closed when a synthetic demo video family is incomplete', () => {
+    const family = '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6'
+    const base = `${family}/entrance-v1-a1b2c3d4e5f6`
+    const media = {
+      ...FRESHCUT_MOTION_SCENES[1].media,
+      desktopPoster: `${base}-desktop-poster.webp`,
+      mobilePoster: `${base}-mobile-poster.webp`,
+      desktopWebm: `${base}-desktop.webm`,
+      sourceStatus: 'generated-demo' as const,
+      rightsStatus: 'synthetic-text-only' as const,
+    }
+
+    expect(validatedFreshCutMotionPosters(media, 'entrance')).toEqual({
+      desktopPoster: media.desktopPoster,
+      mobilePoster: media.mobilePoster,
+    })
+    expect(validatedFreshCutMotionVideoSources(media, 'entrance')).toBeNull()
+
+    const broken = FRESHCUT_MOTION_SCENES.map((scene) =>
+      scene.id === 'entrance' ? { ...scene, media } : scene,
+    ) as unknown as readonly FreshCutMotionScene[]
+    expect(validateFreshCutMotionScenes(broken)).toContain(
+      'entrance playable media must use one local versioned WebM and MP4 source-set',
+    )
   })
 
   it('rejects crossed source and rights provenance even when the source family is complete', () => {
@@ -222,7 +348,8 @@ describe('FreshCut production motion scene map', () => {
     const base = `${family}/entrance-v1-a1b2c3d4e5f6`
     const media = {
       ...FRESHCUT_MOTION_SCENES[1].media,
-      poster: `${base}-poster.webp`,
+      desktopPoster: `${base}-desktop-poster.webp`,
+      mobilePoster: `${base}-mobile-poster.webp`,
       desktopWebm: `${base}-desktop.webm`,
       desktopMp4: `${base}-desktop.mp4`,
       mobileWebm: `${base}-mobile.webm`,
@@ -251,7 +378,8 @@ describe('FreshCut production motion scene map', () => {
   it('rejects a flat published family instead of the atomic nested family directory', () => {
     const media = {
       ...FRESHCUT_MOTION_SCENES[1].media,
-      poster: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-poster.webp',
+      desktopPoster: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-desktop-poster.webp',
+      mobilePoster: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-mobile-poster.webp',
       desktopWebm: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-desktop.webm',
       desktopMp4: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-desktop.mp4',
       mobileWebm: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-mobile.webm',
@@ -272,7 +400,8 @@ describe('FreshCut production motion scene map', () => {
             ...scene,
             media: {
               ...scene.media,
-              poster: `${base}-poster.webp` as const,
+              desktopPoster: `${base}-desktop-poster.webp` as const,
+              mobilePoster: `${base}-mobile-poster.webp` as const,
               desktopWebm: `${base}-desktop.webm` as const,
               desktopMp4: `${base}-desktop.mp4` as const,
               mobileWebm: `${base}-mobile.webm` as const,
@@ -296,7 +425,8 @@ describe('FreshCut production motion scene map', () => {
             ...scene,
             media: {
               ...scene.media,
-              poster: '/media/freshcut-motion/hero-v1-a1b2c3d4e5f6-poster.webp' as const,
+              desktopPoster:
+                '/media/freshcut-motion/hero-v1-a1b2c3d4e5f6-desktop-poster.webp' as const,
             },
           }
         : scene,
@@ -314,7 +444,10 @@ describe('FreshCut production motion scene map', () => {
             ...scene,
             media: {
               ...scene.media,
-              poster: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-poster.webp' as const,
+              desktopPoster:
+                '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-desktop-poster.webp' as const,
+              mobilePoster:
+                '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-mobile-poster.webp' as const,
               desktopWebm: 'https://cdn.example/entrance.webm',
               desktopMp4: '/media/freshcut-motion/entrance-v1-a1b2c3d4e5f6-desktop.mp4',
               mobileWebm: '/media/freshcut-motion/different-v1-a1b2c3d4e5f6-mobile.webm',

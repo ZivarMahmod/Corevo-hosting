@@ -27,6 +27,7 @@ import {
   claimFreshCutMotionPrepaintCapability,
   clearFreshCutMotionPrepaintCapability,
   getFreshCutMotionPrepaintDeadline,
+  isFreshCutMotionRuntimeEligible,
   markFreshCutMotionPrepaintReady,
   releaseFreshCutMotionPrepaintCapability,
 } from './freshcut-motion-capability'
@@ -298,6 +299,15 @@ export function FreshCutMotionExperience({
       return
     }
     const compactQuery = window.matchMedia(`(max-width: ${DESKTOP_VIEWPORT_MIN_WIDTH - 1}px)`)
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const connection = (
+      navigator as Navigator & {
+        connection?: {
+          addEventListener?: (type: 'change', listener: EventListener) => void
+          removeEventListener?: (type: 'change', listener: EventListener) => void
+        }
+      }
+    ).connection
 
     let disposed = false
     let cleaned = false
@@ -315,6 +325,7 @@ export function FreshCutMotionExperience({
     let hasCheckedInitialHash = false
     let latestCompactViewport = compactQuery.matches
     let ownedPreparedBuild: (() => void) | null = null
+    let runtimeDisabled = false
 
     const destroyActiveResources = () => {
       const triggerToKill = masterTrigger
@@ -346,6 +357,34 @@ export function FreshCutMotionExperience({
       }
     }
 
+    const clearBootstrapTimer = () => {
+      if (bootstrapTimer === null) return
+      window.clearTimeout(bootstrapTimer)
+      bootstrapTimer = null
+    }
+
+    const disableEnhancedMotion = () => {
+      if (runtimeDisabled) return
+      runtimeDisabled = true
+      bootstrapExpired = true
+      clearBootstrapTimer()
+      cancelPreparationFrames()
+      if (preparedBuildRef.current === ownedPreparedBuild) preparedBuildRef.current = null
+      destroyActiveResources()
+      clearFreshCutMotionPrepaintCapability()
+      if (!disposed) setMode('static')
+    }
+
+    const handleCapabilityChange: EventListener = () => {
+      if (!isFreshCutMotionRuntimeEligible()) disableEnhancedMotion()
+    }
+
+    reducedMotionQuery.addEventListener('change', handleCapabilityChange)
+    connection?.addEventListener?.('change', handleCapabilityChange)
+    if (!isFreshCutMotionRuntimeEligible()) {
+      disableEnhancedMotion()
+    }
+
     const syncActiveMediaController = (command: MotionMediaCommand) => {
       const controller = mediaActivated ? mediaController : null
       if (!controller) return
@@ -354,12 +393,6 @@ export function FreshCutMotionExperience({
       } catch {
         disableMediaController(controller)
       }
-    }
-
-    const clearBootstrapTimer = () => {
-      if (bootstrapTimer === null) return
-      window.clearTimeout(bootstrapTimer)
-      bootstrapTimer = null
     }
 
     const bootstrapIsCurrent = () =>
@@ -468,19 +501,9 @@ export function FreshCutMotionExperience({
             0,
           )
 
-          const compactVisualStarts = new Map<FreshCutMotionSceneId, number>([
-            ['hero', motionSceneTarget('hero')],
-            ['craft', motionSceneTarget('craft')],
-            ['mirror', motionSceneTarget('return')],
-            ['team', motionSceneTarget('team')],
-          ])
-          const visualKeyframes = FRESHCUT_MOTION_SCENES.filter(
-            (motionScene) => !compactViewport || compactVisualStarts.has(motionScene.id),
-          ).map((motionScene) => ({
+          const visualKeyframes = FRESHCUT_MOTION_SCENES.map((motionScene) => ({
             motionScene,
-            start: compactViewport
-              ? (compactVisualStarts.get(motionScene.id) ?? motionScene.range[0])
-              : motionScene.range[0],
+            start: motionScene.range[0],
           }))
 
           FRESHCUT_MOTION_SCENES.forEach((motionScene, index) => {
@@ -617,34 +640,34 @@ export function FreshCutMotionExperience({
               },
               FRESHCUT_MOTION_SCENES[1].range[0] - (compactViewport ? 0.025 : 0.04),
             )
-            timeline.to(
-              businessPanel,
-              {
-                autoAlpha: 1,
-                duration: compactViewport ? 0.025 : 0.035,
-                ease: 'power2.out',
-                pointerEvents: 'auto',
-                scale: compactViewport ? 1 : 0.82,
-                xPercent: compactViewport ? 0 : 44,
-                yPercent: compactViewport ? 6 : 0,
-              },
-              compactViewport
-                ? FRESHCUT_MOTION_SCENES[5].range[0] - 0.025
-                : FRESHCUT_MOTION_SCENES[6].range[0] - 0.035,
-            )
-            timeline.to(
-              businessPanel,
-              {
-                autoAlpha: 1,
-                duration: 0.025,
-                ease: 'power1.inOut',
-                pointerEvents: 'auto',
-                scale: compactViewport ? 1 : 0.78,
-                xPercent: compactViewport ? 0 : -28,
-                yPercent: 8,
-              },
-              FRESHCUT_MOTION_SCENES[7].range[0] - 0.025,
-            )
+            if (!compactViewport) {
+              timeline.to(
+                businessPanel,
+                {
+                  autoAlpha: 1,
+                  duration: 0.035,
+                  ease: 'power2.out',
+                  pointerEvents: 'auto',
+                  scale: 0.82,
+                  xPercent: 44,
+                  yPercent: 0,
+                },
+                FRESHCUT_MOTION_SCENES[6].range[0] - 0.035,
+              )
+              timeline.to(
+                businessPanel,
+                {
+                  autoAlpha: 1,
+                  duration: 0.025,
+                  ease: 'power1.inOut',
+                  pointerEvents: 'auto',
+                  scale: 0.78,
+                  xPercent: -28,
+                  yPercent: 8,
+                },
+                FRESHCUT_MOTION_SCENES[7].range[0] - 0.025,
+              )
+            }
           }
           masterTimeline = timeline
           masterTrigger = ScrollTrigger.create({
@@ -739,6 +762,7 @@ export function FreshCutMotionExperience({
 
     void (async () => {
       try {
+        if (runtimeDisabled) return
         ownedRuntimePromise = loadMotionRuntime()
         motionRuntime = await ownedRuntimePromise
         if (disposed) return
@@ -764,6 +788,8 @@ export function FreshCutMotionExperience({
         cleaned = true
         clearBootstrapTimer()
         cancelPreparationFrames()
+        reducedMotionQuery.removeEventListener('change', handleCapabilityChange)
+        connection?.removeEventListener?.('change', handleCapabilityChange)
         if (preparedBuildRef.current === ownedPreparedBuild) preparedBuildRef.current = null
         compactQuery.removeEventListener('change', handleCompactChange)
         destroyActiveResources()

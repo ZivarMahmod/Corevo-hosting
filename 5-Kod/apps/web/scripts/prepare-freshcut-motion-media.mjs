@@ -14,6 +14,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const SCENES = new Set(['hero', 'entrance', 'chair', 'craft', 'range', 'return', 'mirror', 'team'])
+const VIDEO_SCENES = new Set(['entrance', 'chair', 'craft', 'mirror'])
 const SOURCE_HASH_PATTERN = /^[a-f0-9]{64}$/i
 const VERSION_PATTERN = /^v[1-9]\d*$/
 const VALID_PROVENANCE_PAIRS = new Set([
@@ -21,7 +22,13 @@ const VALID_PROVENANCE_PAIRS = new Set([
   'approved-final:approved-for-ai-transformation',
 ])
 
-export const FRESHCUT_MOTION_PIPELINE_VERSION = 'freshcut-motion-ffmpeg-v2'
+export const FRESHCUT_MOTION_PIPELINE_VERSION = 'freshcut-motion-ffmpeg-v4'
+
+export const FRESHCUT_MOTION_BYTE_BUDGETS = Object.freeze({
+  poster: Object.freeze({ mobile: 120 * 1024, desktop: 200 * 1024 }),
+  webm: Object.freeze({ mobile: 900 * 1024, desktop: 1_500 * 1024 }),
+  mp4: Object.freeze({ mobile: 1_200 * 1024, desktop: 2_000 * 1024 }),
+})
 
 function normalisePath(path) {
   return String(path).replace(/\\/g, '/')
@@ -48,7 +55,13 @@ function canonicalJson(value) {
   return JSON.stringify(value)
 }
 
-function mediaRecipe({ trimStartSeconds, trimEndSeconds, holdStartSeconds, holdEndSeconds }) {
+function mediaRecipe({
+  sceneId,
+  trimStartSeconds,
+  trimEndSeconds,
+  holdStartSeconds,
+  holdEndSeconds,
+}) {
   return {
     trim: { startSeconds: trimStartSeconds, endSeconds: trimEndSeconds },
     holds: { startSeconds: holdStartSeconds, endSeconds: holdEndSeconds },
@@ -59,6 +72,8 @@ function mediaRecipe({ trimStartSeconds, trimEndSeconds, holdStartSeconds, holdE
     },
     filter: {
       colorspace: 'colorspace=all=bt709:iall=bt709:fast=1',
+      // Baked once so runtime media never pays a per-frame CSS filter cost.
+      grade: 'eq=saturation=0:contrast=1.08:brightness=-0.08',
       fit: 'force_original_aspect_ratio=increase',
       crop: 'center',
       sampleAspectRatio: 1,
@@ -74,23 +89,37 @@ function mediaRecipe({ trimStartSeconds, trimEndSeconds, holdStartSeconds, holdE
       webm: { encoder: 'libvpx-vp9', crf: 31, bitrate: 0, rowMt: 1 },
     },
     keyframes: { gop: 30, minimumInterval: 30, sceneThreshold: 0 },
-    poster: { encoder: 'libwebp', quality: 82, frameCount: 1, viewport: 'desktop' },
+    poster: {
+      encoder: 'libwebp',
+      quality: 82,
+      frameCount: 1,
+      capture: sceneId === 'craft' ? 'end' : 'start',
+    },
+    byteBudgets: FRESHCUT_MOTION_BYTE_BUDGETS,
     audio: 'removed',
   }
 }
 
-function familyOutputs(directory, baseName) {
+function familyOutputs(directory, baseName, mediaDelivery) {
+  const posters = {
+    desktopPosterWebp: outputPath(directory, `${baseName}-desktop-poster.webp`),
+    mobilePosterWebp: outputPath(directory, `${baseName}-mobile-poster.webp`),
+  }
+  if (mediaDelivery === 'poster-only') return posters
   return {
     desktopMp4: outputPath(directory, `${baseName}-desktop.mp4`),
     desktopWebm: outputPath(directory, `${baseName}-desktop.webm`),
     mobileMp4: outputPath(directory, `${baseName}-mobile.mp4`),
     mobileWebm: outputPath(directory, `${baseName}-mobile.webm`),
-    posterWebp: outputPath(directory, `${baseName}-poster.webp`),
+    ...posters,
   }
 }
 
 export function buildFreshCutMotionMediaPlan(input) {
   if (!SCENES.has(input.sceneId)) throw new Error(`Unknown scene: ${input.sceneId}`)
+  if (input.sceneId === 'return') {
+    throw new Error('Return reuses Craft posters exactly and must not publish another family')
+  }
   if (!String(input.inputPath ?? '').trim()) throw new Error('Input path is required')
   if (!String(input.outputDir ?? '').trim()) throw new Error('Output directory is required')
   if (!VERSION_PATTERN.test(String(input.version ?? ''))) {
@@ -114,7 +143,9 @@ export function buildFreshCutMotionMediaPlan(input) {
   if (trimEndSeconds <= trimStartSeconds) throw new Error('Trim window must end after it starts')
 
   const sourceHash = String(input.sourceHash).toLowerCase()
+  const mediaDelivery = VIDEO_SCENES.has(input.sceneId) ? 'video' : 'poster-only'
   const recipe = mediaRecipe({
+    sceneId: input.sceneId,
     trimStartSeconds,
     trimEndSeconds,
     holdStartSeconds,
@@ -127,6 +158,7 @@ export function buildFreshCutMotionMediaPlan(input) {
         provenance,
         sourceHash,
         sceneId: input.sceneId,
+        mediaDelivery,
         version: input.version,
         recipe,
       }),
@@ -143,6 +175,7 @@ export function buildFreshCutMotionMediaPlan(input) {
     familyDirectory,
     version: input.version,
     pipelineVersion: FRESHCUT_MOTION_PIPELINE_VERSION,
+    mediaDelivery,
     provenance,
     sourceHash,
     familyHash,
@@ -152,7 +185,7 @@ export function buildFreshCutMotionMediaPlan(input) {
     holdStartSeconds,
     holdEndSeconds,
     recipe,
-    outputs: familyOutputs(familyDirectory, baseName),
+    outputs: familyOutputs(familyDirectory, baseName, mediaDelivery),
   }
 }
 
@@ -162,6 +195,7 @@ function videoFilter(plan, width, height) {
     `fps=${fps}`,
     `tpad=start_mode=clone:start_duration=${plan.holdStartSeconds}:stop_mode=clone:stop_duration=${plan.holdEndSeconds}`,
     filter.colorspace,
+    filter.grade,
     `scale=${width}:${height}:${filter.fit}`,
     `crop=${width}:${height}`,
     `setsar=${filter.sampleAspectRatio}`,
@@ -178,6 +212,24 @@ function commonInputArgs(plan) {
     String(plan.trimStartSeconds),
     '-to',
     String(plan.trimEndSeconds),
+    '-i',
+    plan.inputPath,
+    '-an',
+  ]
+}
+
+function posterInputArgs(plan) {
+  const captureSecond =
+    plan.recipe.poster.capture === 'end'
+      ? Math.max(plan.trimStartSeconds, plan.trimEndSeconds - 1 / plan.recipe.fps)
+      : plan.trimStartSeconds
+  return [
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-n',
+    '-ss',
+    String(captureSecond),
     '-i',
     plan.inputPath,
     '-an',
@@ -238,43 +290,53 @@ export function buildFreshCutMotionMediaCommands(plan, options = {}) {
   const command = options.ffmpegPath || 'ffmpeg'
   const desktop = plan.recipe.dimensions.desktop
   const mobile = plan.recipe.dimensions.mobile
+  const videoCommands =
+    plan.mediaDelivery === 'video'
+      ? [
+          {
+            kind: 'desktop-mp4',
+            command,
+            args: mp4Args(plan, desktop.width, desktop.height, plan.outputs.desktopMp4),
+          },
+          {
+            kind: 'desktop-webm',
+            command,
+            args: webmArgs(plan, desktop.width, desktop.height, plan.outputs.desktopWebm),
+          },
+          {
+            kind: 'mobile-mp4',
+            command,
+            args: mp4Args(plan, mobile.width, mobile.height, plan.outputs.mobileMp4),
+          },
+          {
+            kind: 'mobile-webm',
+            command,
+            args: webmArgs(plan, mobile.width, mobile.height, plan.outputs.mobileWebm),
+          },
+        ]
+      : []
+
+  const posterCommand = (kind, dimensions, output) => ({
+    kind,
+    command,
+    args: [
+      ...posterInputArgs(plan),
+      '-vf',
+      videoFilter(plan, dimensions.width, dimensions.height),
+      '-frames:v',
+      String(plan.recipe.poster.frameCount),
+      '-c:v',
+      plan.recipe.poster.encoder,
+      '-quality',
+      String(plan.recipe.poster.quality),
+      output,
+    ],
+  })
+
   return [
-    {
-      kind: 'desktop-mp4',
-      command,
-      args: mp4Args(plan, desktop.width, desktop.height, plan.outputs.desktopMp4),
-    },
-    {
-      kind: 'desktop-webm',
-      command,
-      args: webmArgs(plan, desktop.width, desktop.height, plan.outputs.desktopWebm),
-    },
-    {
-      kind: 'mobile-mp4',
-      command,
-      args: mp4Args(plan, mobile.width, mobile.height, plan.outputs.mobileMp4),
-    },
-    {
-      kind: 'mobile-webm',
-      command,
-      args: webmArgs(plan, mobile.width, mobile.height, plan.outputs.mobileWebm),
-    },
-    {
-      kind: 'poster',
-      command,
-      args: [
-        ...commonInputArgs(plan),
-        '-vf',
-        videoFilter(plan, desktop.width, desktop.height),
-        '-frames:v',
-        String(plan.recipe.poster.frameCount),
-        '-c:v',
-        plan.recipe.poster.encoder,
-        '-quality',
-        String(plan.recipe.poster.quality),
-        plan.outputs.posterWebp,
-      ],
-    },
+    ...videoCommands,
+    posterCommand('desktop-poster', desktop, plan.outputs.desktopPosterWebp),
+    posterCommand('mobile-poster', mobile, plan.outputs.mobilePosterWebp),
   ]
 }
 
@@ -325,6 +387,9 @@ export function assertPreparedMediaProbe(probe, expected) {
   const size = Number(probe?.format?.size)
   if (!Number.isFinite(size) || size <= 0) {
     throw new Error(`Prepared media size is ${size}`)
+  }
+  if (Number.isFinite(expected.maximumBytes) && size > expected.maximumBytes) {
+    throw new Error(`Prepared media exceeds byte budget: ${size} > ${expected.maximumBytes}`)
   }
   const bitrate = Number(probe?.format?.bit_rate ?? video.bit_rate)
   if (!Number.isFinite(bitrate) || bitrate <= 0 || bitrate > expected.maximumBitrate) {
@@ -383,6 +448,9 @@ export function assertPreparedPosterProbe(probe, expected) {
   if (!Number.isFinite(size) || size <= 0) {
     throw new Error(`Prepared poster size is ${size}`)
   }
+  if (Number.isFinite(expected.maximumBytes) && size > expected.maximumBytes) {
+    throw new Error(`Prepared poster exceeds byte budget: ${size} > ${expected.maximumBytes}`)
+  }
   return true
 }
 
@@ -415,7 +483,7 @@ function temporaryPlan(plan, temporaryDirectory) {
   return {
     ...plan,
     familyDirectory: temporaryDirectory,
-    outputs: familyOutputs(temporaryDirectory, plan.baseName),
+    outputs: familyOutputs(temporaryDirectory, plan.baseName, plan.mediaDelivery),
   }
 }
 
@@ -445,17 +513,54 @@ export function executeFreshCutMotionMediaPlan(plan, options = {}) {
 
     const desktop = plan.recipe.dimensions.desktop
     const mobile = plan.recipe.dimensions.mobile
-    const checks = [
-      [workingPlan.outputs.desktopMp4, desktop.width, desktop.height, 'h264', ['mp4', 'mov']],
-      [workingPlan.outputs.desktopWebm, desktop.width, desktop.height, 'vp9', ['webm', 'matroska']],
-      [workingPlan.outputs.mobileMp4, mobile.width, mobile.height, 'h264', ['mp4', 'mov']],
-      [workingPlan.outputs.mobileWebm, mobile.width, mobile.height, 'vp9', ['webm', 'matroska']],
-    ]
+    const checks =
+      plan.mediaDelivery === 'video'
+        ? [
+            {
+              file: workingPlan.outputs.desktopMp4,
+              width: desktop.width,
+              height: desktop.height,
+              expectedCodec: 'h264',
+              expectedContainers: ['mp4', 'mov'],
+              maximumBytes: plan.recipe.byteBudgets.mp4.desktop,
+            },
+            {
+              file: workingPlan.outputs.desktopWebm,
+              width: desktop.width,
+              height: desktop.height,
+              expectedCodec: 'vp9',
+              expectedContainers: ['webm', 'matroska'],
+              maximumBytes: plan.recipe.byteBudgets.webm.desktop,
+            },
+            {
+              file: workingPlan.outputs.mobileMp4,
+              width: mobile.width,
+              height: mobile.height,
+              expectedCodec: 'h264',
+              expectedContainers: ['mp4', 'mov'],
+              maximumBytes: plan.recipe.byteBudgets.mp4.mobile,
+            },
+            {
+              file: workingPlan.outputs.mobileWebm,
+              width: mobile.width,
+              height: mobile.height,
+              expectedCodec: 'vp9',
+              expectedContainers: ['webm', 'matroska'],
+              maximumBytes: plan.recipe.byteBudgets.webm.mobile,
+            },
+          ]
+        : []
     const expectedDuration =
       plan.trimEndSeconds - plan.trimStartSeconds + plan.holdStartSeconds + plan.holdEndSeconds
 
-    for (const [file, width, height, expectedCodec, expectedContainers] of checks) {
+    for (const check of checks) {
+      const { file, width, height, expectedCodec, expectedContainers, maximumBytes } = check
       if (!existsSync(file) || statSync(file).size === 0) throw new Error(`Missing output: ${file}`)
+      if (statSync(file).size > maximumBytes) {
+        throw new Error(
+          `Prepared media exceeds byte budget: ${statSync(file).size} > ${maximumBytes}`,
+        )
+      }
       const stdout = runCommand(
         ffprobePath,
         ['-v', 'error', '-show_streams', '-show_format', '-show_frames', '-of', 'json', file],
@@ -469,39 +574,57 @@ export function executeFreshCutMotionMediaPlan(plan, options = {}) {
         expectedDuration,
         durationTolerance: 0.25,
         maximumBitrate: 8_000_000,
+        maximumBytes,
         expectedGop: plan.recipe.keyframes.gop,
         expectedCodec,
         expectedContainers,
       })
       runCommand(ffmpegPath, ['-v', 'error', '-i', file, '-f', 'null', '-'])
     }
-    if (
-      !existsSync(workingPlan.outputs.posterWebp) ||
-      statSync(workingPlan.outputs.posterWebp).size === 0
-    ) {
-      throw new Error(`Missing output: ${workingPlan.outputs.posterWebp}`)
+    const posterChecks = [
+      {
+        file: workingPlan.outputs.desktopPosterWebp,
+        width: desktop.width,
+        height: desktop.height,
+        maximumBytes: plan.recipe.byteBudgets.poster.desktop,
+      },
+      {
+        file: workingPlan.outputs.mobilePosterWebp,
+        width: mobile.width,
+        height: mobile.height,
+        maximumBytes: plan.recipe.byteBudgets.poster.mobile,
+      },
+    ]
+    for (const { file, width, height, maximumBytes } of posterChecks) {
+      if (!existsSync(file) || statSync(file).size === 0) throw new Error(`Missing output: ${file}`)
+      if (statSync(file).size > maximumBytes) {
+        throw new Error(
+          `Prepared poster exceeds byte budget: ${statSync(file).size} > ${maximumBytes}`,
+        )
+      }
+      const posterProbe = runCommand(
+        ffprobePath,
+        [
+          '-v',
+          'error',
+          '-select_streams',
+          'v:0',
+          '-count_frames',
+          '-show_streams',
+          '-show_format',
+          '-of',
+          'json',
+          file,
+        ],
+        { capture: true },
+      )
+      assertPreparedPosterProbe(JSON.parse(posterProbe), {
+        width,
+        height,
+        frameCount: plan.recipe.poster.frameCount,
+        maximumBytes,
+      })
     }
-    const posterProbe = runCommand(
-      ffprobePath,
-      [
-        '-v',
-        'error',
-        '-select_streams',
-        'v:0',
-        '-count_frames',
-        '-show_streams',
-        '-show_format',
-        '-of',
-        'json',
-        workingPlan.outputs.posterWebp,
-      ],
-      { capture: true },
-    )
-    assertPreparedPosterProbe(JSON.parse(posterProbe), {
-      width: desktop.width,
-      height: desktop.height,
-      frameCount: plan.recipe.poster.frameCount,
-    })
 
     const manifestFilename = `${plan.baseName}-manifest.json`
     const temporaryManifestPath = outputPath(temporaryDirectory, manifestFilename)
@@ -512,6 +635,7 @@ export function executeFreshCutMotionMediaPlan(plan, options = {}) {
           sceneId: plan.sceneId,
           version: plan.version,
           pipelineVersion: plan.pipelineVersion,
+          mediaDelivery: plan.mediaDelivery,
           provenance: plan.provenance,
           sourceHash: plan.sourceHash,
           familyHash: plan.familyHash,

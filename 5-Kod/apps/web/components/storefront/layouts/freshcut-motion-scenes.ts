@@ -27,6 +27,8 @@ export type FreshCutMotionLayer = {
 }
 
 export type FreshCutMotionMediaPolicy = {
+  videoOwner: boolean
+  posterOwner: FreshCutMotionSceneId
   slot:
     | 'threshold'
     | 'entrance'
@@ -37,12 +39,17 @@ export type FreshCutMotionMediaPolicy = {
     | 'mirror-result'
     | 'team-editorial'
   humanAction: boolean
-  forward: 'hold' | 'environment-scrub' | 'play-on-entry' | 'micro-loop'
-  reverse: 'environment-scrub' | 'stable-frame'
+  forward: 'hold' | 'play-on-entry' | 'micro-loop'
+  reverse: 'stable-frame'
   stableStart: 'poster' | 'first-frame'
   stableEnd: 'poster' | 'last-frame'
   preload: 'eager' | 'active-and-next' | 'nearby'
-  poster: `/images/freshcut/${string}.webp` | `/media/freshcut-motion/${string}-poster.webp`
+  desktopPoster:
+    | `/images/freshcut/${string}.webp`
+    | `/media/freshcut-motion/${string}-desktop-poster.webp`
+  mobilePoster:
+    | `/images/freshcut/${string}.webp`
+    | `/media/freshcut-motion/${string}-mobile-poster.webp`
   desktopWebm: string | null
   desktopMp4: string | null
   mobileWebm: string | null
@@ -66,6 +73,7 @@ export type FreshCutMotionScene = {
   label: string
   anchorId: string
   headingId: string
+  copyPlacement: 'left' | 'right'
   range: readonly [start: number, end: number]
   mobilePhase: FreshCutMotionMobilePhase
   camera: FreshCutMotionCamera
@@ -104,12 +112,18 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Start',
     anchorId: 'motion-scene-hero',
     headingId: 'motion-scene-hero-title',
+    copyPlacement: 'left',
     range: [0, 0.12],
     mobilePhase: 'enter',
     camera: { x: 0, y: 0, z: 0, rotationY: 0 },
-    safeZone: { desktop: 'copy-left-5-columns', mobile: 'copy-centre-below-brand' },
+    safeZone: {
+      desktop: 'copy-left-x0-46; subject-right-x47-100',
+      mobile: 'critical-x41-59-y12-58; copy-below-y62',
+    },
     layers: sceneLayers('hero'),
     media: {
+      videoOwner: false,
+      posterOwner: 'hero',
       slot: 'threshold',
       humanAction: false,
       forward: 'hold',
@@ -117,13 +131,14 @@ export const FRESHCUT_MOTION_SCENES = [
       stableStart: 'poster',
       stableEnd: 'poster',
       preload: 'eager',
-      poster: '/images/freshcut/freshcut-hero.webp',
+      desktopPoster: '/images/freshcut/freshcut-hero.webp',
+      mobilePoster: '/images/freshcut/freshcut-hero.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
       mobileMp4: null,
       desktopCrop: 'center',
-      mobileCrop: '58% center',
+      mobileCrop: 'center center',
       sourceStatus: 'repository-controlled-fallback',
       rightsStatus: 'ai-transformation-pending',
     },
@@ -140,26 +155,33 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Entré',
     anchorId: 'motion-scene-entrance',
     headingId: 'motion-scene-entrance-title',
+    copyPlacement: 'left',
     range: [0.12, 0.28],
     mobilePhase: 'enter',
     camera: { x: 0, y: 0, z: 18, rotationY: 0 },
-    safeZone: { desktop: 'left-or-right-edge-only', mobile: 'lower-third-short-line' },
+    safeZone: {
+      desktop: 'copy-left-x0-46; doorway-centre-x47-66',
+      mobile: 'critical-x41-59-y12-58; copy-below-y62',
+    },
     layers: sceneLayers('entrance'),
     media: {
+      videoOwner: true,
+      posterOwner: 'entrance',
       slot: 'entrance',
       humanAction: false,
-      forward: 'environment-scrub',
-      reverse: 'environment-scrub',
+      forward: 'play-on-entry',
+      reverse: 'stable-frame',
       stableStart: 'first-frame',
       stableEnd: 'last-frame',
       preload: 'active-and-next',
-      poster: '/images/freshcut/freshcut-hero.webp',
+      desktopPoster: '/images/freshcut/freshcut-hero.webp',
+      mobilePoster: '/images/freshcut/freshcut-hero.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
       mobileMp4: null,
       desktopCrop: 'center',
-      mobileCrop: '58% center',
+      mobileCrop: 'center center',
       sourceStatus: 'repository-controlled-fallback',
       rightsStatus: 'ai-transformation-pending',
     },
@@ -176,12 +198,18 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Stolen',
     anchorId: 'motion-scene-chair',
     headingId: 'motion-scene-chair-title',
+    copyPlacement: 'right',
     range: [0.28, 0.43],
     mobilePhase: 'enter',
     camera: { x: -18, y: 0, z: 24, rotationY: -4 },
-    safeZone: { desktop: 'right-4-columns', mobile: 'lower-third-away-from-chair' },
+    safeZone: {
+      desktop: 'copy-right-x54-100; subject-centre-x41-53',
+      mobile: 'critical-x41-59-y12-58; copy-below-y62',
+    },
     layers: sceneLayers('chair'),
     media: {
+      videoOwner: true,
+      posterOwner: 'chair',
       slot: 'chair-action',
       humanAction: true,
       forward: 'play-on-entry',
@@ -189,7 +217,8 @@ export const FRESHCUT_MOTION_SCENES = [
       stableStart: 'first-frame',
       stableEnd: 'last-frame',
       preload: 'active-and-next',
-      poster: '/images/freshcut/freshcut-barber.webp',
+      desktopPoster: '/images/freshcut/freshcut-barber.webp',
+      mobilePoster: '/images/freshcut/freshcut-barber.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
@@ -212,12 +241,18 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Hantverket',
     anchorId: 'motion-scene-craft',
     headingId: 'motion-scene-craft-title',
+    copyPlacement: 'left',
     range: [0.43, 0.6],
     mobilePhase: 'craft',
     camera: { x: 12, y: -1, z: 30, rotationY: 5 },
-    safeZone: { desktop: 'left-4-columns', mobile: 'lower-third-below-tools' },
+    safeZone: {
+      desktop: 'copy-left-x0-46; hands-tools-centre-x47-66',
+      mobile: 'critical-x41-59-y12-58; copy-below-y62',
+    },
     layers: sceneLayers('craft'),
     media: {
+      videoOwner: true,
+      posterOwner: 'craft',
       slot: 'craft-action',
       humanAction: true,
       forward: 'play-on-entry',
@@ -225,7 +260,8 @@ export const FRESHCUT_MOTION_SCENES = [
       stableStart: 'first-frame',
       stableEnd: 'last-frame',
       preload: 'active-and-next',
-      poster: '/images/freshcut/freshcut-barber.webp',
+      desktopPoster: '/images/freshcut/freshcut-barber.webp',
+      mobilePoster: '/images/freshcut/freshcut-barber.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
@@ -248,20 +284,27 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Utbudet',
     anchorId: 'motion-scene-range',
     headingId: 'motion-scene-range-title',
+    copyPlacement: 'left',
     range: [0.6, 0.76],
     mobilePhase: 'craft',
     camera: { x: 0, y: 0, z: 26, rotationY: 0 },
-    safeZone: { desktop: 'centre-main-customer-with-side-panels', mobile: 'lower-third-labels' },
+    safeZone: {
+      desktop: 'copy-left-x0-46; panels-centre-right-x47-100',
+      mobile: 'critical-x41-59-y12-58; one-panel-centre; copy-below-y62',
+    },
     layers: sceneLayers('range'),
     media: {
+      videoOwner: false,
+      posterOwner: 'range',
       slot: 'range-editorial',
       humanAction: false,
-      forward: 'micro-loop',
+      forward: 'hold',
       reverse: 'stable-frame',
-      stableStart: 'first-frame',
-      stableEnd: 'last-frame',
+      stableStart: 'poster',
+      stableEnd: 'poster',
       preload: 'nearby',
-      poster: '/images/freshcut/freshcut-2.webp',
+      desktopPoster: '/images/freshcut/freshcut-2.webp',
+      mobilePoster: '/images/freshcut/freshcut-2.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
@@ -284,12 +327,18 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Tillbaka',
     anchorId: 'motion-scene-return',
     headingId: 'motion-scene-return-title',
+    copyPlacement: 'right',
     range: [0.76, 0.88],
     mobilePhase: 'result',
     camera: { x: 0, y: 0, z: 20, rotationY: 0 },
-    safeZone: { desktop: 'right-4-columns', mobile: 'lower-third-short-line' },
+    safeZone: {
+      desktop: 'copy-right-x54-100; customer-centre-x41-53',
+      mobile: 'critical-x41-59-y12-58; copy-below-y62',
+    },
     layers: sceneLayers('return'),
     media: {
+      videoOwner: false,
+      posterOwner: 'craft',
       slot: 'main-customer-hold',
       humanAction: false,
       forward: 'hold',
@@ -297,7 +346,8 @@ export const FRESHCUT_MOTION_SCENES = [
       stableStart: 'poster',
       stableEnd: 'poster',
       preload: 'active-and-next',
-      poster: '/images/freshcut/freshcut-3.webp',
+      desktopPoster: '/images/freshcut/freshcut-barber.webp',
+      mobilePoster: '/images/freshcut/freshcut-barber.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
@@ -320,12 +370,18 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Resultatet',
     anchorId: 'motion-scene-mirror',
     headingId: 'motion-scene-mirror-title',
+    copyPlacement: 'right',
     range: [0.88, 0.95],
     mobilePhase: 'result',
     camera: { x: 0, y: 0, z: 12, rotationY: 0 },
-    safeZone: { desktop: 'mirror-left-business-panel-right', mobile: 'mirror-top-panel-bottom' },
+    safeZone: {
+      desktop: 'mirror-left-x0-53; copy-right-x54-100',
+      mobile: 'critical-x41-59-y12-58; copy-below-y62',
+    },
     layers: sceneLayers('mirror', { mirrorFrame: true }),
     media: {
+      videoOwner: true,
+      posterOwner: 'mirror',
       slot: 'mirror-result',
       humanAction: true,
       forward: 'play-on-entry',
@@ -333,7 +389,8 @@ export const FRESHCUT_MOTION_SCENES = [
       stableStart: 'first-frame',
       stableEnd: 'last-frame',
       preload: 'active-and-next',
-      poster: '/images/freshcut/freshcut-3.webp',
+      desktopPoster: '/images/freshcut/freshcut-3.webp',
+      mobilePoster: '/images/freshcut/freshcut-3.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
@@ -356,20 +413,27 @@ export const FRESHCUT_MOTION_SCENES = [
     label: 'Om oss',
     anchorId: 'motion-scene-team',
     headingId: 'motion-scene-team-title',
+    copyPlacement: 'left',
     range: [0.95, 1],
     mobilePhase: 'result',
     camera: { x: 22, y: 0, z: 8, rotationY: 6 },
-    safeZone: { desktop: 'left-5-columns-after-pan', mobile: 'lower-half-about-copy' },
+    safeZone: {
+      desktop: 'copy-left-x0-46; team-centre-right-x47-100',
+      mobile: 'critical-x41-59-y12-58; copy-below-y62',
+    },
     layers: sceneLayers('team'),
     media: {
+      videoOwner: false,
+      posterOwner: 'team',
       slot: 'team-editorial',
       humanAction: false,
-      forward: 'micro-loop',
+      forward: 'hold',
       reverse: 'stable-frame',
-      stableStart: 'first-frame',
-      stableEnd: 'last-frame',
+      stableStart: 'poster',
+      stableEnd: 'poster',
       preload: 'nearby',
-      poster: '/images/freshcut/freshcut-4.webp',
+      desktopPoster: '/images/freshcut/freshcut-4.webp',
+      mobilePoster: '/images/freshcut/freshcut-4.webp',
       desktopWebm: null,
       desktopMp4: null,
       mobileWebm: null,
@@ -391,7 +455,18 @@ export const FRESHCUT_MOTION_SCENES = [
 
 const VERSIONED_MEDIA_BASE =
   /^\/media\/freshcut-motion\/([a-z0-9][a-z0-9-]*-v[1-9]\d*-[a-f0-9]{12})\/\1-desktop\.webm$/
+const VERSIONED_POSTER_BASE =
+  /^\/media\/freshcut-motion\/([a-z0-9][a-z0-9-]*-v[1-9]\d*-[a-f0-9]{12})\/\1-desktop-poster\.webp$/
 const CONTROLLED_FALLBACK_POSTER = /^\/images\/freshcut\/[a-z0-9][a-z0-9-]*\.webp$/
+
+export const FRESHCUT_MOTION_VIDEO_OWNERS = [
+  'entrance',
+  'chair',
+  'craft',
+  'mirror',
+] as const satisfies readonly FreshCutMotionSceneId[]
+
+const VIDEO_OWNER_IDS = new Set<FreshCutMotionSceneId>(FRESHCUT_MOTION_VIDEO_OWNERS)
 
 export type FreshCutMotionVideoSources = {
   desktopWebm: string
@@ -400,17 +475,76 @@ export type FreshCutMotionVideoSources = {
   mobileMp4: string
 }
 
-/** Fail-closed projection gate for one honestly paired provenance and local source family. */
+export type FreshCutMotionPosters = {
+  desktopPoster: string
+  mobilePoster: string
+}
+
+function hasAnyVideoSource(media: FreshCutMotionMediaPolicy): boolean {
+  return Boolean(media.desktopWebm || media.desktopMp4 || media.mobileWebm || media.mobileMp4)
+}
+
+/**
+ * Fail-closed responsive poster gate shared by approved and synthetic families.
+ */
+export function validatedFreshCutMotionPosters(
+  media: FreshCutMotionMediaPolicy,
+  sceneId: FreshCutMotionSceneId,
+): FreshCutMotionPosters | null {
+  const expectedPosterOwner = sceneId === 'return' ? 'craft' : sceneId
+  if (media.posterOwner !== expectedPosterOwner) return null
+
+  const hasVideoSource = hasAnyVideoSource(media)
+  if (media.sourceStatus === 'repository-controlled-fallback') {
+    if (
+      media.rightsStatus !== 'ai-transformation-pending' ||
+      hasVideoSource ||
+      !CONTROLLED_FALLBACK_POSTER.test(media.desktopPoster) ||
+      !CONTROLLED_FALLBACK_POSTER.test(media.mobilePoster)
+    ) {
+      return null
+    }
+    return {
+      desktopPoster: media.desktopPoster,
+      mobilePoster: media.mobilePoster,
+    }
+  }
+
+  const synthetic =
+    media.sourceStatus === 'generated-demo' && media.rightsStatus === 'synthetic-text-only'
+  const approved =
+    media.sourceStatus === 'approved-final' &&
+    media.rightsStatus === 'approved-for-ai-transformation'
+  if (!synthetic && !approved) return null
+
+  const family = media.desktopPoster.match(VERSIONED_POSTER_BASE)?.[1]
+  const base =
+    family && family.startsWith(`${media.posterOwner}-v`)
+      ? `/media/freshcut-motion/${family}/${family}`
+      : null
+  if (!base || media.mobilePoster !== `${base}-mobile-poster.webp`) return null
+
+  return {
+    desktopPoster: media.desktopPoster,
+    mobilePoster: media.mobilePoster,
+  }
+}
+
+/** Fail-closed video gate: either valid provenance pair may play for the four owners. */
 export function validatedFreshCutMotionVideoSources(
   media: FreshCutMotionMediaPolicy,
   sceneId: FreshCutMotionSceneId,
 ): FreshCutMotionVideoSources | null {
-  const hasValidProvenance =
-    (media.sourceStatus === 'approved-final' &&
-      media.rightsStatus === 'approved-for-ai-transformation') ||
-    (media.sourceStatus === 'generated-demo' && media.rightsStatus === 'synthetic-text-only')
   if (
-    !hasValidProvenance ||
+    !media.videoOwner ||
+    !VIDEO_OWNER_IDS.has(sceneId) ||
+    media.posterOwner !== sceneId ||
+    !(
+      (media.sourceStatus === 'approved-final' &&
+        media.rightsStatus === 'approved-for-ai-transformation') ||
+      (media.sourceStatus === 'generated-demo' && media.rightsStatus === 'synthetic-text-only')
+    ) ||
+    !validatedFreshCutMotionPosters(media, sceneId) ||
     !media.desktopWebm ||
     !media.desktopMp4 ||
     !media.mobileWebm ||
@@ -428,7 +562,8 @@ export function validatedFreshCutMotionVideoSources(
     media.desktopMp4 !== `${base}-desktop.mp4` ||
     media.mobileWebm !== `${base}-mobile.webm` ||
     media.mobileMp4 !== `${base}-mobile.mp4` ||
-    media.poster !== `${base}-poster.webp`
+    media.desktopPoster !== `${base}-desktop-poster.webp` ||
+    media.mobilePoster !== `${base}-mobile-poster.webp`
   ) {
     return null
   }
@@ -509,6 +644,18 @@ export function validateFreshCutMotionScenes(scenes: readonly FreshCutMotionScen
     if (scene.media.humanAction && scene.media.reverse !== 'stable-frame') {
       errors.push(`${scene.id} human action must use a stable frame in reverse`)
     }
+    if (
+      scene.media.videoOwner &&
+      (scene.media.forward !== 'play-on-entry' || scene.media.reverse !== 'stable-frame')
+    ) {
+      errors.push(`${scene.id} video owner must play on entry and use a stable reverse frame`)
+    }
+    if (
+      !scene.media.videoOwner &&
+      (scene.media.forward !== 'hold' || scene.media.reverse !== 'stable-frame')
+    ) {
+      errors.push(`${scene.id} still-only scene must hold one stable poster`)
+    }
     if (!scene.media.stableStart || !scene.media.stableEnd) {
       errors.push(`${scene.id} must define stable media start and end frames`)
     }
@@ -532,28 +679,47 @@ export function validateFreshCutMotionScenes(scenes: readonly FreshCutMotionScen
     if (mediaLayerCount !== 1) errors.push(`${scene.id} must own exactly one media layer`)
     if (layerDepths.size < 2)
       errors.push(`${scene.id} must define at least two distinct layer depths`)
-    const hasVideoSource =
-      scene.media.desktopWebm !== null ||
-      scene.media.desktopMp4 !== null ||
-      scene.media.mobileWebm !== null ||
-      scene.media.mobileMp4 !== null
+    const hasVideoSource = hasAnyVideoSource(scene.media)
+    if (!scene.media.videoOwner && hasVideoSource) {
+      errors.push(`${scene.id} still-only scene must not declare video sources`)
+    }
     if (
       scene.media.sourceStatus === 'repository-controlled-fallback' &&
-      (!CONTROLLED_FALLBACK_POSTER.test(scene.media.poster) || hasVideoSource)
+      !validatedFreshCutMotionPosters(scene.media, scene.id)
     ) {
       errors.push(
         `${scene.id} repository fallback must use a controlled fallback image without video sources`,
       )
-    } else if (
-      (scene.media.sourceStatus !== 'repository-controlled-fallback' || hasVideoSource) &&
-      !validatedFreshCutMotionVideoSources(scene.media, scene.id)
-    ) {
+    } else if (!validatedFreshCutMotionPosters(scene.media, scene.id)) {
+      errors.push(`${scene.id} media must use one valid responsive poster family`)
+    }
+    if (hasVideoSource && !validatedFreshCutMotionVideoSources(scene.media, scene.id)) {
       errors.push(`${scene.id} playable media must use one local versioned WebM and MP4 source-set`)
     }
     if (!scene.reducedMotion || !scene.fallback) {
       errors.push(`${scene.id} must define reduced-motion and fallback states`)
     }
   })
+
+  const videoOwners = scenes.filter((scene) => scene.media.videoOwner).map((scene) => scene.id)
+  if (
+    videoOwners.length !== FRESHCUT_MOTION_VIDEO_OWNERS.length ||
+    videoOwners.some((sceneId, index) => sceneId !== FRESHCUT_MOTION_VIDEO_OWNERS[index])
+  ) {
+    errors.push('video owners must be exactly entrance, chair, craft and mirror')
+  }
+
+  const craft = scenes.find((scene) => scene.id === 'craft')
+  const returnScene = scenes.find((scene) => scene.id === 'return')
+  if (
+    !craft ||
+    !returnScene ||
+    returnScene.media.posterOwner !== 'craft' ||
+    returnScene.media.desktopPoster !== craft.media.desktopPoster ||
+    returnScene.media.mobilePoster !== craft.media.mobilePoster
+  ) {
+    errors.push('return must reuse craft responsive poster URLs exactly')
+  }
 
   if (scenes.at(-1)?.range[1] !== 1) errors.push('last scene must end at 1')
   return errors

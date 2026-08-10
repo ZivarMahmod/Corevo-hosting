@@ -24,13 +24,15 @@ let loadCounts: WeakMap<HTMLMediaElement, number>
 let hiddenDescriptor: PropertyDescriptor | undefined
 
 function approvedScene(scene: FreshCutMotionScene): FreshCutMotionScene {
+  if (!scene.media.videoOwner) return scene
   const family = `${scene.id}-v1-${FAMILY_HASH}`
   const base = `/media/freshcut-motion/${family}/${family}`
   return {
     ...scene,
     media: {
       ...scene.media,
-      poster: `${base}-poster.webp`,
+      desktopPoster: `${base}-desktop-poster.webp`,
+      mobilePoster: `${base}-mobile-poster.webp`,
       desktopWebm: `${base}-desktop.webm`,
       desktopMp4: `${base}-desktop.mp4`,
       mobileWebm: `${base}-mobile.webm`,
@@ -52,7 +54,8 @@ function generatedDemoScene(scene: FreshCutMotionScene): FreshCutMotionScene {
     ...scene,
     media: {
       ...scene.media,
-      poster: `${base}-poster.webp`,
+      desktopPoster: `${base}-desktop-poster.webp`,
+      mobilePoster: `${base}-mobile-poster.webp`,
       desktopWebm: `${base}-desktop.webm`,
       desktopMp4: `${base}-desktop.mp4`,
       mobileWebm: `${base}-mobile.webm`,
@@ -134,6 +137,9 @@ describe('FreshCutMotionMediaController', () => {
     for (const scene of FRESHCUT_MOTION_SCENES) {
       const host = document.createElement('div')
       host.dataset.motionMediaHost = scene.id
+      const picture = document.createElement('picture')
+      picture.dataset.motionPosterScene = scene.id
+      host.append(picture)
       root.append(host)
     }
   })
@@ -152,9 +158,11 @@ describe('FreshCutMotionMediaController', () => {
     const video = videoRecord('entrance').element
     const sources = Array.from(video.querySelectorAll('source'))
 
-    expect(mediaHost('entrance').children).toHaveLength(1)
+    expect(mediaHost('entrance').children).toHaveLength(2)
+    expect(mediaHost('entrance').firstElementChild?.tagName).toBe('PICTURE')
+    expect(mediaHost('entrance').lastElementChild).toBe(video)
     expect(video.dataset.motionMediaOwned).toBe('freshcut-controller')
-    expect(video.poster).toContain(entrance.media.poster)
+    expect(video.hasAttribute('poster')).toBe(false)
     expect(sources).toHaveLength(4)
     expect(
       sources.map((source) => [
@@ -204,7 +212,7 @@ describe('FreshCutMotionMediaController', () => {
     expect(root.querySelectorAll('video')).toHaveLength(0)
   })
 
-  it('materializes generated demo media only when its synthetic provenance pair is complete', () => {
+  it('materializes generated demo video only for one of the four video owners', () => {
     const entrance = generatedDemoScene(FRESHCUT_MOTION_SCENES[1])
     const controller = createFreshCutMotionMediaController(root, [entrance])
 
@@ -213,7 +221,17 @@ describe('FreshCutMotionMediaController', () => {
     controller.destroy()
   })
 
-  it('keeps eager media network-inert until the first explicit sync selects sources', () => {
+  it('never materializes generated demo video for a still-only scene', () => {
+    const range = generatedDemoScene(FRESHCUT_MOTION_SCENES[4])
+    const controller = createFreshCutMotionMediaController(root, [range])
+
+    expect(root.querySelectorAll('video')).toHaveLength(0)
+    expect(root.querySelectorAll('source')).toHaveLength(0)
+
+    controller.destroy()
+  })
+
+  it('keeps approved media network-inert until the first explicit sync selects sources', () => {
     vi.spyOn(root, 'getBoundingClientRect').mockReturnValue({
       bottom: 600,
       height: 600,
@@ -228,43 +246,44 @@ describe('FreshCutMotionMediaController', () => {
     const scenes = approvedScenes()
 
     const controller = createFreshCutMotionMediaController(root, scenes)
-    const hero = videoRecord('hero').element
     const entrance = videoRecord('entrance').element
 
-    expect(hero.preload).toBe('none')
-    expect(sourceUrls(hero)).toEqual([null, null, null, null])
-    expect(loadCounts.get(hero)).toBeUndefined()
     expect(entrance.preload).toBe('none')
     expect(sourceUrls(entrance)).toEqual([null, null, null, null])
 
-    controller.sync(command('hero'))
+    controller.sync(command('entrance'))
 
-    expect(hero.preload).toBe('auto')
-    expect(sourceUrls(hero).every(Boolean)).toBe(true)
-    expect(loadCounts.get(hero)).toBe(1)
+    expect(entrance.preload).toBe('auto')
+    expect(sourceUrls(entrance).every(Boolean)).toBe(true)
+    expect(loadCounts.get(entrance)).toBe(1)
   })
 
-  it('projects eager, directed next, and adjacent nearby preload policies from the manifest', () => {
+  it('keeps at most the active video on auto and warms only the directed neighbour as metadata', () => {
     const scenes = approvedScenes()
     const controller = createFreshCutMotionMediaController(root, scenes)
-    const videos = new Map(scenes.map((scene) => [scene.id, videoRecord(scene.id)] as const))
+    const videos = new Map(
+      scenes
+        .filter((scene) => scene.media.videoOwner)
+        .map((scene) => [scene.id, videoRecord(scene.id)] as const),
+    )
+
+    expect(root.querySelectorAll('video')).toHaveLength(4)
 
     controller.sync(command('chair', { progress: 0.3 }))
 
-    expect(videos.get('hero')!.element.preload).toBe('auto')
     expect(videos.get('chair')!.element.preload).toBe('auto')
-    expect(videos.get('craft')!.element.preload).toBe('auto')
+    expect(videos.get('craft')!.element.preload).toBe('metadata')
     expect(videos.get('entrance')!.element.preload).toBe('none')
-    expect(videos.get('range')!.element.preload).toBe('none')
+    expect(videos.get('mirror')!.element.preload).toBe('none')
+    expect([...videos.values()].filter(({ element }) => element.preload === 'auto')).toHaveLength(1)
 
     controller.sync(command('return', { progress: 0.8 }))
 
-    expect(videos.get('hero')!.element.preload).toBe('auto')
-    expect(videos.get('return')!.element.preload).toBe('auto')
-    expect(videos.get('range')!.element.preload).toBe('metadata')
-    expect(videos.get('mirror')!.element.preload).toBe('auto')
+    expect(videos.get('mirror')!.element.preload).toBe('metadata')
     expect(videos.get('craft')!.element.preload).toBe('none')
-    expect(videos.get('team')!.element.preload).toBe('none')
+    expect(videos.get('chair')!.element.preload).toBe('none')
+    expect(videos.get('entrance')!.element.preload).toBe('none')
+    expect([...videos.values()].filter(({ element }) => element.preload === 'auto')).toHaveLength(0)
   })
 
   it('warms the previous active-and-next scene while scrolling backward', () => {
@@ -276,7 +295,10 @@ describe('FreshCutMotionMediaController', () => {
     controller.sync(command('craft', { direction: -1, progress: 0.5 }))
 
     expect(craft.element.preload).toBe('auto')
-    expect(chair.element.preload).toBe('auto')
+    expect(chair.element.preload).toBe('metadata')
+    expect(
+      Array.from(root.querySelectorAll('video')).filter((video) => video.preload === 'auto'),
+    ).toHaveLength(1)
   })
 
   it('loads exactly when preload changes and unloads every source while offscreen', () => {
@@ -463,7 +485,7 @@ describe('FreshCutMotionMediaController', () => {
     expect(chair.element.loop).toBe(false)
   })
 
-  it('scrubs environment media without playback and times out while active loading', () => {
+  it('plays Entrance once on entry and resolves reverse travel to its stable end frame', () => {
     const scenes = approvedScenes()
     const controller = createFreshCutMotionMediaController(root, scenes, {
       loadingTimeoutMs: 500,
@@ -472,13 +494,15 @@ describe('FreshCutMotionMediaController', () => {
     setDuration(entrance.element, 16)
 
     controller.sync(command('entrance', { progress: 0.2 }))
-    expect(entrance.play).not.toHaveBeenCalled()
-    expect(entrance.element.currentTime).toBeCloseTo(8, 5)
-    expect(entrance.element.dataset.motionMediaFrame).toBe('scrub')
+    controller.sync(command('entrance', { progress: 0.24 }))
+    expect(entrance.play).toHaveBeenCalledOnce()
+    expect(entrance.element.dataset.motionMediaFrame).toBe('action')
 
-    vi.advanceTimersByTime(500)
-    expect(entrance.element.dataset.motionMediaState).toBe('fallback')
-    expect(entrance.element.dataset.motionMediaFrame).toBe('poster')
+    controller.sync(command('entrance', { direction: -1, progress: 0.2 }))
+    expect(entrance.play).toHaveBeenCalledOnce()
+    expect(entrance.element.dataset.motionMediaState).toBe('stable')
+    expect(entrance.element.dataset.motionMediaFrame).toBe('end')
+    expect(entrance.element.currentTime).toBe(16)
   })
 
   it('pauses and unloads on document hide, then restores the latest visible command', async () => {

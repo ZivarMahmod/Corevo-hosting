@@ -19,8 +19,9 @@
 }
 
 .page :focus-visible {
-  outline: 2px solid var(--motion-warm);
-  outline-offset: 4px;
+  outline: 3px solid var(--motion-paper);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px var(--motion-ink);
 }
 
 .page a {
@@ -60,7 +61,7 @@
 .motionExperienceNav,
 .motionExperienceActions {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px 18px;
 }
@@ -179,20 +180,57 @@
   transform-style: preserve-3d;
 }
 
-.motionExperience[data-motion-mode='preparing'] .sceneLayer,
-.motionExperience[data-motion-mode='enhanced'] .sceneLayer {
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='hero']
+  .motionScene[data-motion-scene='hero']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='entrance']
+  .motionScene[data-motion-scene='entrance']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='chair']
+  .motionScene[data-motion-scene='chair']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='craft']
+  .motionScene[data-motion-scene='craft']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='range']
+  .motionScene[data-motion-scene='range']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='return']
+  .motionScene[data-motion-scene='return']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='mirror']
+  .motionScene[data-motion-scene='mirror']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='team']
+  .motionScene[data-motion-scene='team']
+  .sceneLayer {
   will-change: transform;
 }
 
 .sceneMediaLayer {
+  overflow: hidden;
   background-color: #30332f;
-  background-image: var(--motion-scene-poster);
-  background-position: var(--motion-scene-crop);
-  background-size: cover;
-  filter: grayscale(1) contrast(1.08) brightness(0.68);
+}
+
+.scenePosterPicture,
+.scenePoster {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.scenePoster {
+  object-fit: cover;
+  object-position: var(--motion-scene-crop);
 }
 
 .sceneVideo {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -255,6 +293,10 @@
   font-size: 13px;
   font-weight: 800;
   text-decoration: none;
+}
+
+.motionScene[data-motion-copy-placement='right'] .sceneCopy {
+  justify-self: end;
 }
 
 .businessPanel {
@@ -320,7 +362,9 @@
 }
 
 .mirrorScene .sceneCopy {
+  grid-column: 2;
   align-self: center;
+  justify-self: end;
   width: 100%;
   margin: 0;
 }
@@ -584,7 +628,7 @@
 .rowIndex,
 .rowDuration,
 .rowAction {
-  color: rgb(23 25 24 / 58%);
+  color: rgb(23 25 24 / 72%);
   font-size: 12px;
   text-transform: uppercase;
 }
@@ -794,7 +838,7 @@
   .motionExperienceNav,
   .motionExperienceActions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 4px 10px;
   }
 
@@ -804,13 +848,6 @@
     min-height: 44px;
     padding: 10px 0;
     font-size: 9px;
-  }
-
-  .motionExperienceNav
-    a:not([href='#motion-scene-hero']):not([href='#motion-scene-craft']):not(
-      [href='#motion-scene-mirror']
-    ) {
-    display: none;
   }
 
   .motionExperience[data-motion-mode='preparing'],
@@ -904,10 +941,7 @@
     min-height: 76svh;
   }
 
-  .sceneMediaLayer {
-    background-position: var(--motion-scene-mobile-crop);
-  }
-
+  .scenePoster,
   .sceneVideo {
     object-position: var(--motion-scene-mobile-crop);
   }
@@ -940,6 +974,7 @@
 
   .mirrorScene .sceneCopy {
     position: absolute;
+    grid-column: auto;
     right: 14px;
     bottom: calc(84px + env(safe-area-inset-bottom));
     left: 14px;

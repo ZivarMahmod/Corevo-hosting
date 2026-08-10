@@ -11,14 +11,16 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  FRESHCUT_MOTION_BYTE_BUDGETS,
   assertPreparedMediaProbe,
+  assertPreparedPosterProbe,
   buildFreshCutMotionMediaPlan,
   buildFreshCutMotionMediaCommands,
   executeFreshCutMotionMediaPlan,
 } from './prepare-freshcut-motion-media.mjs'
 
 const SOURCE_HASH = 'a'.repeat(64)
-const EXPECTED_PIPELINE_VERSION = 'freshcut-motion-ffmpeg-v2'
+const EXPECTED_PIPELINE_VERSION = 'freshcut-motion-ffmpeg-v4'
 const scratchDirectories = []
 
 function scratchDirectory() {
@@ -38,8 +40,8 @@ function planInput(overrides = {}) {
     trimEndSeconds: 5.8,
     holdStartSeconds: 0.25,
     holdEndSeconds: 0.35,
-    sourceStatus: 'generated-demo',
-    rightsStatus: 'synthetic-text-only',
+    sourceStatus: 'approved-final',
+    rightsStatus: 'approved-for-ai-transformation',
     ...overrides,
   }
 }
@@ -59,22 +61,24 @@ function successfulRunner(calls, posterOverrides = {}) {
     if (command === 'ffprobe-test') {
       const file = args.at(-1)
       if (String(file).includes('-poster.webp')) {
+        const mobile = String(file).includes('-mobile-poster.webp')
         return JSON.stringify({
           streams: [
             {
               codec_type: 'video',
               codec_name: 'webp',
-              width: 1920,
-              height: 1080,
+              width: mobile ? 1080 : 1920,
+              height: mobile ? 1920 : 1080,
               nb_read_frames: '1',
               ...posterOverrides.stream,
             },
           ],
-          format: { size: '14', ...posterOverrides.format },
+          format: { size: mobile ? '100000' : '180000', ...posterOverrides.format },
         })
       }
       const mobile = String(file).includes('-mobile.')
       const webm = String(file).endsWith('.webm')
+      const size = mobile ? (webm ? 800_000 : 1_100_000) : webm ? 1_400_000 : 1_900_000
       return JSON.stringify({
         streams: [
           {
@@ -90,7 +94,7 @@ function successfulRunner(calls, posterOverrides = {}) {
           duration: '6.0',
           bit_rate: '2400000',
           format_name: webm ? 'matroska,webm' : 'mov,mp4,m4a,3gp,3g2,mj2',
-          size: '1800000',
+          size: String(size),
         },
         frames: videoFrames(),
       })
@@ -100,6 +104,17 @@ function successfulRunner(calls, posterOverrides = {}) {
     mkdirSync(dirname(output), { recursive: true })
     writeFileSync(output, 'prepared-media')
     return ''
+  })
+}
+
+function successfulRunnerWithOversize(calls, suffix, size) {
+  const baseRunner = successfulRunner(calls)
+  return vi.fn((command, args, options = {}) => {
+    const result = baseRunner(command, args, options)
+    if (command !== 'ffprobe-test' || !String(args.at(-1)).endsWith(suffix)) return result
+    const probe = JSON.parse(result)
+    probe.format.size = String(size)
+    return JSON.stringify(probe)
   })
 }
 
@@ -115,9 +130,10 @@ describe('FreshCut motion media preparation', () => {
     const familyDirectory = `C:/public/media/freshcut-motion/${plan.baseName}`
 
     expect(plan.pipelineVersion).toBe(EXPECTED_PIPELINE_VERSION)
+    expect(plan.mediaDelivery).toBe('video')
     expect(plan.provenance).toEqual({
-      sourceStatus: 'generated-demo',
-      rightsStatus: 'synthetic-text-only',
+      sourceStatus: 'approved-final',
+      rightsStatus: 'approved-for-ai-transformation',
     })
     expect(plan.sourceHash).toBe(SOURCE_HASH)
     expect(plan.familyHash).toMatch(/^[a-f0-9]{64}$/)
@@ -133,6 +149,7 @@ describe('FreshCut motion media preparation', () => {
       },
       filter: {
         colorspace: 'colorspace=all=bt709:iall=bt709:fast=1',
+        grade: 'eq=saturation=0:contrast=1.08:brightness=-0.08',
         fit: 'force_original_aspect_ratio=increase',
         crop: 'center',
         sampleAspectRatio: 1,
@@ -148,7 +165,8 @@ describe('FreshCut motion media preparation', () => {
         webm: { encoder: 'libvpx-vp9', crf: 31, bitrate: 0, rowMt: 1 },
       },
       keyframes: { gop: 30, minimumInterval: 30, sceneThreshold: 0 },
-      poster: { encoder: 'libwebp', quality: 82, frameCount: 1, viewport: 'desktop' },
+      poster: { encoder: 'libwebp', quality: 82, frameCount: 1, capture: 'end' },
+      byteBudgets: FRESHCUT_MOTION_BYTE_BUDGETS,
       audio: 'removed',
     })
     expect(plan.outputs).toEqual({
@@ -156,8 +174,66 @@ describe('FreshCut motion media preparation', () => {
       desktopWebm: `${familyDirectory}/${plan.baseName}-desktop.webm`,
       mobileMp4: `${familyDirectory}/${plan.baseName}-mobile.mp4`,
       mobileWebm: `${familyDirectory}/${plan.baseName}-mobile.webm`,
-      posterWebp: `${familyDirectory}/${plan.baseName}-poster.webp`,
+      desktopPosterWebp: `${familyDirectory}/${plan.baseName}-desktop-poster.webp`,
+      mobilePosterWebp: `${familyDirectory}/${plan.baseName}-mobile-poster.webp`,
     })
+  })
+
+  it('emits only responsive posters for still owners and refuses a separate Return family', () => {
+    const hero = buildFreshCutMotionMediaPlan(planInput({ sceneId: 'hero' }))
+
+    expect(hero.mediaDelivery).toBe('poster-only')
+    expect(buildFreshCutMotionMediaCommands(hero).map(({ kind }) => kind)).toEqual([
+      'desktop-poster',
+      'mobile-poster',
+    ])
+    expect(hero.outputs).toEqual({
+      desktopPosterWebp: `${hero.familyDirectory}/${hero.baseName}-desktop-poster.webp`,
+      mobilePosterWebp: `${hero.familyDirectory}/${hero.baseName}-mobile-poster.webp`,
+    })
+    expect(() => buildFreshCutMotionMediaPlan(planInput({ sceneId: 'return' }))).toThrow(
+      /reuses craft posters/i,
+    )
+  })
+
+  it('captures the finished Craft endpoint for the shared Return poster and starts elsewhere', () => {
+    const craft = buildFreshCutMotionMediaPlan(planInput())
+    const hero = buildFreshCutMotionMediaPlan(planInput({ sceneId: 'hero' }))
+    const craftCommands = buildFreshCutMotionMediaCommands(craft)
+    const heroCommands = buildFreshCutMotionMediaCommands(hero)
+
+    expect(craft.recipe.poster.capture).toBe('end')
+    expect(hero.recipe.poster.capture).toBe('start')
+    for (const command of craftCommands.filter(({ kind }) => kind.includes('poster'))) {
+      const captureSecond = Number(command.args[command.args.indexOf('-ss') + 1])
+      expect(captureSecond).toBeGreaterThan(5.7)
+      expect(captureSecond).toBeLessThan(5.8)
+    }
+    for (const command of heroCommands.filter(({ kind }) => kind.includes('poster'))) {
+      expect(Number(command.args[command.args.indexOf('-ss') + 1])).toBe(0.4)
+    }
+    for (const command of craftCommands.filter(({ kind }) => !kind.includes('poster'))) {
+      expect(Number(command.args[command.args.indexOf('-ss') + 1])).toBe(0.4)
+    }
+  })
+
+  it('emits video and responsive posters for synthetic provenance on a video-owner scene', () => {
+    const syntheticCraft = buildFreshCutMotionMediaPlan(
+      planInput({
+        sourceStatus: 'generated-demo',
+        rightsStatus: 'synthetic-text-only',
+      }),
+    )
+
+    expect(syntheticCraft.mediaDelivery).toBe('video')
+    expect(buildFreshCutMotionMediaCommands(syntheticCraft).map(({ kind }) => kind)).toEqual([
+      'desktop-mp4',
+      'desktop-webm',
+      'mobile-mp4',
+      'mobile-webm',
+      'desktop-poster',
+      'mobile-poster',
+    ])
   })
 
   it('changes the family hash when either raw source identity or a recipe field changes', () => {
@@ -167,8 +243,8 @@ describe('FreshCut motion media preparation', () => {
     const changedHold = buildFreshCutMotionMediaPlan(planInput({ holdEndSeconds: 0.45 }))
     const changedProvenance = buildFreshCutMotionMediaPlan(
       planInput({
-        sourceStatus: 'approved-final',
-        rightsStatus: 'approved-for-ai-transformation',
+        sourceStatus: 'generated-demo',
+        rightsStatus: 'synthetic-text-only',
       }),
     )
 
@@ -187,7 +263,7 @@ describe('FreshCut motion media preparation', () => {
     const plan = buildFreshCutMotionMediaPlan(planInput({ sceneId: 'mirror', version: 'v3' }))
     const commands = buildFreshCutMotionMediaCommands(plan, { ffmpegPath: 'ffmpeg-custom' })
 
-    expect(commands).toHaveLength(5)
+    expect(commands).toHaveLength(6)
     for (const { command, args } of commands) {
       expect(command).toBe('ffmpeg-custom')
       expect(args).toContain('-n')
@@ -197,13 +273,15 @@ describe('FreshCut motion media preparation', () => {
       expect(args.join(' ')).toContain('tpad=start_mode=clone:start_duration=0.25')
       expect(args.join(' ')).toContain('stop_mode=clone:stop_duration=0.35')
     }
-    for (const mediaCommand of commands.filter(({ kind }) => kind !== 'poster')) {
+    for (const mediaCommand of commands.filter(({ kind }) => !kind.includes('poster'))) {
       expect(mediaCommand.args[mediaCommand.args.indexOf('-g') + 1]).toBe('30')
       expect(mediaCommand.args[mediaCommand.args.indexOf('-keyint_min') + 1]).toBe('30')
       expect(mediaCommand.args[mediaCommand.args.indexOf('-sc_threshold') + 1]).toBe('0')
     }
-    const poster = commands.find(({ kind }) => kind === 'poster')
-    expect(poster.args[poster.args.indexOf('-frames:v') + 1]).toBe('1')
+    for (const poster of commands.filter(({ kind }) => kind.includes('poster'))) {
+      expect(poster.args[poster.args.indexOf('-frames:v') + 1]).toBe('1')
+      expect(poster.args.join(' ')).toContain('eq=saturation=0:contrast=1.08:brightness=-0.08')
+    }
   })
 
   it('encodes and probes in a temporary family then atomically publishes one manifest family', () => {
@@ -227,7 +305,7 @@ describe('FreshCut motion media preparation', () => {
           command === 'ffmpeg-test' && args[0] !== '-version' && args.at(-1) !== '-',
       )
       .map(({ args }) => String(args.at(-1)).replaceAll('\\', '/'))
-    expect(encodeOutputs).toHaveLength(5)
+    expect(encodeOutputs).toHaveLength(6)
     expect(encodeOutputs.every((output) => output.includes(`/.${plan.baseName}-tmp-`))).toBe(true)
     expect(encodeOutputs.every((output) => !output.startsWith(`${plan.familyDirectory}/`))).toBe(
       true,
@@ -242,15 +320,17 @@ describe('FreshCut motion media preparation', () => {
       ),
     ).toBe(true)
     const probes = calls.filter(({ command }) => command === 'ffprobe-test')
-    expect(probes).toHaveLength(5)
+    expect(probes).toHaveLength(6)
     expect(
       probes
         .filter(({ args }) => !String(args.at(-1)).includes('-poster.webp'))
         .every(({ args }) => args.includes('-show_frames')),
     ).toBe(true)
-    expect(probes.find(({ args }) => String(args.at(-1)).includes('-poster.webp'))?.args).toContain(
-      '-count_frames',
-    )
+    expect(
+      probes
+        .filter(({ args }) => String(args.at(-1)).includes('-poster.webp'))
+        .every(({ args }) => args.includes('-count_frames')),
+    ).toBe(true)
 
     const manifest = JSON.parse(readFileSync(result.manifestPath, 'utf8'))
     expect(manifest).toMatchObject({
@@ -258,8 +338,8 @@ describe('FreshCut motion media preparation', () => {
       version: plan.version,
       pipelineVersion: EXPECTED_PIPELINE_VERSION,
       provenance: {
-        sourceStatus: 'generated-demo',
-        rightsStatus: 'synthetic-text-only',
+        sourceStatus: 'approved-final',
+        rightsStatus: 'approved-for-ai-transformation',
       },
       sourceHash: SOURCE_HASH,
       familyHash: plan.familyHash,
@@ -270,7 +350,8 @@ describe('FreshCut motion media preparation', () => {
         desktopWebm: `${plan.baseName}-desktop.webm`,
         mobileMp4: `${plan.baseName}-mobile.mp4`,
         mobileWebm: `${plan.baseName}-mobile.webm`,
-        posterWebp: `${plan.baseName}-poster.webp`,
+        desktopPosterWebp: `${plan.baseName}-desktop-poster.webp`,
+        mobilePosterWebp: `${plan.baseName}-mobile-poster.webp`,
       },
     })
     expect(manifest).not.toHaveProperty('sourceFilename')
@@ -312,7 +393,7 @@ describe('FreshCut motion media preparation', () => {
         runCommand,
       }),
     ).toThrow(/probe failed/)
-    expect(encodingCalls).toBe(5)
+    expect(encodingCalls).toBe(6)
     expect(existsSync(plan.familyDirectory)).toBe(false)
     expect(readdirSync(outputDir).filter((entry) => entry.includes('-tmp-'))).toEqual([])
   })
@@ -334,6 +415,92 @@ describe('FreshCut motion media preparation', () => {
         runCommand,
       }),
     ).toThrow(expectedError)
+    expect(existsSync(plan.familyDirectory)).toBe(false)
+  })
+
+  it('enforces the exact responsive poster and codec byte ceilings', () => {
+    expect(FRESHCUT_MOTION_BYTE_BUDGETS).toEqual({
+      poster: { mobile: 120 * 1024, desktop: 200 * 1024 },
+      webm: { mobile: 900 * 1024, desktop: 1_500 * 1024 },
+      mp4: { mobile: 1_200 * 1024, desktop: 2_000 * 1024 },
+    })
+
+    const mediaProbe = {
+      streams: [
+        {
+          codec_type: 'video',
+          codec_name: 'vp9',
+          width: 1080,
+          height: 1920,
+          avg_frame_rate: '30/1',
+          bit_rate: '1000000',
+        },
+      ],
+      format: {
+        duration: '6.0',
+        bit_rate: '1000000',
+        format_name: 'matroska,webm',
+        size: String(FRESHCUT_MOTION_BYTE_BUDGETS.webm.mobile + 1),
+      },
+      frames: videoFrames(),
+    }
+    expect(() =>
+      assertPreparedMediaProbe(mediaProbe, {
+        width: 1080,
+        height: 1920,
+        expectedDuration: 6,
+        durationTolerance: 0.25,
+        maximumBitrate: 4_000_000,
+        maximumBytes: FRESHCUT_MOTION_BYTE_BUDGETS.webm.mobile,
+        expectedGop: 30,
+        expectedCodec: 'vp9',
+        expectedContainers: ['webm', 'matroska'],
+      }),
+    ).toThrow(/byte budget/i)
+
+    expect(() =>
+      assertPreparedPosterProbe(
+        {
+          streams: [
+            {
+              codec_type: 'video',
+              codec_name: 'webp',
+              width: 1080,
+              height: 1920,
+              nb_read_frames: '1',
+            },
+          ],
+          format: { size: String(FRESHCUT_MOTION_BYTE_BUDGETS.poster.mobile + 1) },
+        },
+        {
+          width: 1080,
+          height: 1920,
+          frameCount: 1,
+          maximumBytes: FRESHCUT_MOTION_BYTE_BUDGETS.poster.mobile,
+        },
+      ),
+    ).toThrow(/byte budget/i)
+  })
+
+  it.each([
+    ['mobile poster', '-mobile-poster.webp', FRESHCUT_MOTION_BYTE_BUDGETS.poster.mobile],
+    ['desktop poster', '-desktop-poster.webp', FRESHCUT_MOTION_BYTE_BUDGETS.poster.desktop],
+    ['mobile WebM', '-mobile.webm', FRESHCUT_MOTION_BYTE_BUDGETS.webm.mobile],
+    ['desktop WebM', '-desktop.webm', FRESHCUT_MOTION_BYTE_BUDGETS.webm.desktop],
+    ['mobile MP4', '-mobile.mp4', FRESHCUT_MOTION_BYTE_BUDGETS.mp4.mobile],
+    ['desktop MP4', '-desktop.mp4', FRESHCUT_MOTION_BYTE_BUDGETS.mp4.desktop],
+  ])('refuses an encoded %s one byte above its delivery budget', (_label, suffix, budget) => {
+    const outputDir = join(scratchDirectory(), 'published')
+    const plan = buildFreshCutMotionMediaPlan(planInput({ outputDir }))
+    const runCommand = successfulRunnerWithOversize([], suffix, budget + 1)
+
+    expect(() =>
+      executeFreshCutMotionMediaPlan(plan, {
+        ffmpegPath: 'ffmpeg-test',
+        ffprobePath: 'ffprobe-test',
+        runCommand,
+      }),
+    ).toThrow(/byte budget/i)
     expect(existsSync(plan.familyDirectory)).toBe(false)
   })
 

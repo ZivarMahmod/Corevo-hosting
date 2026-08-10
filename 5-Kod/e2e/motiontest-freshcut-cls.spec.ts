@@ -38,7 +38,8 @@ async function expectCompleteStaticExperience(
   await expect(storefront.locator('#tjanster')).toHaveCount(1)
   await page.waitForLoadState('networkidle')
   await expect(storefront.locator('video')).toHaveCount(0)
-  await expect(storefront.locator('source')).toHaveCount(0)
+  await expect(storefront.locator('video source')).toHaveCount(0)
+  await expect(storefront.locator('picture source')).toHaveCount(16)
   expect(mediaRequests).toEqual([])
   await expect
     .poll(() =>
@@ -104,12 +105,13 @@ test.describe('@readonly @motiontest FreshCut motiontest layout stability', () =
     await expectCompleteStaticExperience(page, mediaRequests)
   })
 
-  test('keeps the complete static flow for save-data, 2g, and low-memory clients', async ({
+  test('keeps the complete static flow for save-data, 2g, 3g, and low-memory clients', async ({
     browser,
   }) => {
     const constrainedClients = [
       { connection: { effectiveType: '4g', saveData: true }, deviceMemory: 8 },
       { connection: { effectiveType: '2g', saveData: false }, deviceMemory: 8 },
+      { connection: { effectiveType: '3g', saveData: false }, deviceMemory: 8 },
       { connection: { effectiveType: '4g', saveData: false }, deviceMemory: 2 },
     ] as const
 
