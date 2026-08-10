@@ -19,6 +19,7 @@
 // check below fires before classify() ever sees the reserved list.
 
 import { tenantHostSuffix } from './storefront-url'
+import { storefrontExperienceForHost } from './storefront/experience'
 
 export type TenantResolution =
   | { kind: 'tenant'; slug: string }
@@ -66,6 +67,7 @@ export const DEFAULT_RESERVED_SUBDOMAINS = [
   'localhost',
   'portal',
   'sms',
+  'motiontest',
 ] as const
 const DEFAULT_RESERVED = DEFAULT_RESERVED_SUBDOMAINS.join(',')
 const DEFAULT_PLATFORM = 'booking.corevo.se'
@@ -149,6 +151,11 @@ export function getTenantFromHost(
   host: string | null | undefined,
   opts: ResolveOptions = {},
 ): TenantResolution {
+  const storefrontExperience = storefrontExperienceForHost(host)
+  if (storefrontExperience) {
+    return { kind: 'tenant', slug: storefrontExperience.tenantSlug }
+  }
+
   const rootDomain = opts.rootDomain ?? envRoot()
   const reserved = opts.reserved ?? envReserved()
   const platformHost = opts.platformHost ?? envPlatform()

@@ -1,0 +1,94 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { NextRequest, NextResponse } from 'next/server'
+import { isMotiontestPublicPath, storefrontExperienceForHost } from './experience'
+
+const mocks = vi.hoisted(() => ({ updateSession: vi.fn() }))
+vi.mock('@/lib/supabase/middleware', () => ({ updateSession: mocks.updateSession }))
+
+import { middleware } from '../../middleware'
+
+describe('FreshCut motiontest storefront experience', () => {
+  it('maps only the exact production and local aliases to FreshCut', () => {
+    expect(storefrontExperienceForHost('motiontest.corevo.se')).toEqual({
+      experience: 'freshcut-motiontest',
+      tenantSlug: 'freshcut',
+    })
+    expect(storefrontExperienceForHost('MOTIONTEST.LOCALHOST:3000')).toEqual({
+      experience: 'freshcut-motiontest',
+      tenantSlug: 'freshcut',
+    })
+  })
+
+  it('does not let ordinary or deceptive hosts select the prototype', () => {
+    expect(storefrontExperienceForHost('freshcut.corevo.se')).toBeNull()
+    expect(storefrontExperienceForHost('motiontest.corevo.se.attacker.test')).toBeNull()
+    expect(storefrontExperienceForHost('evil-motiontest.localhost')).toBeNull()
+  })
+
+  it('allows only the home page and its explicit public metadata and assets', () => {
+    for (const pathname of [
+      '/',
+      '/robots.txt',
+      '/favicon.ico',
+      '/icon.svg',
+      '/_next/static/chunks/app.js',
+      '/_next/image?url=%2Fimages%2Ffreshcut%2Ffreshcut-hero.webp&w=1200&q=75',
+      '/images/freshcut/freshcut-hero.webp',
+    ]) {
+      expect(isMotiontestPublicPath(pathname), pathname).toBe(true)
+    }
+  })
+
+  it('fails closed for alternate pages, APIs, and unrelated public files', () => {
+    for (const pathname of [
+      '/admin',
+      '/api/anything',
+      '/boka',
+      '/login',
+      '/sitemap.xml',
+      '/images/other-tenant.webp',
+      '/_next/data/build-id/index.json',
+    ]) {
+      expect(isMotiontestPublicPath(pathname), pathname).toBe(false)
+    }
+  })
+})
+
+describe('FreshCut motiontest middleware boundary', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.updateSession.mockResolvedValue({ response: NextResponse.next(), user: null })
+  })
+
+  it('rejects an alternate application route directly before auth routing', async () => {
+    const response = await middleware(
+      new NextRequest('https://motiontest.corevo.se/admin', {
+        headers: { host: 'motiontest.corevo.se' },
+      }),
+    )
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get('location')).toBeNull()
+    expect(mocks.updateSession).not.toHaveBeenCalled()
+  })
+
+  it('replaces client-supplied tenant and experience headers from the exact host', async () => {
+    await middleware(
+      new NextRequest('https://motiontest.corevo.se/', {
+        headers: {
+          host: 'motiontest.corevo.se',
+          'x-corevo-storefront-experience': 'attacker-experience',
+          'x-corevo-tenant-kind': 'platform',
+          'x-corevo-tenant-slug': 'attacker-tenant',
+          'x-corevo-reserved-subdomain': 'admin',
+        },
+      }),
+    )
+
+    const trustedHeaders = mocks.updateSession.mock.calls[0]?.[1] as Headers
+    expect(trustedHeaders.get('x-corevo-storefront-experience')).toBe('freshcut-motiontest')
+    expect(trustedHeaders.get('x-corevo-tenant-kind')).toBe('tenant')
+    expect(trustedHeaders.get('x-corevo-tenant-slug')).toBe('freshcut')
+    expect(trustedHeaders.get('x-corevo-reserved-subdomain')).toBeNull()
+  })
+})

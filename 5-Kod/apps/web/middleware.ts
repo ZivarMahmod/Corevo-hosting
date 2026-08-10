@@ -41,6 +41,7 @@ import {
   isCustomerPortalRequestPath,
   isStaticRequestPath,
 } from '@/lib/customer-portal/host-routing'
+import { isMotiontestPublicPath, storefrontExperienceForHost } from '@/lib/storefront/experience'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
@@ -73,6 +74,23 @@ export async function middleware(request: NextRequest) {
   //    (?tenant= / /t/<slug>). Data isolation is enforced by RLS + tenant_id,
   //    NEVER by this header (ADR 01 §2).
   const host = request.headers.get('host')
+  const storefrontExperience = storefrontExperienceForHost(host)
+  const trustedRequestHeaders = new Headers(request.headers)
+  trustedRequestHeaders.delete('x-corevo-storefront-experience')
+  trustedRequestHeaders.delete('x-corevo-tenant-kind')
+  trustedRequestHeaders.delete('x-corevo-tenant-slug')
+  trustedRequestHeaders.delete('x-corevo-reserved-subdomain')
+  if (storefrontExperience) {
+    trustedRequestHeaders.set(
+      'x-corevo-storefront-experience',
+      storefrontExperience.experience,
+    )
+    trustedRequestHeaders.set('x-corevo-tenant-kind', 'tenant')
+    trustedRequestHeaders.set('x-corevo-tenant-slug', storefrontExperience.tenantSlug)
+    if (!isMotiontestPublicPath(path)) {
+      return new NextResponse(null, { status: 404 })
+    }
+  }
   let tenant = getTenantFromHost(host, {
     search: url.searchParams,
     pathname: url.pathname,
@@ -110,7 +128,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (tenant.kind === 'customer_portal' || (previewHost && isCustomerPortalRequestPath(path))) {
-    const portalHeaders = new Headers(request.headers)
+    const portalHeaders = new Headers(trustedRequestHeaders)
     portalHeaders.set('x-corevo-tenant-kind', 'customer_portal')
     portalHeaders.delete('x-corevo-tenant-slug')
     portalHeaders.delete('x-corevo-reserved-subdomain')
@@ -119,7 +137,7 @@ export async function middleware(request: NextRequest) {
 
   // matcher runs for static files too so mina cannot bypass its asset allowlist.
   // Preserve the previous behavior for every other host by skipping session work.
-  if (isStaticRequestPath(path)) return NextResponse.next()
+  if (isStaticRequestPath(path)) return NextResponse.next({ request: { headers: trustedRequestHeaders } })
 
   // 1c. Custom domain (goal-16): an EXTERNAL host (a customer's own domain DNS-routed
   //     to the worker) doesn't match our *.corevo.se suffix, so it resolves to
@@ -144,13 +162,15 @@ export async function middleware(request: NextRequest) {
   // 2. Forward the resolved tenant to Server Components via REQUEST headers
   //    (headers() reads request, not response). Always set-or-delete so a client
   //    can't spoof x-corevo-tenant-slug; middleware is the single source of truth.
-  const requestHeaders = new Headers(request.headers)
+  const requestHeaders = new Headers(trustedRequestHeaders)
   requestHeaders.set('x-corevo-tenant-kind', tenant.kind)
   if (tenant.kind === 'tenant') requestHeaders.set('x-corevo-tenant-slug', tenant.slug)
   else requestHeaders.delete('x-corevo-tenant-slug')
   if (tenant.kind === 'reserved')
     requestHeaders.set('x-corevo-reserved-subdomain', tenant.subdomain)
   else requestHeaders.delete('x-corevo-reserved-subdomain')
+  if (storefrontExperience)
+    requestHeaders.set('x-corevo-storefront-experience', storefrontExperience.experience)
 
   // 2b. Preview-rutterna (/salong-preview/<slug>/…) renderar en tenants storefront ur
   //     SLUG i URL:en på admin-hosten. Sätt samma x-corevo-tenant-slug som en riktig
