@@ -11,7 +11,7 @@ const env = {
 }
 
 describe('primary booking scheduler', () => {
-  it('records start/success after retention, reminders and refunds succeed internally', async () => {
+  it('records start/success after reminders, delivery, refunds, media and jobs succeed', async () => {
     const heartbeat = []
     const appRequests = []
     const fetchImpl = async (request) => {
@@ -32,11 +32,11 @@ describe('primary booking scheduler', () => {
     })
 
     assert.equal(appRequests.length, 5)
-    assert.equal(new URL(appRequests[0].url).pathname, '/api/cron/pending-expiry')
-    assert.equal(new URL(appRequests[1].url).pathname, '/api/cron/reminders')
-    assert.equal(new URL(appRequests[2].url).pathname, '/api/cron/notifications')
-    assert.equal(new URL(appRequests[3].url).pathname, '/api/cron/payment-refunds')
-    assert.equal(new URL(appRequests[4].url).pathname, '/api/cron/media-cleanup')
+    assert.equal(new URL(appRequests[0].url).pathname, '/api/cron/reminders')
+    assert.equal(new URL(appRequests[1].url).pathname, '/api/cron/notifications')
+    assert.equal(new URL(appRequests[2].url).pathname, '/api/cron/payment-refunds')
+    assert.equal(new URL(appRequests[3].url).pathname, '/api/cron/media-cleanup')
+    assert.equal(new URL(appRequests[4].url).pathname, '/api/cron/generic-jobs')
     for (const request of appRequests) {
       assert.equal(request.method, 'POST')
       assert.equal(request.headers.get('authorization'), 'Bearer cron-secret')
@@ -68,11 +68,11 @@ describe('primary booking scheduler', () => {
     assert.deepEqual(heartbeat.map((entry) => entry.p_phase), ['started', 'failed'])
     assert.equal(heartbeat[1].p_error_code, 'route_failed')
     assert.deepEqual(paths, [
-      '/api/cron/pending-expiry',
       '/api/cron/reminders',
       '/api/cron/notifications',
       '/api/cron/payment-refunds',
       '/api/cron/media-cleanup',
+      '/api/cron/generic-jobs',
     ])
   })
 
@@ -88,11 +88,11 @@ describe('primary booking scheduler', () => {
       fetchImpl: async () => new Response(JSON.stringify(true), { status: 200 }),
     }), /primary_scheduler_route_failed/)
     assert.deepEqual(paths, [
-      '/api/cron/pending-expiry',
       '/api/cron/reminders',
       '/api/cron/notifications',
       '/api/cron/payment-refunds',
       '/api/cron/media-cleanup',
+      '/api/cron/generic-jobs',
     ])
   })
 
@@ -117,11 +117,11 @@ describe('primary booking scheduler', () => {
     assert.deepEqual(heartbeat.map((entry) => entry.p_phase), ['started', 'failed'])
     assert.equal(heartbeat[1].p_error_code, 'route_failed')
     assert.deepEqual(paths, [
-      '/api/cron/pending-expiry',
       '/api/cron/reminders',
       '/api/cron/notifications',
       '/api/cron/payment-refunds',
       '/api/cron/media-cleanup',
+      '/api/cron/generic-jobs',
     ])
   })
 

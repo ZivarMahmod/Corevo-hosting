@@ -1,9 +1,7 @@
-# Boknings-cron (vattentät-audit P1-6): pending-expiry + påminnelser.
-# Endpointsen har funnits (secret-gatade) men INGEN scheduler anropade dem —
-# övergivna online-checkout-pending låg kvar och blockerade sin tid för evigt,
-# och påminnelse-mailen gick aldrig ut. GitHub Actions är schemaläggaren
-# (samma mönster som worker-watchdog); CRON_SECRET måste finnas både som
-# Worker-secret och GH-repo-secret.
+# Oberoende nödräls under stabilisering. Cloudflare Cron Triggers är primär
+# app-scheduler och pg_cron äger DB-svepen. GitHub fortsätter anropa de
+# idempotenta endpointsen och larmar om Cloudflare-heartbeat blir gammalt.
+# CRON_SECRET måste finnas både som Worker-secret och GH-repo-secret.
 name: Booking cron
 on:
   schedule:

@@ -1,11 +1,11 @@
 const SCHEDULER_NAME = 'cloudflare-reminders-primary'
 const DEFAULT_ROUTE_TIMEOUT_MS = 60_000
 const ROUTE_PATHS = [
-  '/api/cron/pending-expiry',
   '/api/cron/reminders',
   '/api/cron/notifications',
   '/api/cron/payment-refunds',
   '/api/cron/media-cleanup',
+  '/api/cron/generic-jobs',
 ]
 
 function required(value) {

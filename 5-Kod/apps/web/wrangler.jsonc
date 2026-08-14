@@ -4,7 +4,7 @@
   // Isolated from corevo.se + POS (no routes; see commented block below).
   "name": "bokningsplatformen",
   // OpenNext custom Worker: preserves fetch and adds the durable primary
-  // booking scheduler: expiry, reminders, notification delivery, refunds and media cleanup.
+  // booking scheduler: reminders, notification delivery, refunds, media cleanup and jobs.
   "main": "./custom-worker.mjs",
   "triggers": { "crons": ["*/15 * * * *"] },
   "compatibility_date": "2026-05-01",

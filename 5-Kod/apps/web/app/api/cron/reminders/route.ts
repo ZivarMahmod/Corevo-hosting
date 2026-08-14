@@ -8,7 +8,7 @@ import { authorizedCronRequest } from '@/lib/security/cron-auth'
 // Auth: a static bearer in CRON_SECRET (Worker secret). Not user-facing; rejects
 // anything without the exact secret so the endpoint can't be triggered to fan out
 // mail. This endpoint only discovers due rows and durably queues events. The
-// separate multi-channel dispatcher remains physically unwired until release.
+// notifications cron route owns delivery through the existing durable outbox.
 
 export const dynamic = 'force-dynamic'
 

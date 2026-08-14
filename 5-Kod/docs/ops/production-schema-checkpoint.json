@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "20260810090000",
-  "observedHistoryLatest": "20260810090000",
+  "requiredLatest": "20260814092510",
+  "observedHistoryLatest": "20260814092510",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-08-14T07:14:50Z",
+  "verifiedAt": "2026-08-14T09:45:06Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:3ba99d00e46b901bbeeecedd970a7710b818694e3f6cb7fe6b839ced6b3cfd44",
-  "verificationEvidence": "Supabase production history parity (169 local = 169 remote), read-only migration-effects audit with 0064/0068 owner diagnostics, exact Corevo host and motiontest reservation checks, and role grant verification on 2026-08-14",
+  "migrationFingerprint": "sha256:9fe9cfb49aeb685776be467011785619403b4b49cc3f1c4904057879e1ac8143",
+  "verificationEvidence": "Supabase production history parity (170 local = 170 remote), disposable CI database and full SQL/RLS suite, plus live read-only verification of the logged corevo_jobs queue, empty queue/review state, absent pgmq_public, private failed-review RLS and service-role-only RPC/raw-table grants on 2026-08-14",
   "reason": null
 }
