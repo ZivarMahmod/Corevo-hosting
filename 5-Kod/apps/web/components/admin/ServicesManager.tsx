@@ -1,16 +1,13 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useCreate, useDelete, useList, useUpdate, type HttpError } from '@refinedev/core'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 import type { ServiceRow } from '@/lib/admin/data'
-import {
-  createService,
-  updateService,
-  toggleServiceActive,
-  deleteService,
-  type ActionState,
-} from '@/lib/admin/actions'
 import { centsToKronorInput, formatPrice } from '@/lib/admin/format'
+import { serviceFormSchema, type ServiceFormValues } from '@/lib/admin/service-schema'
+import type { CorevoServiceCapabilities } from '@/lib/motor/corevo-refine-access'
 import {
   Badge,
   Button,
@@ -48,14 +45,25 @@ import {
  *    notes — section model FLAGGED, not faked.
  */
 export function ServicesManager({
-  services,
+  initialServices,
   tenantName,
+  capabilities,
 }: {
-  services: ServiceRow[]
+  initialServices: ServiceRow[]
   tenantName: string
+  capabilities: CorevoServiceCapabilities
 }) {
   const [editing, setEditing] = useState<ServiceRow | null>(null)
   const [creating, setCreating] = useState(false)
+  const { result, query } = useList<ServiceRow>({
+    resource: 'services',
+    pagination: { mode: 'off' },
+    queryOptions: {
+      initialData: { data: initialServices, total: initialServices.length },
+      staleTime: Infinity,
+    },
+  })
+  const services = result.data
 
   return (
     <div>
@@ -64,9 +72,11 @@ export function ServicesManager({
         title="Tjänster"
         lede="När du lägger till eller redigerar en tjänst ser du direkt var på hemsidan den hamnar."
       >
-        <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
-          Ny tjänst
-        </Button>
+        {capabilities.create && (
+          <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
+            Ny tjänst
+          </Button>
+        )}
       </PageHead>
 
       <Callout tone="gold" icon="link">
@@ -74,6 +84,12 @@ export function ServicesManager({
         tjänst blir bokningsbar först när den är kopplad till aktiv personal med plats och
         arbetstider. Inaktiverade tjänster döljs men behåller sin bokningshistorik.
       </Callout>
+
+      {query.error && (
+        <p className="auth-error" role="alert">
+          Tjänsterna kunde inte uppdateras. Försök igen.
+        </p>
+      )}
 
       {/* Kolumn-ratio i CSS (inte inline) så .bo-2col:s ≤920px-kollaps till 1fr vinner
           på mobil — inline-style skulle annars slå media-queryn. */}
@@ -114,36 +130,38 @@ export function ServicesManager({
               <Table
                 cols={['Tjänst', 'Tid', 'Pris', 'Storefront', 'Online', '']}
                 rows={services.map((s) => [
-                <ServiceCell key="namn" service={s} />,
-                <span key="tid" className="num">
-                  {s.duration_min} min
-                </span>,
-                <span key="pris" className="num" style={{ fontWeight: 600 }}>
-                  {formatPrice(s.price_cents)}
-                </span>,
-                <StorefrontCell key="sf" service={s} />,
-                <OnlineToggle key="online" service={s} />,
-                <button
-                  key="edit"
-                  type="button"
-                  onClick={() => setEditing(s)}
-                  aria-label={`Redigera ${s.name}`}
-                  style={{
-                    // goal-62 G1: mätte 25×25 — redigera-knappen på varje tjänsterad låg
-                    // under touch-golvet. 44×44, kvittad marginal → radhöjden oförändrad.
-                    width: 44,
-                    height: 44,
-                    margin: -6,
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--c-ink-3)',
-                    cursor: 'pointer',
-                    display: 'inline-grid',
-                    placeItems: 'center',
-                  }}
-                >
-                  <Icon name="edit" size={17} />
-                </button>,
+                  <ServiceCell key="namn" service={s} />,
+                  <span key="tid" className="num">
+                    {s.duration_min} min
+                  </span>,
+                  <span key="pris" className="num" style={{ fontWeight: 600 }}>
+                    {formatPrice(s.price_cents)}
+                  </span>,
+                  <StorefrontCell key="sf" service={s} />,
+                  <OnlineToggle key="online" service={s} canEdit={capabilities.edit} />,
+                  capabilities.edit ? (
+                    <button
+                      key="edit"
+                      type="button"
+                      onClick={() => setEditing(s)}
+                      aria-label={`Redigera ${s.name}`}
+                      style={{
+                        // goal-62 G1: mätte 25×25 — redigera-knappen på varje tjänsterad låg
+                        // under touch-golvet. 44×44, kvittad marginal → radhöjden oförändrad.
+                        width: 44,
+                        height: 44,
+                        margin: -6,
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--c-ink-3)',
+                        cursor: 'pointer',
+                        display: 'inline-grid',
+                        placeItems: 'center',
+                      }}
+                    >
+                      <Icon name="edit" size={17} />
+                    </button>
+                  ) : null,
                 ])}
               />
             </div>
@@ -153,9 +171,14 @@ export function ServicesManager({
         <StorefrontSiteMap services={services} tenantName={tenantName} />
       </div>
 
-      {creating && <CreateDrawer onClose={() => setCreating(false)} />}
+      {creating && capabilities.create && <CreateDrawer onClose={() => setCreating(false)} />}
       {editing && (
-        <EditDrawer key={editing.id} service={editing} onClose={() => setEditing(null)} />
+        <EditDrawer
+          key={editing.id}
+          service={editing}
+          canDelete={capabilities.delete}
+          onClose={() => setEditing(null)}
+        />
       )}
     </div>
   )
@@ -209,42 +232,38 @@ function StorefrontCell({ service }: { service: ServiceRow }) {
  *  inte betydelsebärande. Switchen är riven; alla fyra ytorna (Tjänster · Butik · Blogg ·
  *  Kurser) delar nu PillToggle-primitiven, som också bär 44px-golvet och fokusringen som
  *  inline-switchen aldrig kunde få. Endast växeln byttes — toggleServiceActive är orörd. */
-function OnlineToggle({ service }: { service: ServiceRow }) {
+function OnlineToggle({ service, canEdit }: { service: ServiceRow; canEdit: boolean }) {
   const { notify } = useToast()
-  const router = useRouter()
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(
-    toggleServiceActive,
-    {},
-  )
+  const { mutate, mutation } = useUpdate<ServiceRow, HttpError, { active: boolean }>()
 
-  useEffect(() => {
-    if (state.success) {
-      notify(
-        service.active
-          ? `${service.name} dold på sajten — historiken finns kvar`
-          : `${service.name} aktiverad i tjänstelistan — kontrollera Personal och Schema för bokning`,
-        'success',
-      )
-      router.refresh()
-    }
-    // fire once per successful toggle
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.success])
+  const toggle = () =>
+    mutate(
+      { resource: 'services', id: service.id, values: { active: !service.active } },
+      {
+        onSuccess: () =>
+          notify(
+            service.active
+              ? `${service.name} dold på sajten — historiken finns kvar`
+              : `${service.name} aktiverad i tjänstelistan — kontrollera Personal och Schema för bokning`,
+            'success',
+          ),
+        onError: (error) => notify(error.message, 'warning'),
+      },
+    )
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-      <form action={formAction} style={{ display: 'inline-flex' }}>
-        <input type="hidden" name="id" value={service.id} />
-        <input type="hidden" name="active" value={String(!service.active)} />
+      {canEdit && (
         <PillToggle
-          type="submit"
+          type="button"
           active={service.active}
-          disabled={pending}
+          disabled={mutation.isPending}
           ariaLabel={service.active ? `Dölj ${service.name}` : `Visa ${service.name}`}
+          onClick={toggle}
         >
-          {pending ? '…' : service.active ? 'Dölj' : 'Visa'}
+          {mutation.isPending ? '…' : service.active ? 'Dölj' : 'Visa'}
         </PillToggle>
-      </form>
+      )}
       {/* Boolean aktiv-flagga (ingen status-sträng) — statusTone gäller ej här. */}
       <Badge tone={service.active ? 'success' : 'neutral'}>{service.active ? 'Aktiv' : 'Av'}</Badge>
     </div>
@@ -392,17 +411,26 @@ function StorefrontSiteMap({
 
 function CreateDrawer({ onClose }: { onClose: () => void }) {
   const { notify } = useToast()
-  const router = useRouter()
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(createService, {})
-
-  useEffect(() => {
-    if (state.success) {
-      notify('Tjänst skapad. Koppla den till personal och schema för bokning.', 'success')
-      router.refresh()
-      onClose()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.success])
+  const { mutate, mutation } = useCreate<ServiceRow, HttpError, ServiceFormValues>()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ServiceFormValues>({
+    resolver: zodResolver(serviceFormSchema),
+    defaultValues: { name: '', category: '', duration_min: 30, price: '' },
+  })
+  const submit = handleSubmit((values) => {
+    mutate(
+      { resource: 'services', values },
+      {
+        onSuccess: () => {
+          notify('Tjänst skapad. Koppla den till personal och schema för bokning.', 'success')
+          onClose()
+        },
+      },
+    )
+  })
 
   return (
     <Drawer
@@ -412,15 +440,16 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
       ariaLabel="Ny tjänst"
       footer={
         <form
-          action={formAction}
+          onSubmit={submit}
           id="create-service"
+          noValidate
           style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
         >
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
-          <Button variant="primary" type="submit" icon="check" disabled={pending}>
-            {pending ? 'Sparar…' : 'Lägg till tjänst'}
+          <Button variant="primary" type="submit" icon="check" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Sparar…' : 'Lägg till tjänst'}
           </Button>
         </form>
       }
@@ -429,12 +458,19 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
           footer button submits them. */}
       <div style={{ display: 'grid', gap: 14 }}>
         <Field label="Namn">
-          <input form="create-service" name="name" required style={inputStyle} />
+          <input
+            form="create-service"
+            {...register('name')}
+            required
+            aria-invalid={Boolean(errors.name)}
+            style={inputStyle}
+          />
+          <FieldError message={errors.name?.message} />
         </Field>
         <Field label="Kategori">
           <input
             form="create-service"
-            name="category"
+            {...register('category')}
             placeholder="t.ex. Populärt"
             style={inputStyle}
           />
@@ -442,31 +478,34 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
         <Field label="Varaktighet (min)">
           <input
             form="create-service"
-            name="duration_min"
+            {...register('duration_min', { valueAsNumber: true })}
             type="number"
             min="1"
             step="1"
-            defaultValue="30"
             required
+            aria-invalid={Boolean(errors.duration_min)}
             className="num"
             style={inputStyle}
           />
+          <FieldError message={errors.duration_min?.message} />
         </Field>
         <Field label="Pris (kr)">
           <input
             form="create-service"
-            name="price"
+            {...register('price')}
             type="text"
             inputMode="decimal"
             required
+            aria-invalid={Boolean(errors.price)}
             placeholder="t.ex. 450"
             className="num"
             style={inputStyle}
           />
+          <FieldError message={errors.price?.message} />
         </Field>
-        {state.error && (
+        {mutation.error && (
           <p className="auth-error" role="alert" style={{ margin: 0 }}>
-            {state.error}
+            {mutation.error.message}
           </p>
         )}
       </div>
@@ -474,34 +513,63 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
   )
 }
 
-function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => void }) {
+function EditDrawer({
+  service,
+  canDelete,
+  onClose,
+}: {
+  service: ServiceRow
+  canDelete: boolean
+  onClose: () => void
+}) {
   const { notify } = useToast()
-  const router = useRouter()
-  const [save, saveAction, saving] = useActionState<ActionState, FormData>(updateService, {})
-  const [del, delAction, deleting] = useActionState<ActionState, FormData>(deleteService, {})
+  const update = useUpdate<ServiceRow, HttpError, ServiceFormValues>()
+  const remove = useDelete<ServiceRow, HttpError>()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ServiceFormValues>({
+    resolver: zodResolver(serviceFormSchema),
+    defaultValues: {
+      name: service.name,
+      category: service.category ?? '',
+      duration_min: service.duration_min,
+      price: centsToKronorInput(service.price_cents),
+    },
+  })
   // Tvåstegsbekräftelse: "Ta bort" raderade tidigare på ETT klick. Klick 1 armerar
   // (knappen blir "Säker? Ta bort permanent" i varningston + en Ångra), klick 2
   // skickar delete-formuläret. Drawern remountas per tjänst (key=service.id) så
   // armeringen kan aldrig läcka mellan tjänster.
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const busy = update.mutation.isPending || remove.mutation.isPending
 
-  useEffect(() => {
-    if (save.success) {
-      notify('Tjänst uppdaterad', 'success')
-      router.refresh()
-      onClose()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [save.success])
+  const submit = handleSubmit((values) => {
+    if (busy) return
+    update.mutate(
+      { resource: 'services', id: service.id, values },
+      {
+        onSuccess: () => {
+          notify('Tjänst uppdaterad', 'success')
+          onClose()
+        },
+      },
+    )
+  })
 
-  useEffect(() => {
-    if (del.success) {
-      notify('Tjänst borttagen', 'success')
-      router.refresh()
-      onClose()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [del.success])
+  const removeService = () => {
+    if (busy) return
+    remove.mutate(
+      { resource: 'services', id: service.id },
+      {
+        onSuccess: () => {
+          notify('Tjänst borttagen', 'success')
+          onClose()
+        },
+      },
+    )
+  }
 
   const formId = `edit-service-${service.id}`
 
@@ -520,36 +588,44 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
         <div
           style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}
         >
-          <form action={delAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-            <input type="hidden" name="id" value={service.id} />
-            {confirmDelete ? (
-              <>
+          {canDelete && (
+            <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+              {confirmDelete ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    icon="trash"
+                    disabled={busy}
+                    onClick={removeService}
+                    style={{ color: 'var(--c-danger)' }}
+                  >
+                    {remove.mutation.isPending ? '…' : 'Säker? Ta bort permanent'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    Ångra
+                  </Button>
+                </>
+              ) : (
                 <Button
                   variant="ghost"
-                  type="submit"
+                  type="button"
                   icon="trash"
-                  disabled={deleting}
-                  style={{ color: 'var(--c-danger)' }}
+                  disabled={busy}
+                  onClick={() => setConfirmDelete(true)}
                 >
-                  {deleting ? '…' : 'Säker? Ta bort permanent'}
+                  Ta bort
                 </Button>
-                <Button variant="ghost" type="button" onClick={() => setConfirmDelete(false)}>
-                  Ångra
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                type="button"
-                icon="trash"
-                onClick={() => setConfirmDelete(true)}
-              >
-                Ta bort
-              </Button>
-            )}
-          </form>
+              )}
+            </div>
+          )}
           <div style={{ flex: 1 }} />
-          <Button variant="ghost" type="button" onClick={onClose}>
+          <Button variant="ghost" type="button" disabled={busy} onClick={onClose}>
             Avbryt
           </Button>
           {/* Native <button> so the HTML form= association can submit the body
@@ -558,58 +634,69 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
           <button
             type="submit"
             form={formId}
-            disabled={saving}
+            disabled={busy}
             className="pbtn pbtn--primary pbtn--md"
           >
             <Icon name="check" size={17} />
-            {saving ? 'Sparar…' : 'Spara'}
+            {update.mutation.isPending ? 'Sparar…' : 'Spara'}
           </button>
         </div>
       }
     >
       {/* Inline edit preserved in full: every field the old per-row form carried. */}
-      <form action={saveAction} id={formId} style={{ display: 'grid', gap: 14 }}>
-        <input type="hidden" name="id" value={service.id} />
+      <form onSubmit={submit} noValidate id={formId} style={{ display: 'grid', gap: 14 }}>
         <Field label="Namn">
-          <input name="name" defaultValue={service.name} required style={inputStyle} />
-        </Field>
-        <Field label="Kategori">
           <input
-            name="category"
-            defaultValue={service.category ?? ''}
-            placeholder="t.ex. Populärt"
+            {...register('name')}
+            required
+            aria-invalid={Boolean(errors.name)}
             style={inputStyle}
           />
+          <FieldError message={errors.name?.message} />
+        </Field>
+        <Field label="Kategori">
+          <input {...register('category')} placeholder="t.ex. Populärt" style={inputStyle} />
         </Field>
         <Field label="Varaktighet (min)">
           <input
-            name="duration_min"
+            {...register('duration_min', { valueAsNumber: true })}
             type="number"
             min="1"
             step="1"
-            defaultValue={service.duration_min}
             required
+            aria-invalid={Boolean(errors.duration_min)}
             className="num"
             style={inputStyle}
           />
+          <FieldError message={errors.duration_min?.message} />
         </Field>
         <Field label="Pris (kr)">
           <input
-            name="price"
+            {...register('price')}
             type="text"
             inputMode="decimal"
-            defaultValue={centsToKronorInput(service.price_cents)}
+            required
+            aria-invalid={Boolean(errors.price)}
             className="num"
             style={inputStyle}
           />
+          <FieldError message={errors.price?.message} />
         </Field>
       </form>
 
-      {(save.error || del.error) && (
+      {(update.mutation.error || remove.mutation.error) && (
         <p className="auth-error" role="alert" style={{ marginTop: 12 }}>
-          {save.error || del.error}
+          {update.mutation.error?.message || remove.mutation.error?.message}
         </p>
       )}
     </Drawer>
   )
+}
+
+function FieldError({ message }: { message?: string }) {
+  return message ? (
+    <span className="auth-error" role="alert" style={{ margin: 0 }}>
+      {message}
+    </span>
+  ) : null
 }

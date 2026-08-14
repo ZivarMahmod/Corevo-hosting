@@ -6,6 +6,8 @@ import { ServicesManager } from '@/components/admin/ServicesManager'
 import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
 import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
 import { settingsCategories } from '@/lib/admin/settings-map'
+import { CorevoRefineProvider } from '@/components/motor/CorevoRefineProvider'
+import type { CorevoServiceCapabilities } from '@/lib/motor/corevo-refine-access'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Tjänster · Adminpanel' }
@@ -16,14 +18,29 @@ export default async function ServicesPage() {
   if (!tenant) return <SettingsWorkspaceEmpty currentCategory="tjanster" title="Tjänster" />
 
   const services = await listServices(tenant.id)
+  const capabilities: CorevoServiceCapabilities = {
+    list: true,
+    create: true,
+    edit: true,
+    delete: true,
+  }
 
   // The header (PageHead + "Ny tjänst" CTA) lives inside the client manager: the
   // CTA opens the create drawer (needs an onClick), which can't cross the
   // server→client boundary from here. The server page just fetches + passes.
   return (
-    <SettingsWorkspace categories={settingsCategories(tenant.terminology)} currentCategory="tjanster">
+    <SettingsWorkspace
+      categories={settingsCategories(tenant.terminology)}
+      currentCategory="tjanster"
+    >
       <section className="portal-section">
-        <ServicesManager services={services} tenantName={tenant.name} />
+        <CorevoRefineProvider capabilities={capabilities}>
+          <ServicesManager
+            initialServices={services}
+            tenantName={tenant.name}
+            capabilities={capabilities}
+          />
+        </CorevoRefineProvider>
       </section>
     </SettingsWorkspace>
   )
