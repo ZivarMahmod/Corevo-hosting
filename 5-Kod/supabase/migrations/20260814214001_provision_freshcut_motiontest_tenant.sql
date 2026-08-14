@@ -248,8 +248,8 @@ begin
   insert into public.tenant_modules (tenant_id, module_key, state)
   values (v_tenant, 'booking', 'live');
 
-  update public.tenants
-  set status = 'active'
-  where id = v_tenant;
+  perform pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);
+  perform pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  perform public.publish_tenant(v_tenant);
 end;
 $migration$;
