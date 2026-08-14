@@ -435,7 +435,7 @@ describe('FreshCut motiontest release contract', () => {
       const guarded = {
         releaseIdentityImpl: () => ({
             gitSha: RELEASE_SHA,
-          releaseRef: 'refs/heads/codex/freshcut-motiontest-production-grade',
+          releaseRef: 'refs/heads/main',
         }),
         artifactImpl: (_appDir, identity) => ({ ...identity }),
         preflightImpl: async () => {
@@ -550,7 +550,7 @@ describe('FreshCut motiontest release contract', () => {
         wranglerBinPath,
         releaseIdentityImpl: () => ({
           gitSha: RELEASE_SHA,
-          releaseRef: 'refs/heads/codex/freshcut-motiontest-production-grade',
+          releaseRef: 'refs/heads/main',
         }),
         artifactImpl: () => ({ artifactSha256: 'b'.repeat(64) }),
         nowImpl: () => verificationNow,
