@@ -23,6 +23,17 @@ describe('Cloudflare primary scheduler wiring', () => {
     assert.match(worker, /handler\.fetch/)
   })
 
+  it('enables redacted logs without persisting request URLs in native telemetry', () => {
+    const expected = {
+      enabled: true,
+      logs: { enabled: true, head_sampling_rate: 1, invocation_logs: false },
+      traces: { enabled: false, head_sampling_rate: 0 },
+    }
+    assert.deepEqual(config.observability, expected)
+    assert.deepEqual(config.env?.staging?.observability, expected)
+    assert.deepEqual(config.env?.motiontest?.observability, { enabled: false })
+  })
+
   it('keeps staging scheduler-free until it has isolated data/secrets', () => {
     assert.deepEqual(config.env?.staging?.triggers?.crons, [])
     assert.notEqual(

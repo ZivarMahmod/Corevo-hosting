@@ -4,7 +4,7 @@
   // Isolated from corevo.se + POS (no routes; see commented block below).
   "name": "bokningsplatformen",
   // OpenNext custom Worker: preserves fetch and adds the durable primary
-  // booking scheduler: reminder queue + refund rail. Never SMS/notification dispatch.
+  // booking scheduler: expiry, reminders, notification delivery, refunds and media cleanup.
   "main": "./custom-worker.mjs",
   "triggers": { "crons": ["*/15 * * * *"] },
   "compatibility_date": "2026-05-01",
@@ -69,6 +69,8 @@
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
   "observability": {
     "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": false },
+    "traces": { "enabled": false, "head_sampling_rate": 0 },
   },
   // ── Fixed production hostnames bound to THIS worker. ────────────────────────
   // Tenant routes deliberately do NOT live here. Cloudflare Worker Domains is the
@@ -112,7 +114,11 @@
       // `wrangler secret put --env staging`.
       "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media-staging" }],
-      "observability": { "enabled": true },
+      "observability": {
+        "enabled": true,
+        "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": false },
+        "traces": { "enabled": false, "head_sampling_rate": 0 },
+      },
       // Staging is workers.dev-only. Named envs inherit top-level routes unless
       // overridden, so this empty list keeps staging off production hostnames.
       "routes": [],

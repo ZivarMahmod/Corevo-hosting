@@ -1,6 +1,6 @@
 // OpenNext generates this module during build. The wrapper keeps its fetch
-// handler and adds the platform-owned booking scheduler. It queues reminder
-// events and drains refunds, but never wires the SMS/notification dispatcher.
+// handler and adds the platform-owned scheduler for expiry, reminders,
+// notification delivery, refunds and media cleanup.
 // @ts-ignore generated at build time
 import handler from './.open-next/worker.js'
 
