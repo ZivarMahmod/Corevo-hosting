@@ -118,11 +118,21 @@ function liveHtml({
 }
 
 const LIVE_ROBOTS = 'User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nAllow: /\nDisallow: /konto\n'
+const MOTIONTEST_ROBOTS = `# BEGIN Cloudflare Managed Content
+
+User-agent: *
+Content-Signal: search=yes,ai-train=no,use=reference
+Allow: /
+
+# END Cloudflare Managed Content
+`
 
 function successfulFetch({
   motionHtml = motiontestHtml(),
   liveMarkup = liveHtml(),
   liveRobots = LIVE_ROBOTS,
+  motionHeaders = { 'x-robots-tag': 'noindex, nofollow, noarchive' },
+  motionRobots = MOTIONTEST_ROBOTS,
   motionStatus = 200,
   staticBody = 'self.__next_f = self.__next_f || [];\n',
   staticContentType = 'application/javascript',
@@ -140,10 +150,14 @@ function successfulFetch({
     if (url === `${MOTIONTEST_ORIGIN}/` && method === 'OPTIONS') {
       return response('', { status: 405, headers: { allow: 'GET, HEAD' } })
     }
-    if (url === `${MOTIONTEST_ORIGIN}/` && method === 'HEAD') return response('')
-    if (url === `${MOTIONTEST_ORIGIN}/`) return response(motionHtml, { status: motionStatus })
+    if (url === `${MOTIONTEST_ORIGIN}/` && method === 'HEAD') {
+      return response('', { headers: motionHeaders })
+    }
+    if (url === `${MOTIONTEST_ORIGIN}/`) {
+      return response(motionHtml, { status: motionStatus, headers: motionHeaders })
+    }
     if (url === `${MOTIONTEST_ORIGIN}/robots.txt`) {
-      return response('User-agent: *\nDisallow: /\n', { contentType: 'text/plain' })
+      return response(motionRobots, { contentType: 'text/plain' })
     }
     if (url === MOTIONTEST_STATIC_URL) {
       return response(method === 'HEAD' ? '' : staticBody, {
@@ -426,6 +440,23 @@ describe('post-deploy motiontest verification', () => {
         log() {},
       }),
     ).rejects.toThrow(/noindex.*nofollow|robots meta/i)
+  })
+
+  it('requires the isolated Worker noindex header when Cloudflare manages robots.txt', async () => {
+    const verifier = await loadVerifier()
+    if (!verifier?.verifyMotiontestRelease) {
+      expect(verifier?.verifyMotiontestRelease).toBeTypeOf('function')
+      return
+    }
+    const liveBaseline = await captureBaseline(verifier)
+
+    await expect(
+      verifier.verifyMotiontestRelease({
+        fetchImpl: successfulFetch({ motionHeaders: {} }),
+        liveBaseline,
+        log() {},
+      }),
+    ).rejects.toThrow(/x-robots-tag.*noindex/i)
   })
 
   it('fails if a negative probe becomes public or an approved asset is unavailable', async () => {
