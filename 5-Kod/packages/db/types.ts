@@ -3918,6 +3918,7 @@ export type Database = {
         }
         Returns: Json
       }
+      archive_corevo_job: { Args: { p_msg_id: number }; Returns: boolean }
       atomic_erase_self_customer_account: {
         Args: { p_auth_user: string; p_tenant: string }
         Returns: {
@@ -4849,6 +4850,7 @@ export type Database = {
         Args: { p_expected_lock_version: number; p_tenant: string }
         Returns: string
       }
+      enqueue_corevo_job: { Args: { p_job: Json }; Returns: number }
       enqueue_offert_reply: {
         Args: {
           p_expected_version: number
@@ -4887,6 +4889,10 @@ export type Database = {
       expire_abandoned_pending_bookings: {
         Args: { p_ttl_min?: number }
         Returns: number
+      }
+      fail_corevo_job_for_review: {
+        Args: { p_msg_id: number; p_reason: string }
+        Returns: boolean
       }
       fail_customer_erasure_auth_cleanup: {
         Args: {
@@ -5412,6 +5418,16 @@ export type Database = {
           p_token_hash: string
         }
         Returns: boolean
+      }
+      read_corevo_jobs: {
+        Args: never
+        Returns: {
+          enqueued_at: string
+          message: Json
+          msg_id: number
+          read_ct: number
+          vt: string
+        }[]
       }
       record_booking_verification_delivery: {
         Args: { p_challenge: string; p_session_token: string }

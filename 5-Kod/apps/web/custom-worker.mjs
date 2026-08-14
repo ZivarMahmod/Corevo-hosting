@@ -1,6 +1,6 @@
 // OpenNext generates this module during build. The wrapper keeps its fetch
-// handler and adds the platform-owned scheduler for expiry, reminders,
-// notification delivery, refunds and media cleanup.
+// handler and adds the platform-owned scheduler for reminders, notification
+// delivery, refunds, media cleanup and generic jobs. pg_cron owns DB-only expiry.
 // @ts-ignore generated at build time
 import handler from './.open-next/worker.js'
 

@@ -5,8 +5,10 @@
 - Rena databas-sweeps (pending, shop-reservationer, slot-holds och retention)
   ligger i `pg_cron` via migration 0090.
 - Cloudflare Cron Triggers kör var 15:e minut och anropar de secret-gatade
-  rutterna för pending-expiry, reminders, notifications, payment-refunds och
-  media-cleanup. `custom-worker.mjs` återanvänder OpenNexts fetch-handler.
+  rutterna för reminders, notifications, payment-refunds, media-cleanup och
+  generic-jobs. `custom-worker.mjs` återanvänder OpenNexts fetch-handler.
+- `pending-expiry` ligger kvar som nödendpoint och GitHub-fallback, men ingår inte
+  i den normala Cloudflare-rundan eftersom live `pg_cron` redan äger svepet.
 - Migration 0102 lagrar ett PII-fritt heartbeat i `private`; en service-only RPC
   rapporterar stale/failure till `/api/cron/scheduler-health`.
 - GitHub `cron-booking.yml` behålls under verifieringsperioden som nödräls och
@@ -26,6 +28,11 @@ providertrafik; den köar bara durabla events. Notifications-rutten äger
 leveransdispatch för sin befintliga outbox. Refund-rutten får anropa Stripe men
 inte notifications-ruttens interna leveransägare. Ett icke-200 är alltid ett
 driftfel.
+
+Generic-jobs-rutten läser högst tio PGMQ-meddelanden med 120 sekunders
+visibility timeout. Lyckade effekter arkiveras. Okända kontrakt och jobb som
+misslyckats åtta gånger flyttas atomiskt till privat failed-review-historik.
+`pgmq_public` exponeras inte.
 
 ## Cloudflare Cron Triggers
 
