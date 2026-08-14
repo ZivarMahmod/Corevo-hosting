@@ -50,6 +50,9 @@
     // Do not change here: controlled dry-run/live activation uses an explicit
     // deployment decision and the runbook in docs/ops/sms-activation.md.
     "SMS_DELIVERY_MODE": "off",
+    // Platform Billing is a separate Stripe account-scope from Connect. `test`
+    // requires a test key; `draft` requires a live key. Neither mode finalizes.
+    "STRIPE_PLATFORM_BILLING_MODE": "off",
     // Public origin of the R2 media bucket (r2.dev). lib/r2/upload.ts builds stored
     // image URLs from this. Production later: swap to a custom subdomain
     // (media.corevo.se) and keep stored links from breaking.
@@ -137,6 +140,7 @@
         "NOTIFICATIONS_FROM": "Corevo <booking@corevo.se>",
         // Staging is also physically off; provider dry-run requires Zivar's approval.
         "SMS_DELIVERY_MODE": "off",
+        "STRIPE_PLATFORM_BILLING_MODE": "off",
         "R2_PUBLIC_BASE_URL": "https://staging-media-required.invalid",
         "DOMAIN_PROVISIONING_ENABLED": "false",
       },

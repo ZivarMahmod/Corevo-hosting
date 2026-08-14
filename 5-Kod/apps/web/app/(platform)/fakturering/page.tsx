@@ -1,12 +1,20 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { billingUnderlag } from '@/lib/platform/metrics'
-import { BILLING_MODEL_LABELS, formatPrice, type BillingModel } from '@/lib/platform/billing'
+import { billingPeriodStatuses, billingUnderlag } from '@/lib/platform/metrics'
+import {
+  billingPeriod,
+  BILLING_MODEL_LABELS,
+  formatPrice,
+  isClosedBillingPeriod,
+  type BillingModel,
+} from '@/lib/platform/billing'
 import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/platform/platform.module.css'
 import { requirePlatformOperator } from '@/lib/auth/session'
 import { loadOwnPartnerBilling } from '@/lib/platform/partners'
 import { PartnerBillingClientLazy } from '@/components/platform/partners/PartnerClientsLazy'
+import { BillingDraftButton } from '@/components/platform/BillingDraftButton'
+import { getPlatformBillingMode } from '@/lib/stripe/platform-billing'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Fakturering' }
@@ -46,11 +54,14 @@ export default async function FaktureringPage({
     )
   }
   const sp = await searchParams
-  const now = new Date()
-  const year = Number(sp.year) || now.getUTCFullYear()
-  const month = Number(sp.month) || now.getUTCMonth() + 1
+  const { year, month } = billingPeriod(sp.year, sp.month)
 
-  const { rows, totalCents } = await billingUnderlag(year, month)
+  const [{ rows, totalCents }, periods] = await Promise.all([
+    billingUnderlag(year, month),
+    billingPeriodStatuses(year, month),
+  ])
+  const billingMode = getPlatformBillingMode()
+  const periodClosed = isClosedBillingPeriod(year, month)
   const prev = clampMonth(year, month - 1)
   const next = clampMonth(year, month + 1)
   const label = `${MONTHS_SV[month - 1]} ${year}`
@@ -59,9 +70,8 @@ export default async function FaktureringPage({
     <section className="portal-section">
       <PageHead eyebrow="Plattform" title="Faktureringsunderlag" />
       <p className="prose">
-        FLÖDE 2 — läs-vy som Corevo fakturerar manuellt från. Per kund per kalendermånad:
-        genomförda bokningar (exkl. avbokade/uteblivna) × avgift, eller fast månadsbelopp. Ingen
-        Stripe-koppling.
+        Per kund och kalendermånad: genomförda bokningar × avgift, eller fast månadsbelopp.
+        Stripe-läge: <strong>{billingMode}</strong>.
       </p>
 
       <div className={styles.filters}>
@@ -83,11 +93,17 @@ export default async function FaktureringPage({
               <th className={styles.right}>Genomförda</th>
               <th className={styles.right}>Avgift</th>
               <th className={styles.right}>Underlag</th>
+              <th className={styles.right}>Stripe-utkast</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.tenantId}>
+            {rows.map((r) => {
+              const period = periods.get(r.tenantId)
+              const status = billingMode === 'test' ? period?.testStatus : period?.status
+              const errorCode = billingMode === 'test'
+                ? period?.errorCode === 'test_draft_failed' ? period.errorCode : null
+                : period?.errorCode === 'live_draft_failed' ? period.errorCode : null
+              return <tr key={r.tenantId}>
                 <td>
                   <Link href={`/kunder/${r.tenantId}`}>
                     <code className={styles.code}>{r.slug}</code>
@@ -104,11 +120,21 @@ export default async function FaktureringPage({
                 <td className={`${styles.right}`} style={{ fontWeight: 700 }}>
                   {formatPrice(r.feeCents)}
                 </td>
+                <td className={styles.right}>
+                  <BillingDraftButton
+                    tenantId={r.tenantId}
+                    year={year}
+                    month={month}
+                    disabled={billingMode === 'off' || (!period && r.feeCents <= 0) || !periodClosed}
+                    existingStatus={status ?? null}
+                    errorCode={errorCode}
+                  />
+                </td>
               </tr>
-            ))}
+            })}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className={styles.muted}>
+                <td colSpan={6} className={styles.muted}>
                   Inga kunder att fakturera för {label}.{' '}
                   <Link href="/kunder/ny">Skapa en kund →</Link>
                 </td>
@@ -123,12 +149,13 @@ export default async function FaktureringPage({
               <td className={styles.right} style={{ fontWeight: 800 }}>
                 {formatPrice(totalCents)}
               </td>
+              <td />
             </tr>
           </tfoot>
         </table>
       </div>
       <p className={styles.hint}>
-        Startavgift (engångs) faktureras separat per kund och ingår inte i månadsunderlaget ovan.
+        Utkast finaliseras, skickas eller debiteras aldrig automatiskt. Startavgift ingår inte.
       </p>
     </section>
   )

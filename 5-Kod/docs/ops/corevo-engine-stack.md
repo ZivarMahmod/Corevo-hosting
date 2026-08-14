@@ -54,5 +54,33 @@ port eller konfigurationsfil är inte livebevis.
 - Connect-klient, Connect-webhook och direct charges får inte ändras av
   billing-rollback.
 
+### Aktivering
+
+1. Skapa en Stripe-webhook för **Your account**, inte Connected accounts, mot
+   `https://booking.corevo.se/api/stripe/platform-billing/webhook`.
+2. Begränsa endpointen till `invoice.created`, `invoice.updated`,
+   `invoice.finalized`, `invoice.paid`, `invoice.payment_failed`,
+   `invoice.voided`, `invoice.marked_uncollectible` och `invoice.deleted`.
+3. Sätt Worker-secrets `STRIPE_PLATFORM_BILLING_SECRET_KEY` och
+   `STRIPE_PLATFORM_BILLING_WEBHOOK_SECRET`. Behåll dessutom testnyckeln som
+   `STRIPE_PLATFORM_BILLING_TEST_SECRET_KEY` under övergången till `draft`, så
+   redan köade testevents kan stämmas av med rätt Stripe-konto. De får inte återanvända
+   Connect-webhookens secret.
+4. Sätt mode `test`, deploya och skapa ett testutkast från `/fakturering`.
+   Kontrollera ledgerbelopp, Stripe-total, tenant, period, org.nr och att
+   fakturan är `draft` med `auto_advance=false`.
+5. Kontrollera att duplicerade och omvända webhookevent ger en ledger-effekt,
+   att `corevo_jobs` arkiveras och att failed-review är tom.
+6. Före varje byte av Billing-mode, API-key eller webhook-secret: verifiera att
+   `pgmq.q_corevo_jobs` är tom och att `private.corevo_job_failed_review` saknar
+   billingfel. Vänta in två gröna scheduler-cykler.
+7. Byt till `draft` först när live-kundens juridiska fakturauppgifter har
+   verifierats i Stripe. Live-key krävs; kodgrinden nekar testnyckel i detta
+   läge.
+
+Den aktiva Workern hade 2026-08-14 inga Stripe-secrets. `off` är därför det
+enda verifierade produktionsläget tills stegen ovan har genomförts. V1 har
+ingen kodväg för finalize, send eller pay.
+
 Additiva tabeller, events och köhistorik raderas inte vid rollback. Eventuell
 schemajustering görs med en ny framåtriktad migration efter read-only inventering.

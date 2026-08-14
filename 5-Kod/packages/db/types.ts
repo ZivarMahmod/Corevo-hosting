@@ -3883,6 +3883,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      attach_platform_billing_draft: {
+        Args: {
+          p_customer_id: string
+          p_invoice_id: string | null
+          p_invoice_status: string | null
+          p_livemode: boolean
+          p_period: string
+        }
+        Returns: boolean
+      }
       admin_customer_rows: {
         Args: { p_customer?: string; p_tenant: string }
         Returns: {
@@ -5120,6 +5130,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_platform_billing_error: {
+        Args: { p_error_code: string; p_period: string }
+        Returns: boolean
+      }
       mark_shop_order_paid: { Args: { p_order_id: string }; Returns: undefined }
       offert_reply_delivery_target: {
         Args: { p_lease_token: string; p_outbox: string }
@@ -5193,6 +5207,26 @@ export type Database = {
           last_at: string
           tenant_id: string
           total: number
+        }[]
+      }
+      platform_billing_periods: {
+        Args: { p_month: number; p_year: number }
+        Returns: {
+          billing_model: string
+          completed_bookings: number
+          currency: string
+          id: string
+          last_error_code: string | null
+          period_start: string
+          stripe_customer_id: string | null
+          stripe_invoice_id: string | null
+          stripe_invoice_status: string | null
+          stripe_test_customer_id: string | null
+          stripe_test_invoice_id: string | null
+          stripe_test_invoice_status: string | null
+          tenant_id: string
+          total_cents: number
+          unit_amount_cents: number
         }[]
       }
       platform_create_customer: {
@@ -5419,6 +5453,39 @@ export type Database = {
         }
         Returns: boolean
       }
+      reconcile_platform_billing_invoice: {
+        Args: {
+          p_customer_id: string | null
+          p_invoice_id: string
+          p_invoice_status: string
+          p_livemode: boolean
+          p_total_cents: number | null
+        }
+        Returns: boolean
+      }
+      platform_billing_webhook_event: {
+        Args: { p_event_id: string }
+        Returns: Json
+      }
+      platform_billing_period: {
+        Args: { p_period_start: string; p_tenant: string }
+        Returns: {
+          currency: string
+          id: string
+          last_error_code: string | null
+          stripe_customer_id: string | null
+          stripe_invoice_id: string | null
+          stripe_invoice_status: string | null
+          stripe_test_customer_id: string | null
+          stripe_test_invoice_id: string | null
+          stripe_test_invoice_status: string | null
+          total_cents: number
+        }[]
+      }
+      platform_billing_completed_counts: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
       read_corevo_jobs: {
         Args: never
         Returns: {
@@ -5441,6 +5508,15 @@ export type Database = {
           p_tenant: string
         }
         Returns: Json
+      }
+      record_platform_billing_event_and_enqueue: {
+        Args: {
+          p_event_id: string
+          p_event_type: string
+          p_livemode: boolean
+          p_object_id: string
+        }
+        Returns: boolean
       }
       record_scheduler_heartbeat: {
         Args: {
@@ -5559,6 +5635,26 @@ export type Database = {
           status: string
           url: string | null
           variants: Json
+        }[]
+      }
+      reserve_platform_billing_period: {
+        Args: {
+          p_billing_model: string
+          p_completed_bookings: number
+          p_currency?: string
+          p_period_start: string
+          p_tenant: string
+          p_total_cents: number
+          p_unit_amount_cents: number
+        }
+        Returns: {
+          id: string
+          stripe_customer_id: string | null
+          stripe_invoice_id: string | null
+          stripe_invoice_status: string | null
+          stripe_test_customer_id: string | null
+          stripe_test_invoice_id: string | null
+          stripe_test_invoice_status: string | null
         }[]
       }
       reserve_shop_order: {

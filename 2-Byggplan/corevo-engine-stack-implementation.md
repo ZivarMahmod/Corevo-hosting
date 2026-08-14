@@ -57,17 +57,32 @@ inte verifierade och billing ska därför vara `off` som default.
 - Låt `pg_cron` äga pending-expiry efter verifierade DB-körningar; endpointen
   och GitHub-fallbacken behålls som nödräls under stabilisering.
 
+Produktionsbevis 2026-08-14: migration `20260814092510`, main/deploy-SHA
+`6798170a27ae268fc6961f730445152fffb0e938`. Första post-deploy-cykeln
+`a62d4b99-be0c-4479-b091-db6ced5197a1` lyckades `10:15:10Z` med tom kö,
+tom failed-review-ledger och inga aktiva notification/refund-jobb. Den andra
+oberoende cykeln `c7bfcaa5-fc46-4e69-b936-06595437f4eb` lyckades `10:30:09Z`
+med samma gröna healthvärden. Fas 3 är accepterad.
+
 ## Fas 4 — Stripe fakturautkast
 
 - Behåll Connect-klient och Connect-webhook oförändrade.
 - Inför separat plattforms-Billing-klient, webhook-secret och mode
   `off|test|draft`; plattformsanrop saknar connected-account-scope.
 - Skapa privat periodledger med unik tenant/period och prissnapshot.
-- Återanvänd `monthlyFeeCents`; operatören skapar endast utkast.
+- Återanvänd `monthlyFeeCents`; exakta bokningsantal aggregeras i DB och endast
+  avslutade månader kan låsas. Operatören skapar endast utkast.
 - Deduplikera webhookevent, enqueuea reconcile atomiskt och låt konsumenten
-  hämta aktuellt Stripeobjekt innan ledgern uppdateras.
+  hämta aktuellt Stripeobjekt innan ledgern uppdateras. Events för fakturor som
+  inte finns i Corevos ledger kvitteras utan att förgifta kön.
 - Finalisering, utskick, debitering, subscriptions, usage meters och automatisk
   accessavstängning ingår inte.
+
+Implementationen är fail-closed med `off` i Wrangler. Test- och live-ID:n
+lagras separat i samma unika tenant/period-rad, så testkörning kan följas av
+ett liveutkast utan att skapa en parallell periodledger. Den aktiva Workern
+saknade alla Stripe-secrets vid inventeringen 2026-08-14; testaktivering görs
+först när de två separata Billing-secretsen finns.
 
 ## Grind per fas
 

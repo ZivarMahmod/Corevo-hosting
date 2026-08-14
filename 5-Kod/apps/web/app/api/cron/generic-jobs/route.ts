@@ -1,5 +1,6 @@
 import { dispatchGenericJobs } from '@/lib/jobs/generic-jobs'
 import { authorizedCronRequest } from '@/lib/security/cron-auth'
+import { reconcilePlatformBillingJob } from '@/lib/stripe/platform-billing'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,9 +10,9 @@ async function run(req: Request): Promise<Response> {
   }
 
   try {
-    // Stripe Billing installs the only V1 handler in the next engine phase. Until
-    // then no producer exists, and any manually queued valid job remains retryable.
-    const result = await dispatchGenericJobs({})
+    const result = await dispatchGenericJobs({
+      'stripe.billing.reconcile': reconcilePlatformBillingJob,
+    })
     if (result.retried > 0 || result.reviewRequired > 0) {
       return Response.json({ error: 'job_review_required', ...result }, { status: 503 })
     }
