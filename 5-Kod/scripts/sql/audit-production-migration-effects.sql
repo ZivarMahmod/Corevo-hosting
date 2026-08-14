@@ -137,14 +137,17 @@ with checks(version, check_name, passed, evidence) as (
       to_regprocedure(
         'public.create_public_booking(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
       ) is not null
+      and to_regprocedure(
+        'private.create_public_booking_goal87_impl(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
+      ) is not null
       and pg_get_functiondef(to_regprocedure(
-        'public.create_public_booking(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
+        'private.create_public_booking_goal87_impl(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
       )) ilike '%exclusion_violation%'
       and pg_get_functiondef(to_regprocedure(
-        'public.create_public_booking(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
+        'private.create_public_booking_goal87_impl(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
       )) ilike '%request_id%return%v_id%'
       ,
-      'create_public_booking contains retry/idempotency handler'
+      'private booking implementation contains retry/idempotency handler'
     ),
     (
       '0065',
@@ -206,7 +209,7 @@ with checks(version, check_name, passed, evidence) as (
       '0068',
       'automatic confirmation for pay-on-site bookings',
       pg_get_functiondef(to_regprocedure(
-        'public.create_public_booking(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
+        'private.create_public_booking_goal87_impl(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
       )) ilike '%require_booking_approval%payments_enabled%stripe_charges_enabled%'
       and not exists (
         select 1
@@ -593,3 +596,24 @@ select
       and pg_get_functiondef(p.oid) like '%.boka.corevo.se%'
   ) as passed,
   'tenant URL functions use the exact <slug>.corevo.se host, never the retired Boka branch' as evidence;
+
+select
+  '20260810090000' as version,
+  'motiontest tenant slug reserved' as check_name,
+  pg_get_functiondef(to_regprocedure(
+    'private.customer_portal_booking_origin(uuid)'
+  )) ilike '%motiontest%'
+  and not has_function_privilege(
+    'anon', 'private.customer_portal_booking_origin(uuid)', 'EXECUTE'
+  )
+  and not has_function_privilege(
+    'authenticated', 'private.customer_portal_booking_origin(uuid)', 'EXECUTE'
+  )
+  and not has_function_privilege(
+    'service_role', 'private.customer_portal_booking_origin(uuid)', 'EXECUTE'
+  )
+  and not exists (select 1 from public.tenants where slug = 'motiontest')
+  and not exists (
+    select 1 from public.tenant_domains where domain = 'motiontest.corevo.se'
+  ) as passed,
+  'fallback origin rejects motiontest; no tenant or tenant-domain collision exists' as evidence;

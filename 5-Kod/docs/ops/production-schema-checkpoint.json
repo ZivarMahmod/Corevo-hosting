@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "20260805034145",
-  "observedHistoryLatest": "20260805034145",
+  "requiredLatest": "20260810090000",
+  "observedHistoryLatest": "20260810090000",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-08-05T04:11:34Z",
+  "verifiedAt": "2026-08-14T07:14:50Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:d678a3dbd0608cc30294235db1065c860a315bccd079c9ca57906842bc376224",
-  "verificationEvidence": "Supabase production history parity (168 local = 168 remote), full read-only migration-effects audit, exact Corevo host function checks, and security advisor review verified on 2026-08-05",
+  "migrationFingerprint": "sha256:3ba99d00e46b901bbeeecedd970a7710b818694e3f6cb7fe6b839ced6b3cfd44",
+  "verificationEvidence": "Supabase production history parity (169 local = 169 remote), read-only migration-effects audit with 0064/0068 owner diagnostics, exact Corevo host and motiontest reservation checks, and role grant verification on 2026-08-14",
   "reason": null
 }
