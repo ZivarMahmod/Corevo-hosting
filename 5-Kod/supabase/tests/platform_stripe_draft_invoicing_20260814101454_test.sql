@@ -191,9 +191,9 @@ begin
       'b1400000-0000-4000-8000-000000000001',
       '2026-07-01',
       'per_booking',
-      3,
+      4,
       500,
-      1400,
+      2000,
       'sek'
     );
     raise exception 'billing_snapshot_mismatch_accepted';
