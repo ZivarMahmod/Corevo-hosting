@@ -7,7 +7,7 @@ import type { Service } from '@/lib/tenant-data'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { resolveThemeContent } from '@/lib/storefront/theme-content'
 import { THEME_LOADS_LAYOUT_MODULES, THEME_OWNS_MODULES } from './runtime'
-import { FreshCutFooter, freshCutNavigationLinks } from './FreshCutChrome'
+import { FreshCutFooter, FreshCutWordmark, freshCutNavigationLinks } from './FreshCutChrome'
 import { FreshCutLayout } from './FreshCutLayout'
 
 const EXTERNAL_URL = 'https://www.bokadirekt.se/places/freshcut-123'
@@ -107,6 +107,15 @@ function renderFreshCutWithOverrides() {
 }
 
 describe('FreshCut v2 customer-locked website', () => {
+  it('owns the FreshCut wordmark in one reusable chrome component', () => {
+    expect(renderToStaticMarkup(<FreshCutWordmark name="FreshCut" />)).toBe(
+      'FRESH<span>CUT</span><i>.</i>',
+    )
+    expect(renderToStaticMarkup(<FreshCutWordmark name="Annan salong" />)).toBe(
+      'Annan salong<i>.</i>',
+    )
+  })
+
   it('loads booking state without taking ownership of future generic modules', () => {
     expect(THEME_LOADS_LAYOUT_MODULES.has('freshcut')).toBe(true)
     expect(THEME_OWNS_MODULES.has('freshcut')).toBe(false)

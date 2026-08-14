@@ -29,7 +29,7 @@ describe('reserved host parity', () => {
   it('keeps the SQL fallback slug denylist fail-closed', () => {
     const sql = read(
       new URL(
-        '../../../../supabase/migrations/0122_customer_portal_rebook_origin.sql',
+        '../../../../supabase/migrations/20260810090000_reserve_motiontest_tenant_slug.sql',
         import.meta.url,
       ),
     )

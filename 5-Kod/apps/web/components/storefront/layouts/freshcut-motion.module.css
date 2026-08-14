@@ -1,0 +1,1128 @@
+.page {
+  --motion-ink: #171918;
+  --motion-ink-soft: #252826;
+  --motion-stone: #d8d6cf;
+  --motion-paper: #ebe8df;
+  --motion-warm: #a78f6d;
+  --motion-line: rgb(23 25 24 / 24%);
+  --motion-light-line: rgb(235 232 223 / 30%);
+
+  color: var(--motion-ink);
+  background: var(--motion-stone);
+  font-family: var(--font-source-sans), 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+.page :focus-visible {
+  outline: 3px solid var(--motion-paper);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px var(--motion-ink);
+}
+
+.page a {
+  color: inherit;
+}
+
+.cinematic {
+  position: relative;
+  color: var(--motion-paper);
+  background: var(--motion-ink);
+}
+
+.motionExperience {
+  --motion-progress: 0;
+  --motion-visual-progress: 0;
+
+  position: relative;
+  background: var(--motion-ink);
+}
+
+.motionExperienceControls {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 22px;
+  min-height: 58px;
+  padding: 10px clamp(16px, 3vw, 42px);
+  border-bottom: 1px solid var(--motion-light-line);
+  color: var(--motion-paper);
+  background: rgb(23 25 24 / 94%);
+  backdrop-filter: blur(12px);
+}
+
+.motionExperienceNav,
+.motionExperienceActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+}
+
+.motionExperienceActions {
+  justify-content: flex-end;
+}
+
+.motionExperienceNav a,
+.motionExperienceActions a,
+.motionExperiencePause {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  color: rgb(235 232 223 / 68%);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.motionExperienceNav a[aria-current='step'],
+.motionExperienceNav a:hover,
+.motionExperienceActions a:hover,
+.motionExperiencePause:hover {
+  border-bottom-color: currentcolor;
+  color: var(--motion-warm);
+}
+
+.motionExperienceActions .primaryButton,
+.motionExperienceActions .primaryButton:hover {
+  min-height: 44px;
+  padding: 12px 18px;
+  border: 1px solid var(--motion-warm);
+  color: var(--motion-ink);
+  background: var(--motion-warm);
+}
+
+.motionExperiencePause {
+  cursor: pointer;
+}
+
+.motionExperiencePause:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.motionExperienceStage {
+  position: relative;
+  min-width: 0;
+}
+
+.motionExperience[data-motion-mode='preparing'],
+.motionExperience[data-motion-mode='enhanced'] {
+  height: calc(100svh + var(--motion-scroll-distance-desktop));
+}
+
+.motionExperience[data-motion-mode='preparing'] .motionExperienceStage,
+.motionExperience[data-motion-mode='enhanced'] .motionExperienceStage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: clip;
+  isolation: isolate;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.motionScene {
+  position: relative;
+  display: grid;
+  min-height: 86svh;
+  overflow: clip;
+  background: var(--motion-ink-soft);
+  scroll-margin-top: 64px;
+  transform-style: preserve-3d;
+}
+
+.motionExperience[data-motion-mode='preparing'] .motionScene,
+.motionExperience[data-motion-mode='enhanced'] .motionScene {
+  position: absolute;
+  inset: 0;
+  min-height: 100%;
+}
+
+.motionExperience[data-motion-mode='preparing'] .motionScene {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.motionExperience[data-motion-mode='preparing'] .motionScene[data-motion-scene='hero'] {
+  visibility: visible;
+  opacity: 1;
+}
+
+.sceneVisual {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  transform-style: preserve-3d;
+}
+
+.sceneLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='hero']
+  .motionScene[data-motion-scene='hero']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='entrance']
+  .motionScene[data-motion-scene='entrance']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='chair']
+  .motionScene[data-motion-scene='chair']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='craft']
+  .motionScene[data-motion-scene='craft']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='range']
+  .motionScene[data-motion-scene='range']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='return']
+  .motionScene[data-motion-scene='return']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='mirror']
+  .motionScene[data-motion-scene='mirror']
+  .sceneLayer,
+.motionExperience:is([data-motion-mode='preparing'], [data-motion-mode='enhanced'])[data-motion-scene='team']
+  .motionScene[data-motion-scene='team']
+  .sceneLayer {
+  will-change: transform;
+}
+
+.sceneMediaLayer {
+  overflow: hidden;
+  background-color: #30332f;
+}
+
+.scenePosterPicture,
+.scenePoster {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.scenePoster {
+  object-fit: cover;
+  object-position: var(--motion-scene-crop);
+}
+
+.sceneVideo {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--motion-scene-crop);
+}
+
+.sceneVideo[data-motion-media-state='fallback'] {
+  opacity: 0;
+}
+
+.sceneSideScrim {
+  background: linear-gradient(
+    90deg,
+    rgb(17 18 15 / 80%) 0%,
+    rgb(17 18 15 / 10%) 58%,
+    rgb(17 18 15 / 42%) 100%
+  );
+}
+
+.sceneBottomScrim {
+  background: linear-gradient(0deg, rgb(17 18 15 / 64%) 0%, transparent 52%);
+}
+
+.sceneCopy {
+  position: relative;
+  z-index: 4;
+  align-self: end;
+  width: min(590px, 46vw);
+  margin: clamp(22px, 4vw, 64px);
+  padding: clamp(22px, 3vw, 44px);
+  border: 1px solid var(--motion-light-line);
+  background: rgb(23 25 24 / 86%);
+  backdrop-filter: blur(10px);
+}
+
+.sceneCopy h2 {
+  margin: 14px 0 18px;
+  font-size: clamp(42px, 5.4vw, 86px);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+.sceneCopy > p:not(.posterIndex) {
+  max-width: 520px;
+  margin: 0;
+  color: rgb(235 232 223 / 72%);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.sceneCopy > a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 20px;
+  padding-block: 8px;
+  border-bottom: 1px solid currentcolor;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.motionScene[data-motion-copy-placement='right'] .sceneCopy {
+  justify-self: end;
+}
+
+.businessPanel {
+  position: relative;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 760px);
+  min-height: 86svh;
+  padding: clamp(40px, 7vw, 104px) clamp(24px, 6vw, 88px);
+  color: var(--motion-paper);
+  background: var(--motion-ink);
+}
+
+.motionExperience[data-motion-mode='preparing'] .businessPanel,
+.motionExperience[data-motion-mode='enhanced'] .businessPanel {
+  position: absolute;
+  top: 58px;
+  bottom: 0;
+  left: 0;
+  width: min(47vw, 720px);
+  min-height: 0;
+}
+
+.businessPanel h1 {
+  max-width: 620px;
+  margin: 20px 0 18px;
+  font-size: clamp(54px, 6vw, 98px);
+  font-weight: 750;
+  line-height: 0.88;
+  letter-spacing: -0.065em;
+  text-wrap: balance;
+}
+
+.rangeLabels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rangeLabels li {
+  padding: 8px 10px;
+  border: 1px solid var(--motion-light-line);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mirrorScene {
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: clamp(28px, 5vw, 76px);
+  align-items: center;
+  padding: clamp(28px, 5vw, 78px);
+  background: #202220;
+}
+
+.mirrorScene .sceneMirrorFrame {
+  z-index: 2;
+  width: min(100%, 640px);
+}
+
+.mirrorScene .sceneCopy {
+  grid-column: 2;
+  align-self: center;
+  justify-self: end;
+  width: 100%;
+  margin: 0;
+}
+
+.motionExperience[data-motion-mode='static'] .heroScene {
+  min-height: 56svh;
+}
+
+.motionExperience[data-motion-mode='static'] .businessPanel {
+  min-height: auto;
+}
+
+.wordmark {
+  margin: 0 0 auto;
+  font-size: clamp(22px, 2.2vw, 34px);
+  font-weight: 900;
+  letter-spacing: -0.075em;
+}
+
+.wordmark span,
+.wordmark i {
+  color: var(--motion-warm);
+  font-style: normal;
+}
+
+@media (min-width: 768px) {
+  .motionExperience[data-motion-mode='preparing'] .businessPanel,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel {
+    top: 0;
+    padding-block: clamp(32px, 4svh, 44px);
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .wordmark,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .wordmark {
+    margin-bottom: clamp(18px, 3svh, 28px);
+  }
+}
+
+.kicker,
+.posterIndex,
+.sectionHeader > p,
+.results > div > p,
+.about > p:first-child,
+.contact > div > p {
+  margin: 0;
+  color: var(--motion-warm);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.lede {
+  max-width: 520px;
+  margin: 0;
+  color: rgb(235 232 223 / 78%);
+  font-size: clamp(17px, 1.45vw, 22px);
+  line-height: 1.45;
+}
+
+.primaryActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+  margin-top: 30px;
+}
+
+.primaryActions > a:not(.primaryButton),
+.textBooking {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid currentcolor;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primaryButton,
+.darkBooking,
+.locationBooking {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border: 1px solid var(--motion-warm);
+  color: var(--motion-ink);
+  background: var(--motion-warm);
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.priceRail {
+  margin-top: 16px;
+  border-top: 1px solid var(--motion-light-line);
+}
+
+.priceRailRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--motion-light-line);
+  font-size: 13px;
+}
+
+.priceRailRow span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.twoSalons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 5px 20px;
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.twoSalons strong {
+  grid-column: 1 / -1;
+  color: var(--motion-warm);
+  text-transform: uppercase;
+}
+
+@media (min-width: 1024px) and (max-height: 900px) {
+  .motionExperience[data-motion-mode='preparing'] .businessPanel,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel {
+    padding-block: clamp(18px, 2.5svh, 24px);
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .wordmark,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .wordmark {
+    margin-bottom: clamp(10px, 1.5svh, 14px);
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel h1,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel h1 {
+    margin: clamp(8px, 1.2svh, 12px) 0 clamp(8px, 1svh, 10px);
+    font-size: clamp(52px, 5vw, 72px);
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .primaryActions,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .primaryActions {
+    margin-top: clamp(14px, 2svh, 18px);
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .priceRail,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .priceRail {
+    margin-top: 10px;
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .priceRailRow,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .priceRailRow {
+    padding-block: 6px;
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .businessPanel .twoSalons,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel .twoSalons {
+    margin-top: 10px;
+  }
+}
+
+.textBooking {
+  display: inline-flex;
+  border-width: 0 0 1px;
+  color: inherit;
+  background: transparent;
+}
+
+.sceneMirrorFrame {
+  inset: 8% auto;
+  aspect-ratio: 4 / 5;
+  width: min(42vw, 640px);
+  max-height: 76svh;
+  margin-inline: auto;
+  border: clamp(12px, 2vw, 30px) solid #665c4d;
+  outline: 1px solid #aa9a81;
+  outline-offset: -7px;
+}
+
+.sceneMirrorFrame::after {
+  position: absolute;
+  inset: 4%;
+  border: 1px solid rgb(235 232 223 / 16%);
+  content: '';
+  pointer-events: none;
+}
+
+.normalPage {
+  background: var(--motion-stone);
+}
+
+.services,
+.salons,
+.results,
+.about,
+.contact {
+  scroll-margin-top: 72px;
+}
+
+.services,
+.salons {
+  padding: clamp(64px, 9vw, 132px) max(22px, calc(50vw - 690px));
+}
+
+.sectionHeader {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.35fr) minmax(280px, 1fr) minmax(220px, 0.55fr);
+  gap: 28px;
+  align-items: end;
+  margin-bottom: 46px;
+}
+
+.sectionHeader h2,
+.results h2,
+.about h2,
+.contact h2 {
+  margin: 0;
+  font-size: clamp(48px, 7vw, 104px);
+  line-height: 0.88;
+  letter-spacing: -0.06em;
+}
+
+.sectionHeader > span {
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.serviceList {
+  border-top: 1px solid var(--motion-line);
+}
+
+.serviceRow {
+  border-bottom: 1px solid var(--motion-line);
+}
+
+.serviceBooking {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 90px 90px 74px;
+  gap: 18px;
+  align-items: center;
+  min-height: 78px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.serviceBooking:hover,
+.serviceBooking:focus-visible {
+  background: var(--motion-paper);
+}
+
+.rowIndex,
+.rowDuration,
+.rowAction {
+  color: rgb(23 25 24 / 72%);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.rowName {
+  font-size: clamp(17px, 2vw, 25px);
+  font-weight: 720;
+}
+
+.rowAction {
+  justify-self: end;
+  border-bottom: 1px solid currentcolor;
+  font-weight: 750;
+}
+
+.prototypeServices {
+  margin-top: 44px;
+  border-top: 1px solid var(--motion-line);
+  border-bottom: 1px solid var(--motion-line);
+}
+
+.prototypeServices summary {
+  padding: 20px 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.prototypeServices > p {
+  max-width: 620px;
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+
+.prototypeServices ul {
+  margin: 0;
+  padding: 0 0 18px;
+  list-style: none;
+}
+
+.prototypeServices li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 90px;
+  gap: 18px;
+  padding: 10px 0;
+  border-top: 1px solid var(--motion-line);
+}
+
+.prototypeServices small {
+  justify-self: end;
+  color: var(--motion-warm);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.salons {
+  color: var(--motion-paper);
+  background: var(--motion-ink);
+}
+
+.locationList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--motion-light-line);
+  border-left: 1px solid var(--motion-light-line);
+}
+
+.location {
+  min-height: 330px;
+  padding: clamp(24px, 4vw, 58px);
+  border-right: 1px solid var(--motion-light-line);
+  border-bottom: 1px solid var(--motion-light-line);
+}
+
+.location > p {
+  margin: 0 0 52px;
+  color: var(--motion-warm);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.location h3 {
+  margin: 0 0 14px;
+  font-size: clamp(27px, 3.2vw, 48px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.location address {
+  margin-bottom: 34px;
+  color: rgb(235 232 223 / 66%);
+  font-style: normal;
+}
+
+.locationBooking {
+  color: var(--motion-ink);
+}
+
+.bookingPending {
+  display: inline-block;
+  padding: 12px 0;
+  border-top: 1px solid var(--motion-light-line);
+  color: rgb(235 232 223 / 56%);
+  font-size: 13px;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr) auto;
+  gap: 42px;
+  align-items: end;
+  padding: clamp(72px, 10vw, 148px) max(22px, calc(50vw - 690px));
+  background: var(--motion-warm);
+}
+
+.results ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.results li {
+  padding: 8px 13px;
+  border: 1px solid rgb(23 25 24 / 46%);
+  border-right: 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.results li:last-child {
+  border-right: 1px solid rgb(23 25 24 / 46%);
+}
+
+.darkBooking {
+  border-color: var(--motion-ink);
+  color: var(--motion-paper);
+  background: var(--motion-ink);
+}
+
+.about {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.25fr) minmax(300px, 0.85fr) minmax(240px, 0.6fr);
+  gap: 34px;
+  align-items: start;
+  padding: clamp(72px, 10vw, 148px) max(22px, calc(50vw - 690px));
+}
+
+.about > p:not(:first-child) {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.about .textBooking {
+  grid-column: 3;
+  justify-self: start;
+  margin-top: 24px;
+}
+
+.contact {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(250px, 0.6fr) auto;
+  gap: 40px;
+  align-items: end;
+  padding: clamp(72px, 10vw, 148px) max(22px, calc(50vw - 690px));
+  color: var(--motion-paper);
+  background: var(--motion-ink-soft);
+}
+
+.contactFacts {
+  display: grid;
+  gap: 10px;
+}
+
+.contactFacts address {
+  font-style: normal;
+}
+
+.contactFacts a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  width: fit-content;
+  text-decoration: none;
+  border-bottom: 1px solid currentcolor;
+}
+
+.mobileBooking {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .motionExperienceControls {
+    position: relative;
+    min-height: 0;
+    padding: 8px 14px;
+    backdrop-filter: none;
+  }
+
+  .motionExperienceNav,
+  .motionExperienceActions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 4px 10px;
+  }
+
+  .motionExperienceNav a,
+  .motionExperienceActions a,
+  .motionExperiencePause {
+    min-height: 44px;
+    padding: 10px 0;
+    font-size: 9px;
+  }
+
+  .motionExperience[data-motion-mode='preparing'],
+  .motionExperience[data-motion-mode='enhanced'] {
+    height: calc(100svh + var(--motion-scroll-distance-mobile));
+  }
+
+  .motionExperience[data-motion-mode='preparing'] .motionExperienceStage,
+  .motionExperience[data-motion-mode='enhanced'] .motionExperienceStage {
+    height: 100svh;
+  }
+
+  .sectionHeader,
+  .results,
+  .about,
+  .contact {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sectionHeader > p,
+  .results > div,
+  .about > p:first-child,
+  .contact > div {
+    grid-column: 1 / -1;
+  }
+
+  .about .textBooking {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 767px) {
+  .motionExperience[data-motion-mode='preparing'] .businessPanel,
+  .motionExperience[data-motion-mode='enhanced'] .businessPanel {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    width: 100%;
+    min-height: 100%;
+  }
+
+  .businessPanel {
+    width: 100%;
+    padding: 18px 16px calc(86px + env(safe-area-inset-bottom));
+  }
+
+  .businessPanel .wordmark {
+    min-height: 28px;
+    margin: 0 0 12px;
+    font-size: 21px;
+  }
+
+  .businessPanel .kicker {
+    max-width: none;
+    font-size: 9px;
+  }
+
+  .businessPanel h1 {
+    max-width: 330px;
+    margin: 10px 0 8px;
+    font-size: clamp(40px, 12.5vw, 54px);
+  }
+
+  .businessPanel .lede {
+    max-width: 350px;
+    font-size: 13px;
+  }
+
+  .businessPanel .primaryActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px 8px;
+    margin-top: 12px;
+  }
+
+  .businessPanel .priceRail {
+    margin-top: 12px;
+  }
+
+  .businessPanel .priceRailRow {
+    padding: 5px 0;
+    font-size: 10px;
+  }
+
+  .businessPanel .twoSalons {
+    margin-top: 10px;
+    font-size: 9px;
+  }
+
+  .motionScene {
+    min-height: 76svh;
+  }
+
+  .scenePoster,
+  .sceneVideo {
+    object-position: var(--motion-scene-mobile-crop);
+  }
+
+  .sceneCopy {
+    width: auto;
+    margin: auto 14px calc(84px + env(safe-area-inset-bottom));
+    padding: 18px;
+  }
+
+  .sceneCopy h2 {
+    margin: 10px 0 12px;
+    font-size: clamp(38px, 13vw, 58px);
+  }
+
+  .sceneCopy > p:not(.posterIndex) {
+    font-size: 13px;
+  }
+
+  .mirrorScene {
+    display: block;
+    padding: 14px 14px calc(84px + env(safe-area-inset-bottom));
+  }
+
+  .mirrorScene .sceneMirrorFrame {
+    width: min(76vw, 360px);
+    height: min(52svh, 470px);
+    margin-inline: auto;
+  }
+
+  .mirrorScene .sceneCopy {
+    position: absolute;
+    grid-column: auto;
+    right: 14px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    left: 14px;
+    margin: 0;
+  }
+
+  .wordmark {
+    min-height: 42px;
+    margin: 0 0 54px;
+  }
+
+  .kicker {
+    max-width: 54%;
+  }
+
+  .lede {
+    max-width: 330px;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .primaryActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
+    margin-top: 16px;
+  }
+
+  .primaryButton {
+    grid-column: 1 / -1;
+    min-height: 44px;
+  }
+
+  .primaryActions > a:not(.primaryButton) {
+    font-size: 11px;
+  }
+
+  .priceRail {
+    margin-top: 16px;
+  }
+
+  .priceRailRow {
+    padding: 7px 0;
+    font-size: 11px;
+  }
+
+  .twoSalons {
+    margin-top: 14px;
+    font-size: 10px;
+  }
+
+  .sceneMirrorFrame {
+    width: min(100%, 430px);
+    max-height: none;
+  }
+
+  .services,
+  .salons {
+    padding: 64px 18px;
+  }
+
+  .sectionHeader,
+  .results,
+  .about,
+  .contact {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .sectionHeader {
+    margin-bottom: 30px;
+  }
+
+  .sectionHeader h2,
+  .results h2,
+  .about h2,
+  .contact h2 {
+    font-size: clamp(46px, 15vw, 70px);
+  }
+
+  .serviceBooking {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 10px;
+    min-height: 72px;
+    padding: 8px 0;
+  }
+
+  .rowDuration {
+    grid-column: 2;
+    font-size: 10px;
+  }
+
+  .serviceBooking > strong {
+    grid-column: 3;
+    grid-row: 1;
+    font-size: 13px;
+  }
+
+  .rowAction {
+    grid-column: 3;
+    font-size: 10px;
+  }
+
+  .prototypeServices li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .prototypeServices small {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .locationList {
+    grid-template-columns: 1fr;
+  }
+
+  .location {
+    min-height: 270px;
+  }
+
+  .results,
+  .about,
+  .contact {
+    padding: 72px 18px;
+  }
+
+  .contact {
+    padding-bottom: calc(146px + env(safe-area-inset-bottom));
+  }
+
+  .about .textBooking {
+    margin-top: 6px;
+  }
+
+  .mobileBooking {
+    position: fixed;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    z-index: 20;
+    display: block;
+  }
+
+  .mobileBooking .primaryButton {
+    display: flex;
+    width: 100%;
+    box-shadow: 0 4px 0 rgb(23 25 24 / 28%);
+  }
+}

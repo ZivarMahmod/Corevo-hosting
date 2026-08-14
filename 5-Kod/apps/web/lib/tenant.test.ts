@@ -13,6 +13,36 @@ const OPTS = {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('getTenantFromHost — host suffix classification', () => {
+  it('maps the exact motiontest aliases to FreshCut before generic tenant classification', () => {
+    expect(getTenantFromHost('motiontest.corevo.se', OPTS)).toEqual({
+      kind: 'tenant',
+      slug: 'freshcut',
+    })
+    expect(getTenantFromHost('motiontest.localhost:3000', OPTS)).toEqual({
+      kind: 'tenant',
+      slug: 'freshcut',
+    })
+  })
+
+  it('does not let preview query or path overrides replace the motiontest tenant', () => {
+    expect(
+      getTenantFromHost('motiontest.localhost:3000', {
+        ...OPTS,
+        search: new URLSearchParams('tenant=evil'),
+      }),
+    ).toEqual({ kind: 'tenant', slug: 'freshcut' })
+    expect(
+      getTenantFromHost('motiontest.localhost:3000', {
+        ...OPTS,
+        pathname: '/t/evil',
+      }),
+    ).toEqual({ kind: 'tenant', slug: 'freshcut' })
+  })
+
+  it('reserves motiontest so the generic tenant resolver cannot mint it', () => {
+    expect(RESERVED_SUBDOMAINS).toContain('motiontest')
+  })
+
   it('accepts an exact Corevo tenant host', () => {
     expect(getTenantFromHost('freshcut.corevo.se', OPTS)).toEqual({
       kind: 'tenant',

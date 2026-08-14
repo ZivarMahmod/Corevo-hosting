@@ -42,7 +42,19 @@ export default defineConfig({
     locale: 'sv-SE',
     timezoneId: 'Europe/Stockholm',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'firefox',
+      testMatch: '**/motiontest*.spec.ts',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      testMatch: '**/motiontest*.spec.ts',
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
   webServer: startServer
     ? {
         // Run from the repo root; pnpm filter targets the web app.

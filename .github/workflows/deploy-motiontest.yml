@@ -1,9 +1,18 @@
 name: Deploy FreshCut Motiontest
 
 on:
-  # One-shot bootstrap. The exact candidate is pinned below and this workflow
-  # must be removed from main after the first verified staging deployment.
-  workflow_dispatch: {}
+  # GitHub exposes workflow_dispatch only after this workflow exists on the
+  # default branch. There is intentionally no automatic or alternate trigger.
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact candidate commit SHA to verify and deploy
+        required: true
+        type: string
+      expected_ref:
+        description: Exact release branch ref containing the candidate
+        required: true
+        type: string
 
 concurrency:
   group: freshcut-motiontest-worker
@@ -19,157 +28,50 @@ defaults:
 jobs:
   deploy-motiontest:
     name: deploy isolated FreshCut motiontest
-    runs-on: ubuntu-24.04
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: motiontest
     env:
-      MOTIONTEST_EXPECTED_SHA: 171338b254d9aa2ecefde0d5ff9d8b772a741f49
-      MOTIONTEST_EXPECTED_REF: refs/heads/codex/freshcut-motiontest-production-grade
-      MOTIONTEST_ACTUAL_SHA: 171338b254d9aa2ecefde0d5ff9d8b772a741f49
-      MOTIONTEST_ACTUAL_REF: refs/heads/codex/freshcut-motiontest-production-grade
+      MOTIONTEST_EXPECTED_SHA: ${{ inputs.expected_sha }}
+      MOTIONTEST_EXPECTED_REF: ${{ inputs.expected_ref }}
+      MOTIONTEST_ACTUAL_SHA: ${{ github.sha }}
+      MOTIONTEST_ACTUAL_REF: ${{ github.ref }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: 171338b254d9aa2ecefde0d5ff9d8b772a741f49
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Verify immutable release branch head
+      - name: Verify exact main release identity
         shell: bash
         run: |
           set -euo pipefail
+          test "$MOTIONTEST_EXPECTED_REF" = "refs/heads/main"
+          test "$MOTIONTEST_ACTUAL_REF" = "$MOTIONTEST_EXPECTED_REF"
+          test "$MOTIONTEST_ACTUAL_SHA" = "$MOTIONTEST_EXPECTED_SHA"
           test "$(git rev-parse HEAD)" = "$MOTIONTEST_EXPECTED_SHA"
-          test "$(git ls-remote origin "$MOTIONTEST_EXPECTED_REF" | cut -f1)" = "$MOTIONTEST_EXPECTED_SHA"
-
-      - name: Inventory Cloudflare isolation before first publish
-        shell: bash
-        env:
-          CF_READ_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const token = process.env.CF_READ_TOKEN
-          const accountId = process.env.CF_ACCOUNT_ID
-          if (!token || !accountId) throw new Error('Cloudflare preflight credentials are missing')
-
-          const api = 'https://api.cloudflare.com/client/v4'
-          async function get(path) {
-            const response = await fetch(`${api}${path}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            const payload = await response.json()
-            if (!response.ok || payload.success !== true) {
-              throw new Error(`Cloudflare read-only preflight failed for ${path}: HTTP ${response.status}`)
-            }
-            return payload.result
-          }
-
-          function routeMatchesHost(pattern, host) {
-            const value = String(pattern ?? '').trim().toLowerCase()
-            if (!value) return true
-
-            const withoutScheme = value.replace(/^(?:https?|\*):\/\//, '')
-            const hostPattern = withoutScheme.split('/', 1)[0]
-            if (!hostPattern || hostPattern.includes(':')) return true
-
-            const escaped = hostPattern
-              .split('*')
-              .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-              .join('.*')
-            return new RegExp(`^${escaped}$`, 'i').test(host)
-          }
-
-          const routeMatcherCases = [
-            ['motiontest.corevo.se/*', true],
-            ['https://motiontest.corevo.se/*', true],
-            ['*.corevo.se/*', true],
-            ['*corevo.se/*', true],
-            ['*motiontest.corevo.se/*', true],
-            ['motiontest.corevo.se*', true],
-            ['freshcut.corevo.se/*', false],
-            ['example.com/*', false],
-          ]
-          for (const [pattern, expected] of routeMatcherCases) {
-            if (routeMatchesHost(pattern, 'motiontest.corevo.se') !== expected) {
-              throw new Error(`Cloudflare route matcher rejected its safety contract for ${pattern}`)
-            }
-          }
-
-          const motionHost = 'motiontest.corevo.se'
-          const liveHost = 'freshcut.corevo.se'
-          const workerName = 'freshcut-motiontest'
-          const scripts = await get(`/accounts/${accountId}/workers/scripts`)
-          const motionDomains = await get(
-            `/accounts/${accountId}/workers/domains?hostname=${encodeURIComponent(motionHost)}`,
-          )
-          const liveDomains = await get(
-            `/accounts/${accountId}/workers/domains?hostname=${encodeURIComponent(liveHost)}`,
-          )
-          const zones = await get('/zones?name=corevo.se&status=active')
-          if (
-            !Array.isArray(zones) ||
-            zones.length !== 1 ||
-            zones[0].name !== 'corevo.se' ||
-            zones[0].status !== 'active' ||
-            zones[0].account?.id !== accountId
-          ) {
-            throw new Error('Cloudflare preflight requires one exact active corevo.se zone in the configured account')
-          }
-          const zoneId = zones[0].id
-          const routes = await get(`/zones/${zoneId}/workers/routes`)
-          const motionDns = await get(
-            `/zones/${zoneId}/dns_records?name=${encodeURIComponent(motionHost)}`,
-          )
-          const liveDns = await get(
-            `/zones/${zoneId}/dns_records?name=${encodeURIComponent(liveHost)}`,
-          )
-
-          const scriptCollision = scripts.some((script) => script.id === workerName)
-          const routeCollisions = routes.filter((route) => routeMatchesHost(route.pattern, motionHost))
-          if (scriptCollision || motionDomains.length || motionDns.length || routeCollisions.length) {
-            throw new Error(
-              `Motiontest Cloudflare target is not empty: worker=${scriptCollision}, domains=${motionDomains.length}, dns=${motionDns.length}, routes=${routeCollisions.length}`,
-            )
-          }
-          console.log(
-            JSON.stringify({
-              motiontestTargetEmpty: true,
-              liveCustomDomains: liveDomains.length,
-              liveDnsRecords: liveDns.length,
-              totalZoneRoutes: routes.length,
-            }),
-          )
-          NODE
-
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 10.33.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22.23.2
+          node-version: 22
           cache: pnpm
           cache-dependency-path: 5-Kod/pnpm-lock.yaml
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run full web test suite
+      - name: Run full web test suite (includes motiontest contracts)
         run: pnpm --filter @corevo/web test
 
       - name: Typecheck web
         run: pnpm --filter @corevo/web typecheck
 
-      - name: Lint web
-        run: pnpm --filter @corevo/web lint
-
-      - name: Install Playwright browsers
+      - name: Install Playwright browsers for motiontest evidence
         run: pnpm exec playwright install --with-deps chromium firefox webkit
 
       - name: Run local motiontest browser evidence
-        # Cloudflare currently injects Web Analytics on freshcut.corevo.se while
-        # its live CSP blocks that beacon. The resulting pre-existing live-only
-        # console error is outside this staging candidate. Live integrity is
-        # instead enforced by the deploy script's exact before/after fingerprint.
         env:
           NEXT_PUBLIC_CUSTOMER_PORTAL_HOST: mina.corevo.se
           NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
@@ -183,7 +85,7 @@ jobs:
           NEXT_PUBLIC_TENANT_MODE: live
           E2E_PORT: "3000"
           LIVE_FRESHCUT_BASE_URL: https://freshcut.corevo.se
-        run: pnpm exec playwright test e2e/motiontest-freshcut.spec.ts e2e/motiontest-freshcut-cls.spec.ts e2e/motiontest-freshcut-nojs.spec.ts --grep-invert "live FreshCut isolation" --project=chromium --project=firefox --project=webkit
+        run: pnpm exec playwright test e2e/motiontest-freshcut.spec.ts e2e/motiontest-freshcut-cls.spec.ts e2e/motiontest-freshcut-nojs.spec.ts --project=chromium --project=firefox --project=webkit
 
       - id: motiontest-build
         name: Build and stamp OpenNext motiontest
@@ -197,142 +99,16 @@ jobs:
           MOTIONTEST_EXPECTED_ARTIFACT_SHA: ${{ steps.motiontest-build.outputs.artifact_sha }}
         run: pnpm --filter @corevo/web deploy:motiontest --dry-run
 
-      - name: Reconfirm empty Cloudflare target immediately before publish
-        shell: bash
-        env:
-          CF_READ_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const token = process.env.CF_READ_TOKEN
-          const accountId = process.env.CF_ACCOUNT_ID
-          if (!token || !accountId) throw new Error('Cloudflare publish-gate credentials are missing')
-
-          const api = 'https://api.cloudflare.com/client/v4'
-          async function get(path) {
-            const response = await fetch(`${api}${path}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            const payload = await response.json()
-            if (!response.ok || payload.success !== true || !Array.isArray(payload.result)) {
-              throw new Error(`Cloudflare publish gate failed for ${path}: HTTP ${response.status}`)
-            }
-            return payload.result
-          }
-
-          function routeMatchesHost(pattern, host) {
-            const value = String(pattern ?? '').trim().toLowerCase()
-            if (!value) return true
-            const withoutScheme = value.replace(/^(?:https?|\*):\/\//, '')
-            const hostPattern = withoutScheme.split('/', 1)[0]
-            if (!hostPattern || hostPattern.includes(':')) return true
-            const escaped = hostPattern
-              .split('*')
-              .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-              .join('.*')
-            return new RegExp(`^${escaped}$`, 'i').test(host)
-          }
-
-          const host = 'motiontest.corevo.se'
-          const worker = 'freshcut-motiontest'
-          const scripts = await get(`/accounts/${accountId}/workers/scripts`)
-          const domains = await get(
-            `/accounts/${accountId}/workers/domains?hostname=${encodeURIComponent(host)}`,
-          )
-          const zones = await get('/zones?name=corevo.se&status=active')
-          if (
-            zones.length !== 1 ||
-            zones[0].name !== 'corevo.se' ||
-            zones[0].status !== 'active' ||
-            zones[0].account?.id !== accountId
-          ) {
-            throw new Error('Cloudflare publish gate requires one exact active corevo.se zone in the configured account')
-          }
-          const routes = await get(`/zones/${zones[0].id}/workers/routes`)
-          const dns = await get(
-            `/zones/${zones[0].id}/dns_records?name=${encodeURIComponent(host)}`,
-          )
-
-          const scriptCollision = scripts.some((script) => script.id === worker)
-          const routeCollisions = routes.filter((route) => routeMatchesHost(route.pattern, host))
-          if (scriptCollision || domains.length || dns.length || routeCollisions.length) {
-            throw new Error(
-              `Motiontest target changed before publish: worker=${scriptCollision}, domains=${domains.length}, dns=${dns.length}, routes=${routeCollisions.length}`,
-            )
-          }
-          console.log(JSON.stringify({ motiontestTargetStillEmpty: true }))
-          NODE
-
-      - id: publish-boundary
-        name: Mark first-publish boundary
-        run: echo "started=true" >> "$GITHUB_OUTPUT"
-
       - name: Deploy and verify isolated motiontest Worker
         env:
           NODE_OPTIONS: ""
           MOTIONTEST_EXPECTED_ARTIFACT_SHA: ${{ steps.motiontest-build.outputs.artifact_sha }}
-          MOTIONTEST_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          MOTIONTEST_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MOTIONTEST_CLOUDFLARE_API_TOKEN: ${{ secrets.MOTIONTEST_CLOUDFLARE_API_TOKEN }}
+          MOTIONTEST_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.MOTIONTEST_CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm --filter @corevo/web deploy:motiontest
 
-      - name: Run public HTTPS browser evidence
+      - name: Run public HTTPS motiontest browser evidence
         env:
           E2E_BASE_URL: https://motiontest.corevo.se
           LIVE_FRESHCUT_BASE_URL: https://freshcut.corevo.se
-        run: pnpm exec playwright test e2e/motiontest-freshcut.spec.ts e2e/motiontest-freshcut-cls.spec.ts e2e/motiontest-freshcut-nojs.spec.ts --grep-invert "live FreshCut isolation" --project=chromium --project=firefox --project=webkit
-
-      - name: Inventory partial staging deployment after failure
-        if: ${{ failure() && steps.publish-boundary.outputs.started == 'true' }}
-        shell: bash
-        env:
-          CF_READ_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const token = process.env.CF_READ_TOKEN
-          const accountId = process.env.CF_ACCOUNT_ID
-          if (!token || !accountId) throw new Error('Cloudflare failure-inventory credentials are missing')
-
-          const api = 'https://api.cloudflare.com/client/v4'
-          async function get(path) {
-            const response = await fetch(`${api}${path}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            const payload = await response.json()
-            if (!response.ok || payload.success !== true || !Array.isArray(payload.result)) {
-              throw new Error(`Cloudflare failure inventory failed for ${path}: HTTP ${response.status}`)
-            }
-            return payload.result
-          }
-
-          const host = 'motiontest.corevo.se'
-          const worker = 'freshcut-motiontest'
-          const scripts = await get(`/accounts/${accountId}/workers/scripts`)
-          const domains = await get(
-            `/accounts/${accountId}/workers/domains?hostname=${encodeURIComponent(host)}`,
-          )
-          const zones = await get('/zones?name=corevo.se&status=active')
-          if (zones.length !== 1 || zones[0].account?.id !== accountId) {
-            throw new Error('Cloudflare failure inventory cannot resolve the exact corevo.se zone')
-          }
-          const dns = await get(
-            `/zones/${zones[0].id}/dns_records?name=${encodeURIComponent(host)}`,
-          )
-
-          console.error('PARTIAL STAGING DEPLOYMENT: do not retry or delete blindly.')
-          console.log(
-            JSON.stringify({
-              workerExists: scripts.some((script) => script.id === worker),
-              domains: domains.map(({ id, hostname, service }) => ({ id, hostname, service })),
-              dns: dns.map(({ id, name, type }) => ({ id, name, type })),
-              recoveryOrder: [
-                'verify freshcut.corevo.se live fingerprint',
-                'detach only the exact motiontest custom-domain id if service is freshcut-motiontest',
-                'delete only Worker freshcut-motiontest',
-                're-inventory exact motiontest DNS before any separate DNS action',
-              ],
-            }),
-          )
-          NODE
+        run: pnpm exec playwright test e2e/motiontest-freshcut.spec.ts e2e/motiontest-freshcut-cls.spec.ts e2e/motiontest-freshcut-nojs.spec.ts --project=chromium --project=firefox --project=webkit

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_RESERVED_SUBDOMAINS } from '@/lib/tenant'
 
@@ -6,10 +6,17 @@ const portalMigration = readFileSync(
   new URL('../../../../supabase/migrations/0122_customer_portal_rebook_origin.sql', import.meta.url),
   'utf8',
 )
-const currentOriginMigration = readFileSync(
-  new URL('../../../../supabase/migrations/20260805034145_exact_corevo_tenant_hosts.sql', import.meta.url),
-  'utf8',
-)
+const migrationDirectory = new URL('../../../../supabase/migrations/', import.meta.url)
+const currentOriginMigration = readdirSync(migrationDirectory)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
+  .map((name) => readFileSync(new URL(name, migrationDirectory), 'utf8'))
+  .filter((sql) => /create or replace function private\.customer_portal_booking_origin\s*\(/i.test(sql))
+  .at(-1)
+
+if (!currentOriginMigration) {
+  throw new Error('customer_portal_booking_origin migration missing')
+}
 
 describe('customer portal rebook origin contract', () => {
   it('uses one private tenant-bound origin resolver and the canonical booking hostname', () => {
