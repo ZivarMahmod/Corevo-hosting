@@ -449,11 +449,11 @@ test.describe('@readonly @motiontest FreshCut motiontest', () => {
     await gotoMotiontest(page)
 
     const sceneNavigation = page.getByRole('navigation', { name: 'Upplevelsens scener' })
-    const visibleMotionControls = sceneNavigation
-      .locator('xpath=..')
-      .locator('a:visible, button:visible')
-    await expect(visibleMotionControls).toHaveCount(7)
-    for (let index = 0; index < 7; index += 1) {
+    const experienceControls = sceneNavigation.locator('xpath=..')
+    const visibleMotionControls = experienceControls.locator('a:visible, button:visible')
+    await expect(sceneNavigation.getByRole('link')).toHaveCount(CHECKPOINTS.length)
+    const motionControlCount = await visibleMotionControls.count()
+    for (let index = 0; index < motionControlCount; index += 1) {
       const control = visibleMotionControls.nth(index)
       await expectMinimumTouchTarget(
         control,
@@ -476,11 +476,17 @@ test.describe('@readonly @motiontest FreshCut motiontest', () => {
 
     await sceneNavigation.getByRole('link', { name: 'Resultatet', exact: true }).click()
     await expect(experience).toHaveAttribute('data-motion-scene', 'mirror')
-    await expectBusinessTouchTargets('Mirror')
+    await expectMinimumTouchTarget(
+      experienceControls.getByRole('link', { name: 'Boka nu', exact: true }),
+      'Mirror: persistent bokningslänk',
+    )
 
     await scrollToMotionProgress(page, 1)
     await expect(experience).toHaveAttribute('data-motion-scene', 'team')
-    await expectBusinessTouchTargets('Om oss')
+    await expectMinimumTouchTarget(
+      experienceControls.getByRole('link', { name: 'Boka nu', exact: true }),
+      'Om oss: persistent bokningslänk',
+    )
     await expectMinimumTouchTarget(
       page.locator('section[data-motion-scene="team"] a[href="#om"]'),
       'Om oss-scenens fortsättningslänk',

@@ -25,8 +25,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
 const cspDirectives = [
   `default-src 'self'`,
-  // Stripe.js is loaded from js.stripe.com; inline bootstrap needs 'unsafe-inline'.
-  `script-src 'self' 'unsafe-inline' https://js.stripe.com${isProd ? '' : " 'unsafe-eval'"}`,
+  // Stripe.js and Cloudflare Web Analytics; inline bootstrap needs 'unsafe-inline'.
+  `script-src 'self' 'unsafe-inline' https://js.stripe.com https://static.cloudflareinsights.com${isProd ? '' : " 'unsafe-eval'"}`,
   // Google Fonts stylesheet (@import in @corevo/ui/tokens.css) → fonts.googleapis.com.
   // The storefront themes reference literal font families (Playfair, Inter,
   // Cormorant, Bebas, Jost, Archivo, DM Serif) loaded from the Google Fonts CDN.
@@ -42,7 +42,7 @@ const cspDirectives = [
   // path. It is kept harmless + future-proof so a browser-side Sentry SDK could POST
   // without a CSP regression. NOT build-env-conditional on SENTRY_DSN: headers() is
   // evaluated at build time but the DSN is a runtime Worker secret (would be empty here).
-  `connect-src 'self' https://api.stripe.com https://*.sentry.io ${supabaseUrl} https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
+  `connect-src 'self' https://api.stripe.com https://cloudflareinsights.com https://*.sentry.io ${supabaseUrl} https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
   // Stripe Checkout/Elements iframes + the storefront's embedded OpenStreetMap map.
   `frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://www.openstreetmap.org`,
   `form-action 'self' https://checkout.stripe.com`,
