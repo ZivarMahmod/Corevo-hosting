@@ -23,8 +23,7 @@ describe('motiontest Worker outer boundary', () => {
       return
     }
 
-    const delegated = new Response('delegated', { status: 200 })
-    const fetch = vi.fn(async () => delegated)
+    const fetch = vi.fn(async () => new Response('delegated', { status: 200 }))
     const worker = runtime.createMotiontestWorker({ fetch })
     const family = 'entrance-v1-a1b2c3d4e5f6'
 
@@ -47,7 +46,10 @@ describe('motiontest Worker outer boundary', () => {
         'https://motiontest.corevo.se/_next/image?url=%2Fimages%2Ffreshcut%2Ffreshcut-hero.webp&w=1200&q=75',
       ),
     ]) {
-      await expect(worker.fetch(request, { binding: 'test' }, {})).resolves.toBe(delegated)
+      const response = await worker.fetch(request, { binding: 'test' }, {})
+      expect(response.status).toBe(200)
+      expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow, noarchive')
+      await expect(response.text()).resolves.toBe('delegated')
     }
     expect(fetch).toHaveBeenCalledTimes(9)
   })

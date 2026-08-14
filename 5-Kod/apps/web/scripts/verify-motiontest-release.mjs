@@ -441,8 +441,22 @@ function wildcardRobotsGroup(parsed, label) {
 function verifyMotiontestRobots(robots) {
   const parsed = parseRobots(robots)
   const wildcard = wildcardRobotsGroup(parsed, 'motiontest')
-  if (!wildcard.disallow.includes('/')) fail('motiontest robots must disallow all crawlers')
+  if (!wildcard.allow.includes('/') && !wildcard.disallow.includes('/')) {
+    fail('motiontest robots wildcard group must declare a root policy')
+  }
   if (parsed.sitemaps.length) fail('motiontest robots must not advertise a sitemap')
+}
+
+function verifyMotiontestSearchIsolation(response) {
+  const directives = new Set(
+    String(response.headers.get('x-robots-tag') ?? '')
+      .toLowerCase()
+      .split(/[\s,]+/)
+      .filter(Boolean),
+  )
+  if (!['noindex', 'nofollow', 'noarchive'].every((directive) => directives.has(directive))) {
+    fail('motiontest x-robots-tag must contain noindex, nofollow, and noarchive')
+  }
 }
 
 const FORBIDDEN_LIVE_MARKERS = [
@@ -629,7 +643,7 @@ export async function verifyMotiontestRelease({
 } = {}) {
   const requestOptions = { deadlineAt, fetchTimeoutMs, nowImpl }
   const trustedBaseline = assertLiveBaseline(liveBaseline)
-  const motionHtml = await fetchText(fetchImpl, `${MOTIONTEST_ORIGIN}/`, 'motiontest HTML', {
+  const motion = await fetchChecked(fetchImpl, `${MOTIONTEST_ORIGIN}/`, 'motiontest HTML', {
     ...requestOptions,
     propagationNetworkFailure: true,
     propagationPendingStatuses: [404],
@@ -641,7 +655,12 @@ export async function verifyMotiontestRelease({
     { ...requestOptions, accept: 'text/plain' },
   )
 
-  const staticAssetUrl = verifyMotiontestHtml(motionHtml, trustedBaseline.fingerprint, expectedSha)
+  const staticAssetUrl = verifyMotiontestHtml(
+    motion.body,
+    trustedBaseline.fingerprint,
+    expectedSha,
+  )
+  verifyMotiontestSearchIsolation(motion.response)
   verifyMotiontestRobots(motionRobots)
   const staticAsset = await fetchChecked(fetchImpl, staticAssetUrl, 'motiontest static asset', {
     ...requestOptions,

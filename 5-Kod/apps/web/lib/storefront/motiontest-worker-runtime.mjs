@@ -25,7 +25,10 @@ export function createMotiontestWorker(openNextWorker) {
           headers: decision.action === 'deny' && decision.allow ? { allow: decision.allow } : {},
         })
       }
-      return openNextWorker.fetch(request, env, context)
+      const response = await openNextWorker.fetch(request, env, context)
+      const isolated = new Response(response.body, response)
+      isolated.headers.set('x-robots-tag', 'noindex, nofollow, noarchive')
+      return isolated
     },
   }
 }
