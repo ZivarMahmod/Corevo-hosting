@@ -2,7 +2,10 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { billingUnderlag, platformMonth, monthRangeUtc, platformOverview } from './metrics'
 
 const platformCtxMock = vi.fn()
-vi.mock('./guard', () => ({ platformCtx: () => platformCtxMock() }))
+vi.mock('./guard', () => ({
+  platformCtx: () => platformCtxMock(),
+  platformAdminCtx: () => platformCtxMock(),
+}))
 
 function queryResult(result: { data?: unknown; count?: number | null; error: { message: string } | null }) {
   const chain: Record<string, unknown> = {
@@ -47,13 +50,39 @@ describe('monthRangeUtc (overview window)', () => {
 })
 
 describe('platform metrics fail closed', () => {
+  it('uses the database aggregate instead of a truncatable booking row list', async () => {
+    const client = {
+      from: () => queryResult({
+        data: [{
+          id: 'tenant-1',
+          slug: 'salong',
+          name: 'Salong',
+          status: 'active',
+          tenant_settings: {
+            billing_model: 'per_booking',
+            per_booking_fee_cents: 500,
+            flat_monthly_fee_cents: 0,
+            setup_fee_cents: 0,
+            settings: {},
+          },
+        }],
+        error: null,
+      }),
+      rpc: () => Promise.resolve({
+        data: { 'tenant-1': 1001 },
+        error: null,
+      }),
+    }
+    platformCtxMock.mockResolvedValue({ supabase: client })
+
+    const result = await billingUnderlag(2026, 7)
+    expect(result.rows[0]).toMatchObject({ completedBookings: 1001, feeCents: 500500 })
+  })
+
   it('throws instead of showing a zero invoice total when bookings fail', async () => {
     const client = {
-      from: (table: string) => queryResult(
-        table === 'tenants'
-          ? { data: [], error: null }
-          : { data: null, error: { message: 'bookings offline' } },
-      ),
+      from: () => queryResult({ data: [], error: null }),
+      rpc: () => Promise.resolve({ data: null, error: { message: 'bookings offline' } }),
     }
     platformCtxMock.mockResolvedValue({ supabase: client })
 
@@ -80,6 +109,7 @@ describe('platform metrics fail closed', () => {
           error: null,
         },
       ),
+      rpc: () => Promise.resolve({ data: {}, error: null }),
     }
     platformCtxMock.mockResolvedValue({ supabase: client })
 

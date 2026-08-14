@@ -2,6 +2,9 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ dispatchGenericJobs: vi.fn() }))
 vi.mock('@/lib/jobs/generic-jobs', () => ({ dispatchGenericJobs: mocks.dispatchGenericJobs }))
+vi.mock('@/lib/stripe/platform-billing', () => ({
+  reconcilePlatformBillingJob: vi.fn(),
+}))
 
 import { GET, POST } from './route'
 
@@ -39,8 +42,12 @@ describe('generic jobs cron', () => {
   it('runs a bounded queue pass for GET and POST', async () => {
     await expect(GET(request())).resolves.toMatchObject({ status: 200 })
     await expect(POST(request('POST'))).resolves.toMatchObject({ status: 200 })
-    expect(mocks.dispatchGenericJobs).toHaveBeenNthCalledWith(1, {})
-    expect(mocks.dispatchGenericJobs).toHaveBeenNthCalledWith(2, {})
+    expect(mocks.dispatchGenericJobs).toHaveBeenNthCalledWith(1, {
+      'stripe.billing.reconcile': expect.any(Function),
+    })
+    expect(mocks.dispatchGenericJobs).toHaveBeenNthCalledWith(2, {
+      'stripe.billing.reconcile': expect.any(Function),
+    })
   })
 
   it('fails the scheduler gate on retry or review work without leaking internals', async () => {

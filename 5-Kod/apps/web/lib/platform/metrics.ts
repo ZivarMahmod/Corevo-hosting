@@ -1,7 +1,8 @@
 import 'server-only'
-import { platformCtx } from './guard'
+import { platformAdminCtx, platformCtx } from './guard'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { monthlyFeeCents } from './billing'
+import { parseTenantLegal } from '@/lib/tenant-region'
 
 // Platform-wide metrics + FLÖDE 2 faktureringsunderlag. All counts are cross-
 // tenant via the platform_admin RLS bypass (platformCtx). The billing view is a
@@ -168,6 +169,17 @@ export type BillingRow = {
   flatMonthlyFeeCents: number
   setupFeeCents: number
   feeCents: number
+  orgNr: string | null
+}
+
+export type BillingPeriodStatus = {
+  id: string
+  tenantId: string
+  testInvoiceId: string | null
+  testStatus: string | null
+  invoiceId: string | null
+  status: string | null
+  errorCode: string | null
 }
 
 export type BillingUnderlag = {
@@ -180,8 +192,8 @@ export type BillingUnderlag = {
 /**
  * Per-tenant invoiceable amount for one calendar month:
  *   completed bookings (excl. cancelled/no_show) × per_booking fee, OR the flat
- *   monthly fee. One bookings query, tallied in JS (manual monthly view — volume
- *   is small; avoids a GROUP BY RPC).
+ *   monthly fee. The database returns exact grouped counts so PostgREST row
+ *   limits can never truncate the permanent invoice snapshot.
  */
 export async function billingUnderlag(year: number, month: number): Promise<BillingUnderlag> {
   const { supabase } = await platformCtx()
@@ -190,21 +202,27 @@ export async function billingUnderlag(year: number, month: number): Promise<Bill
   const [tenantsRes, bookingsRes] = await Promise.all([
     supabase
       .from('tenants')
-      .select('id, slug, name, status, tenant_settings(billing_model, per_booking_fee_cents, flat_monthly_fee_cents, setup_fee_cents)')
+      .select('id, slug, name, status, tenant_settings(billing_model, per_booking_fee_cents, flat_monthly_fee_cents, setup_fee_cents, settings)')
       .order('slug'),
-    supabase
-      .from('bookings')
-      .select('tenant_id')
-      .eq('status', 'completed')
-      .gte('start_ts', fromUtc)
-      .lt('start_ts', toUtc),
+    supabase.rpc('platform_billing_completed_counts', {
+      p_from: fromUtc,
+      p_to: toUtc,
+    }),
   ])
   assertPlatformRead('billingUnderlag tenants', tenantsRes)
   assertPlatformRead('billingUnderlag bookings', bookingsRes)
 
+  if (
+    typeof bookingsRes.data !== 'object'
+    || bookingsRes.data === null
+    || Array.isArray(bookingsRes.data)
+  ) throw new Error('billingUnderlag bookings: invalid aggregate')
   const completedByTenant = new Map<string, number>()
-  for (const b of (bookingsRes.data ?? []) as { tenant_id: string }[]) {
-    completedByTenant.set(b.tenant_id, (completedByTenant.get(b.tenant_id) ?? 0) + 1)
+  for (const [tenantId, count] of Object.entries(bookingsRes.data)) {
+    if (!Number.isInteger(count) || (count as number) < 0) {
+      throw new Error('billingUnderlag bookings: invalid aggregate')
+    }
+    completedByTenant.set(tenantId, count as number)
   }
 
   type Settings = {
@@ -212,6 +230,7 @@ export async function billingUnderlag(year: number, month: number): Promise<Bill
     per_booking_fee_cents: number
     flat_monthly_fee_cents: number
     setup_fee_cents: number
+    settings: unknown
   }
   type TRow = {
     id: string
@@ -245,9 +264,39 @@ export async function billingUnderlag(year: number, month: number): Promise<Bill
       flatMonthlyFeeCents,
       setupFeeCents,
       feeCents,
+      orgNr: parseTenantLegal(ts?.settings).orgNr,
     }
   })
 
   const totalCents = rows.reduce((sum, r) => sum + r.feeCents, 0)
   return { year, month, rows, totalCents }
+}
+
+export async function billingPeriodStatuses(
+  year: number,
+  month: number,
+): Promise<Map<string, BillingPeriodStatus>> {
+  const { supabase } = await platformAdminCtx()
+  const { data, error } = await supabase.rpc('platform_billing_periods', {
+    p_year: year,
+    p_month: month,
+  })
+  if (error) throw new Error(`billingPeriodStatuses: ${error.message}`)
+  return new Map(((data ?? []) as Array<{
+    id: string
+    tenant_id: string
+    stripe_test_invoice_id: string | null
+    stripe_test_invoice_status: string | null
+    stripe_invoice_id: string | null
+    stripe_invoice_status: string | null
+    last_error_code: string | null
+  }>).map((row) => [row.tenant_id, {
+    id: row.id,
+    tenantId: row.tenant_id,
+    testInvoiceId: row.stripe_test_invoice_id,
+    testStatus: row.stripe_test_invoice_status,
+    invoiceId: row.stripe_invoice_id,
+    status: row.stripe_invoice_status,
+    errorCode: row.last_error_code,
+  }]))
 }

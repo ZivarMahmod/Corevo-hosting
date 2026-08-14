@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { monthlyFeeCents, kronorToCents, formatPrice, isBillingModel } from './billing'
+import {
+  billingPeriod,
+  isClosedBillingPeriod,
+  isRetryableBillingDraft,
+  monthlyFeeCents,
+  kronorToCents,
+  formatPrice,
+  isBillingModel,
+} from './billing'
 
 describe('monthlyFeeCents', () => {
   it('per_booking = completed × per-booking fee', () => {
@@ -74,5 +82,30 @@ describe('currency helpers', () => {
     expect(isBillingModel('per_booking')).toBe(true)
     expect(isBillingModel('flat_monthly')).toBe(true)
     expect(isBillingModel('nope')).toBe(false)
+  })
+})
+
+describe('billingPeriod', () => {
+  const now = new Date('2026-08-14T12:00:00Z')
+
+  it('accepts a valid URL period', () => {
+    expect(billingPeriod('2025', '12', now)).toEqual({ year: 2025, month: 12 })
+  })
+
+  it('falls back instead of sending invalid bounds to the database', () => {
+    expect(billingPeriod('not-a-year', '13', now)).toEqual({ year: 2026, month: 7 })
+  })
+
+  it('only allows completed months to become invoice truth', () => {
+    expect(isClosedBillingPeriod(2026, 7, now)).toBe(true)
+    expect(isClosedBillingPeriod(2026, 8, now)).toBe(false)
+    expect(isClosedBillingPeriod(2026, 9, now)).toBe(false)
+  })
+
+  it('only retries an error-marked Stripe draft', () => {
+    expect(isRetryableBillingDraft('draft', 'test_draft_failed')).toBe(true)
+    expect(isRetryableBillingDraft(null, 'test_draft_failed')).toBe(true)
+    expect(isRetryableBillingDraft('draft', null)).toBe(false)
+    expect(isRetryableBillingDraft('paid', 'live_draft_failed')).toBe(false)
   })
 })

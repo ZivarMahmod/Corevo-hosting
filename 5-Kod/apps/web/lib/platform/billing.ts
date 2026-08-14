@@ -1,6 +1,6 @@
 // FLÖDE 2 billing model + faktureringsunderlag math (G08 / M7). Pure + unit-
 // tested. Corevo invoices each salong manually; this computes the amount Zivar
-// reads off the platform billing view. No Stripe, no money movement here.
+// uses for its billing ledger. No Stripe calls or money movement live here.
 
 import {
   formatTenantMoney,
@@ -40,6 +40,38 @@ export function monthlyFeeCents(input: BillingInputs): number {
   const n = Math.max(0, Math.trunc(input.completedBookings))
   if (input.billingModel === 'flat_monthly') return flat
   return n * per // default = per_booking
+}
+
+export function billingPeriod(
+  yearValue: string | undefined,
+  monthValue: string | undefined,
+  now = new Date(),
+): { year: number; month: number } {
+  const year = Number(yearValue)
+  const month = Number(monthValue)
+  const previous = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+  return {
+    year: Number.isInteger(year) && year >= 2000 && year <= 2100
+      ? year
+      : previous.getUTCFullYear(),
+    month: Number.isInteger(month) && month >= 1 && month <= 12
+      ? month
+      : previous.getUTCMonth() + 1,
+  }
+}
+
+export function isClosedBillingPeriod(year: number, month: number, now = new Date()): boolean {
+  return Number.isInteger(year)
+    && Number.isInteger(month)
+    && year >= 2000
+    && year <= 2100
+    && month >= 1
+    && month <= 12
+    && Date.UTC(year, month, 1) <= now.getTime()
+}
+
+export function isRetryableBillingDraft(status: string | null, errorCode: string | null): boolean {
+  return Boolean(errorCode) && (status === null || status === 'draft')
 }
 
 // ── currency helpers (öre, Swedish), self-contained for the platform revir ──

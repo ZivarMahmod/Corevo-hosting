@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -11,6 +11,7 @@ const runtimePath = resolve(
   '../../../../supabase/tests/platform_outbox_summary_0112_test.sql',
 )
 const ciPath = resolve(import.meta.dirname, '../../../../../.github/workflows/ci.yml')
+const migrationsDir = resolve(import.meta.dirname, '../../../../supabase/migrations')
 
 describe('platform outbox summary correction', () => {
   it('replaces the deployed RPC with tenant-banded truthful aggregates and read indexes', () => {
@@ -60,11 +61,17 @@ describe('platform outbox summary correction', () => {
 
   it('keeps 0112 in the database release inventory through the latest timestamped migration', () => {
     const workflow = readFileSync(ciPath, 'utf8')
-    expect(workflow.match(/--expected-latest 20260814092510/g)).toHaveLength(2)
-    expect(
-      workflow.match(
-        /--required-test-versions .*0133,0134,0135,0136,20260814092510/g,
-      ),
-    ).toHaveLength(2)
+    const latest = readdirSync(migrationsDir)
+      .map((name) => name.match(/^(\d+)_/)?.[1])
+      .filter((version): version is string => Boolean(version))
+      .sort()
+      .at(-1)
+    expect(latest).toBeTruthy()
+    expect(workflow.match(new RegExp(`--expected-latest ${latest}`, 'g'))).toHaveLength(2)
+    const inventories = [...workflow.matchAll(/--required-test-versions ([^\s]+)/g)]
+    expect(inventories).toHaveLength(2)
+    for (const inventory of inventories) {
+      expect(inventory[1]?.split(',')).toEqual(expect.arrayContaining(['0112', latest]))
+    }
   })
 })
