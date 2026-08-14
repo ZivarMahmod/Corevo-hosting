@@ -12,7 +12,8 @@ import {
   revalidateTenant,
   type AdminTenant,
 } from './tenant'
-import { kronorToCents } from './format'
+import { listServices, type ServiceRow } from './data'
+import { parseServiceFormData, servicePriceCents } from './service-schema'
 import {
   managedUploadErrorMessage,
   retireManagedImages,
@@ -40,6 +41,8 @@ import {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export type ActionState = { error?: string; success?: string }
+export type ServiceActionState = ActionState & { record?: ServiceRow }
+export type ServiceListState = { error?: string; records?: ServiceRow[] }
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
@@ -78,65 +81,77 @@ async function adminCtx(
 }
 
 // ── Services ────────────────────────────────────────────────────────────────
-export async function createService(_p: ActionState, fd: FormData): Promise<ActionState> {
+export async function listServicesResource(): Promise<ServiceListState> {
+  const user = await requireAdminArea('tjanster')
+  const tenant = await getAdminTenant(user)
+  if (!tenant) return { error: NO_TENANT }
+  try {
+    return { records: await listServices(tenant.id) }
+  } catch {
+    return { error: GENERIC }
+  }
+}
+
+export async function createService(_p: ActionState, fd: FormData): Promise<ServiceActionState> {
   const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
-  const name = String(fd.get('name') ?? '').trim()
-  const category = String(fd.get('category') ?? '').trim()
-  const duration = Number(fd.get('duration_min'))
-  const priceCents = kronorToCents(String(fd.get('price') ?? '')) ?? 0
-
-  if (!name) return { error: 'Ange ett namn.' }
-  if (!Number.isInteger(duration) || duration <= 0)
-    return { error: 'Ange en giltig varaktighet (minuter).' }
+  const parsed = parseServiceFormData(fd)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? GENERIC }
+  const { name, category, duration_min: duration, price } = parsed.data
+  const priceCents = servicePriceCents(price)!
 
   const supabase = await createClient()
-  const { error } = await supabase.from('services').insert({
-    tenant_id: ctx.tenant.id,
-    location_id: ctx.tenant.locationId,
-    name,
-    category: category || null,
-    duration_min: duration,
-    price_cents: priceCents,
-    active: true,
-  })
+  const { data, error } = await supabase
+    .from('services')
+    .insert({
+      tenant_id: ctx.tenant.id,
+      location_id: ctx.tenant.locationId,
+      name,
+      category: category || null,
+      duration_min: duration,
+      price_cents: priceCents,
+      active: true,
+    })
+    .select('*')
+    .single()
   if (error) return { error: GENERIC }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/tjanster')
-  return { success: 'Tjänst skapad.' }
+  return { success: 'Tjänst skapad.', record: data }
 }
 
-export async function updateService(_p: ActionState, fd: FormData): Promise<ActionState> {
+export async function updateService(_p: ActionState, fd: FormData): Promise<ServiceActionState> {
   const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
-  const name = String(fd.get('name') ?? '').trim()
-  const category = String(fd.get('category') ?? '').trim()
-  const duration = Number(fd.get('duration_min'))
-  const priceCents = kronorToCents(String(fd.get('price') ?? '')) ?? 0
-
   if (!id) return { error: 'Saknar tjänst.' }
-  if (!name) return { error: 'Ange ett namn.' }
-  if (!Number.isInteger(duration) || duration <= 0)
-    return { error: 'Ange en giltig varaktighet (minuter).' }
+  const parsed = parseServiceFormData(fd)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? GENERIC }
+  const { name, category, duration_min: duration, price } = parsed.data
+  const priceCents = servicePriceCents(price)!
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('services')
     .update({ name, category: category || null, duration_min: duration, price_cents: priceCents })
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
+    .select('*')
+    .single()
   if (error) return { error: GENERIC }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/tjanster')
-  return { success: 'Tjänst uppdaterad.' }
+  return { success: 'Tjänst uppdaterad.', record: data }
 }
 
-export async function toggleServiceActive(_p: ActionState, fd: FormData): Promise<ActionState> {
+export async function toggleServiceActive(
+  _p: ActionState,
+  fd: FormData,
+): Promise<ServiceActionState> {
   const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
@@ -145,19 +160,24 @@ export async function toggleServiceActive(_p: ActionState, fd: FormData): Promis
   if (!id) return { error: 'Saknar tjänst.' }
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('services')
     .update({ active })
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
+    .select('*')
+    .single()
   if (error) return { error: GENERIC }
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/tjanster')
-  return { success: active ? 'Tjänst aktiverad.' : 'Tjänst inaktiverad.' }
+  return {
+    success: active ? 'Tjänst aktiverad.' : 'Tjänst inaktiverad.',
+    record: data,
+  }
 }
 
-export async function deleteService(_p: ActionState, fd: FormData): Promise<ActionState> {
+export async function deleteService(_p: ActionState, fd: FormData): Promise<ServiceActionState> {
   const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
@@ -165,11 +185,13 @@ export async function deleteService(_p: ActionState, fd: FormData): Promise<Acti
   if (!id) return { error: 'Saknar tjänst.' }
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('services')
     .delete()
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
+    .select('*')
+    .single()
   if (error) {
     // FK from bookings(service_id) → can't delete a service with history.
     if (error.code === '23503')
@@ -179,7 +201,7 @@ export async function deleteService(_p: ActionState, fd: FormData): Promise<Acti
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/tjanster')
-  return { success: 'Tjänst borttagen.' }
+  return { success: 'Tjänst borttagen.', record: data }
 }
 
 // ── Locations (platser) ───────────────────────────────────────────────────────
