@@ -69,7 +69,7 @@ export function createMotiontestBuildInvocation({ appDir, cliPath, systemEnv, pu
   Object.assign(childEnv, publicEnv, { NODE_ENV: 'production' })
   return {
     command: process.execPath,
-    args: [cliPath, 'build'],
+    args: [cliPath, 'build', '--env', 'motiontest'],
     options: {
       cwd: appDir,
       env: childEnv,
