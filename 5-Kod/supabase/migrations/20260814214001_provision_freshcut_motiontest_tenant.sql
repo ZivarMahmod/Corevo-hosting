@@ -199,7 +199,7 @@ begin
     v_location,
     'Motiontest-frisör',
     'Test',
-    true,
+    false,
     false
   )
   returning id into v_staff;
@@ -240,6 +240,10 @@ begin
     pg_catalog.now(),
     v_owner
   from pg_catalog.generate_series(1, 5) as weekday;
+
+  update public.staff
+  set active = true
+  where id = v_staff;
 
   insert into public.tenant_modules (tenant_id, module_key, state)
   values (v_tenant, 'booking', 'live');
