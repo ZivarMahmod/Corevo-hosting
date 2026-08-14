@@ -55,7 +55,7 @@ describe('canonical motiontest build', () => {
 
     expect(invocation).toMatchObject({
       command: process.execPath,
-      args: [cliPath, 'build'],
+      args: [cliPath, 'build', '--env', 'motiontest'],
       options: { cwd: appDir, shell: false, stdio: 'inherit' },
     })
     expect(invocation.options.env).toMatchObject({
