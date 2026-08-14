@@ -251,5 +251,7 @@ begin
   perform pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);
   perform pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', true);
   perform public.publish_tenant(v_tenant);
+  perform pg_catalog.set_config('request.jwt.claim.role', '', true);
+  perform pg_catalog.set_config('request.jwt.claims', '{}', true);
 end;
 $migration$;
