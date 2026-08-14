@@ -24,6 +24,17 @@ begin
   ) then
     raise exception 'freshcut_motiontest_contains_real_user';
   end if;
+  if not exists (
+    select 1
+    from public.users pu
+    join auth.users au on au.id = pu.id
+    where pu.tenant_id = v_tenant
+      and pu.email = 'motiontest-owner@corevo.invalid'
+      and au.banned_until = 'infinity'
+      and not exists (select 1 from auth.identities ai where ai.user_id = au.id)
+  ) then
+    raise exception 'freshcut_motiontest_internal_owner_not_locked';
+  end if;
   if exists (
     select 1 from public.tenants
     where id = v_tenant

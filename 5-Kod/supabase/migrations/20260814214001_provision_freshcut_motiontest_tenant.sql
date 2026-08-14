@@ -103,8 +103,52 @@ begin
   insert into public.roles (tenant_id, name, level)
   values (v_tenant, 'staff', 3);
 
-  -- Readiness requires an owner row. This internal test identity has no auth row
-  -- and therefore cannot sign in or obtain a tenant JWT.
+  -- Readiness requires an owner row and public.users is keyed to auth.users.
+  -- Keep the internal identity permanently banned and without an auth provider.
+  insert into auth.users (
+    id,
+    instance_id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    banned_until,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change,
+    email_change_token_current,
+    phone_change,
+    phone_change_token,
+    reauthentication_token,
+    created_at,
+    updated_at
+  ) values (
+    v_owner,
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'motiontest-owner@corevo.invalid',
+    '',
+    null,
+    'infinity',
+    '{"provider":null,"providers":[]}'::jsonb,
+    '{}'::jsonb,
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    pg_catalog.now(),
+    pg_catalog.now()
+  );
+
   insert into public.users (
     id,
     tenant_id,
