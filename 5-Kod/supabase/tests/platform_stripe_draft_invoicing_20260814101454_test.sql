@@ -36,6 +36,14 @@ insert into public.partner_members (partner_id, user_id, role, status) values (
   'b1400000-0000-4000-8000-000000000022',
   'owner', 'active'
 );
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b1400000-0000-4000-8000-000000000012","role":"authenticated","app_metadata":{"platform_admin":true}}',
+  true
+);
+select set_config(
+  'request.jwt.claim.sub', 'b1400000-0000-4000-8000-000000000012', true
+);
 update public.tenants
 set partner_id = 'b1400000-0000-4000-8000-000000000021'
 where id = 'b1400000-0000-4000-8000-000000000001';
