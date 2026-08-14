@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "20260814092510",
-  "observedHistoryLatest": "20260814092510",
+  "requiredLatest": "20260814101454",
+  "observedHistoryLatest": "20260814101454",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-08-14T09:45:06Z",
+  "verifiedAt": "2026-08-14T12:22:01Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:9fe9cfb49aeb685776be467011785619403b4b49cc3f1c4904057879e1ac8143",
-  "verificationEvidence": "Supabase production history parity (170 local = 170 remote), disposable CI database and full SQL/RLS suite, plus live read-only verification of the logged corevo_jobs queue, empty queue/review state, absent pgmq_public, private failed-review RLS and service-role-only RPC/raw-table grants on 2026-08-14",
+  "migrationFingerprint": "sha256:645e88d41050b7c5f422f8d31c3ef82b4cf2c4997a5a71579965cee3f896ac56",
+  "verificationEvidence": "Supabase production history parity (171 local = 171 remote), disposable CI database and full SQL/RLS suite, plus live read-only verification of private platform billing ledgers, empty billing/event/queue/review state, RLS, no direct table grants, root-only admin RPCs and service-role-only effect RPCs on 2026-08-14",
   "reason": null
 }
