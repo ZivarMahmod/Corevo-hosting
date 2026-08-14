@@ -107,6 +107,10 @@ export function runMotiontestBuild({
     const { config, configPath } = readConfig(appDir)
     canonicalPublicEnv = motiontestBuildEnvironment(config, { appDir, configPath })
   }
+  canonicalPublicEnv = {
+    ...canonicalPublicEnv,
+    NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA: identity.gitSha,
+  }
   if (!existsSync(cliPath) || !statSync(cliPath).isFile()) fail('local OpenNext CLI is missing')
 
   const temporaryEnvPath = resolve(appDir, '.env.production.local')

@@ -73,6 +73,17 @@ function renderMotiontest(
 }
 
 describe('FreshCut motiontest server markup', () => {
+  it('renders the exact build release marker', () => {
+    const previous = process.env.NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA
+    process.env.NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA = 'a'.repeat(40)
+    try {
+      expect(renderMotiontest()).toContain(`data-motiontest-release="${'a'.repeat(40)}"`)
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA
+      else process.env.NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA = previous
+    }
+  })
+
   it('renders the complete booking-first experience without media or JavaScript', () => {
     const html = renderMotiontest()
 

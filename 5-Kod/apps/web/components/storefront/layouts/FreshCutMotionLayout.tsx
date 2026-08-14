@@ -116,7 +116,11 @@ export function FreshCutMotionLayout({
   const prototypeCopy = view.prototypeCopy
 
   return (
-    <div className={motion.page} data-storefront-experience="freshcut-motiontest">
+    <div
+      className={motion.page}
+      data-storefront-experience="freshcut-motiontest"
+      data-motiontest-release={process.env.NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA}
+    >
       <script
         data-freshcut-motion-prepaint=""
         dangerouslySetInnerHTML={{ __html: FRESHCUT_MOTION_PREPAINT_SCRIPT }}

@@ -367,6 +367,7 @@ export function FreshCutMotionExperience({
     const disableEnhancedMotion = () => {
       if (runtimeDisabled) return
       runtimeDisabled = true
+      hasBuiltMotion = false
       bootstrapExpired = true
       clearBootstrapTimer()
       cancelPreparationFrames()
@@ -462,7 +463,7 @@ export function FreshCutMotionExperience({
     }
 
     const rebuildMotion = (compactViewport: boolean) => {
-      if (disposed || !motionRuntime) return
+      if (disposed || runtimeDisabled || !motionRuntime) return
       if (!bootstrapReady && !bootstrapIsCurrent()) {
         failBootstrapStatic()
         return
@@ -773,6 +774,7 @@ export function FreshCutMotionExperience({
     }
 
     const queuePreparedBuild = () => {
+      if (runtimeDisabled || !isFreshCutMotionRuntimeEligible()) return
       const preparedBuild = () => rebuildMotion(latestCompactViewport)
       ownedPreparedBuild = preparedBuild
       preparedBuildRef.current = preparedBuild
@@ -781,7 +783,9 @@ export function FreshCutMotionExperience({
 
     const handleCompactChange = (event: MediaQueryListEvent) => {
       latestCompactViewport = event.matches
-      if (hasBuiltMotion) queuePreparedBuild()
+      if (!runtimeDisabled && isFreshCutMotionRuntimeEligible() && hasBuiltMotion) {
+        queuePreparedBuild()
+      }
     }
     compactQuery.addEventListener('change', handleCompactChange)
 

@@ -20,6 +20,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const appDir = resolve(here, '..')
 const wranglerPath = resolve(appDir, 'wrangler.jsonc')
 const PROPAGATION_PENDING_CODE = 'MOTIONTEST_PROPAGATION_PENDING'
+const RELEASE_SHA = 'a'.repeat(40)
 
 function readWranglerConfig() {
   return parseJsonc(readFileSync(wranglerPath, 'utf8'), [], { allowTrailingComma: true })
@@ -33,10 +34,13 @@ function decodeJwtPayload(value) {
 
 function writeGeneratedEnv(root, overrides = {}) {
   const config = readWranglerConfig()
-  const canonicalBuildEnvironment = motiontestBuildEnvironment(config, {
-    appDir,
-    configPath: wranglerPath,
-  })
+  const canonicalBuildEnvironment = {
+    ...motiontestBuildEnvironment(config, {
+      appDir,
+      configPath: wranglerPath,
+    }),
+    NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA: RELEASE_SHA,
+  }
   const modes = {
     production: canonicalBuildEnvironment,
     development: {},
@@ -264,7 +268,10 @@ describe('FreshCut motiontest release contract', () => {
 
   it('rejects private or cross-project values embedded by OpenNext env compilation', async () => {
     const config = readWranglerConfig()
-    const expected = motiontestBuildEnvironment(config, { appDir, configPath: wranglerPath })
+    const expected = {
+      ...motiontestBuildEnvironment(config, { appDir, configPath: wranglerPath }),
+      NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA: RELEASE_SHA,
+    }
     await withTempApp((root) => {
       writeGeneratedEnv(root)
       expect(() => assertNoEmbeddedPrivateEnv(root, expected)).not.toThrow()
@@ -427,7 +434,7 @@ describe('FreshCut motiontest release contract', () => {
 
       const guarded = {
         releaseIdentityImpl: () => ({
-          gitSha: 'a'.repeat(40),
+            gitSha: RELEASE_SHA,
           releaseRef: 'refs/heads/codex/freshcut-motiontest-production-grade',
         }),
         artifactImpl: (_appDir, identity) => ({ ...identity }),
@@ -439,6 +446,7 @@ describe('FreshCut motiontest release contract', () => {
           verifications += 1
           expect(options).toEqual({
             deadlineAt: expect.any(Number),
+            expectedSha: RELEASE_SHA,
             liveBaseline,
           })
         },
@@ -541,7 +549,7 @@ describe('FreshCut motiontest release contract', () => {
         },
         wranglerBinPath,
         releaseIdentityImpl: () => ({
-          gitSha: 'a'.repeat(40),
+          gitSha: RELEASE_SHA,
           releaseRef: 'refs/heads/codex/freshcut-motiontest-production-grade',
         }),
         artifactImpl: () => ({ artifactSha256: 'b'.repeat(64) }),
@@ -557,7 +565,7 @@ describe('FreshCut motiontest release contract', () => {
         runMotiontestDeploy({
           ...common,
           verifyImpl: async (options) => {
-            expect(options).toEqual({ deadlineAt: 1, liveBaseline })
+            expect(options).toEqual({ deadlineAt: 1, expectedSha: RELEASE_SHA, liveBaseline })
             order.push('verify')
             throw new Error('public verification failed')
           },
@@ -588,7 +596,7 @@ describe('FreshCut motiontest release contract', () => {
         runMotiontestDeploy({
           ...common,
           verifyImpl: async (options) => {
-            expect(options).toEqual({ deadlineAt: 1, liveBaseline })
+            expect(options).toEqual({ deadlineAt: 1, expectedSha: RELEASE_SHA, liveBaseline })
             order.push('verify')
             return { motiontestVerified: true }
           },
@@ -753,7 +761,7 @@ describe('FreshCut motiontest release contract', () => {
     })
   })
 
-  it('keeps the GitHub release manual-only and orders browser evidence before build and deploy', () => {
+  it('keeps the GitHub release manual-only and verifies local and public browser evidence', () => {
     const workflowPath = resolve(appDir, '../../../.github/workflows/deploy-motiontest.yml')
     expect(existsSync(workflowPath)).toBe(true)
 
@@ -771,6 +779,7 @@ describe('FreshCut motiontest release contract', () => {
     expect(Object.keys(workflow.jobs ?? {})).toEqual(['deploy-motiontest'])
 
     const job = workflow.jobs['deploy-motiontest']
+    expect(job.if).toBe("${{ github.ref == 'refs/heads/main' }}")
     expect(job.environment).toBe('motiontest')
     expect(job['timeout-minutes']).toBe(60)
     const steps = job.steps
@@ -782,6 +791,7 @@ describe('FreshCut motiontest release contract', () => {
     const buildIndex = index('Build and stamp OpenNext motiontest')
     const dryRunIndex = index('Dry-run isolated motiontest Worker')
     const deployIndex = index('Deploy and verify isolated motiontest Worker')
+    const publicBrowserIndex = index('Run public HTTPS motiontest browser evidence')
     expect([
       testIndex,
       typecheckIndex,
@@ -790,6 +800,7 @@ describe('FreshCut motiontest release contract', () => {
       buildIndex,
       dryRunIndex,
       deployIndex,
+      publicBrowserIndex,
     ]).toEqual(
       [
         ...new Set([
@@ -800,6 +811,7 @@ describe('FreshCut motiontest release contract', () => {
           buildIndex,
           dryRunIndex,
           deployIndex,
+          publicBrowserIndex,
         ]),
       ].sort((left, right) => left - right),
     )
@@ -824,6 +836,13 @@ describe('FreshCut motiontest release contract', () => {
     expect(steps[buildIndex].run).toBe('pnpm --filter @corevo/web build:motiontest')
     expect(steps[dryRunIndex].run).toBe('pnpm --filter @corevo/web deploy:motiontest --dry-run')
     expect(steps[deployIndex].run).toBe('pnpm --filter @corevo/web deploy:motiontest')
+    expect(steps[publicBrowserIndex].run).toBe(
+      'pnpm exec playwright test e2e/motiontest-freshcut.spec.ts e2e/motiontest-freshcut-cls.spec.ts e2e/motiontest-freshcut-nojs.spec.ts --project=chromium --project=firefox --project=webkit',
+    )
+    expect(steps[publicBrowserIndex].env).toEqual({
+      E2E_BASE_URL: 'https://motiontest.corevo.se',
+      LIVE_FRESHCUT_BASE_URL: 'https://freshcut.corevo.se',
+    })
 
     expect(steps[buildIndex].env).toEqual({ NODE_OPTIONS: '' })
     expect(steps[deployIndex].env).toEqual({
@@ -839,9 +858,15 @@ describe('FreshCut motiontest release contract', () => {
       MOTIONTEST_ACTUAL_REF: '${{ github.ref }}',
     })
     expect(steps[0]).toMatchObject({
-      uses: 'actions/checkout@v4',
-      with: { ref: '${{ inputs.expected_sha }}', 'fetch-depth': 0 },
+      uses: 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
+      with: { ref: '${{ github.sha }}', 'fetch-depth': 0, 'persist-credentials': false },
     })
+    expect(steps[1]).toMatchObject({
+      name: 'Verify exact main release identity',
+      shell: 'bash',
+    })
+    expect(steps[1].run).toMatch(/MOTIONTEST_EXPECTED_REF.*refs\/heads\/main/)
+    expect(steps[1].run).toMatch(/git rev-parse HEAD/)
     expect(steps[buildIndex].id).toBe('motiontest-build')
     expect(steps[dryRunIndex].env).toEqual({
       NODE_OPTIONS: '',

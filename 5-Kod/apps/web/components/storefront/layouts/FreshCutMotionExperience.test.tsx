@@ -733,6 +733,21 @@ describe('FreshCut master motion enhancement', () => {
     expect(media.destroy).toHaveBeenCalledOnce()
   })
 
+  it('does not rebuild after runtime capability disables enhanced motion', async () => {
+    const experience = await renderExperience()
+
+    await act(async () => reducedQuery.emit(true))
+    await act(async () => compactQuery.emit(true))
+    await act(async () => frameHarness.flush())
+    await act(async () => frameHarness.flush())
+
+    expect(experience.dataset.motionMode).toBe('static')
+    expect(gsapHarness.timelines).toHaveLength(1)
+    expect(gsapHarness.triggers).toHaveLength(1)
+    expect(mediaHarness.controllers).toHaveLength(1)
+    expect(frameHarness.pendingCount).toBe(0)
+  })
+
   it('tears down the enhanced owner when the connection becomes constrained', async () => {
     const experience = await renderExperience()
     const timeline = gsapHarness.timelines[0]!

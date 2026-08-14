@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto'
 import {
   createReadStream,
+  closeSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
+  readSync,
   renameSync,
   rmSync,
   statSync,
@@ -465,6 +468,21 @@ export async function hashMotionSource(inputPath) {
   return hash.digest('hex')
 }
 
+function hashMotionSourceSync(inputPath) {
+  const hash = createHash('sha256')
+  const buffer = Buffer.allocUnsafe(1024 * 1024)
+  const descriptor = openSync(inputPath, 'r')
+  try {
+    let bytesRead
+    while ((bytesRead = readSync(descriptor, buffer, 0, buffer.length, null)) > 0) {
+      hash.update(buffer.subarray(0, bytesRead))
+    }
+  } finally {
+    closeSync(descriptor)
+  }
+  return hash.digest('hex')
+}
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
@@ -491,6 +509,7 @@ export function executeFreshCutMotionMediaPlan(plan, options = {}) {
   const ffmpegPath = options.ffmpegPath || process.env.FFMPEG_BIN || 'ffmpeg'
   const ffprobePath = options.ffprobePath || process.env.FFPROBE_BIN || 'ffprobe'
   const runCommand = options.runCommand || run
+  const hashSource = options.hashSource || hashMotionSourceSync
 
   if (existsSync(plan.familyDirectory)) {
     throw new Error(`Published media family already exists: ${plan.familyDirectory}`)
@@ -503,6 +522,9 @@ export function executeFreshCutMotionMediaPlan(plan, options = {}) {
   const workingPlan = temporaryPlan(plan, temporaryDirectory)
 
   try {
+    if (hashSource(plan.inputPath) !== plan.sourceHash) {
+      throw new Error('Motion source changed before preparation')
+    }
     const ffmpegVersion = String(runCommand(ffmpegPath, ['-version'], { capture: true }))
       .split(/\r?\n/, 1)[0]
       .trim()
@@ -653,6 +675,9 @@ export function executeFreshCutMotionMediaPlan(plan, options = {}) {
 
     if (existsSync(plan.familyDirectory)) {
       throw new Error(`Published media family already exists: ${plan.familyDirectory}`)
+    }
+    if (hashSource(plan.inputPath) !== plan.sourceHash) {
+      throw new Error('Motion source changed during preparation')
     }
     renameSync(temporaryDirectory, plan.familyDirectory)
     return {

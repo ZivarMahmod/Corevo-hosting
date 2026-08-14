@@ -66,9 +66,26 @@ async function readBounded(response, label, expectedStatus, propagationPendingSt
     fail(`${label} response is too large`)
   }
 
-  const bytes = new Uint8Array(await response.arrayBuffer())
-  if (bytes.byteLength > MAX_RESPONSE_BYTES) {
-    fail(`${label} response is too large`)
+  if (!response.body) return { body: '', bytes: new Uint8Array() }
+
+  const reader = response.body.getReader()
+  const chunks = []
+  let totalBytes = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    totalBytes += value.byteLength
+    if (totalBytes > MAX_RESPONSE_BYTES) {
+      await reader.cancel()
+      fail(`${label} response is too large`)
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
   }
   return { body: new TextDecoder().decode(bytes), bytes }
 }
@@ -315,12 +332,15 @@ async function verifyFreshCutImageResponse(result) {
   }
 }
 
-function verifyMotiontestHtml(html, liveFingerprint) {
+function verifyMotiontestHtml(html, liveFingerprint, expectedSha) {
   if (!/data-storefront-experience=["']freshcut-motiontest["']/.test(html)) {
     fail('motiontest marker is missing', MOTIONTEST_PROPAGATION_PENDING_CODE)
   }
   if (!/data-motion-scene=/.test(html)) {
     fail('motiontest scene marker is missing', MOTIONTEST_PROPAGATION_PENDING_CODE)
+  }
+  if (!/^[a-f0-9]{40}$/.test(expectedSha ?? '')) {
+    fail('expected motiontest release SHA is missing')
   }
 
   let hasNoIndexNoFollow = false
@@ -359,6 +379,9 @@ function verifyMotiontestHtml(html, liveFingerprint) {
       verifiedServiceText.push(normalizeText(nodeText(node)))
     }
   })
+  if (!new RegExp(`data-motiontest-release=["']${expectedSha}["']`).test(html)) {
+    fail('motiontest release marker does not match candidate', MOTIONTEST_PROPAGATION_PENDING_CODE)
+  }
 
   if (!hasNoIndexNoFollow) fail('motiontest robots meta must contain noindex and nofollow')
   if (!staticAssetPath) fail('motiontest HTML has no local static asset marker')
@@ -599,6 +622,7 @@ export async function verifyMotiontestRelease({
   deadlineAt,
   fetchImpl = fetch,
   fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
+  expectedSha = process.env.MOTIONTEST_EXPECTED_SHA,
   liveBaseline,
   log = console.log,
   nowImpl = Date.now,
@@ -617,7 +641,7 @@ export async function verifyMotiontestRelease({
     { ...requestOptions, accept: 'text/plain' },
   )
 
-  const staticAssetUrl = verifyMotiontestHtml(motionHtml, trustedBaseline.fingerprint)
+  const staticAssetUrl = verifyMotiontestHtml(motionHtml, trustedBaseline.fingerprint, expectedSha)
   verifyMotiontestRobots(motionRobots)
   const staticAsset = await fetchChecked(fetchImpl, staticAssetUrl, 'motiontest static asset', {
     ...requestOptions,

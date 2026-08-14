@@ -38,6 +38,7 @@ const GENERATED_ENV_MODES = ['development', 'production', 'test']
 const ALLOWED_EMBEDDED_ENV_KEYS = new Set([
   'NEXT_PUBLIC_CUSTOMER_PORTAL_HOST',
   'NEXT_PUBLIC_PLATFORM_HOST',
+  'NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA',
   'NEXT_PUBLIC_RESERVED_SUBDOMAINS',
   'NEXT_PUBLIC_ROOT_DOMAIN',
   'NEXT_PUBLIC_SITE_URL',
@@ -64,6 +65,7 @@ function sleep(durationMs) {
 }
 
 export async function verifyMotiontestAfterPropagation({
+  expectedSha,
   intervalMs = DEFAULT_PROPAGATION_INTERVAL_MS,
   liveBaseline,
   nowImpl = Date.now,
@@ -89,7 +91,11 @@ export async function verifyMotiontestAfterPropagation({
   while (true) {
     attempts += 1
     try {
-      const verified = await verifyImpl({ deadlineAt, liveBaseline })
+      const verified = await verifyImpl({
+        deadlineAt,
+        liveBaseline,
+        ...(expectedSha ? { expectedSha } : {}),
+      })
       if (nowImpl() > deadlineAt) {
         fail(`public verification exceeded its ${timeoutMs} ms propagation deadline`)
       }
@@ -372,12 +378,16 @@ export async function runMotiontestDeploy({
   if (parseErrors.length) fail('canonical wrangler.jsonc is not valid JSONC')
 
   validateMotiontestConfig(config, { appDir, configPath })
-  const buildEnvironment = motiontestBuildEnvironment(config, { appDir, configPath })
+  const baseBuildEnvironment = motiontestBuildEnvironment(config, { appDir, configPath })
+  const repoDir = resolve(appDir, '../../..')
+  const identity = releaseIdentityImpl({ repoDir, env })
+  const buildEnvironment = {
+    ...baseBuildEnvironment,
+    NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA: identity.gitSha,
+  }
   assertNoGeneratedConfigRedirect(appDir)
   assertMotiontestBuild(appDir)
   assertNoEmbeddedPrivateEnv(appDir, buildEnvironment)
-  const repoDir = resolve(appDir, '../../..')
-  const identity = releaseIdentityImpl({ repoDir, env })
   const artifactSha256 = expectedArtifactSha(env)
   const artifact = artifactImpl(appDir, { ...identity, artifactSha256 })
   if (!dryRun) requireDeployCredentials(env)
@@ -395,6 +405,7 @@ export async function runMotiontestDeploy({
     log('Motiontest dry-run complete; nothing was published.')
   } else {
     await verifyMotiontestAfterPropagation({
+      expectedSha: identity.gitSha,
       intervalMs: propagationIntervalMs,
       liveBaseline,
       nowImpl,

@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 
 async function loadVerifier() {
   return import('./verify-motiontest-release.mjs').catch(() => null)
@@ -19,6 +19,9 @@ const MOTIONTEST_STATIC_URL = `${MOTIONTEST_ORIGIN}/_next/static/chunks/motionte
 const MOTIONTEST_IMAGE_URL = `${MOTIONTEST_ORIGIN}/images/freshcut/freshcut-hero.webp`
 const MOTIONTEST_OPTIMIZED_IMAGE_URL = `${MOTIONTEST_ORIGIN}/_next/image?url=%2Fimages%2Ffreshcut%2Ffreshcut-hero.webp&w=1200&q=75`
 const PROPAGATION_PENDING_CODE = 'MOTIONTEST_PROPAGATION_PENDING'
+const EXPECTED_SHA = 'a'.repeat(40)
+const previousExpectedSha = process.env.MOTIONTEST_EXPECTED_SHA
+process.env.MOTIONTEST_EXPECTED_SHA = EXPECTED_SHA
 const CORRUPT_WEBP_PREFIX = Uint8Array.from([
   0x52, 0x49, 0x46, 0x46, 0x08, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20,
 ])
@@ -59,7 +62,11 @@ function verifiedServiceMarkup() {
 }
 
 function motiontestHtml(overrides = {}) {
-  const { bookingUrl = LIVE_BOOKING_URL, services = verifiedServiceMarkup() } = overrides
+  const {
+    bookingUrl = LIVE_BOOKING_URL,
+    releaseSha = EXPECTED_SHA,
+    services = verifiedServiceMarkup(),
+  } = overrides
   return `<!doctype html>
     <html>
       <head>
@@ -67,13 +74,18 @@ function motiontestHtml(overrides = {}) {
         <script src="/_next/static/chunks/motiontest-app.js"></script>
       </head>
       <body>
-        <main data-storefront-experience="freshcut-motiontest" data-motion-scene="hero">
+        <main data-storefront-experience="freshcut-motiontest" data-motiontest-release="${releaseSha}" data-motion-scene="hero">
           <a href="${bookingUrl}">Boka tid</a>
           ${services}
         </main>
       </body>
     </html>`
 }
+
+afterAll(() => {
+  if (previousExpectedSha === undefined) delete process.env.MOTIONTEST_EXPECTED_SHA
+  else process.env.MOTIONTEST_EXPECTED_SHA = previousExpectedSha
+})
 
 function liveHtml({
   bookingUrl = LIVE_BOOKING_URL,
@@ -277,6 +289,10 @@ describe('post-deploy motiontest verification', () => {
         ),
       },
     ],
+    [
+      'an old public document has a different release marker',
+      { motionHtml: motiontestHtml({ releaseSha: 'b'.repeat(40) }) },
+    ],
     ['the selected static asset has not propagated', { staticStatus: 404 }],
   ])('marks only transient propagation when $0', async (_label, fetchOptions) => {
     const verifier = await loadVerifier()
@@ -313,6 +329,38 @@ describe('post-deploy motiontest verification', () => {
       .catch((caught) => caught)
 
     expect(error).toMatchObject({ code: PROPAGATION_PENDING_CODE })
+  })
+
+  it('rejects a chunked response before buffering beyond the byte ceiling', async () => {
+    const verifier = await loadVerifier()
+    if (!verifier?.verifyMotiontestRelease) {
+      expect(verifier?.verifyMotiontestRelease).toBeTypeOf('function')
+      return
+    }
+    const liveBaseline = await captureBaseline(verifier)
+    const delegate = successfulFetch()
+    let cancelled = false
+    const oversizedBody = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(1024 * 1024))
+        controller.enqueue(new Uint8Array(1024 * 1024))
+        controller.enqueue(new Uint8Array(1))
+      },
+      cancel() {
+        cancelled = true
+      },
+    })
+    const fetchImpl = vi.fn(async (input, init) => {
+      if (String(input) === `${MOTIONTEST_ORIGIN}/`) {
+        return new Response(oversizedBody, { headers: { 'content-type': 'text/html' } })
+      }
+      return delegate(input, init)
+    })
+
+    await expect(
+      verifier.verifyMotiontestRelease({ fetchImpl, liveBaseline, log() {} }),
+    ).rejects.toThrow(/response is too large/i)
+    expect(cancelled).toBe(true)
   })
 
   it('verifies exact boundary statuses, approved assets, services, and an unchanged live baseline', async () => {
@@ -369,7 +417,7 @@ describe('post-deploy motiontest verification', () => {
     const invalidHtml =
       '<script type="application/json"><meta name="robots" content="noindex,nofollow"></script>' +
       '<script src="/_next/static/chunks/motiontest-app.js"></script>' +
-      '<main data-storefront-experience="freshcut-motiontest" data-motion-scene="hero"></main>'
+      `<main data-storefront-experience="freshcut-motiontest" data-motiontest-release="${EXPECTED_SHA}" data-motion-scene="hero"></main>`
 
     await expect(
       verifier.verifyMotiontestRelease({

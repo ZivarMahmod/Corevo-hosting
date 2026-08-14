@@ -118,6 +118,13 @@ function successfulRunnerWithOversize(calls, suffix, size) {
   })
 }
 
+function executePlan(plan, options = {}) {
+  return executeFreshCutMotionMediaPlan(plan, {
+    hashSource: () => plan.sourceHash,
+    ...options,
+  })
+}
+
 afterEach(() => {
   for (const directory of scratchDirectories.splice(0)) {
     rmSync(directory, { force: true, recursive: true })
@@ -291,7 +298,7 @@ describe('FreshCut motion media preparation', () => {
     const calls = []
     const runCommand = successfulRunner(calls)
 
-    const result = executeFreshCutMotionMediaPlan(plan, {
+    const result = executePlan(plan, {
       ffmpegPath: 'ffmpeg-test',
       ffprobePath: 'ffprobe-test',
       runCommand,
@@ -362,13 +369,31 @@ describe('FreshCut motion media preparation', () => {
     expect(serializedManifest).not.toContain(`.${plan.baseName}-tmp-`)
   })
 
+  it('rejects publication when the source changes during preparation', () => {
+    const outputDir = join(scratchDirectory(), 'published')
+    const plan = buildFreshCutMotionMediaPlan(planInput({ outputDir }))
+    const hashSource = vi.fn().mockReturnValueOnce(plan.sourceHash).mockReturnValue('b'.repeat(64))
+
+    expect(() =>
+      executePlan(plan, {
+        ffmpegPath: 'ffmpeg-test',
+        ffprobePath: 'ffprobe-test',
+        hashSource,
+        runCommand: successfulRunner([]),
+      }),
+    ).toThrow(/source changed during preparation/i)
+    expect(hashSource).toHaveBeenCalledTimes(2)
+    expect(existsSync(plan.familyDirectory)).toBe(false)
+    expect(readdirSync(outputDir).filter((entry) => entry.includes('-tmp-'))).toEqual([])
+  })
+
   it('refuses an existing published family before running FFmpeg', () => {
     const outputDir = join(scratchDirectory(), 'published')
     const plan = buildFreshCutMotionMediaPlan(planInput({ outputDir }))
     mkdirSync(plan.familyDirectory, { recursive: true })
     const runCommand = vi.fn()
 
-    expect(() => executeFreshCutMotionMediaPlan(plan, { runCommand })).toThrow(/already exists/i)
+    expect(() => executePlan(plan, { runCommand })).toThrow(/already exists/i)
     expect(runCommand).not.toHaveBeenCalled()
   })
 
@@ -387,7 +412,7 @@ describe('FreshCut motion media preparation', () => {
     })
 
     expect(() =>
-      executeFreshCutMotionMediaPlan(plan, {
+      executePlan(plan, {
         ffmpegPath: 'ffmpeg-test',
         ffprobePath: 'ffprobe-test',
         runCommand,
@@ -409,7 +434,7 @@ describe('FreshCut motion media preparation', () => {
     const runCommand = successfulRunner([], posterOverrides)
 
     expect(() =>
-      executeFreshCutMotionMediaPlan(plan, {
+      executePlan(plan, {
         ffmpegPath: 'ffmpeg-test',
         ffprobePath: 'ffprobe-test',
         runCommand,
@@ -495,7 +520,7 @@ describe('FreshCut motion media preparation', () => {
     const runCommand = successfulRunnerWithOversize([], suffix, budget + 1)
 
     expect(() =>
-      executeFreshCutMotionMediaPlan(plan, {
+      executePlan(plan, {
         ffmpegPath: 'ffmpeg-test',
         ffprobePath: 'ffprobe-test',
         runCommand,

@@ -126,6 +126,10 @@ describe('canonical motiontest build', () => {
       NEXT_PUBLIC_SUPABASE_URL: 'https://clylvowtowbtotrahuad.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'public-anon',
     }
+    const expectedBuildEnv = {
+      ...publicEnv,
+      NEXT_PUBLIC_MOTIONTEST_RELEASE_SHA: 'a'.repeat(40),
+    }
     mkdirSync(dirname(cliPath), { recursive: true })
     writeFileSync(cliPath, '// fixture cli\n')
     try {
@@ -148,7 +152,7 @@ describe('canonical motiontest build', () => {
                 .split(/\r?\n/)
                 .map((line) => line.split('=', 2)),
             )
-            expect(parsed).toEqual(publicEnv)
+            expect(parsed).toEqual(expectedBuildEnv)
             return { status: 17 }
           },
         }),
