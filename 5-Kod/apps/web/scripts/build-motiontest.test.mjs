@@ -141,7 +141,7 @@ describe('canonical motiontest build', () => {
           env: {},
           releaseIdentityImpl: () => ({
             gitSha: 'a'.repeat(40),
-            releaseRef: 'refs/heads/codex/freshcut-motiontest-production-grade',
+            releaseRef: 'refs/heads/main',
           }),
           spawnSyncImpl() {
             const temporaryEnv = resolve(appDir, '.env.production.local')

@@ -53,7 +53,7 @@ describe('motiontest cryptographic artifact stamp', () => {
       return
     }
     const sha = 'a'.repeat(40)
-    const releaseRef = 'refs/heads/codex/freshcut-motiontest-production-grade'
+    const releaseRef = 'refs/heads/main'
     const runGit = (args) => {
       const command = args.join(' ')
       if (command === 'rev-parse HEAD') return `${sha}\n`
@@ -95,7 +95,7 @@ describe('motiontest cryptographic artifact stamp', () => {
     expect(() =>
       artifact.assertMotiontestReleaseIdentity({
         repoDir: 'C:/repo',
-        env: { ...env, MOTIONTEST_EXPECTED_REF: 'refs/heads/main' },
+        env: { ...env, MOTIONTEST_EXPECTED_REF: 'refs/heads/other' },
         runGit,
       }),
     ).toThrow(/release ref/i)
@@ -117,7 +117,7 @@ describe('motiontest cryptographic artifact stamp', () => {
     await withFixture(async (appDir) => {
       const identity = {
         gitSha: 'a'.repeat(40),
-        releaseRef: 'refs/heads/codex/freshcut-motiontest-production-grade',
+        releaseRef: 'refs/heads/main',
       }
       const buildEnvironment = { NEXT_PUBLIC_SITE_URL: 'https://motiontest.corevo.se' }
       artifact.writeMotiontestArtifactStamp(appDir, { ...identity, buildEnvironment })
@@ -165,7 +165,7 @@ describe('motiontest cryptographic artifact stamp', () => {
       expect(() =>
         artifact.assertMotiontestArtifact(appDir, {
           gitSha: 'a'.repeat(40),
-          releaseRef: 'refs/heads/codex/freshcut-motiontest-production-grade',
+          releaseRef: 'refs/heads/main',
         }),
       ).toThrow(/missing/i)
     })

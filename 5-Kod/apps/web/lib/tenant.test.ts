@@ -13,14 +13,14 @@ const OPTS = {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('getTenantFromHost — host suffix classification', () => {
-  it('maps the exact motiontest aliases to FreshCut before generic tenant classification', () => {
+  it('maps the exact motiontest aliases to the isolated tenant before generic classification', () => {
     expect(getTenantFromHost('motiontest.corevo.se', OPTS)).toEqual({
       kind: 'tenant',
-      slug: 'freshcut',
+      slug: 'freshcut-motiontest',
     })
     expect(getTenantFromHost('motiontest.localhost:3000', OPTS)).toEqual({
       kind: 'tenant',
-      slug: 'freshcut',
+      slug: 'freshcut-motiontest',
     })
   })
 
@@ -30,13 +30,13 @@ describe('getTenantFromHost — host suffix classification', () => {
         ...OPTS,
         search: new URLSearchParams('tenant=evil'),
       }),
-    ).toEqual({ kind: 'tenant', slug: 'freshcut' })
+    ).toEqual({ kind: 'tenant', slug: 'freshcut-motiontest' })
     expect(
       getTenantFromHost('motiontest.localhost:3000', {
         ...OPTS,
         pathname: '/t/evil',
       }),
-    ).toEqual({ kind: 'tenant', slug: 'freshcut' })
+    ).toEqual({ kind: 'tenant', slug: 'freshcut-motiontest' })
   })
 
   it('reserves motiontest so the generic tenant resolver cannot mint it', () => {

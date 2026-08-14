@@ -29,14 +29,14 @@ describe('FreshCut motiontest storefront experience', () => {
     }
   })
 
-  it('maps only the exact production and local aliases to FreshCut', () => {
+  it('maps only the exact production and local aliases to the isolated tenant', () => {
     expect(storefrontExperienceForHost('motiontest.corevo.se')).toEqual({
       experience: 'freshcut-motiontest',
-      tenantSlug: 'freshcut',
+      tenantSlug: 'freshcut-motiontest',
     })
     expect(storefrontExperienceForHost('MOTIONTEST.LOCALHOST:3000')).toEqual({
       experience: 'freshcut-motiontest',
-      tenantSlug: 'freshcut',
+      tenantSlug: 'freshcut-motiontest',
     })
   })
 
@@ -213,7 +213,7 @@ describe('FreshCut motiontest middleware boundary', () => {
     const trustedHeaders = mocks.updateSession.mock.calls[0]?.[1] as Headers
     expect(trustedHeaders.get('x-corevo-storefront-experience')).toBe('freshcut-motiontest')
     expect(trustedHeaders.get('x-corevo-tenant-kind')).toBe('tenant')
-    expect(trustedHeaders.get('x-corevo-tenant-slug')).toBe('freshcut')
+    expect(trustedHeaders.get('x-corevo-tenant-slug')).toBe('freshcut-motiontest')
     expect(trustedHeaders.get('x-corevo-reserved-subdomain')).toBeNull()
   })
 

@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { relative, resolve, sep } from 'node:path'
 
-export const MOTIONTEST_RELEASE_REF = 'refs/heads/codex/freshcut-motiontest-production-grade'
+export const MOTIONTEST_RELEASE_REF = 'refs/heads/main'
 export const MOTIONTEST_STAMP_PATH = '.open-next/motiontest-release-stamp.json'
 
 const STAMP_SCHEMA_VERSION = 1

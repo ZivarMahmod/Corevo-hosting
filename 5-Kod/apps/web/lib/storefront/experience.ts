@@ -12,12 +12,12 @@ export function storefrontExperienceFromHeader(
 
 type StorefrontExperienceResolution = {
   experience: Exclude<StorefrontExperience, null>
-  tenantSlug: 'freshcut'
+  tenantSlug: 'freshcut-motiontest'
 }
 
 export function storefrontExperienceForHost(
   host: string | null | undefined,
 ): StorefrontExperienceResolution | null {
   if (!motiontestAuthorityKind(host)) return null
-  return { experience: 'freshcut-motiontest', tenantSlug: 'freshcut' }
+  return { experience: 'freshcut-motiontest', tenantSlug: 'freshcut-motiontest' }
 }

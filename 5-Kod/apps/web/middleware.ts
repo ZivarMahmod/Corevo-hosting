@@ -42,6 +42,7 @@ import {
   isStaticRequestPath,
 } from '@/lib/customer-portal/host-routing'
 import { decideMotiontestRequest } from '@/lib/storefront/motiontest-request-boundary.mjs'
+import { storefrontExperienceForHost } from '@/lib/storefront/experience'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
@@ -84,7 +85,7 @@ export async function middleware(request: NextRequest) {
   const storefrontExperience =
     motiontestDecision.action === 'outside'
       ? null
-      : { experience: 'freshcut-motiontest' as const, tenantSlug: 'freshcut' as const }
+      : storefrontExperienceForHost(host)
   const trustedRequestHeaders = new Headers(request.headers)
   trustedRequestHeaders.delete('x-corevo-storefront-experience')
   trustedRequestHeaders.delete('x-corevo-tenant-kind')
