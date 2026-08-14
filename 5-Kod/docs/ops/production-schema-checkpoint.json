@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "20260814101454",
-  "observedHistoryLatest": "20260814101454",
+  "requiredLatest": "20260814202330",
+  "observedHistoryLatest": "20260814202330",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-08-14T12:22:01Z",
+  "verifiedAt": "2026-08-14T20:24:46Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:645e88d41050b7c5f422f8d31c3ef82b4cf2c4997a5a71579965cee3f896ac56",
-  "verificationEvidence": "Supabase production history parity (171 local = 171 remote), disposable CI database and full SQL/RLS suite, plus live read-only verification of private platform billing ledgers, empty billing/event/queue/review state, RLS, no direct table grants, root-only admin RPCs and service-role-only effect RPCs on 2026-08-14",
+  "migrationFingerprint": "sha256:c33f7d800d38538f3b9417fdcb06f5ab1cda3802d410fb06514f9a1fb533d064",
+  "verificationEvidence": "Supabase production history parity (172 local = 172 remote), disposable CI database and full SQL/RLS suite, plus live read-only verification that freshcut-motiontest is active and launch-ready with 7 services, 1 permanently banned internal owner, no auth identities, customers, bookings or Stripe connection on 2026-08-14",
   "reason": null
 }
