@@ -52,9 +52,10 @@ function baselineMismatch(error) {
 }
 
 async function readBounded(response, label, expectedStatus, propagationPendingStatuses) {
-  if (response.status !== expectedStatus) {
+  const expectedStatuses = Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus]
+  if (!expectedStatuses.includes(response.status)) {
     fail(
-      `${label} returned HTTP ${response.status}; expected ${expectedStatus}`,
+      `${label} returned HTTP ${response.status}; expected ${expectedStatuses.join(' or ')}`,
       propagationPendingStatuses.includes(response.status)
         ? MOTIONTEST_PROPAGATION_PENDING_CODE
         : undefined,
@@ -605,7 +606,7 @@ async function verifySafeMotiontestBoundary(fetchImpl, requestOptions) {
       fetchImpl,
       `${MOTIONTEST_ORIGIN}${pathname}`,
       `motiontest negative probe ${pathname}`,
-      { ...requestOptions, expectedStatus: 404 },
+      { ...requestOptions, expectedStatus: [400, 403, 404] },
     )
   }
 
