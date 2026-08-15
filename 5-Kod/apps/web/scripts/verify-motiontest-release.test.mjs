@@ -496,6 +496,33 @@ describe('post-deploy motiontest verification', () => {
     ).rejects.toThrow(/FreshCut image.*404/i)
   })
 
+  it('accepts Cloudflare rejecting negative probes with fail-closed HTTP statuses', async () => {
+    const verifier = await loadVerifier()
+    if (!verifier?.verifyMotiontestRelease) {
+      expect(verifier?.verifyMotiontestRelease).toBeTypeOf('function')
+      return
+    }
+    const liveBaseline = await captureBaseline(verifier)
+    const fetchImpl = successfulFetch()
+    const delegate = successfulFetch()
+    fetchImpl.mockImplementation(async (input, init) => {
+      if (String(input) === `${MOTIONTEST_ORIGIN}/_next/static/chunks/app%00.js`) {
+        return response('bad request', { status: 400 })
+      }
+      if (
+        String(input) ===
+        `${MOTIONTEST_ORIGIN}/_next/image?url=https%3A%2F%2Fattacker.example%2Fimage.webp&w=1200&q=75`
+      ) {
+        return response('forbidden', { status: 403 })
+      }
+      return delegate(input, init)
+    })
+
+    await expect(
+      verifier.verifyMotiontestRelease({ fetchImpl, liveBaseline, log() {} }),
+    ).resolves.toMatchObject({ safeBoundaryVerified: true })
+  })
+
   it.each([
     {
       expected: /static asset.*non-empty/i,
