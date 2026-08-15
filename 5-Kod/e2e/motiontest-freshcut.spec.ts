@@ -82,7 +82,9 @@ async function gotoMotiontest(page: Page): Promise<void> {
   const response = await page.goto(motiontestUrl(), { waitUntil: 'domcontentloaded' })
   expect(response, 'motiontest ska svara med ett dokument').not.toBeNull()
   expect(response?.status(), 'motiontest ska inte svara med redirect/fel').toBeLessThan(400)
-  await expect(page.locator('[data-storefront-experience="freshcut-motiontest"]')).toBeVisible()
+  await expect(
+    page.locator('[data-storefront-experience="freshcut-motiontest"]:visible'),
+  ).toHaveCount(1)
 }
 
 function observePageErrors(page: Page) {
